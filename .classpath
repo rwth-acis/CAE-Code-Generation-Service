@@ -16,6 +16,6 @@
 	<classpathentry kind="lib" path="lib/geronimo-jta_1.1_spec-1.1.1.jar"/>
 	<classpathentry kind="lib" path="lib/json-simple-1.1.1.jar"/>
 	<classpathentry kind="lib" path="lib/cae-simple-model-representation-0.1.jar" sourcepath="/CAE-Simple-Model-Representation/src"/>
-	<classpathentry kind="lib" path="lib/org.eclipse.egit.github.core-2.1.5.jar"/>
+	<classpathentry kind="lib" path="lib/org.eclipse.egit.github.core-2.1.5.jar" sourcepath="lib/org.eclipse.egit.github.core-2.1.5-sources.jar"/>
 	<classpathentry kind="output" path="output"/>
 </classpath>
