@@ -1,13 +1,17 @@
 package i5.las2peer.services.codeGenerationService;
 
-import java.io.IOException;
+import java.io.Serializable;
 
-import org.eclipse.egit.github.core.Repository;
 import org.eclipse.egit.github.core.client.GitHubClient;
-import org.eclipse.egit.github.core.service.RepositoryService;
 
 import i5.cae.simpleModel.SimpleModel;
 import i5.las2peer.api.Service;
+import i5.las2peer.services.codeGenerationService.generators.ApplicationGenerator;
+import i5.las2peer.services.codeGenerationService.generators.FrontendComponentGenerator;
+import i5.las2peer.services.codeGenerationService.generators.MicroserviceGenerator;
+import i5.las2peer.services.codeGenerationService.models.application.Application;
+import i5.las2peer.services.codeGenerationService.models.frontendComponent.FrontendComponent;
+import i5.las2peer.services.codeGenerationService.models.microservice.Microservice;
 
 /**
  * CAE Code Generation Service
@@ -17,33 +21,60 @@ import i5.las2peer.api.Service;
  */
 public class CodeGenerationService extends Service {
 
-  public String gitHubUser;
-  public String gitHubPassword;
+  private String gitHubUser;
+  private String gitHubPassword;
+  public GitHubClient client;
 
   public CodeGenerationService() {
     // read and set properties values
     setFieldValues();
-    GitHubClient client = new GitHubClient();
-    client.setCredentials(gitHubUser, gitHubPassword);
-    RepositoryService service = new RepositoryService();
-    try {
-      // prints out the name of the users repositories
-      for (Repository repo : service.getRepositories(gitHubUser))
-        System.out.println(repo.getName());
-    } catch (IOException e) {
-      // TODO Auto-generated catch block
-      e.printStackTrace();
-    }
+    this.client = new GitHubClient();
+    this.client.setCredentials(gitHubUser, gitHubPassword);
   }
 
+
+
   /**
-   * @param model
    * 
-   * @return a string
+   * Creates a new GitHub repository with the source code according to the passed on model.
+   * 
+   * @param serializedModel a @link{i5.cae.simpleModel.SimpleModel} that contains the model
+   * 
+   * @return a string containing either the message "done" or, in case of an error, the error
+   *         message
    * 
    */
-  public String createSource(SimpleModel model) {
-    return null;
+  public String createFromModel(Serializable serializedModel) {
+    SimpleModel model = (SimpleModel) serializedModel;
+    logMessage("Received model with name " + model.getName());
+    // find out what type of model we got (microservice, frontend component or application)
+    for (int i = 0; i < model.getAttributes().size(); i++) {
+      if (model.getAttributes().get(i).getName().equals("type")) {
+        String type = model.getAttributes().get(i).getValue();
+        switch (type) {
+          case "microservice":
+            Microservice microservice = new Microservice(model);
+            MicroserviceGenerator.createSourceCode(microservice, this.client);
+            return "done";
+          case "frontend-component":
+            FrontendComponent frontendComponent = new FrontendComponent(model);
+            FrontendComponentGenerator.createSourceCode(frontendComponent, this.client);
+            return "done";
+          case "application":
+            Application application = new Application(model);
+            ApplicationGenerator.createSourceCode(application, this.client);
+            return "done";
+        }
+      }
+    }
+    // // write as file for (later) testing purposes
+    // try (OutputStream file = new FileOutputStream("testModels/" + model.getName() + ".model");
+    // OutputStream buffer = new BufferedOutputStream(file);
+    // ObjectOutput output = new ObjectOutputStream(buffer);) {
+    // output.writeObject(model);
+    // } catch (IOException ex) {
+    // }
+    return "Error!";
   }
 
 }

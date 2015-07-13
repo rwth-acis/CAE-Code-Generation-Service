@@ -1,18 +1,23 @@
 package i5.las2peer.services.codeGenerationService;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
-import java.io.FileReader;
-import java.util.Properties;
+import java.io.BufferedInputStream;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.ObjectInput;
+import java.io.ObjectInputStream;
+import java.io.Serializable;
 
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import i5.cae.simpleModel.SimpleModel;
 import i5.las2peer.p2p.LocalNode;
 import i5.las2peer.security.ServiceAgent;
-import i5.las2peer.security.UserAgent;
-import i5.las2peer.testing.MockAgentFactory;
 
 
 /**
@@ -23,55 +28,47 @@ import i5.las2peer.testing.MockAgentFactory;
 public class CodeGenerationServiceTest {
 
   private static LocalNode node;
-  private static UserAgent testAgent;
-  private static final String testPass = "adamspass";
 
   private static final String testTemplateService = CodeGenerationService.class.getCanonicalName();
 
+  private static SimpleModel model1;
+
+  private static ServiceAgent testService;
+
   /**
    * 
-   * Called before the tests start. Sets up the node and initializes users that can be used
-   * throughout the tests.
+   * Called before the tests start. Sets up the node and loads test models for later usage.
    * 
    * @throws Exception
    * 
    */
   @BeforeClass
   public static void startServer() throws Exception {
-    // paths to properties and models
-    Properties properties = new Properties();
-    String propertiesFile =
-        "./etc/i5.las2peer.services.codeGenerationService.CodeGenerationService.properties";
+    // load models
+    String modelPath1 = "./testModels/My Cool Model.model";
 
-    // load properties and models
     try {
-      FileReader reader = new FileReader(propertiesFile);
-      properties.load(reader);
-      // set needed properties here
-    } catch (Exception e) {
-      e.printStackTrace();
-      fail("Properties file loading problems: " + e);
+      InputStream file = new FileInputStream(modelPath1);
+      InputStream buffer = new BufferedInputStream(file);
+      ObjectInput input = new ObjectInputStream(buffer);
+      model1 = (SimpleModel) input.readObject();
+      input.close();
+    } catch (IOException ex) {
+      fail("Error reading test models!");
     }
+
 
     // start node
     node = LocalNode.newNode();
-    node.storeAgent(MockAgentFactory.getAdam());
     node.launch();
 
-    ServiceAgent testService = ServiceAgent.generateNewAgent(testTemplateService, "a pass");
+    testService = ServiceAgent.generateNewAgent(testTemplateService, "a pass");
     testService.unlockPrivateKey("a pass");
 
     node.registerReceiver(testService);
 
-    testAgent = MockAgentFactory.getAdam();
+    // waiting here not needed because no connector is running!
 
-    // avoid timing errors: wait for the repository manager to get all services before continuing
-    try {
-      System.out.println("waiting..");
-      Thread.sleep(10000);
-    } catch (InterruptedException e) {
-      e.printStackTrace();
-    }
   }
 
   /**
@@ -90,11 +87,21 @@ public class CodeGenerationServiceTest {
 
   /**
    * 
+   * Posts a new model to the service.
    * 
    */
   @Test
-  public void testModelUpdate() {
-
+  public void testCreateFromModel() {
+    Serializable[] parameters = {(Serializable) model1};
+    try {
+      String returnMessage = (String) node.invokeLocally(testService.getId(),
+          "i5.las2peer.services.codeGenerationService.CodeGenerationService", "createFromModel",
+          parameters);
+      assertEquals("done", returnMessage);
+    } catch (Exception e) {
+      e.printStackTrace();
+      fail(e.getMessage());
+    }
   }
 
 }
