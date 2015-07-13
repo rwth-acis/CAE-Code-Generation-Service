@@ -45,7 +45,7 @@ public class CodeGenerationServiceTest {
   @BeforeClass
   public static void startServer() throws Exception {
     // load models
-    String modelPath1 = "./testModels/My Cool Model.model";
+    String modelPath1 = "./testModels/First Test Microservice Model.model";
 
     try {
       InputStream file = new FileInputStream(modelPath1);
