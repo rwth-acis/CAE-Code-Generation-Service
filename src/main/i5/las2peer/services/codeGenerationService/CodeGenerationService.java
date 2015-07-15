@@ -10,6 +10,7 @@ import i5.las2peer.services.codeGenerationService.generators.ApplicationGenerato
 import i5.las2peer.services.codeGenerationService.generators.FrontendComponentGenerator;
 import i5.las2peer.services.codeGenerationService.generators.MicroserviceGenerator;
 import i5.las2peer.services.codeGenerationService.models.application.Application;
+import i5.las2peer.services.codeGenerationService.models.exception.ModelParseException;
 import i5.las2peer.services.codeGenerationService.models.frontendComponent.FrontendComponent;
 import i5.las2peer.services.codeGenerationService.models.microservice.Microservice;
 
@@ -55,29 +56,45 @@ public class CodeGenerationService extends Service {
     // output.close();
     // } catch (IOException ex) {
     // }
-    logMessage("Received model with name " + model.getName());
+    logMessage("CreateFromModel: Received model with name " + model.getName());
     // find out what type of model we got (microservice, frontend component or application)
     for (int i = 0; i < model.getAttributes().size(); i++) {
       if (model.getAttributes().get(i).getName().equals("type")) {
         String type = model.getAttributes().get(i).getValue();
-        switch (type) {
-          case "microservice":
-            Microservice microservice = new Microservice(model);
-            MicroserviceGenerator.createSourceCode(microservice, this.client);
-            return "done";
-          case "frontend-component":
-            FrontendComponent frontendComponent = new FrontendComponent(model);
-            FrontendComponentGenerator.createSourceCode(frontendComponent, this.client);
-            return "done";
-          case "application":
-            Application application = new Application(model);
-            ApplicationGenerator.createSourceCode(application, this.client);
-            return "done";
+        try {
+          switch (type) {
+            case "microservice":
+              logMessage("Creating microservice source code now..");
+              Microservice microservice = new Microservice(model);
+              MicroserviceGenerator.createSourceCode(microservice, this.client);
+              logMessage("Created!");
+              return "done";
+            case "frontend-component":
+              logMessage("Creating frontend component source code now..");
+              FrontendComponent frontendComponent = new FrontendComponent(model);
+              FrontendComponentGenerator.createSourceCode(frontendComponent, this.client);
+              logMessage("Created!");
+              return "done";
+            case "application":
+              logMessage("Creating application source code now..");
+              Application application = new Application(model);
+              ApplicationGenerator.createSourceCode(application, this.client);
+              logMessage("Created!");
+              return "done";
+            default:
+              return "Error: Model has to have an attribute 'type' that is either "
+                  + "'microservice', 'frontend-component' or 'application'!";
+          }
+        } catch (ModelParseException e) {
+          logError("Model Parsing Exception: " + e.getMessage());
+          e.printStackTrace();
+          return "Error: Parsing model failed with " + e.getMessage();
         }
       }
     }
-
     return "Error!";
+
+
   }
 
 }
