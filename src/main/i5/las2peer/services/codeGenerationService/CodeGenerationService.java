@@ -47,7 +47,7 @@ public class CodeGenerationService extends Service {
    */
   public String createFromModel(Serializable serializedModel) {
     SimpleModel model = (SimpleModel) serializedModel;
-    // // write as file for (later) testing purposes
+    // write as file for (later) testing purposes
     // try {
     // OutputStream file = new FileOutputStream("testModels/" + model.getName() + ".model");
     // OutputStream buffer = new BufferedOutputStream(file);

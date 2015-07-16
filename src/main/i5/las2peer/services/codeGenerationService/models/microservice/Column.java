@@ -18,7 +18,7 @@ public class Column {
         case "name":
           this.name = attribute.getValue();
           break;
-        case "type":
+        case "columnType":
           this.type = attribute.getValue();
           break;
         case "primaryKey":

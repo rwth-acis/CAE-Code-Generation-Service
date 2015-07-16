@@ -35,6 +35,9 @@ public class Table {
   }
 
   public void checkColumns() throws ModelParseException {
+    if (this.columns.isEmpty()) {
+      throw new ModelParseException("Table " + this.name + " contains no columns!");
+    }
     boolean onePrimaryKey = false;
     for (int columnIndex = 0; columnIndex < this.columns.size(); columnIndex++) {
       if (columns.get(columnIndex).isPrimaryKey()) {

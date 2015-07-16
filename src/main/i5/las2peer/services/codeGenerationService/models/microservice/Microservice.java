@@ -159,7 +159,7 @@ public class Microservice {
 
     // check if all columns were correctly connected to a table
     if (!tempColumns.isEmpty()) {
-      throw new ModelParseException("Columns must be connected to a table!");
+      throw new ModelParseException("All columns must be connected to a table!");
     }
 
     // finally, give tables the signal that they can check their columns for correctness
@@ -167,7 +167,7 @@ public class Microservice {
       tempTable.getValue().checkColumns();
     }
     // if that has worked, add them to database
-    this.database.addTables((Table[]) tempTables.values().toArray());
+    this.database.addTables((Table[]) tempTables.values().toArray(new Table[tempTables.size()]));
   }
 
   public String getName() {
