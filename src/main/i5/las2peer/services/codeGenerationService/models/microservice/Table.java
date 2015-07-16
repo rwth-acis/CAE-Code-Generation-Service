@@ -1,5 +1,7 @@
 package i5.las2peer.services.codeGenerationService.models.microservice;
 
+import java.util.ArrayList;
+
 import i5.cae.simpleModel.SimpleEntityAttribute;
 import i5.cae.simpleModel.node.SimpleNode;
 import i5.las2peer.services.codeGenerationService.models.exception.ModelParseException;
@@ -8,6 +10,7 @@ public class Table {
 
   private String modelId;
   private String name;
+  private ArrayList<Column> columns = new ArrayList<Column>();
 
   public Table(SimpleNode node) throws ModelParseException {
     this.modelId = node.getId();
@@ -32,11 +35,23 @@ public class Table {
   }
 
   public void checkColumns() throws ModelParseException {
-    // TODO Auto-generated method stub
+    boolean onePrimaryKey = false;
+    for (int columnIndex = 0; columnIndex < this.columns.size(); columnIndex++) {
+      if (columns.get(columnIndex).isPrimaryKey()) {
+        if (!onePrimaryKey) {
+          onePrimaryKey = true;
+        } else {
+          throw new ModelParseException("More than one primary key in table " + this.name);
+        }
+      }
+    }
+    if (!onePrimaryKey) {
+      throw new ModelParseException("No primary key in table " + this.name);
+    }
   }
 
   public void addColumn(Column column) {
-    // TODO Auto-generated method stub
+    this.columns.add(column);
   }
 
 }

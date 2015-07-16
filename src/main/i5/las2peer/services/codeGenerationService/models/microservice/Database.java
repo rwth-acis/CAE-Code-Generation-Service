@@ -1,7 +1,5 @@
 package i5.las2peer.services.codeGenerationService.models.microservice;
 
-import java.util.Map;
-
 import i5.cae.simpleModel.SimpleEntityAttribute;
 import i5.cae.simpleModel.node.SimpleNode;
 import i5.las2peer.services.codeGenerationService.models.exception.ModelParseException;
@@ -13,7 +11,7 @@ public class Database {
   private String schema;
   private String loginName;
   private String loginPassword;
-  private Map<String, Table> tables;
+  private Table[] tables;
 
   public Database(SimpleNode node) throws ModelParseException {
     this.modelId = node.getId();
@@ -65,11 +63,11 @@ public class Database {
     return this.loginPassword;
   }
 
-  public Map<String, Table> getTables() {
+  public Table[] getTables() {
     return this.tables;
   }
 
-  public void addTables(Map<String, Table> tables) {
+  public void addTables(Table[] tables) {
     this.tables = tables;
   }
 

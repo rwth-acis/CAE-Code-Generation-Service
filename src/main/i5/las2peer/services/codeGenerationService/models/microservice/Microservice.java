@@ -157,9 +157,9 @@ public class Microservice {
       throw new ModelParseException("Model is not fully connected!");
     }
 
-    // check if all columns were correctly connected to only one table
+    // check if all columns were correctly connected to a table
     if (!tempColumns.isEmpty()) {
-      throw new ModelParseException("Columns may only be connected to one table!");
+      throw new ModelParseException("Columns must be connected to a table!");
     }
 
     // finally, give tables the signal that they can check their columns for correctness
@@ -167,7 +167,7 @@ public class Microservice {
       tempTable.getValue().checkColumns();
     }
     // if that has worked, add them to database
-    this.database.addTables(tempTables);
+    this.database.addTables((Table[]) tempTables.values().toArray());
   }
 
   public String getName() {
