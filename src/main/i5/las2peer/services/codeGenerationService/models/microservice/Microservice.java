@@ -107,7 +107,7 @@ public class Microservice {
               && httpMethods.containsKey(currentEdgeTarget)
               && !currentEdgeSource.equals(currentEdgeTarget)) {
             // add call to source method
-            httpMethods.get(currentEdgeSource).addInternalCall(httpMethods.get(currentEdgeTarget));
+            httpMethods.get(currentEdgeSource).addInternalCall(currentEdgeTarget);
           } else {
             throw new ModelParseException("Internal call reference broken!");
           }
