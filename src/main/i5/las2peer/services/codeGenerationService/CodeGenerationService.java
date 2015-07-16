@@ -64,20 +64,23 @@ public class CodeGenerationService extends Service {
         try {
           switch (type) {
             case "microservice":
-              logMessage("Creating microservice source code now..");
+              logMessage("Creating microservice model now..");
               Microservice microservice = new Microservice(model);
+              logMessage("Creating microservice source code now..");
               MicroserviceGenerator.createSourceCode(microservice, this.client);
               logMessage("Created!");
               return "done";
             case "frontend-component":
-              logMessage("Creating frontend component source code now..");
+              logMessage("Creating frontend component model now..");
               FrontendComponent frontendComponent = new FrontendComponent(model);
+              logMessage("Creating frontend component source code now..");
               FrontendComponentGenerator.createSourceCode(frontendComponent, this.client);
               logMessage("Created!");
               return "done";
             case "application":
-              logMessage("Creating application source code now..");
+              logMessage("Creating application model now..");
               Application application = new Application(model);
+              logMessage("Creating application source code now..");
               ApplicationGenerator.createSourceCode(application, this.client);
               logMessage("Created!");
               return "done";

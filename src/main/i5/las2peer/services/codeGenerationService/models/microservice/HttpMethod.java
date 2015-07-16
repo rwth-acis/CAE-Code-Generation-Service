@@ -12,15 +12,14 @@ public class HttpMethod {
     GET, POST, PUT, DELETE
   }
 
+  private MethodType methodType;
+
   private String modelId;
   private String name;
   private String path;
   private String payload;
   private String payloadType;
   private ArrayList<String> internalCalls = new ArrayList<String>();
-
-
-  private MethodType methodType;
 
   public HttpMethod(SimpleNode node) throws ModelParseException {
     this.modelId = node.getId();
@@ -95,7 +94,5 @@ public class HttpMethod {
   public void addInternalCall(String targetMethodId) {
     this.internalCalls.add(targetMethodId);
   }
-
-
 
 }
