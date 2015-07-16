@@ -10,14 +10,14 @@ import i5.las2peer.services.codeGenerationService.models.microservice.Microservi
 
 public class MicroserviceGenerator {
 
-  public static void createSourceCode(Microservice microservice, GitHubClient client) {
-    RepositoryService service = new RepositoryService();
+  public static void createSourceCode(Microservice microservice, GitHubClient client,
+      String gitHubOrganization) {
+    RepositoryService repService = new RepositoryService(client);
+    Repository repository = new Repository();
+    repository.setName("microservice " + microservice.getName());
     try {
-      // prints out the name of the user's repositories
-      for (Repository repo : service.getRepositories(client.getUser()))
-        System.out.println(repo.getName());
+      repService.createRepository(gitHubOrganization, repository);
     } catch (IOException e) {
-      // TODO Auto-generated catch block
       e.printStackTrace();
     }
   }
