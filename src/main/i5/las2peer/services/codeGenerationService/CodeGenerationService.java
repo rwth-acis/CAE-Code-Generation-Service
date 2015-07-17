@@ -10,6 +10,7 @@ import i5.las2peer.services.codeGenerationService.generators.ApplicationGenerato
 import i5.las2peer.services.codeGenerationService.generators.FrontendComponentGenerator;
 import i5.las2peer.services.codeGenerationService.generators.MicroserviceGenerator;
 import i5.las2peer.services.codeGenerationService.models.application.Application;
+import i5.las2peer.services.codeGenerationService.models.exception.GitHubException;
 import i5.las2peer.services.codeGenerationService.models.exception.ModelParseException;
 import i5.las2peer.services.codeGenerationService.models.frontendComponent.FrontendComponent;
 import i5.las2peer.services.codeGenerationService.models.microservice.Microservice;
@@ -93,10 +94,15 @@ public class CodeGenerationService extends Service {
               return "Error: Model has to have an attribute 'type' that is either "
                   + "'microservice', 'frontend-component' or 'application'!";
           }
-        } catch (ModelParseException e) {
-          logError("Model Parsing Exception: " + e.getMessage());
-          e.printStackTrace();
-          return "Error: Parsing model failed with " + e.getMessage();
+        } catch (ModelParseException e1) {
+          logError("Model Parsing exception: " + e1.getMessage());
+          e1.printStackTrace();
+          return "Error: Parsing model failed with " + e1.getMessage();
+        } catch (GitHubException e2) {
+          logError("GitHub access exception: " + e2.getMessage());
+          e2.printStackTrace();
+          return "Error: Generating code failed because of failing GitHub access: "
+              + e2.getMessage();
         }
       }
     }
