@@ -7,7 +7,7 @@ import i5.las2peer.services.codeGenerationService.models.application.Application
 public class ApplicationGenerator {
 
   public static void createSourceCode(Application application, GitHubClient client,
-      String gitHubOrganization) {
+      String gitHubOrganization, String templateRepository) {
     // TODO Auto-generated method stub
 
   }

@@ -11,7 +11,7 @@ import i5.las2peer.services.codeGenerationService.models.microservice.Microservi
 public class MicroserviceGenerator {
 
   public static void createSourceCode(Microservice microservice, GitHubClient client,
-      String gitHubOrganization) {
+      String gitHubOrganization, String templateRepository) {
     RepositoryService repService = new RepositoryService(client);
     Repository repository = new Repository();
     repository.setName("microservice " + microservice.getName());

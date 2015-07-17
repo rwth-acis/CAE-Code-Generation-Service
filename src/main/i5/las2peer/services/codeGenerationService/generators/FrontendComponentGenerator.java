@@ -7,7 +7,7 @@ import i5.las2peer.services.codeGenerationService.models.frontendComponent.Front
 public class FrontendComponentGenerator {
 
   public static void createSourceCode(FrontendComponent frontendComponent, GitHubClient client,
-      String gitHubOrganization) {
+      String gitHubOrganization, String templateRepository) {
     // TODO Auto-generated method stub
 
   }

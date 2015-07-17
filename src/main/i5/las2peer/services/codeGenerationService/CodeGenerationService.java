@@ -25,6 +25,7 @@ public class CodeGenerationService extends Service {
   private String gitHubUser;
   private String gitHubPassword;
   private String gitHubOrganization;
+  private String templateRepository;
   public GitHubClient client;
 
   public CodeGenerationService() {
@@ -68,7 +69,8 @@ public class CodeGenerationService extends Service {
               logMessage("Creating microservice model now..");
               Microservice microservice = new Microservice(model);
               logMessage("Creating microservice source code now..");
-              MicroserviceGenerator.createSourceCode(microservice, this.client, gitHubOrganization);
+              MicroserviceGenerator.createSourceCode(microservice, this.client,
+                  this.gitHubOrganization, this.templateRepository);
               logMessage("Created!");
               return "done";
             case "frontend-component":
@@ -76,14 +78,15 @@ public class CodeGenerationService extends Service {
               FrontendComponent frontendComponent = new FrontendComponent(model);
               logMessage("Creating frontend component source code now..");
               FrontendComponentGenerator.createSourceCode(frontendComponent, this.client,
-                  gitHubOrganization);
+                  this.gitHubOrganization, this.templateRepository);
               logMessage("Created!");
               return "done";
             case "application":
               logMessage("Creating application model now..");
               Application application = new Application(model);
               logMessage("Creating application source code now..");
-              ApplicationGenerator.createSourceCode(application, this.client, gitHubOrganization);
+              ApplicationGenerator.createSourceCode(application, this.client, gitHubOrganization,
+                  this.templateRepository);
               logMessage("Created!");
               return "done";
             default:
