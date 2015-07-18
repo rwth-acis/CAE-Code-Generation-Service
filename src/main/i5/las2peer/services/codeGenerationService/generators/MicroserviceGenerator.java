@@ -17,6 +17,18 @@ import i5.las2peer.services.codeGenerationService.models.microservice.Microservi
 
 public class MicroserviceGenerator {
 
+  /**
+   * 
+   * Currently more of a dirty test & hack thing, needs refactoring!
+   * 
+   * @param microservice
+   * @param client
+   * @param gitHubOrganization
+   * @param templateRepositoryName
+   * 
+   * @throws GitHubException
+   * 
+   */
   public static void createSourceCode(Microservice microservice, GitHubClient client,
       String gitHubOrganization, String templateRepositoryName) throws GitHubException {
     // initialize repository service, contents service and data service
@@ -29,17 +41,33 @@ public class MicroserviceGenerator {
           repService.getRepository(gitHubOrganization, templateRepositoryName);
       List<RepositoryContents> contents = contentsService.getContents(templateRepository);
       for (int i = 0; i < contents.size(); i++) {
-        System.out.println(contents.get(i).getName());
-        System.out.println(contents.get(i).getType());
-        System.out.println(contents.get(i).getSize());
-        // don't print out directories..
-        if (contents.get(i).getSize() != 0) {
-          String contentSha = contents.get(i).getSha();
-          Blob content = dataService.getBlob(templateRepository, contentSha);
-          byte[] decodedContent = EncodingUtils.fromBase64(content.getContent());
-          String decodedContentUTF8 = new String(decodedContent, "UTF-8");
-          System.out.println(decodedContentUTF8);
+        RepositoryContents content = contents.get(i);
+        // get microservice folder
+        if (content.getName().equals("backend")) {
+          System.out.println(content.getPath());
+          List<RepositoryContents> microserviceContents =
+              contentsService.getContents(templateRepository, content.getPath());
+          for (int j = 0; j < microserviceContents.size(); j++) {
+            RepositoryContents microserviceContent = microserviceContents.get(j);
+            if (microserviceContent.getName().equals(".project")) {
+              String contentSha = microserviceContent.getSha();
+              Blob file = dataService.getBlob(templateRepository, contentSha);
+              byte[] decodedFile = EncodingUtils.fromBase64(file.getContent());
+              String decodedFileUTF8 = new String(decodedFile, "UTF-8");
+              decodedFileUTF8 =
+                  decodedFileUTF8.replace("$Microservice_Name$", microservice.getName());
+              System.out.println(decodedFileUTF8);
+            }
+          }
         }
+        // // don't print out directories..
+        // if (content.getSize() != 0) {
+        // String contentSha = content.getSha();
+        // Blob file = dataService.getBlob(templateRepository, contentSha);
+        // byte[] decodedFile = EncodingUtils.fromBase64(file.getContent());
+        // String decodedFileUTF8 = new String(decodedFile, "UTF-8");
+        // System.out.println(decodedFileUTF8);
+        // }
 
       }
     } catch (IOException e) {
