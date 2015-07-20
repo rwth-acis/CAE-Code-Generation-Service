@@ -28,7 +28,7 @@ public class CodeGenerationService extends Service {
   private String gitHubUserMail;
 
   public CodeGenerationService() {
-    // read and set properties values
+    // read and set properties-file values
     setFieldValues();
   }
 
