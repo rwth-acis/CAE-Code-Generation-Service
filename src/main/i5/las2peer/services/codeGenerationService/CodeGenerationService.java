@@ -2,15 +2,13 @@ package i5.las2peer.services.codeGenerationService;
 
 import java.io.Serializable;
 
-import org.eclipse.egit.github.core.client.GitHubClient;
-
 import i5.cae.simpleModel.SimpleModel;
 import i5.las2peer.api.Service;
 import i5.las2peer.services.codeGenerationService.generators.ApplicationGenerator;
 import i5.las2peer.services.codeGenerationService.generators.FrontendComponentGenerator;
 import i5.las2peer.services.codeGenerationService.generators.MicroserviceGenerator;
+import i5.las2peer.services.codeGenerationService.generators.exception.GitHubException;
 import i5.las2peer.services.codeGenerationService.models.application.Application;
-import i5.las2peer.services.codeGenerationService.models.exception.GitHubException;
 import i5.las2peer.services.codeGenerationService.models.exception.ModelParseException;
 import i5.las2peer.services.codeGenerationService.models.frontendComponent.FrontendComponent;
 import i5.las2peer.services.codeGenerationService.models.microservice.Microservice;
@@ -27,15 +25,12 @@ public class CodeGenerationService extends Service {
   private String gitHubPassword;
   private String gitHubOrganization;
   private String templateRepository;
-  public GitHubClient client;
+  private String gitHubUserMail;
 
   public CodeGenerationService() {
     // read and set properties values
     setFieldValues();
-    this.client = new GitHubClient();
-    this.client.setCredentials(gitHubUser, gitHubPassword);
   }
-
 
 
   /**
@@ -60,7 +55,7 @@ public class CodeGenerationService extends Service {
     // } catch (IOException ex) {
     // }
     logMessage("CreateFromModel: Received model with name " + model.getName());
-    // find out what type of model we got (microservice, frontend component or application)
+    // find out what type of model we got (microservice, frontend-component or application)
     for (int i = 0; i < model.getAttributes().size(); i++) {
       if (model.getAttributes().get(i).getName().equals("type")) {
         String type = model.getAttributes().get(i).getValue();
@@ -70,24 +65,27 @@ public class CodeGenerationService extends Service {
               logMessage("Creating microservice model now..");
               Microservice microservice = new Microservice(model);
               logMessage("Creating microservice source code now..");
-              MicroserviceGenerator.createSourceCode(microservice, this.client,
-                  this.gitHubOrganization, this.templateRepository);
+              MicroserviceGenerator.createSourceCode(microservice, this.templateRepository,
+                  this.gitHubOrganization, this.gitHubUser, this.gitHubUserMail,
+                  this.gitHubPassword);
               logMessage("Created!");
               return "done";
             case "frontend-component":
               logMessage("Creating frontend component model now..");
               FrontendComponent frontendComponent = new FrontendComponent(model);
               logMessage("Creating frontend component source code now..");
-              FrontendComponentGenerator.createSourceCode(frontendComponent, this.client,
-                  this.gitHubOrganization, this.templateRepository);
+              FrontendComponentGenerator.createSourceCode(frontendComponent,
+                  this.templateRepository, this.gitHubOrganization, this.gitHubUser,
+                  this.gitHubUserMail, this.gitHubPassword);;
               logMessage("Created!");
               return "done";
             case "application":
               logMessage("Creating application model now..");
               Application application = new Application(model);
               logMessage("Creating application source code now..");
-              ApplicationGenerator.createSourceCode(application, this.client, gitHubOrganization,
-                  this.templateRepository);
+              ApplicationGenerator.createSourceCode(application, this.templateRepository,
+                  this.gitHubOrganization, this.gitHubUser, this.gitHubUserMail,
+                  this.gitHubPassword);
               logMessage("Created!");
               return "done";
             default:

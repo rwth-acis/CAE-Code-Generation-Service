@@ -1,4 +1,4 @@
-package i5.las2peer.services.codeGenerationService.models.exception;
+package i5.las2peer.services.codeGenerationService.generators.exception;
 
 /**
  * 
