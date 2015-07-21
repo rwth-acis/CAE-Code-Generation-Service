@@ -47,6 +47,10 @@ public class MicroserviceGenerator extends Generator {
     Repository microserviceRepository = null;
     TreeWalk treeWalk = null;
 
+    // helper variable
+    String packageName = microservice.getResourceName().substring(0, 1).toLowerCase()
+        + microservice.getResourceName().substring(1);
+
     // variables holding content to be modified and added to repository later
     String projectFile = null;
     BufferedImage logo = null;
@@ -54,8 +58,10 @@ public class MicroserviceGenerator extends Generator {
     String buildFile = null;
     String startScriptWindows = null;
     String startScriptUnix = null;
-    String packageName = microservice.getResourceName().substring(0, 1).toLowerCase()
-        + microservice.getResourceName().substring(1); // helper variable
+    String userAgentGeneratorWindows = null;
+    String userAgentGeneratorUnix = null;
+    String nodeInfo = null;
+
     try {
       PersonIdent caeUser = new PersonIdent(gitHubUser, gitHubUserMail);
       String repositoryName = "microservice-" + microservice.getName().replace(" ", "-");
@@ -103,6 +109,17 @@ public class MicroserviceGenerator extends Generator {
                   startScriptUnix.replace("$Resource_Name$", microservice.getResourceName());
               startScriptUnix = startScriptUnix.replace("$Lower_Resource_Name$", packageName);
               break;
+            case "start_UserAgentGenerator.bat":
+              userAgentGeneratorWindows = new String(loader.getBytes(), "UTF-8");
+              break;
+            case "start_UserAgentGenerator.sh":
+              userAgentGeneratorUnix = new String(loader.getBytes(), "UTF-8");
+              break;
+            case "nodeInfo.xml":
+              nodeInfo = new String(loader.getBytes(), "UTF-8");
+              nodeInfo = nodeInfo.replace("$Developer$", microservice.getDeveloper());
+              nodeInfo = nodeInfo.replace("$Resource_Name$", microservice.getResourceName());
+              break;
           }
 
         }
@@ -112,18 +129,30 @@ public class MicroserviceGenerator extends Generator {
       }
 
       // add files to new repository
+
+      // configuration and build stuff
       microserviceRepository =
           createTextFileInRepository(microserviceRepository, "", ".project", projectFile);
       microserviceRepository =
-          createTextFileInRepository(microserviceRepository, "", "README.md", readMe);
-      microserviceRepository =
-          createImageFileInRepository(microserviceRepository, "img/", "logo.png", logo);
-      microserviceRepository =
           createTextFileInRepository(microserviceRepository, "", "build.xml", buildFile);
+      microserviceRepository =
+          createTextFileInRepository(microserviceRepository, "etc/", "nodeInfo.xml", nodeInfo);
+
+      // scripts
       microserviceRepository = createTextFileInRepository(microserviceRepository, "bin/",
           "start_network.bat", startScriptWindows);
       microserviceRepository = createTextFileInRepository(microserviceRepository, "bin/",
           "start_network.sh", startScriptUnix);
+      microserviceRepository = createTextFileInRepository(microserviceRepository, "bin/",
+          "start_UserAgentGenerator.bat", userAgentGeneratorWindows);
+      microserviceRepository = createTextFileInRepository(microserviceRepository, "bin/",
+          "start_UserAgentGenerator.sh", userAgentGeneratorUnix);
+
+      // doc
+      microserviceRepository =
+          createTextFileInRepository(microserviceRepository, "", "README.md", readMe);
+      microserviceRepository =
+          createImageFileInRepository(microserviceRepository, "img/", "logo.png", logo);
 
       // Commit files
       try {
