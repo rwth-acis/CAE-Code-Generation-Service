@@ -26,6 +26,15 @@ public class Microservice {
   private Map<String, HttpMethod> httpMethods;
   private Database database;
 
+  /**
+   * 
+   * Creates a new microservice.
+   * 
+   * @param model a {@link i5.cae.simpleModel.SimpleModel} containing the microservice
+   * 
+   * @throws ModelParseException if something goes wrong during parsing
+   * 
+   */
   public Microservice(SimpleModel model) throws ModelParseException {
     this.httpMethods = new HashMap<String, HttpMethod>();
 
@@ -170,52 +179,65 @@ public class Microservice {
     this.database.addTables((Table[]) tempTables.values().toArray(new Table[tempTables.size()]));
   }
 
+
   public String getName() {
     return this.name;
   }
+
 
   public void setName(String name) {
     this.name = name;
   }
 
+
   public String getPath() {
     return this.path;
   }
+
 
   public void setPath(String path) {
     this.path = path;
   }
 
+
   public String getDeveloper() {
     return this.developer;
   }
+
 
   public void setDeveloper(String developer) {
     this.developer = developer;
   }
 
+
   public Map<String, HttpMethod> getHttpMethods() {
     return this.httpMethods;
   }
+
 
   public void setHttpMethods(Map<String, HttpMethod> httpMethods) {
     this.httpMethods = httpMethods;
   }
 
+
   public Database getDatabase() {
     return this.database;
   }
+
 
   public void setDatabase(Database database) {
     this.database = database;
   }
 
+
   public String getRessourceName() {
     return this.ressourceName;
   }
 
+
   public void setRessourceName(String ressourceName) {
     this.ressourceName = ressourceName;
   }
+
 
 }

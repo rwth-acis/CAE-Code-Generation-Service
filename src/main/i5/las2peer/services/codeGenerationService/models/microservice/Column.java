@@ -4,12 +4,26 @@ import i5.cae.simpleModel.SimpleEntityAttribute;
 import i5.cae.simpleModel.node.SimpleNode;
 import i5.las2peer.services.codeGenerationService.models.exception.ModelParseException;
 
+/**
+ * 
+ * Column data class. Represents a (table-)column, which is part of a microservice model.
+ *
+ */
 public class Column {
   private String modelId;
   private String name;
   private String type;
   private boolean primaryKey;
 
+  /**
+   * 
+   * Creates a new {@link Column}.
+   * 
+   * @param node a {@link i5.cae.simpleModel.node.SimpleNode} containing the column representation.
+   * 
+   * @throws ModelParseException if something goes wrong during parsing the node
+   * 
+   */
   public Column(SimpleNode node) throws ModelParseException {
     this.modelId = node.getId();
     for (int nodeIndex = 0; nodeIndex < node.getAttributes().size(); nodeIndex++) {
@@ -30,17 +44,21 @@ public class Column {
     }
   }
 
+
   public String getModelId() {
     return modelId;
   }
+
 
   public String getName() {
     return name;
   }
 
+
   public String getType() {
     return type;
   }
+
 
   public boolean isPrimaryKey() {
     return primaryKey;
