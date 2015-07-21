@@ -1,17 +1,22 @@
 package i5.las2peer.services.codeGenerationService.generators;
 
+import java.awt.image.BufferedImage;
 import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.ObjectOutput;
+import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.PrintStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.Base64;
+
+import javax.imageio.ImageIO;
 
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.lib.Constants;
@@ -195,8 +200,8 @@ public abstract class Generator {
 
   /**
    * 
-   * Adds a file to the repository. Beware of side effects, due to adding all files in main folder
-   * to staged area currently.
+   * Adds a text (source code-)file to the repository. Beware of side effects, due to adding all
+   * files in main folder to staged area currently.
    * 
    * @param repository the repository the file should be added to
    * @param relativePath the relative path the file should reside at; without first separator
@@ -208,7 +213,7 @@ public abstract class Generator {
    * @throws GitHubException if anything goes wrong during the creation of the file
    * 
    */
-  public static Repository createFileInRepository(Repository repository, String relativePath,
+  public static Repository createTextFileInRepository(Repository repository, String relativePath,
       String fileName, String content) throws GitHubException {
 
     File dirs = new File(repository.getDirectory().getParent() + "/" + relativePath);
@@ -221,6 +226,92 @@ public abstract class Generator {
       PrintStream printStream = new PrintStream(buffer);
       printStream.print(content);
       printStream.close();
+    } catch (IOException e) {
+      e.printStackTrace();
+      throw new GitHubException(e.getMessage());
+    }
+
+    // stage file
+    try {
+      Git.wrap(repository).add().addFilepattern(".").call();
+    } catch (Exception e) {
+      e.printStackTrace();
+      throw new GitHubException(e.getMessage());
+    }
+    return repository;
+
+  }
+
+
+  /**
+   * 
+   * Adds a binary file to the repository. Beware of side effects, due to adding all files in main
+   * folder to staged area currently.
+   * 
+   * @param repository the repository the file should be added to
+   * @param relativePath the relative path the file should reside at; without first separator
+   * @param fileName the file name
+   * @param content the content the file should have
+   * 
+   * @return the {@link org.eclipse.jgit.lib.Repository}, now containing one more file
+   * 
+   * @throws GitHubException if anything goes wrong during the creation of the file
+   * 
+   */
+  public static Repository createBinaryFileInRepository(Repository repository, String relativePath,
+      String fileName, Object content) throws GitHubException {
+
+    File dirs = new File(repository.getDirectory().getParent() + "/" + relativePath);
+    dirs.mkdirs();
+
+    try {
+      OutputStream file = new FileOutputStream(
+          repository.getDirectory().getParent() + "/" + relativePath + fileName);
+      OutputStream buffer = new BufferedOutputStream(file);
+      ObjectOutput output = new ObjectOutputStream(buffer);
+      output.writeObject(content);
+      output.close();
+    } catch (IOException e) {
+      e.printStackTrace();
+      throw new GitHubException(e.getMessage());
+    }
+
+    // stage file
+    try {
+      Git.wrap(repository).add().addFilepattern(".").call();
+    } catch (Exception e) {
+      e.printStackTrace();
+      throw new GitHubException(e.getMessage());
+    }
+    return repository;
+
+  }
+
+
+  /**
+   * 
+   * Adds an image file to the repository. Beware of side effects, due to adding all files in main
+   * folder to staged area currently.
+   * 
+   * @param repository the repository the file should be added to
+   * @param relativePath the relative path the file should reside at; without first separator
+   * @param fileName the file name
+   * @param content the content the image should have
+   * 
+   * @return the {@link org.eclipse.jgit.lib.Repository}, now containing one more file
+   * 
+   * @throws GitHubException if anything goes wrong during the creation of the file
+   * 
+   */
+  public static Repository createImageFileInRepository(Repository repository, String relativePath,
+      String fileName, BufferedImage content) throws GitHubException {
+
+    File dirs = new File(repository.getDirectory().getParent() + "/" + relativePath);
+    dirs.mkdirs();
+
+    try {
+      File file = new File(repository.getDirectory().getParent() + "/" + relativePath + fileName);
+      ImageIO.write(content, fileName.substring(fileName.lastIndexOf(".") + 1), file);
     } catch (IOException e) {
       e.printStackTrace();
       throw new GitHubException(e.getMessage());
