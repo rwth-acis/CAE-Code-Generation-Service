@@ -46,6 +46,17 @@ public class CodeGenerationService extends Service {
   public String createFromModel(Serializable serializedModel) {
     SimpleModel model = (SimpleModel) serializedModel;
     logMessage("CreateFromModel: Received model with name " + model.getName());
+
+    // TESTING: write as file
+    // try {
+    // OutputStream file = new FileOutputStream("testModels/" + model.getName() + ".model");
+    // OutputStream buffer = new BufferedOutputStream(file);
+    // ObjectOutput output = new ObjectOutputStream(buffer);
+    // output.writeObject(model);
+    // output.close();
+    // } catch (IOException ex) {
+    // }
+
     // find out what type of model we got (microservice, frontend-component or application)
     for (int i = 0; i < model.getAttributes().size(); i++) {
       if (model.getAttributes().get(i).getName().equals("type")) {

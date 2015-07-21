@@ -51,7 +51,11 @@ public class MicroserviceGenerator extends Generator {
     String projectFile = null;
     BufferedImage logo = null;
     String readMe = null;
-
+    String buildFile = null;
+    String startScriptWindows = null;
+    String startScriptUnix = null;
+    String packageName = microservice.getResourceName().substring(0, 1).toLowerCase()
+        + microservice.getResourceName().substring(1); // helper variable
     try {
       PersonIdent caeUser = new PersonIdent(gitHubUser, gitHubUserMail);
       String repositoryName = "microservice-" + microservice.getName().replace(" ", "-");
@@ -69,6 +73,7 @@ public class MicroserviceGenerator extends Generator {
           ObjectLoader loader = reader.open(objectId);
 
           switch (treeWalk.getNameString()) {
+            // start with the "easy" replacements, and store the other template files for later
             case ".project":
               projectFile = new String(loader.getBytes(), "UTF-8");
               projectFile = projectFile.replace("$Microservice_Name$", microservice.getName());
@@ -81,6 +86,23 @@ public class MicroserviceGenerator extends Generator {
               readMe = readMe.replace("$Repository_Name$", repositoryName);
               readMe = readMe.replace("$Organization_Name$", gitHubOrganization);
               readMe = readMe.replace("$Microservice_Name$", microservice.getName());
+              break;
+            case "build.xml":
+              buildFile = new String(loader.getBytes(), "UTF-8");
+              buildFile = buildFile.replace("$Microservice_Name$", microservice.getName());
+              break;
+            case "start_network.bat":
+              startScriptWindows = new String(loader.getBytes(), "UTF-8");
+              startScriptWindows =
+                  startScriptWindows.replace("$Resource_Name$", microservice.getResourceName());
+              startScriptWindows = startScriptWindows.replace("$Lower_Resource_Name$", packageName);
+              break;
+            case "start_network.sh":
+              startScriptUnix = new String(loader.getBytes(), "UTF-8");
+              startScriptUnix =
+                  startScriptUnix.replace("$Resource_Name$", microservice.getResourceName());
+              startScriptUnix = startScriptUnix.replace("$Lower_Resource_Name$", packageName);
+              break;
           }
 
         }
@@ -96,6 +118,12 @@ public class MicroserviceGenerator extends Generator {
           createTextFileInRepository(microserviceRepository, "", "README.md", readMe);
       microserviceRepository =
           createImageFileInRepository(microserviceRepository, "img/", "logo.png", logo);
+      microserviceRepository =
+          createTextFileInRepository(microserviceRepository, "", "build.xml", buildFile);
+      microserviceRepository = createTextFileInRepository(microserviceRepository, "bin/",
+          "start_network.bat", startScriptWindows);
+      microserviceRepository = createTextFileInRepository(microserviceRepository, "bin/",
+          "start_network.sh", startScriptUnix);
 
       // Commit files
       try {
