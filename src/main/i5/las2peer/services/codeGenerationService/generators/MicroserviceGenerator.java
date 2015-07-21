@@ -6,15 +6,18 @@ import org.eclipse.jgit.lib.ObjectLoader;
 import org.eclipse.jgit.lib.ObjectReader;
 import org.eclipse.jgit.lib.PersonIdent;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.transport.CredentialsProvider;
-import org.eclipse.jgit.transport.RefSpec;
-import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider;
 import org.eclipse.jgit.treewalk.TreeWalk;
 import org.eclipse.jgit.treewalk.filter.PathFilter;
 
 import i5.las2peer.services.codeGenerationService.generators.exception.GitHubException;
 import i5.las2peer.services.codeGenerationService.models.microservice.Microservice;
 
+/**
+ * 
+ * Generates microservice source code from passed on
+ * {@link i5.las2peer.services.codeGenerationService.models.microservice} models.
+ * 
+ */
 public class MicroserviceGenerator extends Generator {
 
   /**
@@ -35,68 +38,70 @@ public class MicroserviceGenerator extends Generator {
   public static void createSourceCode(Microservice microservice, String templateRepositoryName,
       String gitHubOrganization, String gitHubUser, String gitHubUserMail, String gitHubPassword)
           throws GitHubException {
-    // some local variables
-    String microserviceRepositoryName = "microservice-" + microservice.getName().replace(" ", "-");
-    String projectFileContent = null;
-    CredentialsProvider credentialsProvider =
-        new UsernamePasswordCredentialsProvider(gitHubUser, gitHubPassword);
-    PersonIdent caeUser = new PersonIdent(gitHubUser, gitHubUserMail);
 
-    Repository microserviceRepository = generateNewRepository(microserviceRepositoryName,
-        gitHubOrganization, gitHubUser, gitHubPassword);
+    // variables to be closed in the final block
+    Repository microserviceRepository = null;
+    TreeWalk treeWalk = null;
 
-    // now load the TreeWalk containing the template repository content
-    TreeWalk treeWalk = getTemplateRepositoryContent(templateRepositoryName, gitHubOrganization);
     try {
-      treeWalk.setFilter(PathFilter.create("backend/"));
-      ObjectReader reader = treeWalk.getObjectReader();
-      // walk through the tree and retrieve the needed templates
-      while (treeWalk.next()) {
-        ObjectId objectId = treeWalk.getObjectId(0);
-        ObjectLoader loader = reader.open(objectId);
-        // only use .project file for now TODO
-        if (treeWalk.getNameString().equals(".project")) {
-          projectFileContent = new String(loader.getBytes(), "UTF-8");
-          projectFileContent =
-              projectFileContent.replace("$Microservice_Name$", microservice.getName());
+
+      String microserviceRepositoryName =
+          "microservice-" + microservice.getName().replace(" ", "-");
+      String projectFileContent = null;
+      PersonIdent caeUser = new PersonIdent(gitHubUser, gitHubUserMail);
+      microserviceRepository = generateNewRepository(microserviceRepositoryName, gitHubOrganization,
+          gitHubUser, gitHubPassword);
+
+      try {
+        // now load the TreeWalk containing the template repository content
+        treeWalk = getTemplateRepositoryContent(templateRepositoryName, gitHubOrganization);
+        treeWalk.setFilter(PathFilter.create("backend/"));
+        ObjectReader reader = treeWalk.getObjectReader();
+        // walk through the tree and retrieve the needed templates
+        while (treeWalk.next()) {
+          ObjectId objectId = treeWalk.getObjectId(0);
+          ObjectLoader loader = reader.open(objectId);
+          // only use .project file for now TODO
+          if (treeWalk.getNameString().equals(".project")) {
+            projectFileContent = new String(loader.getBytes(), "UTF-8");
+            projectFileContent =
+                projectFileContent.replace("$Microservice_Name$", microservice.getName());
+          }
         }
+      } catch (Exception e) {
+        e.printStackTrace();
+        throw new GitHubException(e.getMessage());
       }
-    } catch (Exception e) {
-      e.printStackTrace();
-      throw new GitHubException(e.getMessage());
-    } finally {
-      treeWalk.close();
-    }
 
-    // add files to new repository
-    microserviceRepository =
-        createFileInRepository(microserviceRepository, "", ".project", projectFileContent);
-    microserviceRepository = createFileInRepository(microserviceRepository,
-        "myCoolFolder/myEvenCoolerFolder/", "someOtherCoolFile.txt", "blabla");
-    // add files to new repository
-    microserviceRepository = createFileInRepository(microserviceRepository, "myCoolFolder/",
-        "coolestFile.txt", "blabla");
-    try {
-      // run add command, then commit those files
-      // Git.wrap(microserviceRepository).add().addFilepattern(".").call();
-      Git.wrap(microserviceRepository).commit().setMessage("Added project file")
-          .setCommitter(caeUser).call();
-    } catch (Exception e) {
-      e.printStackTrace();
-      throw new GitHubException(e.getMessage());
-    }
+      // add files to new repository
+      microserviceRepository =
+          createFileInRepository(microserviceRepository, "", ".project", projectFileContent);
+      microserviceRepository = createFileInRepository(microserviceRepository,
+          "myCoolFolder/myEvenCoolerFolder/", "someOtherCoolFile.txt", "blabla");
+      // add files to new repository
+      microserviceRepository = createFileInRepository(microserviceRepository, "myCoolFolder/",
+          "coolestFile.txt", "blabla");
+      try {
+        // Commit files
+        Git.wrap(microserviceRepository).commit().setMessage("Added project file")
+            .setCommitter(caeUser).call();
+      } catch (Exception e) {
+        e.printStackTrace();
+        throw new GitHubException(e.getMessage());
+      }
 
-    // finally push (local) repository content to GitHub repository
-    // (the "remote" parameter name is set in the generateNewRepository method)
-    try {
-      RefSpec spec = new RefSpec("refs/heads/master:refs/heads/master");
-      Git.wrap(microserviceRepository).push().setRemote("GitHub")
-          .setCredentialsProvider(credentialsProvider).setRefSpecs(spec).call();
-    } catch (Exception e) {
-      e.printStackTrace();
-      throw new GitHubException(e.getMessage());
+      // finally push (local) repository content to GitHub repository
+      try {
+        pushToRemoteRepository(microserviceRepository, gitHubUser, gitHubPassword);
+      } catch (Exception e) {
+        e.printStackTrace();
+        throw new GitHubException(e.getMessage());
+      }
+
+      // close all open resources
     } finally {
       microserviceRepository.close();
+      treeWalk.close();
     }
   }
 

@@ -20,13 +20,22 @@ import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.StoredConfig;
 import org.eclipse.jgit.revwalk.RevTree;
 import org.eclipse.jgit.revwalk.RevWalk;
+import org.eclipse.jgit.transport.CredentialsProvider;
+import org.eclipse.jgit.transport.RefSpec;
 import org.eclipse.jgit.transport.RemoteConfig;
 import org.eclipse.jgit.transport.URIish;
+import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider;
 import org.eclipse.jgit.treewalk.TreeWalk;
 import org.json.simple.JSONObject;
 
 import i5.las2peer.services.codeGenerationService.generators.exception.GitHubException;
 
+/**
+ * 
+ * Abstract class providing means to create local repositories, add files to them and push them to a
+ * remote GitHub repository. Does not provide means to commit files (please do manually).
+ *
+ */
 public abstract class Generator {
 
   /**
@@ -40,7 +49,7 @@ public abstract class Generator {
    * @param gitHubUser the CAE user
    * @param gitHubPassword the password of the CAE user
    * 
-   * @return a @link{org.eclipse.jgit.lib.Repository}
+   * @return a {@link org.eclipse.jgit.lib.Repository}
    * 
    * @throws GitHubException if anything goes wrong during this creation process
    * 
@@ -120,16 +129,17 @@ public abstract class Generator {
     return git.getRepository();
   }
 
+
   /**
    * 
-   * Clones the template repository from GitHub to the local machine and returns
-   * a @link{org.eclipse.jgit.treewalk.TreeWalk} that can be used to retrieve the repository's
+   * Clones the template repository from GitHub to the local machine and returns a
+   * {@link org.eclipse.jgit.treewalk.TreeWalk} that can be used to retrieve the repository's
    * content. Repository is used "read-only" here.
    * 
    * @param templateRepositoryName the name of the template repository
    * @param gitHubOrganization the organization that is used in the CAE
    * 
-   * @return a @link{org.eclipse.jgit.treewalk.TreeWalk}
+   * @return a {@link org.eclipse.jgit.treewalk.TreeWalk}
    * 
    * @throws GitHubException if anything goes wrong during retrieving the repository's content
    * 
@@ -182,6 +192,7 @@ public abstract class Generator {
     return treeWalk;
   }
 
+
   /**
    * 
    * Adds a file to the repository. Beware of side effects, due to adding all files in main folder
@@ -192,7 +203,7 @@ public abstract class Generator {
    * @param fileName the file name
    * @param content the content the file should have
    * 
-   * @return a @link{org.eclipse.jgit.lib.Repository}
+   * @return the {@link org.eclipse.jgit.lib.Repository}, now containing one more file
    * 
    * @throws GitHubException if anything goes wrong during the creation of the file
    * 
@@ -225,4 +236,36 @@ public abstract class Generator {
     return repository;
 
   }
+
+
+  /**
+   * 
+   * Pushes a local repository to GitHub. This method only works with repositories previously
+   * created by {@link #generateNewRepository}.
+   * 
+   * @param repository the {@link org.eclipse.jgit.lib.Repository} to be pushed to GitHub
+   * @param gitHubUser the CAE user
+   * @param gitHubPassword the password of the CAE user
+   * 
+   * @return the {@link org.eclipse.jgit.lib.Repository} that was pushed
+   * 
+   * @throws GitHubException if anything goes wrong during the push command
+   * 
+   */
+  public static Repository pushToRemoteRepository(Repository repository, String gitHubUser,
+      String gitHubPassword) throws GitHubException {
+    CredentialsProvider credentialsProvider =
+        new UsernamePasswordCredentialsProvider(gitHubUser, gitHubPassword);
+    try {
+      // the "setRemote" parameter name is set in the generateNewRepository method
+      RefSpec spec = new RefSpec("refs/heads/master:refs/heads/master");
+      Git.wrap(repository).push().setRemote("GitHub").setCredentialsProvider(credentialsProvider)
+          .setRefSpecs(spec).call();
+    } catch (Exception e) {
+      e.printStackTrace();
+      throw new GitHubException(e.getMessage());
+    }
+    return repository;
+  }
+
 }
