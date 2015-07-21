@@ -46,6 +46,17 @@ public class CodeGenerationService extends Service {
   public String createFromModel(Serializable serializedModel) {
     SimpleModel model = (SimpleModel) serializedModel;
     logMessage("CreateFromModel: Received model with name " + model.getName());
+
+    // TESTING: write as file
+    // try {
+    // OutputStream file = new FileOutputStream("testModels/" + model.getName() + ".model");
+    // OutputStream buffer = new BufferedOutputStream(file);
+    // ObjectOutput output = new ObjectOutputStream(buffer);
+    // output.writeObject(model);
+    // output.close();
+    // } catch (IOException ex) {
+    // }
+
     // find out what type of model we got (microservice, frontend-component or application)
     for (int i = 0; i < model.getAttributes().size(); i++) {
       if (model.getAttributes().get(i).getName().equals("type")) {
@@ -59,7 +70,7 @@ public class CodeGenerationService extends Service {
               MicroserviceGenerator.createSourceCode(microservice, this.templateRepository,
                   this.gitHubOrganization, this.gitHubUser, this.gitHubUserMail,
                   this.gitHubPassword);
-              logMessage("Created!");
+              logMessage("CreateFromModel: Created!");
               return "done";
             case "frontend-component":
               logMessage("Creating frontend component model now..");
@@ -68,7 +79,7 @@ public class CodeGenerationService extends Service {
               FrontendComponentGenerator.createSourceCode(frontendComponent,
                   this.templateRepository, this.gitHubOrganization, this.gitHubUser,
                   this.gitHubUserMail, this.gitHubPassword);;
-              logMessage("Created!");
+              logMessage("CreateFromModel: Created!");
               return "done";
             case "application":
               logMessage("Creating application model now..");
@@ -77,18 +88,18 @@ public class CodeGenerationService extends Service {
               ApplicationGenerator.createSourceCode(application, this.templateRepository,
                   this.gitHubOrganization, this.gitHubUser, this.gitHubUserMail,
                   this.gitHubPassword);
-              logMessage("Created!");
+              logMessage("CreateFromModel: Created!");
               return "done";
             default:
               return "Error: Model has to have an attribute 'type' that is either "
                   + "'microservice', 'frontend-component' or 'application'!";
           }
         } catch (ModelParseException e1) {
-          logError("Model Parsing exception: " + e1.getMessage());
+          logError("CreateFromModel: Model Parsing exception: " + e1.getMessage());
           e1.printStackTrace();
           return "Error: Parsing model failed with " + e1.getMessage();
         } catch (GitHubException e2) {
-          logError("GitHub access exception: " + e2.getMessage());
+          logError("CreateFromModel: GitHub access exception: " + e2.getMessage());
           e2.printStackTrace();
           return "Error: Generating code failed because of failing GitHub access: "
               + e2.getMessage();

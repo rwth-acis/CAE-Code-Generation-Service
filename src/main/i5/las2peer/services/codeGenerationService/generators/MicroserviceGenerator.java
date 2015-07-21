@@ -47,10 +47,20 @@ public class MicroserviceGenerator extends Generator {
     Repository microserviceRepository = null;
     TreeWalk treeWalk = null;
 
+    // helper variable
+    String packageName = microservice.getResourceName().substring(0, 1).toLowerCase()
+        + microservice.getResourceName().substring(1);
+
     // variables holding content to be modified and added to repository later
     String projectFile = null;
     BufferedImage logo = null;
     String readMe = null;
+    String buildFile = null;
+    String startScriptWindows = null;
+    String startScriptUnix = null;
+    String userAgentGeneratorWindows = null;
+    String userAgentGeneratorUnix = null;
+    String nodeInfo = null;
 
     try {
       PersonIdent caeUser = new PersonIdent(gitHubUser, gitHubUserMail);
@@ -69,6 +79,7 @@ public class MicroserviceGenerator extends Generator {
           ObjectLoader loader = reader.open(objectId);
 
           switch (treeWalk.getNameString()) {
+            // start with the "easy" replacements, and store the other template files for later
             case ".project":
               projectFile = new String(loader.getBytes(), "UTF-8");
               projectFile = projectFile.replace("$Microservice_Name$", microservice.getName());
@@ -81,6 +92,34 @@ public class MicroserviceGenerator extends Generator {
               readMe = readMe.replace("$Repository_Name$", repositoryName);
               readMe = readMe.replace("$Organization_Name$", gitHubOrganization);
               readMe = readMe.replace("$Microservice_Name$", microservice.getName());
+              break;
+            case "build.xml":
+              buildFile = new String(loader.getBytes(), "UTF-8");
+              buildFile = buildFile.replace("$Microservice_Name$", microservice.getName());
+              break;
+            case "start_network.bat":
+              startScriptWindows = new String(loader.getBytes(), "UTF-8");
+              startScriptWindows =
+                  startScriptWindows.replace("$Resource_Name$", microservice.getResourceName());
+              startScriptWindows = startScriptWindows.replace("$Lower_Resource_Name$", packageName);
+              break;
+            case "start_network.sh":
+              startScriptUnix = new String(loader.getBytes(), "UTF-8");
+              startScriptUnix =
+                  startScriptUnix.replace("$Resource_Name$", microservice.getResourceName());
+              startScriptUnix = startScriptUnix.replace("$Lower_Resource_Name$", packageName);
+              break;
+            case "start_UserAgentGenerator.bat":
+              userAgentGeneratorWindows = new String(loader.getBytes(), "UTF-8");
+              break;
+            case "start_UserAgentGenerator.sh":
+              userAgentGeneratorUnix = new String(loader.getBytes(), "UTF-8");
+              break;
+            case "nodeInfo.xml":
+              nodeInfo = new String(loader.getBytes(), "UTF-8");
+              nodeInfo = nodeInfo.replace("$Developer$", microservice.getDeveloper());
+              nodeInfo = nodeInfo.replace("$Resource_Name$", microservice.getResourceName());
+              break;
           }
 
         }
@@ -90,8 +129,26 @@ public class MicroserviceGenerator extends Generator {
       }
 
       // add files to new repository
+
+      // configuration and build stuff
       microserviceRepository =
           createTextFileInRepository(microserviceRepository, "", ".project", projectFile);
+      microserviceRepository =
+          createTextFileInRepository(microserviceRepository, "", "build.xml", buildFile);
+      microserviceRepository =
+          createTextFileInRepository(microserviceRepository, "etc/", "nodeInfo.xml", nodeInfo);
+
+      // scripts
+      microserviceRepository = createTextFileInRepository(microserviceRepository, "bin/",
+          "start_network.bat", startScriptWindows);
+      microserviceRepository = createTextFileInRepository(microserviceRepository, "bin/",
+          "start_network.sh", startScriptUnix);
+      microserviceRepository = createTextFileInRepository(microserviceRepository, "bin/",
+          "start_UserAgentGenerator.bat", userAgentGeneratorWindows);
+      microserviceRepository = createTextFileInRepository(microserviceRepository, "bin/",
+          "start_UserAgentGenerator.sh", userAgentGeneratorUnix);
+
+      // doc
       microserviceRepository =
           createTextFileInRepository(microserviceRepository, "", "README.md", readMe);
       microserviceRepository =

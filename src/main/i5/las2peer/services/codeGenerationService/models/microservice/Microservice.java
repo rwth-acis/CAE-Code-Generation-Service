@@ -17,10 +17,12 @@ import i5.las2peer.services.codeGenerationService.models.exception.ModelParseExc
  */
 public class Microservice {
 
+  // TODO: create sanity checks for variable content of all entries (non-empty values for example..)
+
   // id of resource node in SyncMeta, needed for model correctness checking
   private String microserviceModelId;
   private String name; // name of complete service "construct"
-  private String ressourceName; // name of concrete las2peer service
+  private String resourceName; // name of concrete las2peer service
   private String path;
   private String developer;
   private Map<String, HttpMethod> httpMethods;
@@ -61,7 +63,7 @@ public class Microservice {
             SimpleEntityAttribute attribute = nodeAttributes.get(attributeIndex);
             switch (attribute.getName()) {
               case "name":
-                this.ressourceName = attribute.getValue();
+                this.resourceName = attribute.getValue();
                 break;
               case "path":
                 this.path = attribute.getValue();
@@ -230,13 +232,13 @@ public class Microservice {
   }
 
 
-  public String getRessourceName() {
-    return this.ressourceName;
+  public String getResourceName() {
+    return this.resourceName;
   }
 
 
-  public void setRessourceName(String ressourceName) {
-    this.ressourceName = ressourceName;
+  public void setResourceName(String resourceName) {
+    this.resourceName = resourceName;
   }
 
 
