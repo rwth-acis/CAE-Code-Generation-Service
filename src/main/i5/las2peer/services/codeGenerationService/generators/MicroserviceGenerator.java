@@ -1,5 +1,9 @@
 package i5.las2peer.services.codeGenerationService.generators;
 
+import java.awt.image.BufferedImage;
+
+import javax.imageio.ImageIO;
+
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.ObjectLoader;
@@ -43,14 +47,16 @@ public class MicroserviceGenerator extends Generator {
     Repository microserviceRepository = null;
     TreeWalk treeWalk = null;
 
-    try {
+    // variables holding content to be modified and added to repository later
+    String projectFile = null;
+    BufferedImage logo = null;
+    String readMe = null;
 
-      String microserviceRepositoryName =
-          "microservice-" + microservice.getName().replace(" ", "-");
-      String projectFileContent = null;
+    try {
       PersonIdent caeUser = new PersonIdent(gitHubUser, gitHubUserMail);
-      microserviceRepository = generateNewRepository(microserviceRepositoryName, gitHubOrganization,
-          gitHubUser, gitHubPassword);
+      String repositoryName = "microservice-" + microservice.getName().replace(" ", "-");
+      microserviceRepository =
+          generateNewRepository(repositoryName, gitHubOrganization, gitHubUser, gitHubPassword);
 
       try {
         // now load the TreeWalk containing the template repository content
@@ -61,12 +67,22 @@ public class MicroserviceGenerator extends Generator {
         while (treeWalk.next()) {
           ObjectId objectId = treeWalk.getObjectId(0);
           ObjectLoader loader = reader.open(objectId);
-          // only use .project file for now TODO
-          if (treeWalk.getNameString().equals(".project")) {
-            projectFileContent = new String(loader.getBytes(), "UTF-8");
-            projectFileContent =
-                projectFileContent.replace("$Microservice_Name$", microservice.getName());
+
+          switch (treeWalk.getNameString()) {
+            case ".project":
+              projectFile = new String(loader.getBytes(), "UTF-8");
+              projectFile = projectFile.replace("$Microservice_Name$", microservice.getName());
+              break;
+            case "logo_services.png":
+              logo = ImageIO.read(loader.openStream());
+              break;
+            case "README.md":
+              readMe = new String(loader.getBytes(), "UTF-8");
+              readMe = readMe.replace("$Repository_Name$", repositoryName);
+              readMe = readMe.replace("$Organization_Name$", gitHubOrganization);
+              readMe = readMe.replace("$Microservice_Name$", microservice.getName());
           }
+
         }
       } catch (Exception e) {
         e.printStackTrace();
@@ -75,22 +91,22 @@ public class MicroserviceGenerator extends Generator {
 
       // add files to new repository
       microserviceRepository =
-          createFileInRepository(microserviceRepository, "", ".project", projectFileContent);
-      microserviceRepository = createFileInRepository(microserviceRepository,
-          "myCoolFolder/myEvenCoolerFolder/", "someOtherCoolFile.txt", "blabla");
-      // add files to new repository
-      microserviceRepository = createFileInRepository(microserviceRepository, "myCoolFolder/",
-          "coolestFile.txt", "blabla");
+          createTextFileInRepository(microserviceRepository, "", ".project", projectFile);
+      microserviceRepository =
+          createTextFileInRepository(microserviceRepository, "", "README.md", readMe);
+      microserviceRepository =
+          createImageFileInRepository(microserviceRepository, "img/", "logo.png", logo);
+
+      // Commit files
       try {
-        // Commit files
-        Git.wrap(microserviceRepository).commit().setMessage("Added project file")
+        Git.wrap(microserviceRepository).commit().setMessage("Generated Microservice")
             .setCommitter(caeUser).call();
       } catch (Exception e) {
         e.printStackTrace();
         throw new GitHubException(e.getMessage());
       }
 
-      // finally push (local) repository content to GitHub repository
+      // push (local) repository content to GitHub repository
       try {
         pushToRemoteRepository(microserviceRepository, gitHubUser, gitHubPassword);
       } catch (Exception e) {
