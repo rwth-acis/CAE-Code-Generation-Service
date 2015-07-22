@@ -65,7 +65,7 @@ public class MicroserviceGenerator extends Generator {
     String antUserProperties = null;
     String ivy = null;
     String ivySettings = null;
-
+    String serviceProperties = null;
 
     try {
       PersonIdent caeUser = new PersonIdent(gitHubUser, gitHubUserMail);
@@ -152,6 +152,22 @@ public class MicroserviceGenerator extends Generator {
             case "ivysettings.xml":
               ivySettings = new String(loader.getBytes(), "UTF-8");
               break;
+            case "i5.las2peer.services.servicePackage.ServiceClass.properties":
+              serviceProperties = new String(loader.getBytes(), "UTF-8");
+              // if database does not exist, clear the file
+              if (microservice.getDatabase() == null) {
+                serviceProperties = "";
+              } else {
+                serviceProperties = serviceProperties.replace("$Database_Address$",
+                    microservice.getDatabase().getAddress());
+                serviceProperties = serviceProperties.replace("$Database_Schema$",
+                    microservice.getDatabase().getSchema());
+                serviceProperties = serviceProperties.replace("$Database_User$",
+                    microservice.getDatabase().getLoginName());
+                serviceProperties = serviceProperties.replace("$Database_Password$",
+                    microservice.getDatabase().getLoginPassword());
+              }
+              break;
           }
 
         }
@@ -177,6 +193,10 @@ public class MicroserviceGenerator extends Generator {
           createTextFileInRepository(microserviceRepository, "etc/", "nodeInfo.xml", nodeInfo);
       microserviceRepository =
           createTextFileInRepository(microserviceRepository, "", ".project", projectFile);
+      microserviceRepository = createTextFileInRepository(microserviceRepository, "etc/",
+          "i5.las2peer.services." + packageName + "." + microservice.getResourceName()
+              + ".properties",
+          serviceProperties);
 
       // scripts
       microserviceRepository = createTextFileInRepository(microserviceRepository, "bin/",
@@ -196,7 +216,8 @@ public class MicroserviceGenerator extends Generator {
 
       // Commit files
       try {
-        Git.wrap(microserviceRepository).commit().setMessage("Generated Microservice")
+        Git.wrap(microserviceRepository).commit()
+            .setMessage("Generated microservice version " + microservice.getVersion())
             .setCommitter(caeUser).call();
       } catch (Exception e) {
         e.printStackTrace();
