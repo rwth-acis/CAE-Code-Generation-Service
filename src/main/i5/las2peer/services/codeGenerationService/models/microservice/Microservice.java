@@ -27,6 +27,7 @@ public class Microservice {
   private String developer;
   private Map<String, HttpMethod> httpMethods;
   private Database database;
+  private float version;
 
   /**
    * 
@@ -45,6 +46,13 @@ public class Microservice {
     Map<String, Column> tempColumns = new HashMap<String, Column>();
 
     this.name = model.getName();
+
+    // metadata of model (currently only version)
+    for (int attributeIndex = 0; attributeIndex < model.getAttributes().size(); attributeIndex++) {
+      if (model.getAttributes().get(attributeIndex).getName().equals("version")) {
+        this.setVersion(Float.parseFloat(model.getAttributes().get(attributeIndex).getValue()));
+      }
+    }
 
     // go through the nodes and create objects
     ArrayList<SimpleNode> nodes = model.getNodes();
@@ -241,5 +249,14 @@ public class Microservice {
     this.resourceName = resourceName;
   }
 
+
+  public float getVersion() {
+    return version;
+  }
+
+
+  public void setVersion(float version) {
+    this.version = version;
+  }
 
 }

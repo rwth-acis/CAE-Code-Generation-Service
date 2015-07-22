@@ -47,9 +47,12 @@ public class MicroserviceGenerator extends Generator {
     Repository microserviceRepository = null;
     TreeWalk treeWalk = null;
 
-    // helper variable
+    // helper variables
     String packageName = microservice.getResourceName().substring(0, 1).toLowerCase()
         + microservice.getResourceName().substring(1);
+    // get the port: skip first 6 characters for search (http: / https:)
+    String port = microservice.getPath().substring(microservice.getPath().indexOf(":", 6) + 1,
+        microservice.getPath().indexOf("/", microservice.getPath().indexOf(":", 6)));
 
     // variables holding content to be modified and added to repository later
     String projectFile = null;
@@ -61,6 +64,14 @@ public class MicroserviceGenerator extends Generator {
     String userAgentGeneratorWindows = null;
     String userAgentGeneratorUnix = null;
     String nodeInfo = null;
+    String antServiceProperties = null;
+    String antUserProperties = null;
+    String ivy = null;
+    String ivySettings = null;
+    String serviceProperties = null;
+    String webConnectorConfig = null;
+    String gitignore = null;
+    String classpath = null;
 
     try {
       PersonIdent caeUser = new PersonIdent(gitHubUser, gitHubUserMail);
@@ -120,6 +131,63 @@ public class MicroserviceGenerator extends Generator {
               nodeInfo = nodeInfo.replace("$Developer$", microservice.getDeveloper());
               nodeInfo = nodeInfo.replace("$Resource_Name$", microservice.getResourceName());
               break;
+            case "service.properties":
+              antServiceProperties = new String(loader.getBytes(), "UTF-8");
+              antServiceProperties = antServiceProperties.replace("$Microservice_Version$",
+                  microservice.getVersion() + "");
+              antServiceProperties =
+                  antServiceProperties.replace("$Lower_Resource_Name$", packageName);
+              antServiceProperties =
+                  antServiceProperties.replace("$Resource_Name$", microservice.getResourceName());
+              antServiceProperties = antServiceProperties.replace("$Microservice_Version$",
+                  microservice.getVersion() + "");
+              break;
+            case "user.properties":
+              antUserProperties = new String(loader.getBytes(), "UTF-8");
+              break;
+            case "ivy.xml":
+              ivy = new String(loader.getBytes(), "UTF-8");
+              // add mysql dependency only if a database exists
+              if (microservice.getDatabase() != null) {
+                ivy = ivy.replace("$MYSQL_DEPENDENCY$",
+                    "<dependency org=\"mysql\" name=\"mysql-connector-java\" rev=\"5.1.6\" /><dependency org=\"org.apache.commons\" name=\"commons-pool2\" rev=\"2.2\" /><dependency org=\"org.apache.commons\" name=\"commons-dbcp2\" rev=\"2.0\" />");
+              } else {
+                ivy = ivy.replace("$MYSQL_DEPENDENCY$", "");
+              }
+              break;
+            case "ivysettings.xml":
+              ivySettings = new String(loader.getBytes(), "UTF-8");
+              break;
+            case "i5.las2peer.services.servicePackage.ServiceClass.properties":
+              serviceProperties = new String(loader.getBytes(), "UTF-8");
+              // if database does not exist, clear the file
+              if (microservice.getDatabase() == null) {
+                serviceProperties = "";
+              } else {
+                serviceProperties = serviceProperties.replace("$Database_Address$",
+                    microservice.getDatabase().getAddress());
+                serviceProperties = serviceProperties.replace("$Database_Schema$",
+                    microservice.getDatabase().getSchema());
+                serviceProperties = serviceProperties.replace("$Database_User$",
+                    microservice.getDatabase().getLoginName());
+                serviceProperties = serviceProperties.replace("$Database_Password$",
+                    microservice.getDatabase().getLoginPassword());
+              }
+            case "i5.las2peer.webConnector.WebConnector.properties":
+              webConnectorConfig = new String(loader.getBytes(), "UTF-8");
+              webConnectorConfig = webConnectorConfig.replace("$HTTP_PORT$", port);
+              break;
+            case ".gitignore":
+              gitignore = new String(loader.getBytes(), "UTF-8");
+              break;
+            case ".classpath":
+              classpath = new String(loader.getBytes(), "UTF-8");
+              if (microservice.getDatabase() != null) {
+                classpath = classpath.replace("$Database_Libraries$",
+                    "<classpathentry kind=\"lib\" path=\"lib/mysql-connector-java-5.1.6.jar\"/><classpathentry kind=\"lib\" path=\"lib/commons-dbcp2-2.0.jar\"/>");
+              } else {
+                classpath = classpath.replace("$Database_Libraries$", "");
+              }
           }
 
         }
@@ -132,11 +200,31 @@ public class MicroserviceGenerator extends Generator {
 
       // configuration and build stuff
       microserviceRepository =
-          createTextFileInRepository(microserviceRepository, "", ".project", projectFile);
+          createTextFileInRepository(microserviceRepository, "etc/ivy/", "ivy.xml", ivy);
+      microserviceRepository = createTextFileInRepository(microserviceRepository, "etc/ivy/",
+          "ivysettings.xml", ivySettings);
       microserviceRepository =
           createTextFileInRepository(microserviceRepository, "", "build.xml", buildFile);
+      microserviceRepository = createTextFileInRepository(microserviceRepository,
+          "etc/ant_configuration/", "user.properties", antUserProperties);
+      microserviceRepository = createTextFileInRepository(microserviceRepository,
+          "etc/ant_configuration/", "service.properties", antServiceProperties);
       microserviceRepository =
           createTextFileInRepository(microserviceRepository, "etc/", "nodeInfo.xml", nodeInfo);
+      microserviceRepository =
+          createTextFileInRepository(microserviceRepository, "", ".project", projectFile);
+      microserviceRepository =
+          createTextFileInRepository(microserviceRepository, "", ".gitignore", gitignore);
+      microserviceRepository =
+          createTextFileInRepository(microserviceRepository, "", ".classpath", classpath);
+
+      // property files
+      microserviceRepository = createTextFileInRepository(microserviceRepository, "etc/",
+          "i5.las2peer.services." + packageName + "." + microservice.getResourceName()
+              + ".properties",
+          serviceProperties);
+      microserviceRepository = createTextFileInRepository(microserviceRepository, "etc/",
+          "i5.las2peer.webConnector.WebConnector.properties", webConnectorConfig);
 
       // scripts
       microserviceRepository = createTextFileInRepository(microserviceRepository, "bin/",
@@ -156,7 +244,8 @@ public class MicroserviceGenerator extends Generator {
 
       // Commit files
       try {
-        Git.wrap(microserviceRepository).commit().setMessage("Generated Microservice")
+        Git.wrap(microserviceRepository).commit()
+            .setMessage("Generated microservice version " + microservice.getVersion())
             .setCommitter(caeUser).call();
       } catch (Exception e) {
         e.printStackTrace();
