@@ -71,6 +71,7 @@ public class MicroserviceGenerator extends Generator {
     String serviceProperties = null;
     String webConnectorConfig = null;
     String gitignore = null;
+    String classpath = null;
 
     try {
       PersonIdent caeUser = new PersonIdent(gitHubUser, gitHubUserMail);
@@ -149,7 +150,7 @@ public class MicroserviceGenerator extends Generator {
               // add mysql dependency only if a database exists
               if (microservice.getDatabase() != null) {
                 ivy = ivy.replace("$MYSQL_DEPENDENCY$",
-                    "<dependency org=\"mysql\" name=\"mysql-connector-java\" rev=\"5.1.6\" />");
+                    "<dependency org=\"mysql\" name=\"mysql-connector-java\" rev=\"5.1.6\" /><dependency org=\"org.apache.commons\" name=\"commons-pool2\" rev=\"2.2\" /><dependency org=\"org.apache.commons\" name=\"commons-dbcp2\" rev=\"2.0\" />");
               } else {
                 ivy = ivy.replace("$MYSQL_DEPENDENCY$", "");
               }
@@ -179,6 +180,14 @@ public class MicroserviceGenerator extends Generator {
             case ".gitignore":
               gitignore = new String(loader.getBytes(), "UTF-8");
               break;
+            case ".classpath":
+              classpath = new String(loader.getBytes(), "UTF-8");
+              if (microservice.getDatabase() != null) {
+                classpath = classpath.replace("$Database_Libraries$",
+                    "<classpathentry kind=\"lib\" path=\"lib/mysql-connector-java-5.1.6.jar\"/><classpathentry kind=\"lib\" path=\"lib/commons-dbcp2-2.0.jar\"/>");
+              } else {
+                classpath = classpath.replace("$Database_Libraries$", "");
+              }
           }
 
         }
@@ -206,6 +215,8 @@ public class MicroserviceGenerator extends Generator {
           createTextFileInRepository(microserviceRepository, "", ".project", projectFile);
       microserviceRepository =
           createTextFileInRepository(microserviceRepository, "", ".gitignore", gitignore);
+      microserviceRepository =
+          createTextFileInRepository(microserviceRepository, "", ".classpath", classpath);
 
       // property files
       microserviceRepository = createTextFileInRepository(microserviceRepository, "etc/",
