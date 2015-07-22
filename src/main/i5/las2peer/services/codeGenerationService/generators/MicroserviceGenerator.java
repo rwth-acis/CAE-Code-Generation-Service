@@ -47,10 +47,12 @@ public class MicroserviceGenerator extends Generator {
     Repository microserviceRepository = null;
     TreeWalk treeWalk = null;
 
-    // helper variable
+    // helper variables
     String packageName = microservice.getResourceName().substring(0, 1).toLowerCase()
         + microservice.getResourceName().substring(1);
-
+    // get the port: skip first 6 characters for search(http: / https:)
+    String port = microservice.getPath().substring(microservice.getPath().indexOf(":", 6) + 1,
+        microservice.getPath().indexOf("/", microservice.getPath().indexOf(":", 6)));
     // variables holding content to be modified and added to repository later
     String projectFile = null;
     BufferedImage logo = null;
@@ -66,7 +68,7 @@ public class MicroserviceGenerator extends Generator {
     String ivy = null;
     String ivySettings = null;
     String serviceProperties = null;
-
+    String webConnectorConfig = null;
     try {
       PersonIdent caeUser = new PersonIdent(gitHubUser, gitHubUserMail);
       String repositoryName = "microservice-" + microservice.getName().replace(" ", "-");
@@ -167,6 +169,9 @@ public class MicroserviceGenerator extends Generator {
                 serviceProperties = serviceProperties.replace("$Database_Password$",
                     microservice.getDatabase().getLoginPassword());
               }
+            case "i5.las2peer.webConnector.WebConnector.properties":
+              webConnectorConfig = new String(loader.getBytes(), "UTF-8");
+              webConnectorConfig = webConnectorConfig.replace("$HTTP_PORT$", port);
               break;
           }
 
@@ -197,6 +202,8 @@ public class MicroserviceGenerator extends Generator {
           "i5.las2peer.services." + packageName + "." + microservice.getResourceName()
               + ".properties",
           serviceProperties);
+      microserviceRepository = createTextFileInRepository(microserviceRepository, "etc/",
+          "i5.las2peer.webConnector.WebConnector.properties", webConnectorConfig);
 
       // scripts
       microserviceRepository = createTextFileInRepository(microserviceRepository, "bin/",
