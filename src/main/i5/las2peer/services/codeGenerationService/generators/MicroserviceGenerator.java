@@ -50,9 +50,10 @@ public class MicroserviceGenerator extends Generator {
     // helper variables
     String packageName = microservice.getResourceName().substring(0, 1).toLowerCase()
         + microservice.getResourceName().substring(1);
-    // get the port: skip first 6 characters for search(http: / https:)
+    // get the port: skip first 6 characters for search (http: / https:)
     String port = microservice.getPath().substring(microservice.getPath().indexOf(":", 6) + 1,
         microservice.getPath().indexOf("/", microservice.getPath().indexOf(":", 6)));
+
     // variables holding content to be modified and added to repository later
     String projectFile = null;
     BufferedImage logo = null;
@@ -69,6 +70,8 @@ public class MicroserviceGenerator extends Generator {
     String ivySettings = null;
     String serviceProperties = null;
     String webConnectorConfig = null;
+    String gitignore = null;
+
     try {
       PersonIdent caeUser = new PersonIdent(gitHubUser, gitHubUserMail);
       String repositoryName = "microservice-" + microservice.getName().replace(" ", "-");
@@ -173,6 +176,9 @@ public class MicroserviceGenerator extends Generator {
               webConnectorConfig = new String(loader.getBytes(), "UTF-8");
               webConnectorConfig = webConnectorConfig.replace("$HTTP_PORT$", port);
               break;
+            case ".gitignore":
+              gitignore = new String(loader.getBytes(), "UTF-8");
+              break;
           }
 
         }
@@ -198,6 +204,10 @@ public class MicroserviceGenerator extends Generator {
           createTextFileInRepository(microserviceRepository, "etc/", "nodeInfo.xml", nodeInfo);
       microserviceRepository =
           createTextFileInRepository(microserviceRepository, "", ".project", projectFile);
+      microserviceRepository =
+          createTextFileInRepository(microserviceRepository, "", ".gitignore", gitignore);
+
+      // property files
       microserviceRepository = createTextFileInRepository(microserviceRepository, "etc/",
           "i5.las2peer.services." + packageName + "." + microservice.getResourceName()
               + ".properties",
