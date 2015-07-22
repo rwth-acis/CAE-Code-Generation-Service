@@ -61,6 +61,8 @@ public class MicroserviceGenerator extends Generator {
     String userAgentGeneratorWindows = null;
     String userAgentGeneratorUnix = null;
     String nodeInfo = null;
+    String antServiceProperties = null;
+    String antUserProperties = null;
 
     try {
       PersonIdent caeUser = new PersonIdent(gitHubUser, gitHubUserMail);
@@ -120,6 +122,22 @@ public class MicroserviceGenerator extends Generator {
               nodeInfo = nodeInfo.replace("$Developer$", microservice.getDeveloper());
               nodeInfo = nodeInfo.replace("$Resource_Name$", microservice.getResourceName());
               break;
+            case "service.properties":
+              antServiceProperties = new String(loader.getBytes(), "UTF-8");
+              antServiceProperties = antServiceProperties.replace("$Microservice_Version$",
+                  microservice.getVersion() + "");
+              antServiceProperties =
+                  antServiceProperties.replace("$Lower_Resource_Name$", packageName);
+              antServiceProperties =
+                  antServiceProperties.replace("$Resource_Name$", microservice.getResourceName());
+              antServiceProperties = antServiceProperties.replace("$Microservice_Version$",
+                  microservice.getVersion() + "");
+
+
+              break;
+            case "user.properties":
+              antUserProperties = new String(loader.getBytes(), "UTF-8");
+              break;
           }
 
         }
@@ -137,6 +155,10 @@ public class MicroserviceGenerator extends Generator {
           createTextFileInRepository(microserviceRepository, "", "build.xml", buildFile);
       microserviceRepository =
           createTextFileInRepository(microserviceRepository, "etc/", "nodeInfo.xml", nodeInfo);
+      microserviceRepository = createTextFileInRepository(microserviceRepository,
+          "etc/ant_configuration/", "user.properties", antUserProperties);
+      microserviceRepository = createTextFileInRepository(microserviceRepository,
+          "etc/ant_configuration/", "service.properties", antServiceProperties);
 
       // scripts
       microserviceRepository = createTextFileInRepository(microserviceRepository, "bin/",
