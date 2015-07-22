@@ -63,6 +63,9 @@ public class MicroserviceGenerator extends Generator {
     String nodeInfo = null;
     String antServiceProperties = null;
     String antUserProperties = null;
+    String ivy = null;
+    String ivySettings = null;
+
 
     try {
       PersonIdent caeUser = new PersonIdent(gitHubUser, gitHubUserMail);
@@ -132,11 +135,22 @@ public class MicroserviceGenerator extends Generator {
                   antServiceProperties.replace("$Resource_Name$", microservice.getResourceName());
               antServiceProperties = antServiceProperties.replace("$Microservice_Version$",
                   microservice.getVersion() + "");
-
-
               break;
             case "user.properties":
               antUserProperties = new String(loader.getBytes(), "UTF-8");
+              break;
+            case "ivy.xml":
+              ivy = new String(loader.getBytes(), "UTF-8");
+              // add mysql dependency only if a database exists
+              if (microservice.getDatabase() != null) {
+                ivy = ivy.replace("$MYSQL_DEPENDENCY$",
+                    "<dependency org=\"mysql\" name=\"mysql-connector-java\" rev=\"5.1.6\" />");
+              } else {
+                ivy = ivy.replace("$MYSQL_DEPENDENCY$", "");
+              }
+              break;
+            case "ivysettings.xml":
+              ivySettings = new String(loader.getBytes(), "UTF-8");
               break;
           }
 
@@ -150,15 +164,19 @@ public class MicroserviceGenerator extends Generator {
 
       // configuration and build stuff
       microserviceRepository =
-          createTextFileInRepository(microserviceRepository, "", ".project", projectFile);
+          createTextFileInRepository(microserviceRepository, "etc/ivy/", "ivy.xml", ivy);
+      microserviceRepository = createTextFileInRepository(microserviceRepository, "etc/ivy/",
+          "ivysettings.xml", ivySettings);
       microserviceRepository =
           createTextFileInRepository(microserviceRepository, "", "build.xml", buildFile);
-      microserviceRepository =
-          createTextFileInRepository(microserviceRepository, "etc/", "nodeInfo.xml", nodeInfo);
       microserviceRepository = createTextFileInRepository(microserviceRepository,
           "etc/ant_configuration/", "user.properties", antUserProperties);
       microserviceRepository = createTextFileInRepository(microserviceRepository,
           "etc/ant_configuration/", "service.properties", antServiceProperties);
+      microserviceRepository =
+          createTextFileInRepository(microserviceRepository, "etc/", "nodeInfo.xml", nodeInfo);
+      microserviceRepository =
+          createTextFileInRepository(microserviceRepository, "", ".project", projectFile);
 
       // scripts
       microserviceRepository = createTextFileInRepository(microserviceRepository, "bin/",
