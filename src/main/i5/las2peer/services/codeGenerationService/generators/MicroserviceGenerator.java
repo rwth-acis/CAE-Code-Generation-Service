@@ -72,6 +72,9 @@ public class MicroserviceGenerator extends Generator {
     String webConnectorConfig = null;
     String gitignore = null;
     String classpath = null;
+    String databaseManager = null;
+    String serviceClass = null;
+    String serviceTest = null;
 
     try {
       PersonIdent caeUser = new PersonIdent(gitHubUser, gitHubUserMail);
@@ -191,6 +194,19 @@ public class MicroserviceGenerator extends Generator {
               } else {
                 classpath = classpath.replace("$Database_Libraries$", "");
               }
+              break;
+            case "DatabaseManager.java":
+              if (microservice.getDatabase() != null) {
+                databaseManager = new String(loader.getBytes(), "UTF-8");
+                databaseManager = databaseManager.replace("$Lower_Resource_Name$", packageName);
+              }
+              break;
+            case "ServiceClass.java":
+              serviceClass = new String(loader.getBytes(), "UTF-8");
+              break;
+            case "ServiceTest.java":
+              serviceTest = new String(loader.getBytes(), "UTF-8");
+              break;
           }
 
         }
@@ -244,6 +260,18 @@ public class MicroserviceGenerator extends Generator {
           createTextFileInRepository(microserviceRepository, "", "README.md", readMe);
       microserviceRepository =
           createImageFileInRepository(microserviceRepository, "img/", "logo.png", logo);
+
+
+      // source code
+      if (databaseManager != null) {
+        microserviceRepository = createTextFileInRepository(microserviceRepository,
+            "src/main/i5/las2peer/service/" + packageName + "/database/", "DatabaseManager.java",
+            databaseManager);
+      }
+      microserviceRepository = createTextFileInRepository(microserviceRepository,
+          "src/main/i5/las2peer/service/" + packageName + "/", "ServiceClass.java", serviceClass);
+      microserviceRepository = createTextFileInRepository(microserviceRepository,
+          "src/test/i5/las2peer/service/" + packageName + "/", "ServiceTest.java", serviceTest);
 
       // Commit files
       try {
