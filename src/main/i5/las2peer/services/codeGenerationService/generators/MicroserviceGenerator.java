@@ -14,6 +14,7 @@ import org.eclipse.jgit.treewalk.TreeWalk;
 import org.eclipse.jgit.treewalk.filter.PathFilter;
 
 import i5.las2peer.services.codeGenerationService.generators.exception.GitHubException;
+import i5.las2peer.services.codeGenerationService.models.microservice.HttpMethod;
 import i5.las2peer.services.codeGenerationService.models.microservice.Microservice;
 
 /**
@@ -367,11 +368,23 @@ public class MicroserviceGenerator extends Generator {
       serviceClass = serviceClass.replace("$Database_Configuration$", "");
       serviceClass = serviceClass.replace("$Database_Instantiation$", "");
     }
-    for (int httpMethodIndex = 0; httpMethodIndex < microservice.getHttpMethods()
-        .size(); httpMethodIndex++) {
-      String currentMethod = genericHttpMethod;
-      serviceClass = serviceClass.replace("$Service_Methods$", currentMethod);
+    HttpMethod[] httpMethods = microservice.getHttpMethods().values().toArray(new HttpMethod[0]);
+    for (int httpMethodIndex = 0; httpMethodIndex < httpMethods.length; httpMethodIndex++) {
+      String currentMethodCode = genericHttpMethod;
+      HttpMethod currentMethod = httpMethods[httpMethodIndex];
+      // replace currentMethodCode placeholders with content of currentMethod
+      currentMethodCode = currentMethodCode.replace("$HTTPMethod_Name$", currentMethod.getName());
+      currentMethodCode = currentMethodCode.replace("$HTTP_Method_Type$",
+          "@" + currentMethod.getMethodType().toString());
+      currentMethodCode =
+          currentMethodCode.replace("$HTTPMethod_Path$", "/" + currentMethod.getPath());
+      currentMethodCode = currentMethodCode.replace("$HTTP_METHOD_PARAMETERS$",
+          currentMethod.getPayloadType() + " " + currentMethod.getPayload());
+
+      // finally insert currentMethodCode into serviceClass
+      serviceClass = serviceClass.replace("$Service_Methods$", currentMethodCode);
     }
+    // remove last placeholder
     serviceClass = serviceClass.replace("$Service_Methods$", "");
 
     return serviceClass;
