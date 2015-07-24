@@ -61,7 +61,6 @@ public class Microservice {
       ArrayList<SimpleEntityAttribute> nodeAttributes = node.getAttributes();
       switch (node.getType()) {
         case "RESTful Resource":
-
           if (this.microserviceModelId == null) {
             this.microserviceModelId = node.getId();
           } else {
