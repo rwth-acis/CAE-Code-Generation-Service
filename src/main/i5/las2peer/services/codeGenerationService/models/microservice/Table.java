@@ -64,7 +64,7 @@ public class Table {
 
   /**
    * 
-   * Checks the (until now added columns) for (semantical) correctness. Checks, if the table has
+   * Checks the (until now added) columns for (semantical) correctness. Checks, if the table has
    * columns and exactly one primary key.
    * 
    * @throws ModelParseException the check revealed incorrectness.
