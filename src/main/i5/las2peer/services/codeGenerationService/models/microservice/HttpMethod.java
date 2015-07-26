@@ -135,7 +135,7 @@ public class HttpMethod {
     if (this.responses.isEmpty()) {
       throw new ModelParseException("Http Method " + this.name + " contains no response!");
     }
-    // TODO check more?
+    // TODO check more
   }
 
 }
