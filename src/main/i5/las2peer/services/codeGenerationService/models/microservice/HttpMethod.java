@@ -27,9 +27,9 @@ public class HttpMethod {
   private String modelId;
   private String name;
   private String path;
-  private String payload;
-  private String payloadType;
   private ArrayList<String> internalCalls = new ArrayList<String>();
+  private ArrayList<HttpPayload> payloads = new ArrayList<HttpPayload>();
+  private ArrayList<HttpResponse> responses = new ArrayList<HttpResponse>();
 
   /**
    * 
@@ -61,7 +61,8 @@ public class HttpMethod {
               this.methodType = MethodType.DELETE;
               break;
             default:
-              throw new ModelParseException("Unknown HTTPMethod type: " + methodType);
+              throw new ModelParseException(
+                  "Unknown HTTPMethod methodType: " + attribute.getValue());
           }
           break;
         case "name":
@@ -69,12 +70,6 @@ public class HttpMethod {
           break;
         case "path":
           this.path = attribute.getValue();
-          break;
-        case "payload":
-          this.payload = attribute.getValue();
-          break;
-        case "payloadType":
-          this.payloadType = attribute.getValue();
           break;
         default:
           throw new ModelParseException(
@@ -91,16 +86,6 @@ public class HttpMethod {
 
   public String getPath() {
     return this.path;
-  }
-
-
-  public String getPayload() {
-    return this.payload;
-  }
-
-
-  public String getPayloadType() {
-    return this.payloadType;
   }
 
 
@@ -121,6 +106,36 @@ public class HttpMethod {
 
   public void addInternalCall(String targetMethodId) {
     this.internalCalls.add(targetMethodId);
+  }
+
+
+  public void addHttpPayload(HttpPayload payload) {
+    this.payloads.add(payload);
+  }
+
+
+  public void addHttpResponse(HttpResponse response) {
+    this.responses.add(response);
+  }
+
+
+  /**
+   * 
+   * Checks the (until now added) payloads and responses for (semantical) correctness.
+   * 
+   * @throws ModelParseException the check revealed incorrectness.
+   * 
+   */
+  public void checkPayloadAndResponses() throws ModelParseException {
+    // no payload but at least one response is ok
+    if (this.payloads.isEmpty() && !this.responses.isEmpty()) {
+      return;
+    }
+    // has to have at least one response
+    if (this.responses.isEmpty()) {
+      throw new ModelParseException("Http Method " + this.name + " contains no response!");
+    }
+    // TODO check more
   }
 
 }

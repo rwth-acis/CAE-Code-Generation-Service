@@ -44,6 +44,8 @@ public class Microservice {
     // used for checking node to edge dependencies for correctness
     Map<String, Table> tempTables = new HashMap<String, Table>();
     Map<String, Column> tempColumns = new HashMap<String, Column>();
+    Map<String, HttpPayload> tempHttpPayloads = new HashMap<String, HttpPayload>();
+    Map<String, HttpResponse> tempHttpResponses = new HashMap<String, HttpResponse>();
 
     this.name = model.getName();
 
@@ -99,6 +101,12 @@ public class Microservice {
           break;
         case "Column":
           tempColumns.put(node.getId(), new Column(node));
+          break;
+        case "HTTP Payload":
+          tempHttpPayloads.put(node.getId(), new HttpPayload(node));
+          break;
+        case "HTTP Response":
+          tempHttpResponses.put(node.getId(), new HttpResponse(node));
           break;
         default:
           throw new ModelParseException("Unknown node type: " + node.getType());
@@ -164,6 +172,28 @@ public class Microservice {
           currentTable.addColumn(currentColumn);
           tempColumns.remove(currentEdgeTarget);
           break;
+        // add payload to http method and remove from temp payloads if edge was validated
+        // successfully
+        case "HTTP Method to HTTP Payload":
+          HttpMethod currentHttpMethod = this.httpMethods.get(currentEdgeSource);
+          HttpPayload currentHttpPayload = tempHttpPayloads.get(currentEdgeTarget);
+          if (currentHttpMethod == null || currentHttpPayload == null) {
+            throw new ModelParseException("Wrong HTTP Method to HTTP Payload Edge!");
+          }
+          currentHttpMethod.addHttpPayload(currentHttpPayload);
+          tempHttpPayloads.remove(currentEdgeTarget);
+          break;
+        // add response to http method and remove from temp responses if edge was validated
+        // successfully
+        case "HTTP Method to HTTP Response":
+          currentHttpMethod = this.httpMethods.get(currentEdgeSource);
+          HttpResponse currentHttpResponse = tempHttpResponses.get(currentEdgeTarget);
+          if (currentHttpMethod == null || currentHttpResponse == null) {
+            throw new ModelParseException("Wrong HTTP Method to HTTP Response Edge!");
+          }
+          currentHttpMethod.addHttpResponse(currentHttpResponse);
+          tempHttpResponses.remove(currentEdgeTarget);
+          break;
         default:
           throw new ModelParseException("Unknown edge type: " + currentEdgeType);
       }
@@ -174,12 +204,22 @@ public class Microservice {
         || !(tableToDatabaseEdges == tempTables.size())) {
       throw new ModelParseException("Model is not fully connected!");
     }
-
     // check if all columns were correctly connected to a table
     if (!tempColumns.isEmpty()) {
       throw new ModelParseException("All columns must be connected to a table!");
     }
-
+    // check if all payloads were correctly connected to an http method
+    if (!tempHttpPayloads.isEmpty()) {
+      throw new ModelParseException("All http payloads must be connected to an http method!");
+    }
+    // check, if all responses were correctly connected to an http method
+    if (!tempHttpResponses.isEmpty()) {
+      throw new ModelParseException("All htp responses must be connected to an http metod!");
+    }
+    // give the http methods the singal that they can check their payloads and responses
+    for (Map.Entry<String, HttpMethod> httpMethod : httpMethods.entrySet()) {
+      httpMethod.getValue().checkPayloadAndResponses();
+    }
     // finally, give tables the signal that they can check their columns for correctness
     for (Map.Entry<String, Table> tempTable : tempTables.entrySet()) {
       tempTable.getValue().checkColumns();

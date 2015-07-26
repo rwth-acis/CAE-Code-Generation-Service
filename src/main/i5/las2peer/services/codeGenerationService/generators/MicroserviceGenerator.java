@@ -378,8 +378,8 @@ public class MicroserviceGenerator extends Generator {
           "@" + currentMethod.getMethodType().toString());
       currentMethodCode =
           currentMethodCode.replace("$HTTPMethod_Path$", "/" + currentMethod.getPath());
-      currentMethodCode = currentMethodCode.replace("$HTTP_METHOD_PARAMETERS$",
-          currentMethod.getPayloadType() + " " + currentMethod.getPayload());
+          // currentMethodCode = currentMethodCode.replace("$HTTP_METHOD_PARAMETERS$",
+          // currentMethod.getPayloadType() + " " + currentMethod.getPayload());
 
       // finally insert currentMethodCode into serviceClass
       serviceClass = serviceClass.replace("$Service_Methods$", currentMethodCode);
