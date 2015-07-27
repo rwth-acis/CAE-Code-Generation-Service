@@ -73,6 +73,10 @@ public class Microservice {
             switch (attribute.getName()) {
               case "name":
                 this.resourceName = attribute.getValue();
+                if (this.resourceName.contains(" ")) {
+                  // throw new ModelParseException(
+                  // "Resource name contains invalid characters: " + this.resourceName);
+                }
                 break;
               case "path":
                 this.path = attribute.getValue();

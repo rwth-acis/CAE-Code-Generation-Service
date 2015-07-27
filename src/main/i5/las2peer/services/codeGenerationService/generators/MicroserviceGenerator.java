@@ -15,6 +15,7 @@ import org.eclipse.jgit.treewalk.filter.PathFilter;
 
 import i5.las2peer.services.codeGenerationService.generators.exception.GitHubException;
 import i5.las2peer.services.codeGenerationService.models.microservice.HttpMethod;
+import i5.las2peer.services.codeGenerationService.models.microservice.HttpResponse;
 import i5.las2peer.services.codeGenerationService.models.microservice.Microservice;
 
 /**
@@ -78,6 +79,8 @@ public class MicroserviceGenerator extends Generator {
     String serviceClass = null;
     String serviceTest = null;
     String genericHttpMethod = null;
+    String genericApiResponse = null;
+    String genericHttpResponse = null;
     String genericTestCase = null;
     String databaseConfig = null;
     String databaseInstantiation = null;
@@ -216,6 +219,12 @@ public class MicroserviceGenerator extends Generator {
             case "genericHTTPMethod.txt":
               genericHttpMethod = new String(loader.getBytes(), "UTF-8");
               break;
+            case "genericHTTPResponse.txt":
+              genericHttpResponse = new String(loader.getBytes(), "UTF-8");
+              break;
+            case "genericApiResponse.txt":
+              genericApiResponse = new String(loader.getBytes(), "UTF-8");
+              break;
             case "ServiceTest.java":
               serviceTest = new String(loader.getBytes(), "UTF-8");
               break;
@@ -234,8 +243,9 @@ public class MicroserviceGenerator extends Generator {
 
       // generate service class and test
       String repositoryLocation = "https://github.com/" + gitHubOrganization + "/" + repositoryName;
-      serviceClass = generateNewServiceClass(serviceClass, microservice, repositoryLocation,
-          genericHttpMethod, databaseConfig, databaseInstantiation);
+      serviceClass =
+          generateNewServiceClass(serviceClass, microservice, repositoryLocation, genericHttpMethod,
+              genericApiResponse, genericHttpResponse, databaseConfig, databaseInstantiation);
       serviceTest = generateNewServiceTest(serviceTest, microservice, genericTestCase);
 
       // add files to new repository
@@ -327,6 +337,8 @@ public class MicroserviceGenerator extends Generator {
    * @param microservice
    * @param repositoryLocation
    * @param genericHttpMethod
+   * @param genericApiResponse
+   * @param generiHttpResponse
    * @param databaseConfig
    * @param databaseInstantiation
    * 
@@ -334,8 +346,8 @@ public class MicroserviceGenerator extends Generator {
    * 
    */
   private static String generateNewServiceClass(String serviceClass, Microservice microservice,
-      String repositoryLocation, String genericHttpMethod, String databaseConfig,
-      String databaseInstantiation) {
+      String repositoryLocation, String genericHttpMethod, String genericApiResponse,
+      String genericHttpResponse, String databaseConfig, String databaseInstantiation) {
     // helper variables
     String packageName = microservice.getResourceName().substring(0, 1).toLowerCase()
         + microservice.getResourceName().substring(1);
@@ -370,7 +382,7 @@ public class MicroserviceGenerator extends Generator {
     }
     HttpMethod[] httpMethods = microservice.getHttpMethods().values().toArray(new HttpMethod[0]);
     for (int httpMethodIndex = 0; httpMethodIndex < httpMethods.length; httpMethodIndex++) {
-      String currentMethodCode = genericHttpMethod;
+      String currentMethodCode = genericHttpMethod; // copy content
       HttpMethod currentMethod = httpMethods[httpMethodIndex];
       // replace currentMethodCode placeholders with content of currentMethod
       currentMethodCode = currentMethodCode.replace("$HTTPMethod_Name$", currentMethod.getName());
@@ -378,8 +390,20 @@ public class MicroserviceGenerator extends Generator {
           "@" + currentMethod.getMethodType().toString());
       currentMethodCode =
           currentMethodCode.replace("$HTTPMethod_Path$", "/" + currentMethod.getPath());
-          // currentMethodCode = currentMethodCode.replace("$HTTP_METHOD_PARAMETERS$",
-          // currentMethod.getPayloadType() + " " + currentMethod.getPayload());
+      String apiResponseCode = "";
+      for (int httpResponseIndex = 0; httpResponseIndex < currentMethod.getHttpResponses()
+          .size(); httpResponseIndex++) {
+        HttpResponse currentResponse = currentMethod.getHttpResponses().get(httpResponseIndex);
+        apiResponseCode += genericApiResponse + "\n";
+        // replace just inserted placeholders
+        apiResponseCode = apiResponseCode.replace("$HTTPResponse_Code$",
+            currentResponse.getReturnStatusCode().getCode() + "");
+        apiResponseCode = apiResponseCode.replace("$HTTPResponse_Name$", currentResponse.getName());
+      }
+      // remove last comma and empty line
+      apiResponseCode = apiResponseCode.substring(0, apiResponseCode.length() - 2);
+      // add api responses to method
+      currentMethodCode = currentMethodCode.replace("$HTTPMethod_Api_Responses$", apiResponseCode);
 
       // finally insert currentMethodCode into serviceClass
       serviceClass = serviceClass.replace("$Service_Methods$", currentMethodCode);

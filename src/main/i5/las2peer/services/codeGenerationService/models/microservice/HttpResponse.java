@@ -19,23 +19,14 @@ public class HttpResponse {
   public enum ReturnStatusCode {
     OK(200), CREATED(201), BAD_REQUEST(400), UNAUTHORIZED(401), NOT_FOUND(404), CONFLICT(
         409), INTERNAL_ERROR(500), CUSTOM(-1);
-    /**
-     * a numeric event code
-     */
+
     private int value = -1;
 
-    /**
-     * simple constructor for the code assignment
-     * 
-     * @param value
-     */
+
     private ReturnStatusCode(int value) {
       this.value = value;
     }
 
-    /**
-     * @return code of the ReturnStatusCode
-     */
     public int getCode() {
       return value;
     }

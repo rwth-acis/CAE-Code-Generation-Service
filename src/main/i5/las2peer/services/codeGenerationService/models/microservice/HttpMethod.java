@@ -104,6 +104,16 @@ public class HttpMethod {
   }
 
 
+  public ArrayList<HttpPayload> getHttpPayloads() {
+    return this.payloads;
+  }
+
+
+  public ArrayList<HttpResponse> getHttpResponses() {
+    return this.responses;
+  }
+
+
   public void addInternalCall(String targetMethodId) {
     this.internalCalls.add(targetMethodId);
   }
