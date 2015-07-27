@@ -16,6 +16,7 @@ import org.eclipse.jgit.treewalk.filter.PathFilter;
 import i5.las2peer.services.codeGenerationService.generators.exception.GitHubException;
 import i5.las2peer.services.codeGenerationService.models.microservice.HttpMethod;
 import i5.las2peer.services.codeGenerationService.models.microservice.HttpResponse;
+import i5.las2peer.services.codeGenerationService.models.microservice.HttpResponse.ResultType;
 import i5.las2peer.services.codeGenerationService.models.microservice.Microservice;
 
 /**
@@ -383,6 +384,8 @@ public class MicroserviceGenerator extends Generator {
     HttpMethod[] httpMethods = microservice.getHttpMethods().values().toArray(new HttpMethod[0]);
     for (int httpMethodIndex = 0; httpMethodIndex < httpMethods.length; httpMethodIndex++) {
       String currentMethodCode = genericHttpMethod; // copy content
+      String producesAnnotation = "";
+      String consumesAnnotation = "";
       HttpMethod currentMethod = httpMethods[httpMethodIndex];
       // replace currentMethodCode placeholders with content of currentMethod
       currentMethodCode = currentMethodCode.replace("$HTTPMethod_Name$", currentMethod.getName());
@@ -391,19 +394,58 @@ public class MicroserviceGenerator extends Generator {
       currentMethodCode =
           currentMethodCode.replace("$HTTPMethod_Path$", "/" + currentMethod.getPath());
       String apiResponseCode = "";
+      String httpResponsesCode = "";
       for (int httpResponseIndex = 0; httpResponseIndex < currentMethod.getHttpResponses()
           .size(); httpResponseIndex++) {
         HttpResponse currentResponse = currentMethod.getHttpResponses().get(httpResponseIndex);
+        // start with api response code
         apiResponseCode += genericApiResponse + "\n";
         // replace just inserted placeholders
         apiResponseCode = apiResponseCode.replace("$HTTPResponse_Code$",
-            currentResponse.getReturnStatusCode().getCode() + "");
+            currentResponse.getReturnStatusCode().toString());
         apiResponseCode = apiResponseCode.replace("$HTTPResponse_Name$", currentResponse.getName());
+        // now to the http responses
+        httpResponsesCode += genericHttpResponse + "\n";
+        httpResponsesCode =
+            httpResponsesCode.replace("$HTTPResponse_Name$", currentResponse.getName());
+        httpResponsesCode =
+            httpResponsesCode.replace("$HTTPResponse_ResultName$", currentResponse.getResultName());
+        httpResponsesCode =
+            httpResponsesCode.replace("$HTTPResponse_ResultName$", currentResponse.getResultName());
+        httpResponsesCode = httpResponsesCode.replace("$HTTPResponse_Code$",
+            currentResponse.getReturnStatusCode().toString());
+        httpResponsesCode = httpResponsesCode.replace("$HTTPResponse_ResultType$",
+            currentResponse.getResultType().toString());
+        // JSON objects have to be transformed to strings first (a bit ugly, but works:-) )
+        // additionally, if there exists a JSON response, we can set the produces annotation
+        if (currentResponse.getResultType() == ResultType.JSONObject) {
+          httpResponsesCode =
+              httpResponsesCode.replace("HttpResponse(" + currentResponse.getResultName(),
+                  "HttpResponse(" + currentResponse.getResultName() + ".toJSONString()");
+          producesAnnotation = "MediaType.APPLICATION_JSON";
+        }
+        // check for custom return type and mark it if found
+        if (currentResponse.getResultType() == ResultType.CUSTOM) {
+          producesAnnotation = "CUSTOM";
+        }
       }
-      // remove last comma and empty line
+      // if no return annotation is set until here, we set it to text
+      if (producesAnnotation.equals("")) {
+        producesAnnotation = "MediaType.TEXT_PLAIN";
+      }
+      // remove last comma and empty line from api response string
       apiResponseCode = apiResponseCode.substring(0, apiResponseCode.length() - 2);
-      // add api responses to method
+      // remove last empty line from http responses string
+      httpResponsesCode = httpResponsesCode.substring(0, httpResponsesCode.length() - 1);
+
+      // add both code fragments to method
       currentMethodCode = currentMethodCode.replace("$HTTPMethod_Api_Responses$", apiResponseCode);
+      currentMethodCode = currentMethodCode.replace("$HTTPMethod_Responses$", httpResponsesCode);
+      // insert produces and consumes annotations
+      currentMethodCode = currentMethodCode.replace("$HTTPMethod_Produces$",
+          "@Produces(" + producesAnnotation + ")");
+      currentMethodCode = currentMethodCode.replace("$HTTPMethod_Consumes$",
+          "@Consumes(" + consumesAnnotation + ")");// TODO
 
       // finally insert currentMethodCode into serviceClass
       serviceClass = serviceClass.replace("$Service_Methods$", currentMethodCode);

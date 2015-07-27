@@ -17,8 +17,8 @@ public class HttpResponse {
    * 
    */
   public enum ReturnStatusCode {
-    OK(200), CREATED(201), BAD_REQUEST(400), UNAUTHORIZED(401), NOT_FOUND(404), CONFLICT(
-        409), INTERNAL_ERROR(500), CUSTOM(-1);
+    HTTP_OK(200), HTTP_CREATED(201), HTTP_BAD_REQUEST(400), HTTP_UNAUTHORIZED(401), HTTP_NOT_FOUND(
+        404), HTTP_CONFLICT(409), HTTP_INTERNAL_ERROR(500), HTTP_CUSTOM(-1);
 
     private int value = -1;
 
@@ -38,7 +38,7 @@ public class HttpResponse {
    * 
    */
   public enum ResultType {
-    JSON, TEXT, CUSTOM
+    JSONObject, String, CUSTOM
   }
 
   private String modelId;
@@ -71,28 +71,28 @@ public class HttpResponse {
         case "returnStatusCode":
           switch (attribute.getValue()) {
             case "OK":
-              this.returnStatusCode = ReturnStatusCode.OK;
+              this.returnStatusCode = ReturnStatusCode.HTTP_OK;
               break;
             case "CREATED":
-              this.returnStatusCode = ReturnStatusCode.CREATED;
+              this.returnStatusCode = ReturnStatusCode.HTTP_CREATED;
               break;
             case "BAD_REQUEST":
-              this.returnStatusCode = ReturnStatusCode.BAD_REQUEST;
+              this.returnStatusCode = ReturnStatusCode.HTTP_BAD_REQUEST;
               break;
             case "UNAUTHORIZED":
-              this.returnStatusCode = ReturnStatusCode.UNAUTHORIZED;
+              this.returnStatusCode = ReturnStatusCode.HTTP_UNAUTHORIZED;
               break;
             case "NOT_FOUND":
-              this.returnStatusCode = ReturnStatusCode.NOT_FOUND;
+              this.returnStatusCode = ReturnStatusCode.HTTP_NOT_FOUND;
               break;
             case "CONFLICT":
-              this.returnStatusCode = ReturnStatusCode.CONFLICT;
+              this.returnStatusCode = ReturnStatusCode.HTTP_CONFLICT;
               break;
             case "INTERNAL_ERROR":
-              this.returnStatusCode = ReturnStatusCode.INTERNAL_ERROR;
+              this.returnStatusCode = ReturnStatusCode.HTTP_INTERNAL_ERROR;
               break;
             case "CUSTOM":
-              this.returnStatusCode = ReturnStatusCode.CUSTOM;
+              this.returnStatusCode = ReturnStatusCode.HTTP_CUSTOM;
               break;
             default:
               throw new ModelParseException(
@@ -102,10 +102,10 @@ public class HttpResponse {
         case "resultType":
           switch (attribute.getValue()) {
             case "JSON":
-              this.resultType = ResultType.JSON;
+              this.resultType = ResultType.JSONObject;
               break;
             case "TEXT":
-              this.resultType = ResultType.TEXT;
+              this.resultType = ResultType.String;
               break;
             case "CUSTOM":
               this.resultType = ResultType.CUSTOM;
