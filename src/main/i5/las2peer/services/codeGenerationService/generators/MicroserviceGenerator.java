@@ -15,6 +15,8 @@ import org.eclipse.jgit.treewalk.filter.PathFilter;
 
 import i5.las2peer.services.codeGenerationService.generators.exception.GitHubException;
 import i5.las2peer.services.codeGenerationService.models.microservice.HttpMethod;
+import i5.las2peer.services.codeGenerationService.models.microservice.HttpPayload;
+import i5.las2peer.services.codeGenerationService.models.microservice.HttpPayload.PayloadType;
 import i5.las2peer.services.codeGenerationService.models.microservice.HttpResponse;
 import i5.las2peer.services.codeGenerationService.models.microservice.HttpResponse.ResultType;
 import i5.las2peer.services.codeGenerationService.models.microservice.Microservice;
@@ -355,7 +357,7 @@ public class MicroserviceGenerator extends Generator {
     String relativeResourcePath =
         microservice.getPath().substring(microservice.getPath().indexOf("/", 8) + 1);
 
-    // package and import pathes
+    // package and import paths
     serviceClass = serviceClass.replace("$Lower_Resource_Name$", packageName);
     // service name for documentation
     serviceClass = serviceClass.replace("$Microservice_Name$", microservice.getName());
@@ -381,11 +383,10 @@ public class MicroserviceGenerator extends Generator {
       serviceClass = serviceClass.replace("$Database_Configuration$", "");
       serviceClass = serviceClass.replace("$Database_Instantiation$", "");
     }
+    // http methods
     HttpMethod[] httpMethods = microservice.getHttpMethods().values().toArray(new HttpMethod[0]);
     for (int httpMethodIndex = 0; httpMethodIndex < httpMethods.length; httpMethodIndex++) {
       String currentMethodCode = genericHttpMethod; // copy content
-      String producesAnnotation = "";
-      String consumesAnnotation = "";
       HttpMethod currentMethod = httpMethods[httpMethodIndex];
       // replace currentMethodCode placeholders with content of currentMethod
       currentMethodCode = currentMethodCode.replace("$HTTPMethod_Name$", currentMethod.getName());
@@ -393,6 +394,9 @@ public class MicroserviceGenerator extends Generator {
           "@" + currentMethod.getMethodType().toString());
       currentMethodCode =
           currentMethodCode.replace("$HTTPMethod_Path$", "/" + currentMethod.getPath());
+
+      // responses
+      String producesAnnotation = "";
       String apiResponseCode = "";
       String httpResponsesCode = "";
       for (int httpResponseIndex = 0; httpResponseIndex < currentMethod.getHttpResponses()
@@ -429,7 +433,7 @@ public class MicroserviceGenerator extends Generator {
           producesAnnotation = "CUSTOM";
         }
       }
-      // if no return annotation is set until here, we set it to text
+      // if no produces annotation is set until here, we set it to text
       if (producesAnnotation.equals("")) {
         producesAnnotation = "MediaType.TEXT_PLAIN";
       }
@@ -437,21 +441,61 @@ public class MicroserviceGenerator extends Generator {
       apiResponseCode = apiResponseCode.substring(0, apiResponseCode.length() - 2);
       // remove last empty line from http responses string
       httpResponsesCode = httpResponsesCode.substring(0, httpResponsesCode.length() - 1);
-
       // add both code fragments to method
       currentMethodCode = currentMethodCode.replace("$HTTPMethod_Api_Responses$", apiResponseCode);
       currentMethodCode = currentMethodCode.replace("$HTTPMethod_Responses$", httpResponsesCode);
-      // insert produces and consumes annotations
+      // insert produces annotation
       currentMethodCode = currentMethodCode.replace("$HTTPMethod_Produces$",
           "@Produces(" + producesAnnotation + ")");
+
+      // payload
+      String consumesAnnotation = "";
+      String parameterCode = "";
+      for (int httpPayloadIndex = 0; httpPayloadIndex < currentMethod.getHttpPayloads()
+          .size(); httpPayloadIndex++) {
+        HttpPayload currentPayload = currentMethod.getHttpPayloads().get(httpPayloadIndex);
+        // check if payload is a JSON and cast if so
+        if (currentPayload.getPayloadType() == PayloadType.JSONObject) {
+          consumesAnnotation = "MediaType.APPLICATION_JSON";
+          parameterCode += "String " + currentPayload.getName() + ", ";
+          currentMethodCode = currentMethodCode.replace("$HTTPMethod_Casts$",
+              "    JSONObject " + currentPayload.getName() + "_JSON = JSONValue.parse("
+                  + currentPayload.getName() + ");\n$HTTPMethod_Casts$");
+        }
+        // string param
+        if (currentPayload.getPayloadType() == PayloadType.String) {
+          parameterCode += "String " + currentPayload.getName() + ", ";
+        }
+        // mark custom payload in consumes annotation and parameter type
+        if (currentPayload.getPayloadType() == PayloadType.CUSTOM) {
+          consumesAnnotation = "CUSTOM";
+          parameterCode += "CUSTOM " + currentPayload.getName() + ", ";
+        }
+        // path param
+        if (currentPayload.getPayloadType() == PayloadType.PATH_PARAM) {
+          parameterCode += "@PathParam(\"" + currentPayload.getName() + "\") String "
+              + currentPayload.getName() + ", ";
+        }
+      }
+      // remove last cast placeholder
+      currentMethodCode = currentMethodCode.replace("\n$HTTPMethod_Casts$", "");
+      // remove last comma from parameter code
+      parameterCode = parameterCode.substring(0, parameterCode.length() - 2);
+      // if no consumes annotation is set until here, we set it to text
+      if (consumesAnnotation.equals("")) {
+        consumesAnnotation = "MediaType.TEXT_PLAIN";
+      }
+      // set the consumes annotation
       currentMethodCode = currentMethodCode.replace("$HTTPMethod_Consumes$",
-          "@Consumes(" + consumesAnnotation + ")");// TODO
+          "@Consumes(" + consumesAnnotation + ")");
+      // set the parameters
+      currentMethodCode = currentMethodCode.replace("$HTTPMethod_Parameters$", parameterCode);
 
       // finally insert currentMethodCode into serviceClass
       serviceClass = serviceClass.replace("$Service_Methods$", currentMethodCode);
     }
     // remove last placeholder
-    serviceClass = serviceClass.replace("$Service_Methods$", "");
+    serviceClass = serviceClass.replace("\n\n\n$Service_Methods$", "");
 
     return serviceClass;
   }

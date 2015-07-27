@@ -16,7 +16,7 @@ public class HttpPayload {
    * 
    */
   public enum PayloadType {
-    JSON, TEXT, PATH_PARAM, CUSTOM
+    JSONObject, String, PATH_PARAM, CUSTOM
   }
 
   private String modelId;
@@ -44,10 +44,10 @@ public class HttpPayload {
         case "payloadType":
           switch (attribute.getValue()) {
             case "JSON":
-              this.payloadType = PayloadType.JSON;
+              this.payloadType = PayloadType.JSONObject;
               break;
             case "TEXT":
-              this.payloadType = PayloadType.TEXT;
+              this.payloadType = PayloadType.String;
               break;
             case "PATH_PARAM":
               this.payloadType = PayloadType.PATH_PARAM;
