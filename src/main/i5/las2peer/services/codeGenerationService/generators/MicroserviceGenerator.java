@@ -304,9 +304,10 @@ public class MicroserviceGenerator extends Generator {
           "src/main/i5/las2peer/service/" + packageName + "/",
           microservice.getResourceName() + ".java", serviceClass);
       microserviceRepository = createTextFileInRepository(microserviceRepository,
-          "src/test/i5/las2peer/service/" + packageName + "/", "ServiceTest.java", serviceTest);
+          "src/test/i5/las2peer/service/" + packageName + "/",
+          microservice.getResourceName() + "Test.java", serviceTest);
 
-      // Commit files
+      // commit files
       try {
         Git.wrap(microserviceRepository).commit()
             .setMessage("Generated microservice version " + microservice.getVersion())
@@ -514,6 +515,8 @@ public class MicroserviceGenerator extends Generator {
    */
   private static String generateNewServiceTest(String serviceTest, Microservice microservice,
       String genericTestCase) {
+    serviceTest = serviceTest.replace("$Resource_Name$", microservice.getResourceName());
+
     // get the resource address: (skip first /)
     // String relativeResourcePath =
     // microservice.getPath().substring(microservice.getPath().indexOf("/", 8) + 1);

@@ -32,6 +32,8 @@ public class CodeGenerationServiceTest {
   private static final String testTemplateService = CodeGenerationService.class.getCanonicalName();
 
   private static SimpleModel model1;
+  @SuppressWarnings("unused")
+  private static SimpleModel model2;
 
   private static ServiceAgent testService;
 
@@ -46,13 +48,18 @@ public class CodeGenerationServiceTest {
   public static void startServer() throws Exception {
     // load models
     String modelPath1 = "./testModels/My First Testservice.model";
-
+    String modelPath2 = "./testModels/My First Testservice without DB.model";
     try {
-      InputStream file = new FileInputStream(modelPath1);
-      InputStream buffer = new BufferedInputStream(file);
-      ObjectInput input = new ObjectInputStream(buffer);
-      model1 = (SimpleModel) input.readObject();
-      input.close();
+      InputStream file1 = new FileInputStream(modelPath1);
+      InputStream buffer1 = new BufferedInputStream(file1);
+      ObjectInput input1 = new ObjectInputStream(buffer1);
+      model1 = (SimpleModel) input1.readObject();
+      InputStream file2 = new FileInputStream(modelPath2);
+      InputStream buffer2 = new BufferedInputStream(file2);
+      ObjectInput input2 = new ObjectInputStream(buffer2);
+      model2 = (SimpleModel) input2.readObject();
+      input1.close();
+      input2.close();
     } catch (IOException ex) {
       fail("Error reading test models!");
     }
@@ -71,6 +78,7 @@ public class CodeGenerationServiceTest {
 
   }
 
+
   /**
    * 
    * Called after the tests have finished. Shuts down the server.
@@ -84,6 +92,7 @@ public class CodeGenerationServiceTest {
     node = null;
     LocalNode.reset();
   }
+
 
   /**
    * 
