@@ -73,6 +73,10 @@ public class Microservice {
             switch (attribute.getName()) {
               case "name":
                 this.resourceName = attribute.getValue();
+                if (this.resourceName.contains(" ")) {
+                  throw new ModelParseException(
+                      "Resource name contains invalid characters: " + this.resourceName);
+                }
                 break;
               case "path":
                 this.path = attribute.getValue();
@@ -200,7 +204,8 @@ public class Microservice {
     }
 
     // check for correct edge counts
-    if (!(httpMethodToResourceEdges == this.httpMethods.size()) || !databaseToResourceEdge
+    if (!(httpMethodToResourceEdges == this.httpMethods.size())
+        || (!databaseToResourceEdge && this.database != null)
         || !(tableToDatabaseEdges == tempTables.size())) {
       throw new ModelParseException("Model is not fully connected!");
     }
@@ -224,8 +229,10 @@ public class Microservice {
     for (Map.Entry<String, Table> tempTable : tempTables.entrySet()) {
       tempTable.getValue().checkColumns();
     }
-    // if that has worked, add them to database
-    this.database.addTables((Table[]) tempTables.values().toArray(new Table[tempTables.size()]));
+    // if that has worked, add them to database (if database exists;-) )
+    if (this.database != null) {
+      this.database.addTables((Table[]) tempTables.values().toArray(new Table[tempTables.size()]));
+    }
   }
 
 
