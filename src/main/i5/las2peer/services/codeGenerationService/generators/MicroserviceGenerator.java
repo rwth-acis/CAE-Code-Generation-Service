@@ -172,7 +172,7 @@ public class MicroserviceGenerator extends Generator {
                         + "    <dependency org=\"org.apache.commons\" name=\"commons-pool2\" rev=\"2.2\" />\n"
                         + "    <dependency org=\"org.apache.commons\" name=\"commons-dbcp2\" rev=\"2.0\" />");
               } else {
-                ivy = ivy.replace("$MySQL_Dependencies$", "");
+                ivy = ivy.replace("$MySQL_Dependencies$\n", "");
               }
               break;
             case "ivysettings.xml":
@@ -207,7 +207,7 @@ public class MicroserviceGenerator extends Generator {
                     "<classpathentry kind=\"lib\" path=\"lib/mysql-connector-java-5.1.6.jar\"/>\n"
                         + "  <classpathentry kind=\"lib\" path=\"lib/commons-dbcp2-2.0.jar\"/>");
               } else {
-                classpath = classpath.replace("$Database_Libraries$", "");
+                classpath = classpath.replace("$Database_Libraries$\n", "");
               }
               break;
             case "DatabaseManager.java":

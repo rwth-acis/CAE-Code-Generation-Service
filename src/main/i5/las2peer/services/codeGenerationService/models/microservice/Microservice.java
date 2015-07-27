@@ -229,8 +229,10 @@ public class Microservice {
     for (Map.Entry<String, Table> tempTable : tempTables.entrySet()) {
       tempTable.getValue().checkColumns();
     }
-    // if that has worked, add them to database
-    this.database.addTables((Table[]) tempTables.values().toArray(new Table[tempTables.size()]));
+    // if that has worked, add them to database (if database exists;-) )
+    if (this.database != null) {
+      this.database.addTables((Table[]) tempTables.values().toArray(new Table[tempTables.size()]));
+    }
   }
 
 
