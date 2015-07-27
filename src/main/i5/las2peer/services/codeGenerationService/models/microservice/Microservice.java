@@ -204,7 +204,8 @@ public class Microservice {
     }
 
     // check for correct edge counts
-    if (!(httpMethodToResourceEdges == this.httpMethods.size()) || !databaseToResourceEdge
+    if (!(httpMethodToResourceEdges == this.httpMethods.size())
+        || (!databaseToResourceEdge && this.database != null)
         || !(tableToDatabaseEdges == tempTables.size())) {
       throw new ModelParseException("Model is not fully connected!");
     }
