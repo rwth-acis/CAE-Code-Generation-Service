@@ -67,6 +67,10 @@ public class HttpMethod {
           break;
         case "name":
           this.name = attribute.getValue();
+          if (this.name.contains(" ")) {
+            throw new ModelParseException(
+                "HttpMethod name contains invalid characters: " + this.name);
+          }
           break;
         case "path":
           this.path = attribute.getValue();
@@ -133,7 +137,7 @@ public class HttpMethod {
    * 
    * Checks the (until now added) payloads and responses for (semantical) correctness.
    * 
-   * @throws ModelParseException the check revealed incorrectness.
+   * @throws ModelParseException if the check revealed incorrectness
    * 
    */
   public void checkPayloadAndResponses() throws ModelParseException {
@@ -144,6 +148,24 @@ public class HttpMethod {
     // has to have at least one response
     if (this.responses.isEmpty()) {
       throw new ModelParseException("Http Method " + this.name + " contains no response!");
+    }
+    // check responses
+    for (int responseIndex = 0; responseIndex < this.responses.size(); responseIndex++) {
+      if (responses.get(responseIndex).getName().contains(" ")) {
+        throw new ModelParseException("HttpResponse name contains invalid characters: "
+            + responses.get(responseIndex).getName());
+      }
+      if (responses.get(responseIndex).getResultName().contains(" ")) {
+        throw new ModelParseException("HttpResponse result name contains invalid characters: "
+            + responses.get(responseIndex).getResultName());
+      }
+    }
+    // check payloads
+    for (int payloadIndex = 0; payloadIndex < this.payloads.size(); payloadIndex++) {
+      if (payloads.get(payloadIndex).getName().contains(" ")) {
+        throw new ModelParseException("HttpPayload name contains invalid characters: "
+            + payloads.get(payloadIndex).getName());
+      }
     }
     // TODO check more?
   }

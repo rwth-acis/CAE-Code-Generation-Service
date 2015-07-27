@@ -515,9 +515,8 @@ public class MicroserviceGenerator extends Generator {
   private static String generateNewServiceTest(String serviceTest, Microservice microservice,
       String genericTestCase) {
     // get the resource address: (skip first /)
-    String relativeResourcePath =
-        microservice.getPath().substring(microservice.getPath().indexOf("/", 8) + 1);
-
+    // String relativeResourcePath =
+    // microservice.getPath().substring(microservice.getPath().indexOf("/", 8) + 1);
     return serviceTest;
   }
 
