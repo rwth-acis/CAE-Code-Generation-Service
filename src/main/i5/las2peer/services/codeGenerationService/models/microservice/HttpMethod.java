@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import i5.cae.simpleModel.SimpleEntityAttribute;
 import i5.cae.simpleModel.node.SimpleNode;
 import i5.las2peer.services.codeGenerationService.models.exception.ModelParseException;
+import i5.las2peer.services.codeGenerationService.models.microservice.HttpPayload.PayloadType;
 
 /**
  * 
@@ -161,10 +162,19 @@ public class HttpMethod {
       }
     }
     // check payloads
+    boolean contentPayloadParsed = false;
     for (int payloadIndex = 0; payloadIndex < this.payloads.size(); payloadIndex++) {
       if (payloads.get(payloadIndex).getName().contains(" ")) {
         throw new ModelParseException("HttpPayload name contains invalid characters: "
             + payloads.get(payloadIndex).getName());
+      }
+      if (payloads.get(payloadIndex).getPayloadType() != PayloadType.PATH_PARAM) {
+        if (contentPayloadParsed) {
+          throw new ModelParseException(
+              "More than one content parameter in HTTPMethod " + this.name);
+        } else {
+          contentPayloadParsed = true;
+        }
       }
     }
     // TODO check more?

@@ -195,7 +195,7 @@ public class MicroserviceGenerator extends Generator {
               }
             case "i5.las2peer.webConnector.WebConnector.properties":
               webConnectorConfig = new String(loader.getBytes(), "UTF-8");
-              webConnectorConfig = webConnectorConfig.replace("$HTTP_PORT$", port);
+              webConnectorConfig = webConnectorConfig.replace("$HTTP_Port$", port);
               break;
             case ".gitignore":
               gitignore = new String(loader.getBytes(), "UTF-8");
@@ -230,6 +230,9 @@ public class MicroserviceGenerator extends Generator {
               break;
             case "ServiceTest.java":
               serviceTest = new String(loader.getBytes(), "UTF-8");
+              break;
+            case "genericTestMethod.txt":
+              genericTestCase = new String(loader.getBytes(), "UTF-8");
               break;
             case "databaseConfig.txt":
               databaseConfig = new String(loader.getBytes(), "UTF-8");
@@ -297,16 +300,17 @@ public class MicroserviceGenerator extends Generator {
       // source code
       if (databaseManager != null) {
         microserviceRepository = createTextFileInRepository(microserviceRepository,
-            "src/main/i5/las2peer/service/" + packageName + "/database/", "DatabaseManager.java",
+            "src/main/i5/las2peer/services/" + packageName + "/database/", "DatabaseManager.java",
             databaseManager);
       }
       microserviceRepository = createTextFileInRepository(microserviceRepository,
-          "src/main/i5/las2peer/service/" + packageName + "/",
+          "src/main/i5/las2peer/services/" + packageName + "/",
           microservice.getResourceName() + ".java", serviceClass);
       microserviceRepository = createTextFileInRepository(microserviceRepository,
-          "src/test/i5/las2peer/service/" + packageName + "/", "ServiceTest.java", serviceTest);
+          "src/test/i5/las2peer/services/" + packageName + "/",
+          microservice.getResourceName() + "Test.java", serviceTest);
 
-      // Commit files
+      // commit files
       try {
         Git.wrap(microserviceRepository).commit()
             .setMessage("Generated microservice version " + microservice.getVersion())
@@ -336,14 +340,14 @@ public class MicroserviceGenerator extends Generator {
    * 
    * Generates the service class.
    * 
-   * @param serviceClass
-   * @param microservice
-   * @param repositoryLocation
-   * @param genericHttpMethod
-   * @param genericApiResponse
-   * @param generiHttpResponse
-   * @param databaseConfig
-   * @param databaseInstantiation
+   * @param serviceClass the service class file
+   * @param microservice the microservice model
+   * @param repositoryLocation the location of the service's repository
+   * @param genericHttpMethod a generic http method template
+   * @param genericApiResponse a generic api response template
+   * @param generiHttpResponse a generic http response template
+   * @param databaseConfig a database configuration (source code) template
+   * @param databaseInstantiation a database instantiation (source code) template
    * 
    * @return the service class as a string
    * 
@@ -427,10 +431,17 @@ public class MicroserviceGenerator extends Generator {
               httpResponsesCode.replace("HttpResponse(" + currentResponse.getResultName(),
                   "HttpResponse(" + currentResponse.getResultName() + ".toJSONString()");
           producesAnnotation = "MediaType.APPLICATION_JSON";
+          httpResponsesCode =
+              httpResponsesCode.replace("$HTTP_Response_Result_Init$", "new JSONObject()");
         }
-        // check for custom return type and mark it if found
+        // check for custom return type and mark it in produces annotation if found
         if (currentResponse.getResultType() == ResultType.CUSTOM) {
           producesAnnotation = "CUSTOM";
+          httpResponsesCode = httpResponsesCode.replace("$HTTP_Response_Result_Init$", "CUSTOM");
+        }
+        if (currentResponse.getResultType() == ResultType.String) {
+          httpResponsesCode =
+              httpResponsesCode.replace("$HTTP_Response_Result_Init$", "\"Some String\"");
         }
       }
       // if no produces annotation is set until here, we set it to text
@@ -454,13 +465,23 @@ public class MicroserviceGenerator extends Generator {
       for (int httpPayloadIndex = 0; httpPayloadIndex < currentMethod.getHttpPayloads()
           .size(); httpPayloadIndex++) {
         HttpPayload currentPayload = currentMethod.getHttpPayloads().get(httpPayloadIndex);
+        // add param for JavaDoc
+        // dirty, but works:-)
+        String type = currentPayload.getPayloadType().toString();
+        if (type.equals("PATH_PARAM")) {
+          type = "String";
+        }
+        currentMethodCode = currentMethodCode.replace("$HTTPMethod_Params$",
+            "   * @param " + currentPayload.getName() + " a " + type + "\n$HTTPMethod_Params$");
         // check if payload is a JSON and cast if so
         if (currentPayload.getPayloadType() == PayloadType.JSONObject) {
           consumesAnnotation = "MediaType.APPLICATION_JSON";
           parameterCode += "String " + currentPayload.getName() + ", ";
-          currentMethodCode = currentMethodCode.replace("$HTTPMethod_Casts$",
-              "    JSONObject " + currentPayload.getName() + "_JSON = JSONValue.parse("
-                  + currentPayload.getName() + ");\n$HTTPMethod_Casts$");
+          currentMethodCode =
+              currentMethodCode.replace("$HTTPMethod_Casts$",
+                  "    JSONObject " + currentPayload.getName()
+                      + "_JSON = (JSONObject) JSONValue.parse(" + currentPayload.getName()
+                      + ");\n$HTTPMethod_Casts$");
         }
         // string param
         if (currentPayload.getPayloadType() == PayloadType.String) {
@@ -481,6 +502,8 @@ public class MicroserviceGenerator extends Generator {
       currentMethodCode = currentMethodCode.replace("\n$HTTPMethod_Casts$", "");
       // remove last comma from parameter code
       parameterCode = parameterCode.substring(0, parameterCode.length() - 2);
+      // remove last param placeholder (JavaDoc)
+      currentMethodCode = currentMethodCode.replace("\n$HTTPMethod_Params$", "");
       // if no consumes annotation is set until here, we set it to text
       if (consumesAnnotation.equals("")) {
         consumesAnnotation = "MediaType.TEXT_PLAIN";
@@ -505,18 +528,105 @@ public class MicroserviceGenerator extends Generator {
    * 
    * Generates the service test class.
    * 
-   * @param serviceTest
-   * @param microservice
-   * @param genericTestCase
+   * @param serviceTest the service test class file
+   * @param microservice the microservice model
+   * @param genericTestCase a generic test class file
    * 
    * @return the service test as a string
    * 
    */
   private static String generateNewServiceTest(String serviceTest, Microservice microservice,
       String genericTestCase) {
+    // general replacements
+    serviceTest = serviceTest.replace("$Resource_Name$", microservice.getResourceName());
+    serviceTest = serviceTest.replace("$Microservice_Name$", microservice.getName());
     // get the resource address: (skip first /)
-    // String relativeResourcePath =
-    // microservice.getPath().substring(microservice.getPath().indexOf("/", 8) + 1);
+    String relativeResourcePath =
+        microservice.getPath().substring(microservice.getPath().indexOf("/", 8) + 1);
+    serviceTest = serviceTest.replace("$Resource_Path$", relativeResourcePath);
+    String packageName = microservice.getResourceName().substring(0, 1).toLowerCase()
+        + microservice.getResourceName().substring(1);
+    serviceTest = serviceTest.replace("$Lower_Resource_Name$", packageName);
+
+    // test cases
+    HttpMethod[] httpMethods = microservice.getHttpMethods().values().toArray(new HttpMethod[0]);
+    for (int httpMethodIndex = 0; httpMethodIndex < httpMethods.length; httpMethodIndex++) {
+      String currentMethodCode = genericTestCase; // copy content
+      HttpMethod currentMethod = httpMethods[httpMethodIndex];
+      String content = "\"\"";
+      String consumesAnnotation = "";
+      // replace placeholder of current method code
+      currentMethodCode = currentMethodCode.replace("$HTTP_Method_Name$", currentMethod.getName());
+      currentMethodCode = currentMethodCode.replace("$HTTPMethod_Path$", currentMethod.getPath());
+      for (int httpPayloadIndex = 0; httpPayloadIndex < currentMethod.getHttpPayloads()
+          .size(); httpPayloadIndex++) {
+        HttpPayload currentPayload = currentMethod.getHttpPayloads().get(httpPayloadIndex);
+
+        // get the payload and create variables for it, if needed, cast in sendRequest code
+        if (currentPayload.getPayloadType() == PayloadType.JSONObject) {
+          consumesAnnotation = "MediaType.APPLICATION_JSON";
+          currentMethodCode =
+              currentMethodCode.replace("$TestMethod_Variables$", "      JSONObject "
+                  + currentPayload.getName() + " = new JSONObject();\n$TestMethod_Variables$");
+          content = currentPayload.getName() + ".toJSONString()";
+        }
+        // string param
+        if (currentPayload.getPayloadType() == PayloadType.String) {
+          currentMethodCode = currentMethodCode.replace("$TestMethod_Variables$", "      String "
+              + currentPayload.getName() + " = \"initialized\";\n$TestMethod_Variables$");
+          content = currentPayload.getName();
+        }
+        // mark custom payload in consumes annotation and parameter type
+        if (currentPayload.getPayloadType() == PayloadType.CUSTOM) {
+          consumesAnnotation = "CUSTOM";
+          currentMethodCode = currentMethodCode.replace("$TestMethod_Variables$",
+              "      CUSTOM " + currentPayload.getName() + " = null;\n$TestMethod_Variables$");
+          content = currentPayload.getName();
+        }
+        // path param: replace strings in method call path
+        if (currentPayload.getPayloadType() == PayloadType.PATH_PARAM) {
+          currentMethodCode = currentMethodCode.replace("$TestMethod_Variables$", "      String "
+              + currentPayload.getName() + " = \"initialized\";\n$TestMethod_Variables$");
+          currentMethodCode = currentMethodCode.replace("{" + currentPayload.getName() + "}",
+              "\" + " + currentPayload.getName() + " + \"");
+        }
+        // no JSON, no custom, set it to text
+        if (consumesAnnotation.equals("")) {
+          consumesAnnotation = "MediaType.TEXT_PLAIN";
+        }
+      }
+      // might still be empty, if only path parameter were parsed
+      currentMethodCode = currentMethodCode.replace("$HTTPMethod_Content$", content);
+      // remove last method variable placeholder
+      currentMethodCode = currentMethodCode.replace("\n$TestMethod_Variables$", "");
+      currentMethodCode =
+          currentMethodCode.replace("$HTTP_Method_Type$", currentMethod.getMethodType().toString());
+      // produces annotation
+      String producesAnnotation = "";
+      for (int httpResponseIndex = 0; httpResponseIndex < currentMethod.getHttpResponses()
+          .size(); httpResponseIndex++) {
+        HttpResponse currentResponse = currentMethod.getHttpResponses().get(httpResponseIndex);
+        if (currentResponse.getResultType() == ResultType.JSONObject) {
+          producesAnnotation = "MediaType.APPLICATION_JSON";
+        }
+        // check for custom return type and mark it if found
+        if (currentResponse.getResultType() == ResultType.CUSTOM) {
+          producesAnnotation = "CUSTOM";
+        }
+      }
+      // if no produces annotation is set until here, we set it to text
+      if (producesAnnotation.equals("")) {
+        producesAnnotation = "MediaType.TEXT_PLAIN";
+      }
+      currentMethodCode = currentMethodCode.replace("$HTTPMethod_Produces$", producesAnnotation);
+      // consumes annotation
+      currentMethodCode = currentMethodCode.replace("$HTTPMethod_Consumes$", consumesAnnotation);
+      // insert into service test class
+      serviceTest = serviceTest.replace("$Test_Methods$", currentMethodCode);
+    }
+    // remove last placeholder
+    serviceTest = serviceTest.replace("\n\n\n$Test_Methods$", "");
+
     return serviceTest;
   }
 
