@@ -431,10 +431,17 @@ public class MicroserviceGenerator extends Generator {
               httpResponsesCode.replace("HttpResponse(" + currentResponse.getResultName(),
                   "HttpResponse(" + currentResponse.getResultName() + ".toJSONString()");
           producesAnnotation = "MediaType.APPLICATION_JSON";
+          httpResponsesCode =
+              httpResponsesCode.replace("$HTTP_Response_Result_Init$", "new JSONObject()");
         }
-        // check for custom return type and mark it if found
+        // check for custom return type and mark it in produces annotation if found
         if (currentResponse.getResultType() == ResultType.CUSTOM) {
           producesAnnotation = "CUSTOM";
+          httpResponsesCode = httpResponsesCode.replace("$HTTP_Response_Result_Init$", "CUSTOM");
+        }
+        if (currentResponse.getResultType() == ResultType.String) {
+          httpResponsesCode =
+              httpResponsesCode.replace("$HTTP_Response_Result_Init$", "\"Some String\"");
         }
       }
       // if no produces annotation is set until here, we set it to text
@@ -458,6 +465,14 @@ public class MicroserviceGenerator extends Generator {
       for (int httpPayloadIndex = 0; httpPayloadIndex < currentMethod.getHttpPayloads()
           .size(); httpPayloadIndex++) {
         HttpPayload currentPayload = currentMethod.getHttpPayloads().get(httpPayloadIndex);
+        // add param for JavaDoc
+        // dirty, but works:-)
+        String type = currentPayload.getPayloadType().toString();
+        if (type.equals("PATH_PARAM")) {
+          type = "String";
+        }
+        currentMethodCode = currentMethodCode.replace("$HTTPMethod_Params$",
+            "   * @param " + currentPayload.getName() + " a " + type + "\n$HTTPMethod_Params$");
         // check if payload is a JSON and cast if so
         if (currentPayload.getPayloadType() == PayloadType.JSONObject) {
           consumesAnnotation = "MediaType.APPLICATION_JSON";
@@ -487,6 +502,8 @@ public class MicroserviceGenerator extends Generator {
       currentMethodCode = currentMethodCode.replace("\n$HTTPMethod_Casts$", "");
       // remove last comma from parameter code
       parameterCode = parameterCode.substring(0, parameterCode.length() - 2);
+      // remove last param placeholder (JavaDoc)
+      currentMethodCode = currentMethodCode.replace("\n$HTTPMethod_Params$", "");
       // if no consumes annotation is set until here, we set it to text
       if (consumesAnnotation.equals("")) {
         consumesAnnotation = "MediaType.TEXT_PLAIN";
@@ -568,8 +585,8 @@ public class MicroserviceGenerator extends Generator {
         }
         // path param: replace strings in method call path
         if (currentPayload.getPayloadType() == PayloadType.PATH_PARAM) {
-          currentMethodCode = currentMethodCode.replace("$TestMethod_Variables$",
-              "      String " + currentPayload.getName() + " = \"\";\n$TestMethod_Variables$");
+          currentMethodCode = currentMethodCode.replace("$TestMethod_Variables$", "      String "
+              + currentPayload.getName() + " = \"initialized\";\n$TestMethod_Variables$");
           currentMethodCode = currentMethodCode.replace("{" + currentPayload.getName() + "}",
               "\" + " + currentPayload.getName() + " + \"");
         }
