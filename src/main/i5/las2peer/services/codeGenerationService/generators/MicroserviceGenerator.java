@@ -462,9 +462,11 @@ public class MicroserviceGenerator extends Generator {
         if (currentPayload.getPayloadType() == PayloadType.JSONObject) {
           consumesAnnotation = "MediaType.APPLICATION_JSON";
           parameterCode += "String " + currentPayload.getName() + ", ";
-          currentMethodCode = currentMethodCode.replace("$HTTPMethod_Casts$",
-              "    JSONObject " + currentPayload.getName() + "_JSON = JSONValue.parse("
-                  + currentPayload.getName() + ");\n$HTTPMethod_Casts$");
+          currentMethodCode =
+              currentMethodCode.replace("$HTTPMethod_Casts$",
+                  "    JSONObject " + currentPayload.getName()
+                      + "_JSON = (JSONObject) JSONValue.parse(" + currentPayload.getName()
+                      + ");\n$HTTPMethod_Casts$");
         }
         // string param
         if (currentPayload.getPayloadType() == PayloadType.String) {
