@@ -516,10 +516,16 @@ public class MicroserviceGenerator extends Generator {
   private static String generateNewServiceTest(String serviceTest, Microservice microservice,
       String genericTestCase) {
     serviceTest = serviceTest.replace("$Resource_Name$", microservice.getResourceName());
+    serviceTest = serviceTest.replace("$Microservice_Name$", microservice.getName());
 
     // get the resource address: (skip first /)
-    // String relativeResourcePath =
-    // microservice.getPath().substring(microservice.getPath().indexOf("/", 8) + 1);
+    String relativeResourcePath =
+        microservice.getPath().substring(microservice.getPath().indexOf("/", 8) + 1);
+    serviceTest = serviceTest.replace("$Resource_Path$", relativeResourcePath);
+    String packageName = microservice.getResourceName().substring(0, 1).toLowerCase()
+        + microservice.getResourceName().substring(1);
+    serviceTest = serviceTest.replace("$Lower_Resource_Name$", packageName);
+
     return serviceTest;
   }
 
