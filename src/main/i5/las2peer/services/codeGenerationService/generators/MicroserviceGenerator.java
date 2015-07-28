@@ -195,7 +195,7 @@ public class MicroserviceGenerator extends Generator {
               }
             case "i5.las2peer.webConnector.WebConnector.properties":
               webConnectorConfig = new String(loader.getBytes(), "UTF-8");
-              webConnectorConfig = webConnectorConfig.replace("$HTTP_PORT$", port);
+              webConnectorConfig = webConnectorConfig.replace("$HTTP_Port$", port);
               break;
             case ".gitignore":
               gitignore = new String(loader.getBytes(), "UTF-8");
@@ -230,6 +230,9 @@ public class MicroserviceGenerator extends Generator {
               break;
             case "ServiceTest.java":
               serviceTest = new String(loader.getBytes(), "UTF-8");
+              break;
+            case "genericTestMethod.txt":
+              genericTestCase = new String(loader.getBytes(), "UTF-8");
               break;
             case "databaseConfig.txt":
               databaseConfig = new String(loader.getBytes(), "UTF-8");
@@ -337,14 +340,14 @@ public class MicroserviceGenerator extends Generator {
    * 
    * Generates the service class.
    * 
-   * @param serviceClass
-   * @param microservice
-   * @param repositoryLocation
-   * @param genericHttpMethod
-   * @param genericApiResponse
-   * @param generiHttpResponse
-   * @param databaseConfig
-   * @param databaseInstantiation
+   * @param serviceClass the service class file
+   * @param microservice the microservice model
+   * @param repositoryLocation the location of the service's repository
+   * @param genericHttpMethod a generic http method template
+   * @param genericApiResponse a generic api response template
+   * @param generiHttpResponse a generic http response template
+   * @param databaseConfig a database configuration (source code) template
+   * @param databaseInstantiation a database instantiation (source code) template
    * 
    * @return the service class as a string
    * 
@@ -506,18 +509,18 @@ public class MicroserviceGenerator extends Generator {
    * 
    * Generates the service test class.
    * 
-   * @param serviceTest
-   * @param microservice
-   * @param genericTestCase
+   * @param serviceTest the service test class file
+   * @param microservice the microservice model
+   * @param genericTestCase a generic test class file
    * 
    * @return the service test as a string
    * 
    */
   private static String generateNewServiceTest(String serviceTest, Microservice microservice,
       String genericTestCase) {
+    // general replacements
     serviceTest = serviceTest.replace("$Resource_Name$", microservice.getResourceName());
     serviceTest = serviceTest.replace("$Microservice_Name$", microservice.getName());
-
     // get the resource address: (skip first /)
     String relativeResourcePath =
         microservice.getPath().substring(microservice.getPath().indexOf("/", 8) + 1);
@@ -525,6 +528,20 @@ public class MicroserviceGenerator extends Generator {
     String packageName = microservice.getResourceName().substring(0, 1).toLowerCase()
         + microservice.getResourceName().substring(1);
     serviceTest = serviceTest.replace("$Lower_Resource_Name$", packageName);
+
+    // test cases
+    HttpMethod[] httpMethods = microservice.getHttpMethods().values().toArray(new HttpMethod[0]);
+    for (int httpMethodIndex = 0; httpMethodIndex < httpMethods.length; httpMethodIndex++) {
+      String currentMethodCode = genericTestCase; // copy content
+      HttpMethod currentMethod = httpMethods[httpMethodIndex];
+      // replace placeholder of current method code
+      currentMethodCode = currentMethodCode.replace("$HTTP_Method_Name$", currentMethod.getName());
+      currentMethodCode = currentMethodCode.replace("$HTTPMethod_Path$", currentMethod.getPath());
+      // insert into service test class
+      serviceTest = serviceTest.replace("$Test_Methods$", currentMethodCode);
+    }
+    // remove last placeholder
+    serviceTest = serviceTest.replace("\n\n\n$Test_Methods$", "");
 
     return serviceTest;
   }
