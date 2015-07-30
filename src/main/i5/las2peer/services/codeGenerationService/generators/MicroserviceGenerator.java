@@ -384,8 +384,8 @@ public class MicroserviceGenerator extends Generator {
       serviceClass = serviceClass.replace("$Database_Instantiation$", databaseInstantiation);
     } else {
       // set to empty string
-      serviceClass = serviceClass.replace("$Database_Configuration$", "");
-      serviceClass = serviceClass.replace("$Database_Instantiation$", "");
+      serviceClass = serviceClass.replace("$Database_Configuration$\n\n\n", "");
+      serviceClass = serviceClass.replace("$Database_Instantiation$\n", "");
     }
     // http methods
     HttpMethod[] httpMethods = microservice.getHttpMethods().values().toArray(new HttpMethod[0]);
@@ -500,8 +500,10 @@ public class MicroserviceGenerator extends Generator {
       }
       // remove last cast placeholder
       currentMethodCode = currentMethodCode.replace("\n$HTTPMethod_Casts$", "");
-      // remove last comma from parameter code
-      parameterCode = parameterCode.substring(0, parameterCode.length() - 2);
+      // remove last comma from parameter code (of parameters were inserted before)
+      if (parameterCode.length() > 0) {
+        parameterCode = parameterCode.substring(0, parameterCode.length() - 2);
+      }
       // remove last param placeholder (JavaDoc)
       currentMethodCode = currentMethodCode.replace("\n$HTTPMethod_Params$", "");
       // if no consumes annotation is set until here, we set it to text
@@ -561,7 +563,6 @@ public class MicroserviceGenerator extends Generator {
       for (int httpPayloadIndex = 0; httpPayloadIndex < currentMethod.getHttpPayloads()
           .size(); httpPayloadIndex++) {
         HttpPayload currentPayload = currentMethod.getHttpPayloads().get(httpPayloadIndex);
-
         // get the payload and create variables for it, if needed, cast in sendRequest code
         if (currentPayload.getPayloadType() == PayloadType.JSONObject) {
           consumesAnnotation = "MediaType.APPLICATION_JSON";
@@ -590,10 +591,10 @@ public class MicroserviceGenerator extends Generator {
           currentMethodCode = currentMethodCode.replace("{" + currentPayload.getName() + "}",
               "\" + " + currentPayload.getName() + " + \"");
         }
-        // no JSON, no custom, set it to text
-        if (consumesAnnotation.equals("")) {
-          consumesAnnotation = "MediaType.TEXT_PLAIN";
-        }
+      }
+      // no JSON, no custom, set it to text (no payloads, string payload, only path params)
+      if (consumesAnnotation.equals("")) {
+        consumesAnnotation = "MediaType.TEXT_PLAIN";
       }
       // might still be empty, if only path parameter were parsed
       currentMethodCode = currentMethodCode.replace("$HTTPMethod_Content$", content);
