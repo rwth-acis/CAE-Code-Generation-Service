@@ -11,6 +11,7 @@ import i5.cae.simpleModel.node.SimpleNode;
 import i5.las2peer.services.codeGenerationService.models.exception.ModelParseException;
 
 /**
+ * 
  * Microservice data class. Currently, edges are only used for creating simple 1 to 1 dependencies
  * between objects, without any attributes added to them.
  * 
