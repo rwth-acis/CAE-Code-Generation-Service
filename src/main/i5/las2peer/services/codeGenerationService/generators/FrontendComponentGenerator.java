@@ -80,7 +80,8 @@ public class FrontendComponentGenerator extends Generator {
       // commit files
       try {
         // TODO
-        Git.wrap(frontendComponentRepository).commit().setMessage("Generated frontend component")
+        Git.wrap(frontendComponentRepository).commit()
+            .setMessage("Generated frontend component" + frontendComponent.getVersion())
             .setCommitter(caeUser).call();
       } catch (Exception e) {
         e.printStackTrace();
