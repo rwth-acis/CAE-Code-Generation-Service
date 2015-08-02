@@ -46,8 +46,10 @@ public class FrontendComponentGenerator extends Generator {
     // helper variables
     // TODO
     // variables holding content to be modified and added to repository later
-    // TODO
     String widget = null;
+    String applicationScript = null;
+    String las2peerWidgetLibrary = null;
+    String style = null;
     try {
       PersonIdent caeUser = new PersonIdent(gitHubUser, gitHubUserMail);
       String repositoryName = "frontendComponent-" + frontendComponent.getName().replace(" ", "-");
@@ -67,6 +69,15 @@ public class FrontendComponentGenerator extends Generator {
             case "widget.xml":
               widget = new String(loader.getBytes(), "UTF-8");
               break;
+            case "applicationScript.js":
+              applicationScript = new String(loader.getBytes(), "UTF-8");
+              break;
+            case "las2peerWidgetLibrary.js":
+              las2peerWidgetLibrary = new String(loader.getBytes(), "UTF-8");
+              break;
+            case "style.css":
+              style = new String(loader.getBytes(), "UTF-8");
+              break;
           }
         }
       } catch (Exception e) {
@@ -76,12 +87,16 @@ public class FrontendComponentGenerator extends Generator {
       // add files to new repository
       frontendComponentRepository =
           createTextFileInRepository(frontendComponentRepository, "", "widget.xml", widget);
-
+      frontendComponentRepository = createTextFileInRepository(frontendComponentRepository, "js/",
+          "applicationScript.js", applicationScript);
+      frontendComponentRepository = createTextFileInRepository(frontendComponentRepository, "js/",
+          "las2peerWidgetLibrary.js", las2peerWidgetLibrary);
+      frontendComponentRepository =
+          createTextFileInRepository(frontendComponentRepository, "css/", "style.css", style);
       // commit files
       try {
-        // TODO
         Git.wrap(frontendComponentRepository).commit()
-            .setMessage("Generated frontend component" + frontendComponent.getVersion())
+            .setMessage("Generated frontend component " + frontendComponent.getVersion())
             .setCommitter(caeUser).call();
       } catch (Exception e) {
         e.printStackTrace();
