@@ -363,4 +363,48 @@ public abstract class Generator {
   }
 
 
+  /**
+   * 
+   * Deletes a repository on GitHub, given by its name.
+   * 
+   * @param name the name of the repository
+   * @param gitHubOrganization the name of the repositories organization
+   * @param gitHubUser the name of the GitHub user
+   * @param gitHubPassword the password of the GitHub user
+   * 
+   * @throws GitHubException if deletion was not successful
+   * 
+   */
+  public static void deleteRemoteRepository(String name, String gitHubOrganization,
+      String gitHubUser, String gitHubPassword) throws GitHubException {
+    try {
+      String authString = gitHubUser + ":" + gitHubPassword;
+      byte[] authEncBytes = Base64.getEncoder().encode(authString.getBytes());
+      String authStringEnc = new String(authEncBytes);
+
+      URL url = new URL("https://api.github.com/repos/" + gitHubOrganization + "/" + name);
+      System.out.println(url.toString());
+      HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+      connection.setRequestMethod("DELETE");
+      connection.setUseCaches(false);
+      connection.setRequestProperty("Authorization", "Basic " + authStringEnc);
+
+      // forward (in case of) error
+      if (connection.getResponseCode() != 204) {
+        String message = "Error deleting repository: ";
+        BufferedReader reader =
+            new BufferedReader(new InputStreamReader(connection.getErrorStream()));
+        for (String line; (line = reader.readLine()) != null;) {
+          message += line;
+        }
+        reader.close();
+        throw new GitHubException(message);
+      }
+    } catch (Exception e) {
+      e.printStackTrace();
+      throw new GitHubException(e.getMessage());
+    }
+  }
+
+
 }
