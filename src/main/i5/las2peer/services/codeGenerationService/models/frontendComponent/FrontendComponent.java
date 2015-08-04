@@ -1,6 +1,8 @@
 package i5.las2peer.services.codeGenerationService.models.frontendComponent;
 
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 
 import i5.cae.simpleModel.SimpleEntityAttribute;
 import i5.cae.simpleModel.SimpleModel;
@@ -23,6 +25,7 @@ public class FrontendComponent {
   private String widgetDeveloperMail;
   private int widgetWidth;
   private int widgetHeight;
+  private Map<String, HtmlElement> htmlElements;
 
   /**
    * 
@@ -34,8 +37,10 @@ public class FrontendComponent {
    * 
    */
   public FrontendComponent(SimpleModel model) throws ModelParseException {
+    this.htmlElements = new HashMap<String, HtmlElement>();
     this.name = model.getName();
-
+    // used to find (possible) duplicate (HTML) ids and report them
+    ArrayList<String> ids = new ArrayList<String>();
     // metadata of model (currently only version)
     for (int attributeIndex = 0; attributeIndex < model.getAttributes().size(); attributeIndex++) {
       if (model.getAttributes().get(attributeIndex).getName().equals("version")) {
@@ -89,9 +94,17 @@ public class FrontendComponent {
                 }
               default:
                 throw new ModelParseException(
-                    "Unknown attribute typ of RESTfulResource: " + attribute.getName());
+                    "Unknown attribute typ of Widget: " + attribute.getName());
             }
           }
+          break;
+        case "HTML Element":
+          HtmlElement element = new HtmlElement(node);
+          this.htmlElements.put(node.getId(), element);
+          if (ids.contains(element.getId())) {
+            throw new ModelParseException("Duplicate id found: " + node.getId());
+          }
+          ids.add(element.getId());
           break;
         default:
           throw new ModelParseException("Unknown node type: " + node.getType());
