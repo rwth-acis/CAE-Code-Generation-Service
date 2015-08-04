@@ -53,7 +53,11 @@ public class Microservice {
     // metadata of model (currently only version)
     for (int attributeIndex = 0; attributeIndex < model.getAttributes().size(); attributeIndex++) {
       if (model.getAttributes().get(attributeIndex).getName().equals("version")) {
-        this.setVersion(Float.parseFloat(model.getAttributes().get(attributeIndex).getValue()));
+        try {
+          this.setVersion(Float.parseFloat(model.getAttributes().get(attributeIndex).getValue()));
+        } catch (NumberFormatException e) {
+          throw new ModelParseException("Microservice version is not a number!");
+        }
       }
     }
 
