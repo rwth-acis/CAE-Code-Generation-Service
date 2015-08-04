@@ -21,6 +21,7 @@ import i5.cae.simpleModel.SimpleModel;
 import i5.las2peer.p2p.LocalNode;
 import i5.las2peer.security.ServiceAgent;
 import i5.las2peer.services.codeGenerationService.generators.Generator;
+import i5.las2peer.services.codeGenerationService.generators.exception.GitHubException;
 
 
 /**
@@ -36,7 +37,6 @@ public class CodeGenerationServiceTest {
       CodeGenerationService.class.getCanonicalName();
 
   private static SimpleModel model1;
-  @SuppressWarnings("unused")
   private static SimpleModel model2;
   private static SimpleModel model3;
 
@@ -121,12 +121,33 @@ public class CodeGenerationServiceTest {
   @AfterClass
   public static void shutDownServer() throws Exception {
     String model1GitHubName = "microservice-" + model1.getName().replace(" ", "-");
-    // String model2GitHubName = "microservice-" + model2.getName().replace(" ", "-");
+    @SuppressWarnings("unused")
+    String model2GitHubName = "microservice-" + model2.getName().replace(" ", "-");
     String model3GitHubName = "frontendComponent-" + model3.getName().replace(" ", "-");
-    Generator.deleteRemoteRepository(model1GitHubName, gitHubOrganization, gitHubUser,
-        gitHubPassword);
-    Generator.deleteRemoteRepository(model3GitHubName, gitHubOrganization, gitHubUser,
-        gitHubPassword);
+    try {
+      Generator.deleteRemoteRepository(model1GitHubName, gitHubOrganization, gitHubUser,
+          gitHubPassword);
+    } catch (GitHubException e) {
+      e.printStackTrace();
+      // that's ok, maybe some error / failure in previous tests caused this
+      // catch this, to make sure that every other repository gets deleted
+    }
+    // try {
+    // Generator.deleteRemoteRepository(model2GitHubName, gitHubOrganization, gitHubUser,
+    // gitHubPassword);
+    // } catch (GitHubException e) {
+    // e.printStackTrace();
+    // // that's ok, maybe some error / failure in previous tests caused this
+    // // catch this, to make sure that every other repository gets deleted
+    // }
+    try {
+      Generator.deleteRemoteRepository(model3GitHubName, gitHubOrganization, gitHubUser,
+          gitHubPassword);
+    } catch (GitHubException e) {
+      e.printStackTrace();
+      // that's ok, maybe some error / failure in previous tests caused this
+      // catch this, to make sure that every other repository gets deleted
+    }
     node.shutDown();
     node = null;
     LocalNode.reset();

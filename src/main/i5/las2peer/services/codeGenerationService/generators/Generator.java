@@ -381,9 +381,7 @@ public abstract class Generator {
       String authString = gitHubUser + ":" + gitHubPassword;
       byte[] authEncBytes = Base64.getEncoder().encode(authString.getBytes());
       String authStringEnc = new String(authEncBytes);
-
       URL url = new URL("https://api.github.com/repos/" + gitHubOrganization + "/" + name);
-      System.out.println(url.toString());
       HttpURLConnection connection = (HttpURLConnection) url.openConnection();
       connection.setRequestMethod("DELETE");
       connection.setUseCaches(false);
@@ -400,11 +398,11 @@ public abstract class Generator {
         reader.close();
         throw new GitHubException(message);
       }
+
     } catch (Exception e) {
       e.printStackTrace();
       throw new GitHubException(e.getMessage());
     }
   }
-
 
 }
