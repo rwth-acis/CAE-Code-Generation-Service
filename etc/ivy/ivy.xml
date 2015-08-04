@@ -9,8 +9,7 @@
       <dependency org="i5" name="cae-simple-model-representation" rev="0.1"/>
       <dependency org="junit" name="junit" rev="4.11"/>
       <dependency org="org.eclipse.jgit" name="org.eclipse.jgit" rev="4.0.1.201506240215-r"/>
-  		<dependency org="org.apache.commons" name="commons-pool2" rev="2.2"/>
-  		<dependency org="org.apache.commons" name="commons-dbcp2" rev="2.0"/>
+      <dependency org="org.slf4j" name="slf4j-nop" rev="1.7.12"/>
   		<dependency org="com.googlecode.json-simple" name="json-simple" rev="1.1.1"/>
     </dependencies>
 </ivy-module>
