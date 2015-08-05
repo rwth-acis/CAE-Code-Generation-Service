@@ -10,6 +10,7 @@ import i5.las2peer.services.codeGenerationService.models.exception.ModelParseExc
  *
  */
 public class HttpPayload {
+
   /**
    * 
    * Represents the four different payload types an {@link HttpPayload} can have.

@@ -16,7 +16,7 @@ import i5.las2peer.services.codeGenerationService.models.exception.ModelParseExc
  * 
  */
 public class FrontendComponent {
-  private String widgetId;
+  private String widgetModelId;
   private String name;
   private String widgetName;
   private float version;
@@ -26,6 +26,8 @@ public class FrontendComponent {
   private int widgetWidth;
   private int widgetHeight;
   private Map<String, HtmlElement> htmlElements;
+  private Map<String, Function> functions;
+
 
   /**
    * 
@@ -38,16 +40,22 @@ public class FrontendComponent {
    */
   public FrontendComponent(SimpleModel model) throws ModelParseException {
     this.htmlElements = new HashMap<String, HtmlElement>();
-    this.name = model.getName();
+    this.functions = new HashMap<String, Function>();
+
     // used to find (possible) duplicate (HTML) ids and report them
     ArrayList<String> ids = new ArrayList<String>();
+    // used to first parse all nodes and later add them to their corresponding "parent objects"
+    HashMap<String, Event> tempEvents = new HashMap<String, Event>();
+
+    this.name = model.getName();
+
     // metadata of model (currently only version)
     for (int attributeIndex = 0; attributeIndex < model.getAttributes().size(); attributeIndex++) {
       if (model.getAttributes().get(attributeIndex).getName().equals("version")) {
         try {
           this.setVersion(Float.parseFloat(model.getAttributes().get(attributeIndex).getValue()));
         } catch (NumberFormatException e) {
-          throw new ModelParseException("Frontend Component version is not a number!");
+          throw new ModelParseException("FrontendComponent version is not a number!");
         }
       }
     }
@@ -58,10 +66,10 @@ public class FrontendComponent {
       ArrayList<SimpleEntityAttribute> nodeAttributes = node.getAttributes();
       switch (node.getType()) {
         case "Widget":
-          if (this.widgetId == null) {
-            this.widgetId = node.getId();
+          if (this.widgetModelId == null) {
+            this.widgetModelId = node.getId();
           } else {
-            throw new ModelParseException("More than one Widget in frontend component model");
+            throw new ModelParseException("More than one Widget in FrontendComponent model");
           }
           for (int attributeIndex = 0; attributeIndex < nodeAttributes.size(); attributeIndex++) {
             SimpleEntityAttribute attribute = nodeAttributes.get(attributeIndex);
@@ -94,7 +102,7 @@ public class FrontendComponent {
                 }
               default:
                 throw new ModelParseException(
-                    "Unknown attribute typ of Widget: " + attribute.getName());
+                    "Unknown attribute type of Widget: " + attribute.getName());
             }
           }
           break;
@@ -106,20 +114,29 @@ public class FrontendComponent {
           }
           ids.add(element.getId());
           break;
+        case "Event":
+          Event event = new Event(node);
+          tempEvents.put(node.getId(), event);
+          break;
+        case "Function":
+          Function function = new Function(node);
+          this.functions.put(node.getId(), function);
+          break;
         default:
           throw new ModelParseException("Unknown node type: " + node.getType());
       }
     }
+    // TODO: Add events to html elements
   }
 
 
-  public String getWidgetId() {
-    return widgetId;
+  public String getWidgetModelId() {
+    return widgetModelId;
   }
 
 
-  public void setWidgetId(String widgetId) {
-    this.widgetId = widgetId;
+  public void setWidgetModelId(String widgetId) {
+    this.widgetModelId = widgetId;
   }
 
 
@@ -200,6 +217,26 @@ public class FrontendComponent {
 
   public void setWidgetHeight(int widgetHeight) {
     this.widgetHeight = widgetHeight;
+  }
+
+
+  public Map<String, HtmlElement> getHtmlElements() {
+    return this.htmlElements;
+  }
+
+
+  public void setHtmlElements(Map<String, HtmlElement> htmlElements) {
+    this.htmlElements = htmlElements;
+  }
+
+
+  public Map<String, Function> getFunctions() {
+    return this.functions;
+  }
+
+
+  public void setFunctions(Map<String, Function> functions) {
+    this.functions = functions;
   }
 
 }
