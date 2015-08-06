@@ -6,12 +6,14 @@ import i5.cae.simpleModel.SimpleEntityAttribute;
 import i5.cae.simpleModel.node.SimpleNode;
 import i5.las2peer.services.codeGenerationService.models.exception.ModelParseException;
 
+
 /**
  * 
  * HtmlElement data class. Represents an HTML Element, which is part of a frontend component model.
  *
  */
 public class HtmlElement {
+
 
   /**
    * 
@@ -27,6 +29,7 @@ public class HtmlElement {
   private ElementType type;
   private boolean staticElement;
   private ArrayList<Event> events = new ArrayList<Event>();
+
 
   /**
    *
