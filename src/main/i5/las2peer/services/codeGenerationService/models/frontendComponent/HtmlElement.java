@@ -21,7 +21,7 @@ public class HtmlElement {
    * 
    */
   public enum ElementType {
-    input, table, br, button, p, div, CUSTOM
+    input, table, br, button, p, div, textarea, CUSTOM
   }
 
   private String modelId;
@@ -67,6 +67,9 @@ public class HtmlElement {
               break;
             case "div":
               this.type = ElementType.div;
+              break;
+            case "textarea":
+              this.type = ElementType.textarea;
               break;
             case "CUSTOM":
               this.type = ElementType.CUSTOM;

@@ -27,6 +27,7 @@ public class FrontendComponent {
   private int widgetHeight;
   private Map<String, HtmlElement> htmlElements;
   private Map<String, Function> functions;
+  private Map<String, InputParameter> parameters;
 
 
   /**
@@ -122,6 +123,9 @@ public class FrontendComponent {
           Function function = new Function(node);
           this.functions.put(node.getId(), function);
           break;
+        case "Input Parameter":
+          InputParameter parameter = new InputParameter(node);
+          this.parameters.put(node.getId(), parameter);
         default:
           throw new ModelParseException("Unknown node type: " + node.getType());
       }
