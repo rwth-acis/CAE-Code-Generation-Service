@@ -25,6 +25,7 @@ public class FrontendComponent {
   private String widgetDeveloperMail;
   private int widgetWidth;
   private int widgetHeight;
+  private String microserviceAddress;
   private HashMap<String, HtmlElement> htmlElements;
   private HashMap<String, Function> functions;
 
@@ -106,6 +107,9 @@ public class FrontendComponent {
                 } catch (NumberFormatException e) {
                   throw new ModelParseException("Widget width is not a number!");
                 }
+              case "microserviceAddress":
+                this.microserviceAddress = attribute.getValue();
+                break;
               default:
                 throw new ModelParseException(
                     "Unknown attribute type of Widget: " + attribute.getName());
@@ -259,6 +263,16 @@ public class FrontendComponent {
 
   public void setFunctions(HashMap<String, Function> functions) {
     this.functions = functions;
+  }
+
+
+  public String getMicroserviceAddress() {
+    return microserviceAddress;
+  }
+
+
+  public void setMicroserviceAddress(String microserviceAddress) {
+    this.microserviceAddress = microserviceAddress;
   }
 
 }
