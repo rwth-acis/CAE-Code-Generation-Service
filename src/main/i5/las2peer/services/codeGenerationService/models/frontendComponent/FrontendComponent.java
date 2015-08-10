@@ -25,10 +25,8 @@ public class FrontendComponent {
   private String widgetDeveloperMail;
   private int widgetWidth;
   private int widgetHeight;
-  private Map<String, HtmlElement> htmlElements;
-  private Map<String, Function> functions;
-  private Map<String, InputParameter> parameters;
-
+  private HashMap<String, HtmlElement> htmlElements;
+  private HashMap<String, Function> functions;
 
   /**
    * 
@@ -43,10 +41,17 @@ public class FrontendComponent {
     this.htmlElements = new HashMap<String, HtmlElement>();
     this.functions = new HashMap<String, Function>();
 
+    // some helper fields to check model for correctness
     // used to find (possible) duplicate (HTML) ids and report them
-    ArrayList<String> ids = new ArrayList<String>();
+    ArrayList<String> tempIds = new ArrayList<String>();
     // used to first parse all nodes and later add them to their corresponding "parent objects"
     HashMap<String, Event> tempEvents = new HashMap<String, Event>();
+    HashMap<String, InputParameter> tempParameters = new HashMap<String, InputParameter>();
+    HashMap<String, IWCResponse> tempIwcResponses = new HashMap<String, IWCResponse>();
+    HashMap<String, IWCCall> tempIwcCalls = new HashMap<String, IWCCall>();
+    HashMap<String, MicroserviceCall> tempMicroserviceCalls =
+        new HashMap<String, MicroserviceCall>();
+
 
     this.name = model.getName();
 
@@ -110,10 +115,10 @@ public class FrontendComponent {
         case "HTML Element":
           HtmlElement element = new HtmlElement(node);
           this.htmlElements.put(node.getId(), element);
-          if (ids.contains(element.getId())) {
+          if (tempIds.contains(element.getId())) {
             throw new ModelParseException("Duplicate id found: " + node.getId());
           }
-          ids.add(element.getId());
+          tempIds.add(element.getId());
           break;
         case "Event":
           Event event = new Event(node);
@@ -125,12 +130,25 @@ public class FrontendComponent {
           break;
         case "Input Parameter":
           InputParameter parameter = new InputParameter(node);
-          this.parameters.put(node.getId(), parameter);
+          tempParameters.put(node.getId(), parameter);
+          break;
+        case "IWC Response":
+          IWCResponse response = new IWCResponse(node);
+          tempIwcResponses.put(node.getId(), response);
+          break;
+        case "IWC Call":
+          IWCCall call = new IWCCall(node);
+          tempIwcCalls.put(node.getId(), call);
+          break;
+        case "Microservice Call":
+          MicroserviceCall microserviceCall = new MicroserviceCall(node);
+          tempMicroserviceCalls.put(node.getId(), microserviceCall);
+          break;
         default:
           throw new ModelParseException("Unknown node type: " + node.getType());
       }
     }
-    // TODO: Add events to html elements
+    // TODO: Edges
   }
 
 
@@ -229,7 +247,7 @@ public class FrontendComponent {
   }
 
 
-  public void setHtmlElements(Map<String, HtmlElement> htmlElements) {
+  public void setHtmlElements(HashMap<String, HtmlElement> htmlElements) {
     this.htmlElements = htmlElements;
   }
 
@@ -239,7 +257,7 @@ public class FrontendComponent {
   }
 
 
-  public void setFunctions(Map<String, Function> functions) {
+  public void setFunctions(HashMap<String, Function> functions) {
     this.functions = functions;
   }
 

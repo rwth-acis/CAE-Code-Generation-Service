@@ -28,6 +28,7 @@ public class HtmlElement {
   private String id;
   private ElementType type;
   private boolean staticElement;
+  private boolean collaborativeElement;
   private ArrayList<Event> events = new ArrayList<Event>();
 
 
@@ -80,6 +81,9 @@ public class HtmlElement {
         case "static":
           this.staticElement = Boolean.parseBoolean(attribute.getValue());
           break;
+        case "collaborative":
+          this.collaborativeElement = Boolean.parseBoolean(attribute.getValue());
+          break;
         default:
           throw new ModelParseException("Unknown HtmlElement attribute: " + attribute.getName());
       }
@@ -114,6 +118,11 @@ public class HtmlElement {
 
   public void addEvent(Event event) {
     this.events.add(event);
+  }
+
+
+  public boolean isCollaborativeElement() {
+    return collaborativeElement;
   }
 
 }
