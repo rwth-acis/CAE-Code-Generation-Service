@@ -6,6 +6,7 @@ import java.util.Map;
 
 import i5.cae.simpleModel.SimpleEntityAttribute;
 import i5.cae.simpleModel.SimpleModel;
+import i5.cae.simpleModel.edge.SimpleEdge;
 import i5.cae.simpleModel.node.SimpleNode;
 import i5.las2peer.services.codeGenerationService.models.exception.ModelParseException;
 
@@ -152,7 +153,38 @@ public class FrontendComponent {
           throw new ModelParseException("Unknown node type: " + node.getType());
       }
     }
-    // TODO: Edges
+
+    // edges
+    ArrayList<SimpleEdge> edges = model.getEdges();
+    for (int edgeIndex = 0; edgeIndex < edges.size(); edgeIndex++) {
+      String currentEdgeSource = edges.get(edgeIndex).getSourceNode();
+      String currentEdgeTarget = edges.get(edgeIndex).getTargetNode();
+      String currentEdgeType = edges.get(edgeIndex).getType();
+      switch (currentEdgeType) {
+        case "Widget to HTML Element":
+          break;
+        case "Element Update":
+          break;
+        case "Element Creation":
+          break;
+        case "HTML Element to Event":
+          break;
+        case "Parameter Connection":
+          break;
+        case "Initiates":
+          break;
+        case "Waits for":
+          break;
+        case "Event to Function Call":
+          break;
+        case "Function To Microservice Call":
+          break;
+        case "Widget to Function":
+          break;
+        default:
+          throw new ModelParseException("Unknown frontend component edge type: " + currentEdgeType);
+      }
+    }
   }
 
 
