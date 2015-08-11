@@ -334,8 +334,8 @@ public abstract class Generator {
 
   /**
    * 
-   * Pushes a local repository to GitHub. This method only works with repositories previously
-   * created by {@link #generateNewRepository}.
+   * Pushes a local repository to the "master" branch on GitHub. This method only works with
+   * repositories previously created by {@link #generateNewRepository}.
    * 
    * @param repository the {@link org.eclipse.jgit.lib.Repository} to be pushed to GitHub
    * @param gitHubUser the CAE user
@@ -348,11 +348,32 @@ public abstract class Generator {
    */
   public static Repository pushToRemoteRepository(Repository repository, String gitHubUser,
       String gitHubPassword) throws GitHubException {
+    return pushToRemoteRepository(repository, gitHubUser, gitHubPassword, "master");
+  }
+
+
+  /**
+   * 
+   * Pushes a local repository to GitHub. This method only works with repositories previously
+   * created by {@link #generateNewRepository}.
+   * 
+   * @param repository the {@link org.eclipse.jgit.lib.Repository} to be pushed to GitHub
+   * @param gitHubUser the CAE user
+   * @param gitHubPassword the password of the CAE user
+   * @param branchName the name of the branch that should be pushed to
+   * 
+   * @return the {@link org.eclipse.jgit.lib.Repository} that was pushed
+   * 
+   * @throws GitHubException if anything goes wrong during the push command
+   * 
+   */
+  public static Repository pushToRemoteRepository(Repository repository, String gitHubUser,
+      String gitHubPassword, String branchName) throws GitHubException {
     CredentialsProvider credentialsProvider =
         new UsernamePasswordCredentialsProvider(gitHubUser, gitHubPassword);
     try {
       // the "setRemote" parameter name is set in the generateNewRepository method
-      RefSpec spec = new RefSpec("refs/heads/master:refs/heads/master");
+      RefSpec spec = new RefSpec("refs/heads/master:refs/heads/" + branchName);
       Git.wrap(repository).push().setRemote("GitHub").setCredentialsProvider(credentialsProvider)
           .setRefSpecs(spec).call();
     } catch (Exception e) {

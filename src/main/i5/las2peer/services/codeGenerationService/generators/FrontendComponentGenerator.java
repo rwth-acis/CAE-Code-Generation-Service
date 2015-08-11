@@ -1,5 +1,9 @@
 package i5.las2peer.services.codeGenerationService.generators;
 
+import java.awt.image.BufferedImage;
+
+import javax.imageio.ImageIO;
+
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.ObjectLoader;
@@ -50,6 +54,9 @@ public class FrontendComponentGenerator extends Generator {
     String applicationScript = null;
     String las2peerWidgetLibrary = null;
     String style = null;
+    String readme = null;
+    BufferedImage logo = null;
+
     try {
       PersonIdent caeUser = new PersonIdent(gitHubUser, gitHubUserMail);
       String repositoryName = "frontendComponent-" + frontendComponent.getName().replace(" ", "-");
@@ -78,6 +85,12 @@ public class FrontendComponentGenerator extends Generator {
             case "style.css":
               style = new String(loader.getBytes(), "UTF-8");
               break;
+            case "README.md":
+              readme = new String(loader.getBytes(), "UTF-8");
+              break;
+            case "logo_services.png":
+              logo = ImageIO.read(loader.openStream());
+              break;
           }
         }
       } catch (Exception e) {
@@ -93,6 +106,11 @@ public class FrontendComponentGenerator extends Generator {
           "las2peerWidgetLibrary.js", las2peerWidgetLibrary);
       frontendComponentRepository =
           createTextFileInRepository(frontendComponentRepository, "css/", "style.css", style);
+      frontendComponentRepository =
+          createTextFileInRepository(frontendComponentRepository, "", "README.md", readme);
+      frontendComponentRepository =
+          createImageFileInRepository(frontendComponentRepository, "img/", "logo.png", logo);
+
       // commit files
       try {
         Git.wrap(frontendComponentRepository).commit()
@@ -103,9 +121,9 @@ public class FrontendComponentGenerator extends Generator {
         throw new GitHubException(e.getMessage());
       }
 
-      // push (local) repository content to GitHub repository
+      // push (local) repository content to GitHub repository "gh-pages" branch
       try {
-        pushToRemoteRepository(frontendComponentRepository, gitHubUser, gitHubPassword);
+        pushToRemoteRepository(frontendComponentRepository, gitHubUser, gitHubPassword, "gh-pages");
       } catch (Exception e) {
         e.printStackTrace();
         throw new GitHubException(e.getMessage());

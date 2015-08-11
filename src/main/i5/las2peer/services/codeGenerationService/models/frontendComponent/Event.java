@@ -70,6 +70,7 @@ public class Event {
     return calledFunctionId;
   }
 
+
   /**
    * 
    * Sets the called function id.
