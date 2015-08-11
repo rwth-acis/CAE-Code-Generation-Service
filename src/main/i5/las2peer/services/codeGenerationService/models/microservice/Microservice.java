@@ -204,7 +204,7 @@ public class Microservice {
           tempHttpResponses.remove(currentEdgeTarget);
           break;
         default:
-          throw new ModelParseException("Unknown edge type: " + currentEdgeType);
+          throw new ModelParseException("Unknown microservice edge type: " + currentEdgeType);
       }
     }
 

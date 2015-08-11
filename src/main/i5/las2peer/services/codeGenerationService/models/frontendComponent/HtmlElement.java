@@ -6,6 +6,7 @@ import i5.cae.simpleModel.SimpleEntityAttribute;
 import i5.cae.simpleModel.node.SimpleNode;
 import i5.las2peer.services.codeGenerationService.models.exception.ModelParseException;
 
+
 /**
  * 
  * HtmlElement data class. Represents an HTML Element, which is part of a frontend component model.
@@ -13,20 +14,23 @@ import i5.las2peer.services.codeGenerationService.models.exception.ModelParseExc
  */
 public class HtmlElement {
 
+
   /**
    * 
    * Represents the different element types an {@link HtmlElement} can have.
    * 
    */
   public enum ElementType {
-    input, table, br, button, p, div, CUSTOM
+    input, table, br, button, p, div, textarea, CUSTOM
   }
 
   private String modelId;
   private String id;
   private ElementType type;
   private boolean staticElement;
+  private boolean collaborativeElement;
   private ArrayList<Event> events = new ArrayList<Event>();
+
 
   /**
    *
@@ -65,6 +69,9 @@ public class HtmlElement {
             case "div":
               this.type = ElementType.div;
               break;
+            case "textarea":
+              this.type = ElementType.textarea;
+              break;
             case "CUSTOM":
               this.type = ElementType.CUSTOM;
               break;
@@ -73,6 +80,9 @@ public class HtmlElement {
           }
         case "static":
           this.staticElement = Boolean.parseBoolean(attribute.getValue());
+          break;
+        case "collaborative":
+          this.collaborativeElement = Boolean.parseBoolean(attribute.getValue());
           break;
         default:
           throw new ModelParseException("Unknown HtmlElement attribute: " + attribute.getName());
@@ -106,6 +116,18 @@ public class HtmlElement {
   }
 
 
+  public boolean isCollaborativeElement() {
+    return collaborativeElement;
+  }
+
+
+  /**
+   * 
+   * Adds an {@link Event} to the HtmlElement.
+   * 
+   * @param event an {@link Event}
+   * 
+   */
   public void addEvent(Event event) {
     this.events.add(event);
   }
