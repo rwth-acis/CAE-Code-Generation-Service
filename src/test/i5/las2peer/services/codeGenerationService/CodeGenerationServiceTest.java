@@ -193,4 +193,28 @@ public class CodeGenerationServiceTest {
     }
   }
 
+
+  /**
+   * 
+   * Posts a new model to the service and then tries to delete it.
+   * 
+   */
+  @Test
+  public void testDeleteModel() {
+    Serializable[] parameters = {(Serializable) model2};
+    try {
+      String returnMessage = (String) node.invokeLocally(testService.getId(),
+          "i5.las2peer.services.codeGenerationService.CodeGenerationService", "createFromModel",
+          parameters);
+      assertEquals("done", returnMessage);
+      returnMessage = (String) node.invokeLocally(testService.getId(),
+          "i5.las2peer.services.codeGenerationService.CodeGenerationService",
+          "deleteRepositoryOfModel", parameters);
+      assertEquals("done", returnMessage);
+    } catch (Exception e) {
+      e.printStackTrace();
+      fail(e.getMessage());
+    }
+  }
+
 }
