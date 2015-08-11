@@ -121,7 +121,6 @@ public class CodeGenerationServiceTest {
   @AfterClass
   public static void shutDownServer() throws Exception {
     String model1GitHubName = "microservice-" + model1.getName().replace(" ", "-");
-    @SuppressWarnings("unused")
     String model2GitHubName = "microservice-" + model2.getName().replace(" ", "-");
     String model3GitHubName = "frontendComponent-" + model3.getName().replace(" ", "-");
     try {
@@ -132,14 +131,13 @@ public class CodeGenerationServiceTest {
       // that's ok, maybe some error / failure in previous tests caused this
       // catch this, to make sure that every other repository gets deleted
     }
-    // try {
-    // Generator.deleteRemoteRepository(model2GitHubName, gitHubOrganization, gitHubUser,
-    // gitHubPassword);
-    // } catch (GitHubException e) {
-    // e.printStackTrace();
-    // // that's ok, maybe some error / failure in previous tests caused this
-    // // catch this, to make sure that every other repository gets deleted
-    // }
+    try {
+      Generator.deleteRemoteRepository(model2GitHubName, gitHubOrganization, gitHubUser,
+          gitHubPassword);
+    } catch (GitHubException e) {
+      e.printStackTrace();
+      // that's ok, model should not have been there if everything was executed correctly
+    }
     try {
       Generator.deleteRemoteRepository(model3GitHubName, gitHubOrganization, gitHubUser,
           gitHubPassword);
@@ -210,6 +208,30 @@ public class CodeGenerationServiceTest {
       returnMessage = (String) node.invokeLocally(testService.getId(),
           "i5.las2peer.services.codeGenerationService.CodeGenerationService",
           "deleteRepositoryOfModel", parameters);
+      assertEquals("done", returnMessage);
+    } catch (Exception e) {
+      e.printStackTrace();
+      fail(e.getMessage());
+    }
+  }
+
+
+  /**
+   * 
+   * Posts a new model to the service and then tries to update it (with the same model).
+   * 
+   */
+  @Test
+  public void testUpdate() {
+    Serializable[] parameters = {(Serializable) model2};
+    try {
+      String returnMessage = (String) node.invokeLocally(testService.getId(),
+          "i5.las2peer.services.codeGenerationService.CodeGenerationService", "createFromModel",
+          parameters);
+      assertEquals("done", returnMessage);
+      returnMessage = (String) node.invokeLocally(testService.getId(),
+          "i5.las2peer.services.codeGenerationService.CodeGenerationService",
+          "updateRepositoryOfModel", parameters);
       assertEquals("done", returnMessage);
     } catch (Exception e) {
       e.printStackTrace();

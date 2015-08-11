@@ -114,8 +114,8 @@ public class CodeGenerationService extends Service {
   /**
    * 
    * Deletes a model's repository from GitHub. Please note, that in this case, it is not checked for
-   * correctness of the model, only the name is extracted and then the repository gets deleted
-   * according to it.
+   * correctness of the model, only the name and type are extracted and then the repository gets
+   * deleted according to it.
    * 
    * @param serializedModel a {@link i5.cae.simpleModel.SimpleModel} that contains the model
    * 
@@ -133,31 +133,34 @@ public class CodeGenerationService extends Service {
         try {
           switch (type) {
             case "microservice":
-              logMessage("deleteRepositoryOfModel: Deleting microservice now..");
+              logMessage("deleteRepositoryOfModel: Deleting microservice repository now..");
               modelName = "microservice-" + modelName.replace(" ", "-");
               Generator.deleteRemoteRepository(modelName, this.gitHubOrganization, this.gitHubUser,
                   this.gitHubPassword);
+              logMessage("deleteRepositoryOfModel: Deleted!");
               return "done";
             case "frontend-component":
-              logMessage("deleteRepositoryOfModel: Deleting frontend-component now..");
+              logMessage("deleteRepositoryOfModel: Deleting frontend-component repository now..");
               modelName = "frontendComponent-" + modelName.replace(" ", "-");
               Generator.deleteRemoteRepository(modelName, this.gitHubOrganization, this.gitHubUser,
                   this.gitHubPassword);
+              logMessage("deleteRepositoryOfModel: Deleted!");
               return "done";
             case "application":
-              logMessage("deleteRepositoryOfModel: Deleting application now..");
+              logMessage("deleteRepositoryOfModel: Deleting application repository now..");
               modelName = "application-" + modelName.replace(" ", "-");
               Generator.deleteRemoteRepository(modelName, this.gitHubOrganization, this.gitHubUser,
                   this.gitHubPassword);
+              logMessage("deleteRepositoryOfModel: Deleted!");
               return "done";
             default:
               return "Error: Model has to have an attribute 'type' that is either "
                   + "'microservice', 'frontend-component' or 'application'!";
           }
         } catch (GitHubException e) {
-          logError("createFromModel: GitHub access exception: " + e.getMessage());
+          logError("deleteRepositoryOfModel: GitHub access exception: " + e.getMessage());
           e.printStackTrace();
-          return "Error: Generating code failed because of failing GitHub access: "
+          return "Error: Deleting repository failed because of failing GitHub access: "
               + e.getMessage();
         }
       }
@@ -165,4 +168,75 @@ public class CodeGenerationService extends Service {
     return "Unknown Error!";
   }
 
+
+  /**
+   * 
+   * "Updates" an already existing repository with the new given model. Please note that the current
+   * implementation does not really perform an update, but just deletes the old repository and
+   * replaces it with the contents of the new model.
+   * 
+   * @param serializedModel a {@link i5.cae.simpleModel.SimpleModel} that contains the model
+   * 
+   * @return a string containing either the message "done" or, in case of an error, the error
+   *         message
+   * 
+   */
+  public String updateRepositoryOfModel(Serializable serializedModel) {
+    SimpleModel model = (SimpleModel) serializedModel;
+    String modelName = model.getName();
+    logMessage("updateRepositoryOfModel: Received model with name " + modelName);
+    for (int i = 0; i < model.getAttributes().size(); i++) {
+      if (model.getAttributes().get(i).getName().equals("type")) {
+        String type = model.getAttributes().get(i).getValue();
+        try {
+          switch (type) {
+            case "microservice":
+              logMessage("updateRepositoryOfModel: Checking microservice model now..");
+              // check first if model can be constructed
+              // (in case of an invalid model, keep the old repository)
+              new Microservice(model);
+              logMessage("updateRepositoryOfModel: Calling delete (old) repository method now..");
+              String deleteReturnMessage = deleteRepositoryOfModel(serializedModel);
+              if (!deleteReturnMessage.equals("done")) {
+                return deleteReturnMessage; // error happened
+              }
+              logMessage("updateRepositoryOfModel: Calling createFromModel now..");
+              return createFromModel(serializedModel);
+            case "frontend-component":
+              logMessage("updateRepositoryOfModel: Checking frontend-component model now..");
+              // check first if model can be constructed
+              // (in case of an invalid model, keep the old repository)
+              new FrontendComponent(model);
+              logMessage("updateRepositoryOfModel: Calling delete (old) repository method now..");
+              deleteReturnMessage = deleteRepositoryOfModel(serializedModel);
+              if (!deleteReturnMessage.equals("done")) {
+                return deleteReturnMessage; // error happened
+              }
+              logMessage("updateRepositoryOfModel: Calling createFromModel now..");
+              return createFromModel(serializedModel);
+            case "application":
+              logMessage("updateRepositoryOfModel: Checking application model now..");
+              // check first if model can be constructed
+              // (in case of an invalid model, keep the old repository)
+              new Application(model);
+              logMessage("updateRepositoryOfModel: Calling delete (old) repository method now..");
+              deleteReturnMessage = deleteRepositoryOfModel(serializedModel);
+              if (!deleteReturnMessage.equals("done")) {
+                return deleteReturnMessage; // error happened
+              }
+              logMessage("updateRepositoryOfModel: Calling createFromModel now..");
+              return createFromModel(serializedModel);
+            default:
+              return "Error: Model has to have an attribute 'type' that is either "
+                  + "'microservice', 'frontend-component' or 'application'!";
+          }
+        } catch (ModelParseException e) {
+          logError("updateRepositoryOfModel: Model Parsing exception: " + e.getMessage());
+          e.printStackTrace();
+          return "Error: Parsing model failed with " + e.getMessage();
+        }
+      }
+    }
+    return "Unknown Error!";
+  }
 }
