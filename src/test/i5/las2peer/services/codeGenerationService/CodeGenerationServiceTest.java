@@ -136,7 +136,8 @@ public class CodeGenerationServiceTest {
           gitHubPassword);
     } catch (GitHubException e) {
       e.printStackTrace();
-      // that's ok, model should not have been there if everything was executed correctly
+      // that's ok, maybe some error / failure in previous tests caused this
+      // catch this, to make sure that every other repository gets deleted
     }
     try {
       Generator.deleteRemoteRepository(model3GitHubName, gitHubOrganization, gitHubUser,
