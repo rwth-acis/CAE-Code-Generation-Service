@@ -24,7 +24,7 @@ public class Event {
 
   private String modelId;
   private EventCause eventCause;
-
+  private String calledFunctionId;
 
   /**
    *
@@ -63,6 +63,27 @@ public class Event {
 
   public EventCause getEventCause() {
     return eventCause;
+  }
+
+
+  public String getCalledFunctionId() {
+    return calledFunctionId;
+  }
+
+  /**
+   * 
+   * Sets the called function id.
+   * 
+   * @param functionId the SyncMeta id
+   * 
+   * @throws ModelParseException if an id was already set previously.
+   * 
+   */
+  public void setCalledFunctionId(String functionId) throws ModelParseException {
+    if (calledFunctionId != null) {
+      throw new ModelParseException("Event " + this.modelId + " already has a called function!");
+    }
+    this.calledFunctionId = functionId;
   }
 
 }

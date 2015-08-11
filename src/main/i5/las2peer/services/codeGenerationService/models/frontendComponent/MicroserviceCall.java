@@ -1,5 +1,7 @@
 package i5.las2peer.services.codeGenerationService.models.frontendComponent;
 
+import java.util.ArrayList;
+
 import i5.cae.simpleModel.SimpleEntityAttribute;
 import i5.cae.simpleModel.node.SimpleNode;
 import i5.las2peer.services.codeGenerationService.models.exception.ModelParseException;
@@ -19,6 +21,8 @@ public class MicroserviceCall {
   private boolean authorize;
   private String content;
   private MethodType methodType;
+  private ArrayList<InputParameter> inputParameters;
+
 
   /**
    *
@@ -30,6 +34,9 @@ public class MicroserviceCall {
    * 
    */
   public MicroserviceCall(SimpleNode node) throws ModelParseException {
+    // initialize list
+    this.inputParameters = new ArrayList<InputParameter>();
+
     this.modelId = node.getId();
     for (int nodeIndex = 0; nodeIndex < node.getAttributes().size(); nodeIndex++) {
       SimpleEntityAttribute attribute = node.getAttributes().get(nodeIndex);
@@ -71,27 +78,44 @@ public class MicroserviceCall {
 
 
   public String getModelId() {
-    return modelId;
+    return this.modelId;
   }
 
 
   public String getPath() {
-    return path;
+    return this.path;
   }
 
 
   public boolean isAuthorize() {
-    return authorize;
+    return this.authorize;
   }
 
 
   public String getContent() {
-    return content;
+    return this.content;
   }
 
 
   public MethodType getMethodType() {
-    return methodType;
+    return this.methodType;
+  }
+
+
+  public ArrayList<InputParameter> getInputParameters() {
+    return inputParameters;
+  }
+
+
+  /**
+   * 
+   * Adds an {@link InputParameter} to the input parameter list.
+   * 
+   * @param parameter an {@link InputParameter}
+   * 
+   */
+  public void addInputParameter(InputParameter parameter) {
+    this.inputParameters.add(parameter);
   }
 
 }

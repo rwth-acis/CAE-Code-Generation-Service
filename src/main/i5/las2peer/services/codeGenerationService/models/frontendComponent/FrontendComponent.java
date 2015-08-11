@@ -54,7 +54,6 @@ public class FrontendComponent {
     HashMap<String, MicroserviceCall> tempMicroserviceCalls =
         new HashMap<String, MicroserviceCall>();
 
-
     this.name = model.getName();
 
     // metadata of model (currently only version)
@@ -156,34 +155,146 @@ public class FrontendComponent {
 
     // edges
     ArrayList<SimpleEdge> edges = model.getEdges();
+    // helper variables to check for correct edges
+    int htmlElementCount = this.htmlElements.size();
+    int functionCount = this.functions.size();
     for (int edgeIndex = 0; edgeIndex < edges.size(); edgeIndex++) {
       String currentEdgeSource = edges.get(edgeIndex).getSourceNode();
       String currentEdgeTarget = edges.get(edgeIndex).getTargetNode();
       String currentEdgeType = edges.get(edgeIndex).getType();
       switch (currentEdgeType) {
         case "Widget to HTML Element":
+          if (!this.widgetModelId.equals(currentEdgeSource)
+              || !this.htmlElements.containsKey(currentEdgeTarget)) {
+            throw new ModelParseException("Wrong Widget to HTML edge!");
+          }
+          htmlElementCount--;
           break;
         case "Element Update":
+          if (!this.functions.containsKey(currentEdgeSource)
+              || !this.htmlElements.containsKey(currentEdgeTarget)) {
+            throw new ModelParseException("Wrong Element Update edge!");
+          }
+          this.functions.get(currentEdgeSource).addHtmlElementUpdates(currentEdgeTarget);
           break;
         case "Element Creation":
+          if (!this.functions.containsKey(currentEdgeSource)
+              || !this.htmlElements.containsKey(currentEdgeTarget)) {
+            throw new ModelParseException("Wrong Element Creation edge!");
+          }
+          this.functions.get(currentEdgeSource).addHtmlElementCreations(currentEdgeTarget);
           break;
         case "HTML Element to Event":
+          if (!this.htmlElements.containsKey(currentEdgeSource)
+              || !tempEvents.containsKey(currentEdgeTarget)) {
+            throw new ModelParseException("Wrong HTML Element to Event edge!");
+          }
+          this.htmlElements.get(currentEdgeSource).addEvent(tempEvents.get(currentEdgeTarget));
+          tempEvents.remove(currentEdgeTarget);
           break;
         case "Parameter Connection":
-          break;
-        case "Initiates":
+          // check if parameter is there
+          if (!tempParameters.containsKey(currentEdgeTarget)) {
+            throw new ModelParseException("Wrong Parameter Connection edge!");
+          }
+          // check for function connection
+          if (this.functions.containsKey(currentEdgeSource)) {
+            this.functions.get(currentEdgeSource)
+                .addInputParameter(tempParameters.get(currentEdgeTarget));
+          }
+          // if not, check for microservice connection
+          // first, check if call is still in tempMicroserviceCalls
+          else if (tempMicroserviceCalls.containsKey(currentEdgeSource)) {
+            tempMicroserviceCalls.get(currentEdgeSource)
+                .addInputParameter(tempParameters.get(currentEdgeTarget));
+            // if not, check if in list of a function
+          } else {
+            boolean found = false;
+            for (Function function : this.functions.values()) {
+              for (MicroserviceCall call : function.getMicroserviceCalls()) {
+                if (call.getModelId().equals(currentEdgeSource)) {
+                  call.addInputParameter(tempParameters.get(currentEdgeTarget));
+                  found = true;
+                }
+              }
+            }
+            // if not, the parameter connection is invalid
+            if (!found) {
+              throw new ModelParseException("Wrong Parameter Connection edge!");
+            }
+          }
+          tempParameters.remove(currentEdgeTarget);
           break;
         case "Waits for":
+          if (!this.functions.containsKey(currentEdgeSource)
+              || !tempIwcResponses.containsKey(currentEdgeTarget)) {
+            throw new ModelParseException("Wrong Waits for edge!");
+          }
+          this.functions.get(currentEdgeSource)
+              .addIwcResponse(tempIwcResponses.get(currentEdgeTarget));
+          tempIwcResponses.remove(currentEdgeTarget);
+          break;
+        case "Initiates":
+          if (!this.functions.containsKey(currentEdgeSource)
+              || !tempIwcCalls.containsKey(currentEdgeTarget)) {
+            throw new ModelParseException("Wrong Initiates edge!");
+          }
+          this.functions.get(currentEdgeSource).addIwcCall(tempIwcCalls.get(currentEdgeTarget));
+          tempIwcCalls.remove(currentEdgeTarget);
           break;
         case "Event to Function Call":
+
+          // check if function exists
+          if (!this.functions.containsKey(currentEdgeTarget)) {
+            throw new ModelParseException("Wrong Event to Function Call!");
+          }
+          // check if event is still in tempEvent list
+          if (tempEvents.containsKey(currentEdgeSource)) {
+            tempEvents.get(currentEdgeSource).setCalledFunctionId(currentEdgeTarget);
+            break;
+          } else {
+            boolean found = false;
+            // now we need to check already parsed events..
+            for (HtmlElement element : this.htmlElements.values()) {
+              for (Event event : element.getEvents()) {
+                if (event.getModelId().equals(currentEdgeSource)) {
+                  event.setCalledFunctionId(currentEdgeTarget);
+                  found = true;
+                }
+              }
+            }
+            if (!found) {
+              throw new ModelParseException("Wrong Event to Function Call!");
+            }
+          }
           break;
         case "Function To Microservice Call":
+          if (!this.functions.containsKey(currentEdgeSource)
+              || !tempMicroserviceCalls.containsKey(currentEdgeTarget)) {
+            throw new ModelParseException("Wrong Function To Microservice Call edge!");
+          }
+          this.functions.get(currentEdgeSource)
+              .addMicroserviceCall(tempMicroserviceCalls.get(currentEdgeTarget));
+          tempMicroserviceCalls.remove(currentEdgeTarget);
           break;
         case "Widget to Function":
+          if (!this.widgetModelId.equals(currentEdgeSource)
+              || !this.functions.containsKey(currentEdgeTarget)) {
+            throw new ModelParseException("Wrong Widget to Function edge!");
+          }
+          functionCount--;
           break;
         default:
           throw new ModelParseException("Unknown frontend component edge type: " + currentEdgeType);
       }
+    }
+    // only one widget allowed (checked previously), no multiple edges between two objects in
+    // SyncMeta -> element count must be zero now if all elements are connected to the widget
+    // also, all temp lists should be empty by now
+    if (htmlElementCount != 0 || functionCount != 0 || !tempEvents.isEmpty()
+        || !tempParameters.isEmpty() || !tempIwcResponses.isEmpty() || !tempIwcCalls.isEmpty()
+        || !tempMicroserviceCalls.isEmpty()) {
+      throw new ModelParseException("Model not fully connected!");
     }
   }
 

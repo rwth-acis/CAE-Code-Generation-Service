@@ -116,13 +116,20 @@ public class HtmlElement {
   }
 
 
-  public void addEvent(Event event) {
-    this.events.add(event);
+  public boolean isCollaborativeElement() {
+    return collaborativeElement;
   }
 
 
-  public boolean isCollaborativeElement() {
-    return collaborativeElement;
+  /**
+   * 
+   * Adds an {@link Event} to the HtmlElement.
+   * 
+   * @param event an {@link Event}
+   * 
+   */
+  public void addEvent(Event event) {
+    this.events.add(event);
   }
 
 }
