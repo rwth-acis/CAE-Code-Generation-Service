@@ -54,7 +54,7 @@ public class FrontendComponentGenerator extends Generator {
     String applicationScript = null;
     String las2peerWidgetLibrary = null;
     String style = null;
-    String readme = null;
+    String readMe = null;
     BufferedImage logo = null;
 
     try {
@@ -75,6 +75,17 @@ public class FrontendComponentGenerator extends Generator {
           switch (treeWalk.getNameString()) {
             case "widget.xml":
               widget = new String(loader.getBytes(), "UTF-8");
+              widget = widget.replace("$Widget_Title$", frontendComponent.getWidgetName());
+              widget =
+                  widget.replace("$Widget_Description$", frontendComponent.getWidgetDescription());
+              widget = widget.replace("$Widget_Developer_Name$",
+                  frontendComponent.getWidgetDeveloperName());
+              widget = widget.replace("$Widget_Developer_Mail$",
+                  frontendComponent.getWidgetDeveloperMail());
+              widget = widget.replace("$Widget_Width$", frontendComponent.getWidgetWidth() + "");
+              widget = widget.replace("$Widget_Height$", frontendComponent.getWidgetHeight() + "");
+              String widgetHome = "http://" + gitHubOrganization + ".github.io/" + repositoryName;
+              widget = widget.replace("$Widget_Home$", widgetHome);
               break;
             case "applicationScript.js":
               applicationScript = new String(loader.getBytes(), "UTF-8");
@@ -86,7 +97,10 @@ public class FrontendComponentGenerator extends Generator {
               style = new String(loader.getBytes(), "UTF-8");
               break;
             case "README.md":
-              readme = new String(loader.getBytes(), "UTF-8");
+              readMe = new String(loader.getBytes(), "UTF-8");
+              readMe = readMe.replace("$Repository_Name$", repositoryName);
+              readMe = readMe.replace("$Widget_Name$", frontendComponent.getName());
+              readMe = readMe.replace("$Organization_Name$", gitHubOrganization);
               break;
             case "logo_services.png":
               logo = ImageIO.read(loader.openStream());
@@ -107,7 +121,7 @@ public class FrontendComponentGenerator extends Generator {
       frontendComponentRepository =
           createTextFileInRepository(frontendComponentRepository, "css/", "style.css", style);
       frontendComponentRepository =
-          createTextFileInRepository(frontendComponentRepository, "", "README.md", readme);
+          createTextFileInRepository(frontendComponentRepository, "", "README.md", readMe);
       frontendComponentRepository =
           createImageFileInRepository(frontendComponentRepository, "img/", "logo.png", logo);
 
