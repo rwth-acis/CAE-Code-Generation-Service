@@ -86,9 +86,13 @@ public class FrontendComponentGenerator extends Generator {
               widget = widget.replace("$Widget_Height$", frontendComponent.getWidgetHeight() + "");
               String widgetHome = "http://" + gitHubOrganization + ".github.io/" + repositoryName;
               widget = widget.replace("$Widget_Home$", widgetHome);
+              widget = addHtmlElements(widget, frontendComponent);
               break;
             case "applicationScript.js":
               applicationScript = new String(loader.getBytes(), "UTF-8");
+              applicationScript = applicationScript.replace("$Microservice_Endpoint_Url$",
+                  frontendComponent.getMicroserviceAddress());
+              applicationScript = addFunctions(applicationScript, frontendComponent);
               break;
             case "las2peerWidgetLibrary.js":
               las2peerWidgetLibrary = new String(loader.getBytes(), "UTF-8");
@@ -148,7 +152,39 @@ public class FrontendComponentGenerator extends Generator {
       frontendComponentRepository.close();
       treeWalk.close();
     }
+  }
 
+
+  /**
+   * 
+   * Adds html elements according to a frontend component model to the passed widget (code).
+   * 
+   * @param widget the widget code as a string.
+   * @param frontendComponent a {@link FrontendComponent}
+   * 
+   * @return the widget code with the inserted html elements
+   * 
+   */
+  private static String addHtmlElements(String widget, FrontendComponent frontendComponent) {
+    // TODO
+    return widget;
+  }
+
+
+  /**
+   * 
+   * Adds functions to the passed application script code, according to a frontend component model.
+   * 
+   * @param applicationScript the application script source code
+   * @param frontendComponent a {@link FrontendComponent}
+   * 
+   * @return the application script source code with inserted functions
+   * 
+   */
+  private static String addFunctions(String applicationScript,
+      FrontendComponent frontendComponent) {
+    // TODO
+    return applicationScript;
   }
 
 }
