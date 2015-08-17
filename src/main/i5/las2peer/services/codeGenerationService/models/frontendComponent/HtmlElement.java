@@ -78,6 +78,7 @@ public class HtmlElement {
             default:
               throw new ModelParseException("Unknown HtmlElement type: " + attribute.getValue());
           }
+          break;
         case "static":
           this.staticElement = Boolean.parseBoolean(attribute.getValue());
           break;
