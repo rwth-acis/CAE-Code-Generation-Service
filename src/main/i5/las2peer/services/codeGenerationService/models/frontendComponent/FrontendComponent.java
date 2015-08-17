@@ -30,6 +30,7 @@ public class FrontendComponent {
   private HashMap<String, HtmlElement> htmlElements;
   private HashMap<String, Function> functions;
 
+
   /**
    * 
    * Creates a new frontend component.
@@ -120,7 +121,7 @@ public class FrontendComponent {
           HtmlElement element = new HtmlElement(node);
           this.htmlElements.put(node.getId(), element);
           if (tempIds.contains(element.getId())) {
-            throw new ModelParseException("Duplicate id found: " + node.getId());
+            throw new ModelParseException("Duplicate id found: " + element.getId());
           }
           tempIds.add(element.getId());
           break;

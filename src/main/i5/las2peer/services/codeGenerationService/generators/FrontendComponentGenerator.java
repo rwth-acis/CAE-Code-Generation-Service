@@ -1,6 +1,9 @@
 package i5.las2peer.services.codeGenerationService.generators;
 
 import java.awt.image.BufferedImage;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 
 import javax.imageio.ImageIO;
 
@@ -15,6 +18,8 @@ import org.eclipse.jgit.treewalk.filter.PathFilter;
 
 import i5.las2peer.services.codeGenerationService.generators.exception.GitHubException;
 import i5.las2peer.services.codeGenerationService.models.frontendComponent.FrontendComponent;
+import i5.las2peer.services.codeGenerationService.models.frontendComponent.Function;
+import i5.las2peer.services.codeGenerationService.models.frontendComponent.HtmlElement;
 
 /**
  * 
@@ -56,6 +61,7 @@ public class FrontendComponentGenerator extends Generator {
     String style = null;
     String readMe = null;
     BufferedImage logo = null;
+    String htmlElementTemplate = null;
 
     try {
       PersonIdent caeUser = new PersonIdent(gitHubUser, gitHubUserMail);
@@ -86,13 +92,14 @@ public class FrontendComponentGenerator extends Generator {
               widget = widget.replace("$Widget_Height$", frontendComponent.getWidgetHeight() + "");
               String widgetHome = "http://" + gitHubOrganization + ".github.io/" + repositoryName;
               widget = widget.replace("$Widget_Home$", widgetHome);
-              widget = addHtmlElements(widget, frontendComponent);
+              break;
+            case "htmlElement.txt":
+              htmlElementTemplate = new String(loader.getBytes(), "UTF-8");
               break;
             case "applicationScript.js":
               applicationScript = new String(loader.getBytes(), "UTF-8");
               applicationScript = applicationScript.replace("$Microservice_Endpoint_Url$",
                   frontendComponent.getMicroserviceAddress());
-              applicationScript = addFunctions(applicationScript, frontendComponent);
               break;
             case "las2peerWidgetLibrary.js":
               las2peerWidgetLibrary = new String(loader.getBytes(), "UTF-8");
@@ -115,6 +122,12 @@ public class FrontendComponentGenerator extends Generator {
         e.printStackTrace();
         throw new GitHubException(e.getMessage());
       }
+
+      // add html elements to widget source code
+      widget = addHtmlElements(widget, htmlElementTemplate, frontendComponent);
+      // add functions to application script
+      applicationScript = addFunctions(applicationScript, frontendComponent);
+
       // add files to new repository
       frontendComponentRepository =
           createTextFileInRepository(frontendComponentRepository, "", "widget.xml", widget);
@@ -165,8 +178,85 @@ public class FrontendComponentGenerator extends Generator {
    * @return the widget code with the inserted html elements
    * 
    */
-  private static String addHtmlElements(String widget, FrontendComponent frontendComponent) {
-    // TODO
+  private static String addHtmlElements(String widget, String htmlElementTemplate,
+      FrontendComponent frontendComponent) {
+    Map<String, HtmlElement> htmlElementsToAdd = new HashMap<String, HtmlElement>();
+    // add all static elements
+    for (HtmlElement element : frontendComponent.getHtmlElements().values()) {
+      if (element.isStaticElement()) {
+        htmlElementsToAdd.put(element.getId(), element);
+      }
+    }
+    // now, get all "updated", but not "created" elements (since these are there "from the start")
+    ArrayList<String> idsToAdd = new ArrayList<String>();
+    ArrayList<String> htmlElementsCreated = new ArrayList<String>();
+    for (Function function : frontendComponent.getFunctions().values()) {
+      idsToAdd.addAll(function.getHtmlElementUpdates());
+      htmlElementsCreated.addAll(function.getHtmlElementCreations());
+    }
+    idsToAdd.removeAll(htmlElementsCreated);
+    for (String idToAdd : idsToAdd) {
+      htmlElementsToAdd.put(idToAdd, frontendComponent.getHtmlElements().get(idToAdd));
+    }
+    // now we got all elements that are there from the start on, so add them to the widget code
+    for (HtmlElement element : htmlElementsToAdd.values()) {
+      String elementCode = "";
+      switch (element.getType()) {
+        case CUSTOM:
+          elementCode = htmlElementTemplate;
+          elementCode = elementCode.replace("$Closing_Element$", "</$Element_Type$>");
+          elementCode = elementCode.replace("$Element_Type$", element.getType().toString());
+          elementCode = elementCode.replace("$Element_Id$", element.getId());
+          break;
+        case br:
+          elementCode = htmlElementTemplate;
+          elementCode = elementCode.replace("$Closing_Element$", "");
+          elementCode = elementCode.replace("$Element_Type$", element.getType().toString());
+          elementCode = elementCode.replace("$Element_Id$", element.getId());
+          break;
+        case button:
+          elementCode = htmlElementTemplate;
+          elementCode = elementCode.replace("$Closing_Element$", "</$Element_Type$>");
+          elementCode = elementCode.replace("$Element_Type$", element.getType().toString());
+          elementCode = elementCode.replace("$Element_Id$", element.getId());
+          break;
+        case div:
+          elementCode = htmlElementTemplate;
+          elementCode = elementCode.replace("$Closing_Element$", "</$Element_Type$>");
+          elementCode = elementCode.replace("$Element_Type$", element.getType().toString());
+          elementCode = elementCode.replace("$Element_Id$", element.getId());
+          break;
+        case input:
+          elementCode = htmlElementTemplate;
+          elementCode = elementCode.replace("$Closing_Element$", "</$Element_Type$>");
+          elementCode = elementCode.replace("$Element_Type$", element.getType().toString());
+          elementCode = elementCode.replace("$Element_Id$", element.getId());
+          break;
+        case p:
+          elementCode = htmlElementTemplate;
+          elementCode = elementCode.replace("$Closing_Element$", "</$Element_Type$>");
+          elementCode = elementCode.replace("$Element_Type$", element.getType().toString());
+          elementCode = elementCode.replace("$Element_Id$", element.getId());
+          break;
+        case table:
+          elementCode = htmlElementTemplate;
+          elementCode = elementCode.replace("$Closing_Element$", "</$Element_Type$>");
+          elementCode = elementCode.replace("$Element_Type$", element.getType().toString());
+          elementCode = elementCode.replace("$Element_Id$", element.getId());
+          break;
+        case textarea:
+          elementCode = htmlElementTemplate;
+          elementCode = elementCode.replace("$Closing_Element$", "</$Element_Type$>");
+          elementCode = elementCode.replace("$Element_Type$", element.getType().toString());
+          elementCode = elementCode.replace("$Element_Id$", element.getId());
+          break;
+        default:
+          break;
+      }
+      widget = widget.replace("$Main_Content$", elementCode);
+    }
+    // remove last placeholder
+    widget = widget.replace("$Main_Content$\n", "");
     return widget;
   }
 
@@ -183,7 +273,10 @@ public class FrontendComponentGenerator extends Generator {
    */
   private static String addFunctions(String applicationScript,
       FrontendComponent frontendComponent) {
-    // TODO
+    for (Function function : frontendComponent.getFunctions().values()) {
+      function.getHtmlElementCreations();
+      function.getHtmlElementUpdates();
+    }
     return applicationScript;
   }
 
