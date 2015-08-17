@@ -20,6 +20,10 @@ import i5.las2peer.services.codeGenerationService.generators.exception.GitHubExc
 import i5.las2peer.services.codeGenerationService.models.frontendComponent.FrontendComponent;
 import i5.las2peer.services.codeGenerationService.models.frontendComponent.Function;
 import i5.las2peer.services.codeGenerationService.models.frontendComponent.HtmlElement;
+import i5.las2peer.services.codeGenerationService.models.frontendComponent.IWCCall;
+import i5.las2peer.services.codeGenerationService.models.frontendComponent.IWCResponse;
+import i5.las2peer.services.codeGenerationService.models.frontendComponent.InputParameter;
+import i5.las2peer.services.codeGenerationService.models.frontendComponent.MicroserviceCall;
 
 /**
  * 
@@ -53,7 +57,6 @@ public class FrontendComponentGenerator extends Generator {
     TreeWalk treeWalk = null;
 
     // helper variables
-    // TODO
     // variables holding content to be modified and added to repository later
     String widget = null;
     String applicationScript = null;
@@ -62,6 +65,8 @@ public class FrontendComponentGenerator extends Generator {
     String readMe = null;
     BufferedImage logo = null;
     String htmlElementTemplate = null;
+    String functionTemplate = null;
+    String microserviceCallTemplate = null;
 
     try {
       PersonIdent caeUser = new PersonIdent(gitHubUser, gitHubUserMail);
@@ -93,13 +98,19 @@ public class FrontendComponentGenerator extends Generator {
               String widgetHome = "http://" + gitHubOrganization + ".github.io/" + repositoryName;
               widget = widget.replace("$Widget_Home$", widgetHome);
               break;
-            case "htmlElement.txt":
+            case "genericHtmlElement.txt":
               htmlElementTemplate = new String(loader.getBytes(), "UTF-8");
               break;
             case "applicationScript.js":
               applicationScript = new String(loader.getBytes(), "UTF-8");
               applicationScript = applicationScript.replace("$Microservice_Endpoint_Url$",
                   frontendComponent.getMicroserviceAddress());
+              break;
+            case "genericFunction.txt":
+              functionTemplate = new String(loader.getBytes(), "UTF-8");
+              break;
+            case "genericMicroserviceCall.txt":
+              microserviceCallTemplate = new String(loader.getBytes(), "UTF-8");
               break;
             case "las2peerWidgetLibrary.js":
               las2peerWidgetLibrary = new String(loader.getBytes(), "UTF-8");
@@ -126,7 +137,8 @@ public class FrontendComponentGenerator extends Generator {
       // add html elements to widget source code
       widget = addHtmlElements(widget, htmlElementTemplate, frontendComponent);
       // add functions to application script
-      applicationScript = addFunctions(applicationScript, frontendComponent);
+      applicationScript = addFunctions(applicationScript, functionTemplate,
+          microserviceCallTemplate, frontendComponent);
 
       // add files to new repository
       frontendComponentRepository =
@@ -172,7 +184,8 @@ public class FrontendComponentGenerator extends Generator {
    * 
    * Adds html elements according to a frontend component model to the passed widget (code).
    * 
-   * @param widget the widget code as a string.
+   * @param widget the widget code as a string
+   * @param htmlElementTemplate the html element template as a string
    * @param frontendComponent a {@link FrontendComponent}
    * 
    * @return the widget code with the inserted html elements
@@ -255,7 +268,7 @@ public class FrontendComponentGenerator extends Generator {
       }
       widget = widget.replace("$Main_Content$", elementCode);
     }
-    // remove last placeholder
+    // remove last element placeholder
     widget = widget.replace("$Main_Content$\n", "");
     return widget;
   }
@@ -266,17 +279,64 @@ public class FrontendComponentGenerator extends Generator {
    * Adds functions to the passed application script code, according to a frontend component model.
    * 
    * @param applicationScript the application script source code
+   * @param functionTemplate a template representing a generic function
+   * @param microserviceCallTemplate a template representing a generic microservice call
    * @param frontendComponent a {@link FrontendComponent}
    * 
    * @return the application script source code with inserted functions
    * 
    */
-  private static String addFunctions(String applicationScript,
-      FrontendComponent frontendComponent) {
+  private static String addFunctions(String applicationScript, String functionTemplate,
+      String microserviceCallTemplate, FrontendComponent frontendComponent) {
+    String functionCode = "";
+    String microserviceCallCode = "";
     for (Function function : frontendComponent.getFunctions().values()) {
-      function.getHtmlElementCreations();
-      function.getHtmlElementUpdates();
+      functionCode = functionTemplate;
+      functionCode = functionCode.replace("$Function_Name$", function.getName());
+
+      // treat special case when function does not have any input parameter
+      if (function.getInputParameters().isEmpty()) {
+        functionCode = functionCode.replace("$Function_Parameters$", "");
+      }
+      for (InputParameter parameter : function.getInputParameters()) {
+        functionCode = functionCode.replace("$Function_Parameters$",
+            parameter.getName() + ", $Function_Parameters$");
+      }
+      // remove last input parameter placeholder
+      functionCode = functionCode.replace(", $Function_Parameters$", "");
+
+      // check for return parameter (if there is one, else just remove placeholder)
+      if (!function.getReturnParameter().equals("")) {
+        functionCode = functionCode.replace("$Function_Body$",
+            "  var " + function.getReturnParameter() + " = null;\n$Function_Body$");
+        functionCode = functionCode.replace("$Function_Return_Parameter$",
+            "  return " + function.getReturnParameter() + ";");
+      } else {
+        functionCode = functionCode.replace("$Function_Return_Parameter$\n", "");
+      }
+
+      for (MicroserviceCall microserviceCall : function.getMicroserviceCalls()) {
+        microserviceCallCode = microserviceCallTemplate;
+        functionCode = functionCode.replace("$Function_Body$", microserviceCallCode);
+      }
+
+      for (String elementId : function.getHtmlElementCreations()) {
+      }
+
+      for (String elementId : function.getHtmlElementUpdates()) {
+      }
+
+      for (IWCCall call : function.getIwcCalls()) {
+      }
+
+      for (IWCResponse response : function.getIwcResponses()) {
+      }
+
+      // add function to application script
+      applicationScript = applicationScript.replace("$Functions$", functionCode);
     }
+    // remove last function placeholder
+    applicationScript = applicationScript.replace("$Functions$\n", "");
     return applicationScript;
   }
 
