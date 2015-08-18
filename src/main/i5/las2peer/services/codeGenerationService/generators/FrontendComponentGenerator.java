@@ -17,6 +17,7 @@ import org.eclipse.jgit.treewalk.TreeWalk;
 import org.eclipse.jgit.treewalk.filter.PathFilter;
 
 import i5.las2peer.services.codeGenerationService.generators.exception.GitHubException;
+import i5.las2peer.services.codeGenerationService.models.frontendComponent.Event;
 import i5.las2peer.services.codeGenerationService.models.frontendComponent.FrontendComponent;
 import i5.las2peer.services.codeGenerationService.models.frontendComponent.Function;
 import i5.las2peer.services.codeGenerationService.models.frontendComponent.HtmlElement;
@@ -67,6 +68,8 @@ public class FrontendComponentGenerator extends Generator {
     String htmlElementTemplate = null;
     String functionTemplate = null;
     String microserviceCallTemplate = null;
+    String iwcResponseTemplate = null;
+    String eventTemplate = null;
 
     try {
       PersonIdent caeUser = new PersonIdent(gitHubUser, gitHubUserMail);
@@ -101,6 +104,9 @@ public class FrontendComponentGenerator extends Generator {
             case "genericHtmlElement.txt":
               htmlElementTemplate = new String(loader.getBytes(), "UTF-8");
               break;
+            case "genericEvent.txt":
+              eventTemplate = new String(loader.getBytes(), "UTF-8");
+              break;
             case "applicationScript.js":
               applicationScript = new String(loader.getBytes(), "UTF-8");
               applicationScript = applicationScript.replace("$Microservice_Endpoint_Url$",
@@ -111,6 +117,9 @@ public class FrontendComponentGenerator extends Generator {
               break;
             case "genericMicroserviceCall.txt":
               microserviceCallTemplate = new String(loader.getBytes(), "UTF-8");
+              break;
+            case "genericIWCResponse.txt":
+              iwcResponseTemplate = new String(loader.getBytes(), "UTF-8");
               break;
             case "las2peerWidgetLibrary.js":
               las2peerWidgetLibrary = new String(loader.getBytes(), "UTF-8");
@@ -138,8 +147,10 @@ public class FrontendComponentGenerator extends Generator {
       widget = addHtmlElements(widget, htmlElementTemplate, frontendComponent);
       // add functions to application script
       applicationScript = addFunctions(applicationScript, functionTemplate,
-          microserviceCallTemplate, frontendComponent);
-
+          microserviceCallTemplate, iwcResponseTemplate, frontendComponent);
+      // add events to elements
+      applicationScript = addEvents(applicationScript, eventTemplate, frontendComponent);
+      applicationScript = removeRemainingPlaceholder(applicationScript);
       // add files to new repository
       frontendComponentRepository =
           createTextFileInRepository(frontendComponentRepository, "", "widget.xml", widget);
@@ -182,13 +193,13 @@ public class FrontendComponentGenerator extends Generator {
 
   /**
    * 
-   * Adds html elements according to a frontend component model to the passed widget (code).
+   * Adds HTML elements according to a frontend component model to the passed widget (code).
    * 
    * @param widget the widget code as a string
-   * @param htmlElementTemplate the html element template as a string
+   * @param htmlElementTemplate the HTML element template as a string
    * @param frontendComponent a {@link FrontendComponent}
    * 
-   * @return the widget code with the inserted html elements
+   * @return the widget code with the inserted HTML elements
    * 
    */
   private static String addHtmlElements(String widget, String htmlElementTemplate,
@@ -213,59 +224,7 @@ public class FrontendComponentGenerator extends Generator {
     }
     // now we got all elements that are there from the start on, so add them to the widget code
     for (HtmlElement element : htmlElementsToAdd.values()) {
-      String elementCode = "";
-      switch (element.getType()) {
-        case CUSTOM:
-          elementCode = htmlElementTemplate;
-          elementCode = elementCode.replace("$Closing_Element$", "</$Element_Type$>");
-          elementCode = elementCode.replace("$Element_Type$", element.getType().toString());
-          elementCode = elementCode.replace("$Element_Id$", element.getId());
-          break;
-        case br:
-          elementCode = htmlElementTemplate;
-          elementCode = elementCode.replace("$Closing_Element$", "");
-          elementCode = elementCode.replace("$Element_Type$", element.getType().toString());
-          elementCode = elementCode.replace("$Element_Id$", element.getId());
-          break;
-        case button:
-          elementCode = htmlElementTemplate;
-          elementCode = elementCode.replace("$Closing_Element$", "</$Element_Type$>");
-          elementCode = elementCode.replace("$Element_Type$", element.getType().toString());
-          elementCode = elementCode.replace("$Element_Id$", element.getId());
-          break;
-        case div:
-          elementCode = htmlElementTemplate;
-          elementCode = elementCode.replace("$Closing_Element$", "</$Element_Type$>");
-          elementCode = elementCode.replace("$Element_Type$", element.getType().toString());
-          elementCode = elementCode.replace("$Element_Id$", element.getId());
-          break;
-        case input:
-          elementCode = htmlElementTemplate;
-          elementCode = elementCode.replace("$Closing_Element$", "</$Element_Type$>");
-          elementCode = elementCode.replace("$Element_Type$", element.getType().toString());
-          elementCode = elementCode.replace("$Element_Id$", element.getId());
-          break;
-        case p:
-          elementCode = htmlElementTemplate;
-          elementCode = elementCode.replace("$Closing_Element$", "</$Element_Type$>");
-          elementCode = elementCode.replace("$Element_Type$", element.getType().toString());
-          elementCode = elementCode.replace("$Element_Id$", element.getId());
-          break;
-        case table:
-          elementCode = htmlElementTemplate;
-          elementCode = elementCode.replace("$Closing_Element$", "</$Element_Type$>");
-          elementCode = elementCode.replace("$Element_Type$", element.getType().toString());
-          elementCode = elementCode.replace("$Element_Id$", element.getId());
-          break;
-        case textarea:
-          elementCode = htmlElementTemplate;
-          elementCode = elementCode.replace("$Closing_Element$", "</$Element_Type$>");
-          elementCode = elementCode.replace("$Element_Type$", element.getType().toString());
-          elementCode = elementCode.replace("$Element_Id$", element.getId());
-          break;
-        default:
-          break;
-      }
+      String elementCode = createElementCode(element, htmlElementTemplate);
       widget = widget.replace("$Main_Content$", elementCode);
     }
     // remove last element placeholder
@@ -276,35 +235,120 @@ public class FrontendComponentGenerator extends Generator {
 
   /**
    * 
+   * Creates the code for an HTML element.
+   * 
+   * @param element the element
+   * @param htmlElementTemplate a template for an HTML element
+   * 
+   * @return the code for an HTML element
+   * 
+   */
+  private static String createElementCode(HtmlElement element, String htmlElementTemplate) {
+    String elementCode = htmlElementTemplate;
+    switch (element.getType()) {
+      case CUSTOM:
+        elementCode = htmlElementTemplate;
+        elementCode = elementCode.replace("$Closing_Element$", "</$Element_Type$>");
+        elementCode = elementCode.replace("$Element_Type$", element.getType().toString());
+        elementCode = elementCode.replace("$Element_Id$", element.getId());
+        break;
+      case br:
+        elementCode = htmlElementTemplate;
+        elementCode = elementCode.replace("$Closing_Element$", "");
+        elementCode = elementCode.replace("$Element_Type$", element.getType().toString());
+        elementCode = elementCode.replace("$Element_Id$", element.getId());
+        break;
+      case button:
+        elementCode = htmlElementTemplate;
+        elementCode = elementCode.replace("$Closing_Element$", "</$Element_Type$>");
+        elementCode = elementCode.replace("$Element_Type$", element.getType().toString());
+        elementCode = elementCode.replace("$Element_Id$", element.getId());
+        break;
+      case div:
+        elementCode = htmlElementTemplate;
+        elementCode = elementCode.replace("$Closing_Element$", "</$Element_Type$>");
+        elementCode = elementCode.replace("$Element_Type$", element.getType().toString());
+        elementCode = elementCode.replace("$Element_Id$", element.getId());
+        break;
+      case input:
+        elementCode = htmlElementTemplate;
+        elementCode = elementCode.replace("$Closing_Element$", "</$Element_Type$>");
+        elementCode = elementCode.replace("$Element_Type$", element.getType().toString());
+        elementCode = elementCode.replace("$Element_Id$", element.getId());
+        break;
+      case p:
+        elementCode = htmlElementTemplate;
+        elementCode = elementCode.replace("$Closing_Element$", "</$Element_Type$>");
+        elementCode = elementCode.replace("$Element_Type$", element.getType().toString());
+        elementCode = elementCode.replace("$Element_Id$", element.getId());
+        break;
+      case table:
+        elementCode = htmlElementTemplate;
+        elementCode = elementCode.replace("$Closing_Element$", "</$Element_Type$>");
+        elementCode = elementCode.replace("$Element_Type$", element.getType().toString());
+        elementCode = elementCode.replace("$Element_Id$", element.getId());
+        break;
+      case textarea:
+        elementCode = htmlElementTemplate;
+        elementCode = elementCode.replace("$Closing_Element$", "</$Element_Type$>");
+        elementCode = elementCode.replace("$Element_Type$", element.getType().toString());
+        elementCode = elementCode.replace("$Element_Id$", element.getId());
+        break;
+      default:
+        break;
+    }
+    return elementCode;
+  }
+
+
+  /**
+   * 
    * Adds functions to the passed application script code, according to a frontend component model.
    * 
    * @param applicationScript the application script source code
    * @param functionTemplate a template representing a generic function
    * @param microserviceCallTemplate a template representing a generic microservice call
+   * @param iwcResponseTemplate a template representing a generic IWC response (with function call)
    * @param frontendComponent a {@link FrontendComponent}
    * 
    * @return the application script source code with inserted functions
    * 
    */
   private static String addFunctions(String applicationScript, String functionTemplate,
-      String microserviceCallTemplate, FrontendComponent frontendComponent) {
+      String microserviceCallTemplate, String iwcResponseTemplate,
+      FrontendComponent frontendComponent) {
     String functionCode = "";
     String microserviceCallCode = "";
     for (Function function : frontendComponent.getFunctions().values()) {
+
+      // start with (potential) IWC response creation
+      for (IWCResponse response : function.getIwcResponses()) {
+        String iwcResponseCode = iwcResponseTemplate;
+        iwcResponseCode = iwcResponseCode.replace("$Intent_Action$", response.getIntentAction());
+        iwcResponseCode = iwcResponseCode.replace("$Function_Name$", function.getName());
+        // add IWC response to application script
+        applicationScript = applicationScript.replace("$IWC_Responses$", iwcResponseCode);
+      }
+
       functionCode = functionTemplate;
       functionCode = functionCode.replace("$Function_Name$", function.getName());
 
-      // treat special case when function does not have any input parameter
-      if (function.getInputParameters().isEmpty()) {
-        functionCode = functionCode.replace("$Function_Parameters$", "");
-      }
-      for (InputParameter parameter : function.getInputParameters()) {
+      if (!function.getIwcResponses().isEmpty()) {
+        // all content names are equal (checked in model creation process), so just take the first
         functionCode = functionCode.replace("$Function_Parameters$",
-            parameter.getName() + ", $Function_Parameters$");
+            function.getIwcResponses().get(0).getContent());
       }
-      // remove last input parameter placeholder
-      functionCode = functionCode.replace(", $Function_Parameters$", "");
-
+      // treat special case when function does not have any input parameter
+      else if (function.getInputParameters().isEmpty()) {
+        functionCode = functionCode.replace("$Function_Parameters$", "");
+      } else {
+        for (InputParameter parameter : function.getInputParameters()) {
+          functionCode = functionCode.replace("$Function_Parameters$",
+              parameter.getName() + ", $Function_Parameters$");
+        }
+        // remove last input parameter placeholder
+        functionCode = functionCode.replace(", $Function_Parameters$", "");
+      }
       // check for return parameter (if there is one, else just remove placeholder)
       if (!function.getReturnParameter().equals("")) {
         // add variable initialization
@@ -341,23 +385,82 @@ public class FrontendComponentGenerator extends Generator {
       }
 
       for (String elementId : function.getHtmlElementCreations()) {
+        functionCode = functionCode.replace("$Function_Body$",
+            "$( \".container\" ).append(\"<strong>TODO</strong>\" );");
       }
 
       for (String elementId : function.getHtmlElementUpdates()) {
       }
 
       for (IWCCall call : function.getIwcCalls()) {
+        functionCode = functionCode.replace("$Function_Body$",
+            "  var " + call.getContent() + " = \"initialized\";\n$Function_Body$");
+        functionCode = functionCode.replace("$Function_Body$", "  client.sendIntent(\""
+            + call.getIntentAction() + "\", " + call.getContent() + ");\n$Function_Body$");
       }
 
-      for (IWCResponse response : function.getIwcResponses()) {
-      }
-
+      // remove last function body placeholder
+      functionCode = functionCode.replace("$Function_Body$\n", "");
       // add function to application script
       applicationScript = applicationScript.replace("$Functions$", functionCode);
     }
-    // remove last function placeholder
-    applicationScript = applicationScript.replace("$Functions$\n", "");
     return applicationScript;
   }
 
+
+  /**
+   * 
+   * Adds events to the passed application script for all HTML elements.
+   * 
+   * @param applicationScript the application script code
+   * @param eventTemplate a template for an event
+   * @param frontendComponent a {@link FrontendComponent}
+   * 
+   * @return the updated application script code
+   * 
+   */
+  private static String addEvents(String applicationScript, String eventTemplate,
+      FrontendComponent frontendComponent) {
+    String eventCode = "";
+    for (HtmlElement element : frontendComponent.getHtmlElements().values()) {
+      for (Event event : element.getEvents()) {
+        eventCode = eventTemplate;
+        eventCode = eventCode.replace("$Html_Element_Id$", element.getId());
+        eventCode = eventCode.replace("$Event_Type$", event.getEventCause().toString());
+        Function function = frontendComponent.getFunctions().get(event.getCalledFunctionId());
+        eventCode = eventCode.replace("$Function_Name$", function.getName());
+        for (InputParameter parameter : function.getInputParameters()) {
+          eventCode = eventCode.replace("$Parameter_Init$",
+              "var " + parameter.getName() + " = null;\n    $Parameter_Init$");
+          eventCode = eventCode.replace("$Function_Parameter$",
+              parameter.getName() + ", $Function_Parameter$");
+        }
+        // remove last parameter placeholder
+        eventCode = eventCode.replace("    $Parameter_Init$\n", "");
+        eventCode = eventCode.replace(", $Function_Parameter$", "");
+        // special case: no parameter
+        eventCode = eventCode.replace("$Function_Parameter$", "");
+
+        applicationScript = applicationScript.replace("$Events$", eventCode);
+      }
+    }
+    return applicationScript;
+  }
+
+
+  /**
+   * 
+   * Removes all remaining placeholder from the application script.
+   * 
+   * @param applicationScript the application script source code
+   * 
+   * @return the updated application script source code
+   * 
+   */
+  private static String removeRemainingPlaceholder(String applicationScript) {
+    applicationScript = applicationScript.replace("$Functions$\n\n", "");
+    applicationScript = applicationScript.replace("$IWC_Responses$\n", "");
+    applicationScript = applicationScript.replace("$Events$\n", "");
+    return applicationScript;
+  }
 }

@@ -176,4 +176,27 @@ public class Function {
     this.microserviceCalls.add(call);
   }
 
+
+  /**
+   * 
+   * Checks the (complete) function for (semantical) correctness. Should be called after all
+   * microservice calls, IWC events and input parameters are added to the function.
+   * 
+   * @throws ModelParseException if the function is not (semantical) correct
+   * 
+   */
+  public void checkCorrectness() throws ModelParseException {
+    if (!this.iwcResponses.isEmpty()) {
+      if (!this.inputParameters.isEmpty()) {
+        throw new ModelParseException(
+            "Functions that wait for an IWC response may not have additional input parameters!");
+      }
+      for (IWCResponse response : this.iwcResponses) {
+        if (!response.getContent().equals(this.iwcResponses.get(0).getContent())) {
+          throw new ModelParseException(
+              "Functions that have multiple IWC responses must have the same (iwc-)content variable name!");
+        }
+      }
+    }
+  }
 }
