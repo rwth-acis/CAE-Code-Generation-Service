@@ -14,6 +14,7 @@ public class IWCCall {
 
   private String modelId;
   private String intentAction;
+  private String content;
 
   /**
    *
@@ -32,6 +33,9 @@ public class IWCCall {
         case "intentAction":
           this.intentAction = attribute.getValue();
           break;
+        case "content":
+          this.content = attribute.getValue();
+          break;
         default:
           throw new ModelParseException("Unknown IWCCall attribute: " + attribute.getName());
       }
@@ -39,12 +43,17 @@ public class IWCCall {
   }
 
   public String getModelId() {
-    return modelId;
+    return this.modelId;
   }
 
 
   public String getIntentAction() {
-    return intentAction;
+    return this.intentAction;
+  }
+
+
+  public String getContent() {
+    return this.content;
   }
 
 }
