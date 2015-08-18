@@ -21,7 +21,32 @@ public class MicroserviceCall {
   private boolean authorize;
   private String content;
   private MethodType methodType;
+  private ContentType contentType;
   private ArrayList<InputParameter> inputParameters;
+
+  /**
+   * 
+   * Represents the three different content types a {@link MicroserviceCall} can have.
+   * 
+   */
+  public enum ContentType {
+    json, text, CUSTOM;
+
+    @Override
+    public String toString() {
+      switch (this) {
+        case json:
+          return "application/json";
+        case text:
+          return "text/plain";
+        case CUSTOM:
+          return "CUSTOM";
+        default:
+          return "Unknown";
+      }
+    }
+
+  }
 
 
   /**
@@ -69,6 +94,22 @@ public class MicroserviceCall {
                   "Unknown MicroserviceCall methodType: " + attribute.getValue());
           }
           break;
+        case "contentType":
+          switch (attribute.getValue()) {
+            case "application/json":
+              this.contentType = ContentType.json;
+              break;
+            case "text/plain":
+              this.contentType = ContentType.text;
+              break;
+            case "CUSTOM":
+              this.contentType = ContentType.CUSTOM;
+              break;
+            default:
+              throw new ModelParseException(
+                  "Unknown MicroserviceCall contentType: " + attribute.getValue());
+          }
+          break;
         default:
           throw new ModelParseException(
               "Unknown MicroserviceCall attribute: " + attribute.getName());
@@ -94,6 +135,11 @@ public class MicroserviceCall {
 
   public String getContent() {
     return this.content;
+  }
+
+
+  public ContentType getContentType() {
+    return this.contentType;
   }
 
 

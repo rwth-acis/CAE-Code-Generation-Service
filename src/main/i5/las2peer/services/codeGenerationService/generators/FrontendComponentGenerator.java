@@ -307,6 +307,7 @@ public class FrontendComponentGenerator extends Generator {
 
       // check for return parameter (if there is one, else just remove placeholder)
       if (!function.getReturnParameter().equals("")) {
+        // add variable initialization
         functionCode = functionCode.replace("$Function_Body$",
             "  var " + function.getReturnParameter() + " = null;\n$Function_Body$");
         functionCode = functionCode.replace("$Function_Return_Parameter$",
@@ -317,6 +318,25 @@ public class FrontendComponentGenerator extends Generator {
 
       for (MicroserviceCall microserviceCall : function.getMicroserviceCalls()) {
         microserviceCallCode = microserviceCallTemplate;
+        microserviceCallCode = microserviceCallCode.replace("$Method_Type$",
+            microserviceCall.getMethodType().toString());
+        microserviceCallCode =
+            microserviceCallCode.replace("$Method_Path$", microserviceCall.getPath());
+        if (!microserviceCall.getContent().isEmpty()) {
+          // add variable initialization
+          functionCode = functionCode.replace("$Function_Body$",
+              "  var " + microserviceCall.getContent() + " = null;\n$Function_Body$");
+          microserviceCallCode =
+              microserviceCallCode.replace("$Content$", microserviceCall.getContent());
+          microserviceCallCode = microserviceCallCode.replace("$Content_Type$",
+              microserviceCall.getContentType().toString());
+        } else {
+          // no content specified, just remove placeholder / insert empty entries
+          microserviceCallCode = microserviceCallCode.replace("$Content$", "\"\"");
+          microserviceCallCode = microserviceCallCode.replace("$Content_Type$", "");
+        }
+        microserviceCallCode =
+            microserviceCallCode.replace("$Method_Path$", microserviceCall.getPath());
         functionCode = functionCode.replace("$Function_Body$", microserviceCallCode);
       }
 
