@@ -75,6 +75,8 @@ public class FrontendComponentGenerator extends Generator {
     String yText = null;
     String yXmpp = null;
     String iwc = null;
+    String yjsInit = null;
+    String yjsBindCode = null;
 
     try {
       PersonIdent caeUser = new PersonIdent(gitHubUser, gitHubUserMail);
@@ -131,6 +133,12 @@ public class FrontendComponentGenerator extends Generator {
             case "y-xmpp.js":
               yXmpp = new String(loader.getBytes(), "UTF-8");
               break;
+            case "yjsInit.txt":
+              yjsInit = new String(loader.getBytes(), "UTF-8");
+              break;
+            case "yjsBindCode.txt":
+              yjsBindCode = new String(loader.getBytes(), "UTF-8");
+              break;
             case "style.css":
               style = new String(loader.getBytes(), "UTF-8");
               break;
@@ -157,7 +165,12 @@ public class FrontendComponentGenerator extends Generator {
       applicationScript = createApplicationScript(applicationScript, functionTemplate,
           microserviceCallTemplate, iwcResponseTemplate, htmlElementTemplate, frontendComponent);
       // add events to elements
-      applicationScript = addEvents(applicationScript, eventTemplate, frontendComponent);
+      applicationScript =
+          addEventsToApplicationScript(applicationScript, eventTemplate, frontendComponent);
+      // add (possible) Yjs collaboration stuff
+      applicationScript =
+          addYjsCollaboration(applicationScript, yjsInit, yjsBindCode, frontendComponent);
+      // and remove remaining placeholer in the end
       applicationScript = removeRemainingAppScriptPlaceholder(applicationScript);
       // add files to new repository
       frontendComponentRepository =
@@ -469,6 +482,44 @@ public class FrontendComponentGenerator extends Generator {
 
   /**
    * 
+   * Adds the (possible) Yjs collaboration code to the application script.
+   * 
+   * TODO: Currently, only textareas are supported.
+   * 
+   * @param applicationScript the application script code
+   * @param yjsInit a template for initializing the Yjs connector etc
+   * @param yjsTemplate a template for binding an html element
+   * @param frontendComponent a {@link FrontendComponent}
+   * 
+   * @return the updated application script code
+   * 
+   */
+  private static String addYjsCollaboration(String applicationScript, String yjsInit,
+      String yjsBindCode, FrontendComponent frontendComponent) {
+    boolean foundCollaborativeElement = false; // helper so that the code only needs to run once
+    for (HtmlElement element : frontendComponent.getHtmlElements().values()) {
+      if (element.isCollaborativeElement()) {
+        if (!foundCollaborativeElement) {
+          applicationScript = applicationScript.replace("$Yjs_Code$", yjsInit);
+          foundCollaborativeElement = true;
+        }
+        applicationScript = applicationScript.replace("$Variable_Init$", "  var " + element.getId()
+            + " = document.getElementById(\"" + element.getId() + "\");\n$Variable_Init$");
+        applicationScript = applicationScript.replace("$Variable_Observe_Code$", yjsBindCode);
+        // TODO also static "textfield" code in yjsInit template!!
+        applicationScript = applicationScript.replace("$Element_Type$", "textfield");
+        applicationScript = applicationScript.replace("$Element_Id$", element.getId());
+      }
+    }
+    // remove last placeholder
+    applicationScript = applicationScript.replace("$Variable_Init$\n", "");
+    applicationScript = applicationScript.replace("$Variable_Observe_Code$\n", "");
+    return applicationScript;
+  }
+
+
+  /**
+   * 
    * Adds events to the passed application script for all HTML elements.
    * 
    * @param applicationScript the application script code
@@ -478,7 +529,7 @@ public class FrontendComponentGenerator extends Generator {
    * @return the updated application script code
    * 
    */
-  private static String addEvents(String applicationScript, String eventTemplate,
+  private static String addEventsToApplicationScript(String applicationScript, String eventTemplate,
       FrontendComponent frontendComponent) {
     String eventCode = "";
     for (HtmlElement element : frontendComponent.getHtmlElements().values()) {
