@@ -147,7 +147,7 @@ public class FrontendComponentGenerator extends Generator {
       widget = addHtmlElements(widget, htmlElementTemplate, frontendComponent);
       // add functions to application script
       applicationScript = addFunctions(applicationScript, functionTemplate,
-          microserviceCallTemplate, iwcResponseTemplate, frontendComponent);
+          microserviceCallTemplate, iwcResponseTemplate, htmlElementTemplate, frontendComponent);
       // add events to elements
       applicationScript = addEvents(applicationScript, eventTemplate, frontendComponent);
       applicationScript = removeRemainingPlaceholder(applicationScript);
@@ -225,7 +225,7 @@ public class FrontendComponentGenerator extends Generator {
     // now we got all elements that are there from the start on, so add them to the widget code
     for (HtmlElement element : htmlElementsToAdd.values()) {
       String elementCode = createElementCode(element, htmlElementTemplate);
-      widget = widget.replace("$Main_Content$", elementCode);
+      widget = widget.replace("$Main_Content$", "    " + elementCode + "\n$Main_Content$");
     }
     // remove last element placeholder
     widget = widget.replace("$Main_Content$\n", "");
@@ -309,16 +309,16 @@ public class FrontendComponentGenerator extends Generator {
    * @param functionTemplate a template representing a generic function
    * @param microserviceCallTemplate a template representing a generic microservice call
    * @param iwcResponseTemplate a template representing a generic IWC response (with function call)
+   * @param htmlElementTemplate a template representing a generic HTML template
    * @param frontendComponent a {@link FrontendComponent}
    * 
    * @return the application script source code with inserted functions
    * 
    */
   private static String addFunctions(String applicationScript, String functionTemplate,
-      String microserviceCallTemplate, String iwcResponseTemplate,
+      String microserviceCallTemplate, String iwcResponseTemplate, String htmlElementTemplate,
       FrontendComponent frontendComponent) {
-    String functionCode = "";
-    String microserviceCallCode = "";
+
     for (Function function : frontendComponent.getFunctions().values()) {
 
       // start with (potential) IWC response creation
@@ -330,9 +330,10 @@ public class FrontendComponentGenerator extends Generator {
         applicationScript = applicationScript.replace("$IWC_Responses$", iwcResponseCode);
       }
 
-      functionCode = functionTemplate;
+      String functionCode = functionTemplate;
       functionCode = functionCode.replace("$Function_Name$", function.getName());
 
+      // function parameters
       if (!function.getIwcResponses().isEmpty()) {
         // all content names are equal (checked in model creation process), so just take the first
         functionCode = functionCode.replace("$Function_Parameters$",
@@ -360,8 +361,9 @@ public class FrontendComponentGenerator extends Generator {
         functionCode = functionCode.replace("$Function_Return_Parameter$\n", "");
       }
 
+      // microservice calls
       for (MicroserviceCall microserviceCall : function.getMicroserviceCalls()) {
-        microserviceCallCode = microserviceCallTemplate;
+        String microserviceCallCode = microserviceCallTemplate;
         microserviceCallCode = microserviceCallCode.replace("$Method_Type$",
             microserviceCall.getMethodType().toString());
         microserviceCallCode =
@@ -384,14 +386,22 @@ public class FrontendComponentGenerator extends Generator {
         functionCode = functionCode.replace("$Function_Body$", microserviceCallCode);
       }
 
+      // element creations
       for (String elementId : function.getHtmlElementCreations()) {
+        HtmlElement element = frontendComponent.getHtmlElements().get(elementId);
+        String htmlElementCode = createElementCode(element, htmlElementTemplate);
         functionCode = functionCode.replace("$Function_Body$",
-            "$( \".container\" ).append(\"<strong>TODO</strong>\" );");
+            "$( \".container\" ).append(\"" + htmlElementCode + "\");\n$Function_Body$");
       }
 
+      // element updates
       for (String elementId : function.getHtmlElementUpdates()) {
+        HtmlElement element = frontendComponent.getHtmlElements().get(elementId);
+        functionCode = functionCode.replace("$Function_Body$",
+            "$(\"#" + element.getId() + "\").html(\"Upated Element\");\n$Function_Body$");
       }
 
+      // iwc calls
       for (IWCCall call : function.getIwcCalls()) {
         functionCode = functionCode.replace("$Function_Body$",
             "  var " + call.getContent() + " = \"initialized\";\n$Function_Body$");
