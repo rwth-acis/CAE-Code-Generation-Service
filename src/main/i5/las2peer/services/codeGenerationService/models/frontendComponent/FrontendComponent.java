@@ -30,6 +30,7 @@ public class FrontendComponent {
   private HashMap<String, HtmlElement> htmlElements;
   private HashMap<String, Function> functions;
 
+
   /**
    * 
    * Creates a new frontend component.
@@ -120,7 +121,7 @@ public class FrontendComponent {
           HtmlElement element = new HtmlElement(node);
           this.htmlElements.put(node.getId(), element);
           if (tempIds.contains(element.getId())) {
-            throw new ModelParseException("Duplicate id found: " + node.getId());
+            throw new ModelParseException("Duplicate id found: " + element.getId());
           }
           tempIds.add(element.getId());
           break;
@@ -175,12 +176,22 @@ public class FrontendComponent {
               || !this.htmlElements.containsKey(currentEdgeTarget)) {
             throw new ModelParseException("Wrong Element Update edge!");
           }
+          // check if element is not static
+          if (this.htmlElements.get(currentEdgeTarget).isStaticElement()) {
+            throw new ModelParseException("Static HtmlElements cannot be updated by functions: "
+                + this.htmlElements.get(currentEdgeTarget).getId());
+          }
           this.functions.get(currentEdgeSource).addHtmlElementUpdates(currentEdgeTarget);
           break;
         case "Element Creation":
           if (!this.functions.containsKey(currentEdgeSource)
               || !this.htmlElements.containsKey(currentEdgeTarget)) {
             throw new ModelParseException("Wrong Element Creation edge!");
+          }
+          // check if element is not static
+          if (this.htmlElements.get(currentEdgeTarget).isStaticElement()) {
+            throw new ModelParseException("Static HtmlElements cannot be created by functions: "
+                + this.htmlElements.get(currentEdgeTarget).getId());
           }
           this.functions.get(currentEdgeSource).addHtmlElementCreations(currentEdgeTarget);
           break;
@@ -295,6 +306,11 @@ public class FrontendComponent {
         || !tempParameters.isEmpty() || !tempIwcResponses.isEmpty() || !tempIwcCalls.isEmpty()
         || !tempMicroserviceCalls.isEmpty()) {
       throw new ModelParseException("Model not fully connected!");
+    }
+    // check functions (now complete with all IWC events, microservice calls and input parameters)
+    // for semantical correctness
+    for (Function function : this.functions.values()) {
+      function.checkCorrectness();
     }
   }
 

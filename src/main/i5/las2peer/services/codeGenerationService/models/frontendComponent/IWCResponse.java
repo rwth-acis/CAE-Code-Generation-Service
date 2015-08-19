@@ -14,6 +14,7 @@ public class IWCResponse {
 
   private String modelId;
   private String intentAction;
+  private String content;
 
   /**
    *
@@ -32,6 +33,9 @@ public class IWCResponse {
         case "intentAction":
           this.intentAction = attribute.getValue();
           break;
+        case "content":
+          this.content = attribute.getValue();
+          break;
         default:
           throw new ModelParseException("Unknown IWCResponse attribute: " + attribute.getName());
       }
@@ -40,12 +44,17 @@ public class IWCResponse {
 
 
   public String getModelId() {
-    return modelId;
+    return this.modelId;
   }
 
 
   public String getIntentAction() {
-    return intentAction;
+    return this.intentAction;
+  }
+
+
+  public String getContent() {
+    return this.content;
   }
 
 }
