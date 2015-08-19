@@ -70,6 +70,11 @@ public class FrontendComponentGenerator extends Generator {
     String microserviceCallTemplate = null;
     String iwcResponseTemplate = null;
     String eventTemplate = null;
+    String yjsImports = null;
+    String yjs = null;
+    String yText = null;
+    String yXmpp = null;
+    String iwc = null;
 
     try {
       PersonIdent caeUser = new PersonIdent(gitHubUser, gitHubUserMail);
@@ -89,17 +94,6 @@ public class FrontendComponentGenerator extends Generator {
           switch (treeWalk.getNameString()) {
             case "widget.xml":
               widget = new String(loader.getBytes(), "UTF-8");
-              widget = widget.replace("$Widget_Title$", frontendComponent.getWidgetName());
-              widget =
-                  widget.replace("$Widget_Description$", frontendComponent.getWidgetDescription());
-              widget = widget.replace("$Widget_Developer_Name$",
-                  frontendComponent.getWidgetDeveloperName());
-              widget = widget.replace("$Widget_Developer_Mail$",
-                  frontendComponent.getWidgetDeveloperMail());
-              widget = widget.replace("$Widget_Width$", frontendComponent.getWidgetWidth() + "");
-              widget = widget.replace("$Widget_Height$", frontendComponent.getWidgetHeight() + "");
-              String widgetHome = "http://" + gitHubOrganization + ".github.io/" + repositoryName;
-              widget = widget.replace("$Widget_Home$", widgetHome);
               break;
             case "genericHtmlElement.txt":
               htmlElementTemplate = new String(loader.getBytes(), "UTF-8");
@@ -109,8 +103,6 @@ public class FrontendComponentGenerator extends Generator {
               break;
             case "applicationScript.js":
               applicationScript = new String(loader.getBytes(), "UTF-8");
-              applicationScript = applicationScript.replace("$Microservice_Endpoint_Url$",
-                  frontendComponent.getMicroserviceAddress());
               break;
             case "genericFunction.txt":
               functionTemplate = new String(loader.getBytes(), "UTF-8");
@@ -121,8 +113,23 @@ public class FrontendComponentGenerator extends Generator {
             case "genericIWCResponse.txt":
               iwcResponseTemplate = new String(loader.getBytes(), "UTF-8");
               break;
+            case "yjs-imports.txt":
+              yjsImports = new String(loader.getBytes(), "UTF-8");
+              break;
             case "las2peerWidgetLibrary.js":
               las2peerWidgetLibrary = new String(loader.getBytes(), "UTF-8");
+              break;
+            case "iwc.js":
+              iwc = new String(loader.getBytes(), "UTF-8");
+              break;
+            case "y.js":
+              yjs = new String(loader.getBytes(), "UTF-8");
+              break;
+            case "y-text.js":
+              yText = new String(loader.getBytes(), "UTF-8");
+              break;
+            case "y-xmpp.js":
+              yXmpp = new String(loader.getBytes(), "UTF-8");
               break;
             case "style.css":
               style = new String(loader.getBytes(), "UTF-8");
@@ -144,20 +151,33 @@ public class FrontendComponentGenerator extends Generator {
       }
 
       // add html elements to widget source code
-      widget = addHtmlElements(widget, htmlElementTemplate, frontendComponent);
+      widget = createWidgetCode(widget, htmlElementTemplate, yjsImports, gitHubOrganization,
+          repositoryName, frontendComponent);
       // add functions to application script
-      applicationScript = addFunctions(applicationScript, functionTemplate,
+      applicationScript = createApplicationScript(applicationScript, functionTemplate,
           microserviceCallTemplate, iwcResponseTemplate, htmlElementTemplate, frontendComponent);
       // add events to elements
       applicationScript = addEvents(applicationScript, eventTemplate, frontendComponent);
-      applicationScript = removeRemainingPlaceholder(applicationScript);
+      applicationScript = removeRemainingAppScriptPlaceholder(applicationScript);
       // add files to new repository
       frontendComponentRepository =
           createTextFileInRepository(frontendComponentRepository, "", "widget.xml", widget);
       frontendComponentRepository = createTextFileInRepository(frontendComponentRepository, "js/",
           "applicationScript.js", applicationScript);
-      frontendComponentRepository = createTextFileInRepository(frontendComponentRepository, "js/",
-          "las2peerWidgetLibrary.js", las2peerWidgetLibrary);
+      // libraries
+      frontendComponentRepository = createTextFileInRepository(frontendComponentRepository,
+          "js/lib/", "las2peerWidgetLibrary.js", las2peerWidgetLibrary);
+      frontendComponentRepository =
+          createTextFileInRepository(frontendComponentRepository, "js/lib/", "iwc.js", iwc);
+      // y-is (if needed)
+      if (widget.contains("/js/lib/y.js")) {
+        frontendComponentRepository =
+            createTextFileInRepository(frontendComponentRepository, "js/lib/", "y.js", yjs);
+        frontendComponentRepository =
+            createTextFileInRepository(frontendComponentRepository, "js/lib/", "y-text.js", yText);
+        frontendComponentRepository =
+            createTextFileInRepository(frontendComponentRepository, "js/lib/", "y-xmpp.js", yXmpp);
+      }
       frontendComponentRepository =
           createTextFileInRepository(frontendComponentRepository, "css/", "style.css", style);
       frontendComponentRepository =
@@ -193,22 +213,31 @@ public class FrontendComponentGenerator extends Generator {
 
   /**
    * 
-   * Adds HTML elements according to a frontend component model to the passed widget (code).
+   * Creates the "widget.xml" code according to a passed frontend component model.
    * 
    * @param widget the widget code as a string
    * @param htmlElementTemplate the HTML element template as a string
+   * @param importTemplate a text file containing all additional imports to be added
+   * @param gitHubOrganization the organization name (for correct paths)
+   * @param repositoryName the repository's name (for correct paths)
    * @param frontendComponent a {@link FrontendComponent}
    * 
    * @return the widget code with the inserted HTML elements
    * 
    */
-  private static String addHtmlElements(String widget, String htmlElementTemplate,
+  private static String createWidgetCode(String widget, String htmlElementTemplate,
+      String importTemplate, String gitHubOrganization, String repositoryName,
       FrontendComponent frontendComponent) {
+
     Map<String, HtmlElement> htmlElementsToAdd = new HashMap<String, HtmlElement>();
-    // add all static elements
+    // add all static elements and check for collaborative elements
     for (HtmlElement element : frontendComponent.getHtmlElements().values()) {
       if (element.isStaticElement()) {
         htmlElementsToAdd.put(element.getId(), element);
+      }
+      if (element.isCollaborativeElement()) {
+        // currently, only textareas are supported
+        widget = widget.replace("$Additional_Imports$", importTemplate);
       }
     }
     // now, get all "updated", but not "created" elements (since these are there "from the start")
@@ -224,11 +253,24 @@ public class FrontendComponentGenerator extends Generator {
     }
     // now we got all elements that are there from the start on, so add them to the widget code
     for (HtmlElement element : htmlElementsToAdd.values()) {
-      String elementCode = createElementCode(element, htmlElementTemplate);
+      String elementCode = createHtmlElementCode(element, htmlElementTemplate);
       widget = widget.replace("$Main_Content$", "    " + elementCode + "\n$Main_Content$");
     }
+
+    // widget meta-data and path replacements
+    widget = widget.replace("$Widget_Title$", frontendComponent.getWidgetName());
+    widget = widget.replace("$Widget_Description$", frontendComponent.getWidgetDescription());
+    widget = widget.replace("$Widget_Developer_Name$", frontendComponent.getWidgetDeveloperName());
+    widget = widget.replace("$Widget_Developer_Mail$", frontendComponent.getWidgetDeveloperMail());
+    widget = widget.replace("$Widget_Width$", frontendComponent.getWidgetWidth() + "");
+    widget = widget.replace("$Widget_Height$", frontendComponent.getWidgetHeight() + "");
+    String widgetHome = "http://" + gitHubOrganization + ".github.io/" + repositoryName;
+    widget = widget.replace("$Widget_Home$", widgetHome);
+
     // remove last element placeholder
     widget = widget.replace("$Main_Content$\n", "");
+    // remove import placeholder (if existing)
+    widget = widget.replace("$Additional_Imports$\n", "");
     return widget;
   }
 
@@ -243,7 +285,7 @@ public class FrontendComponentGenerator extends Generator {
    * @return the code for an HTML element
    * 
    */
-  private static String createElementCode(HtmlElement element, String htmlElementTemplate) {
+  private static String createHtmlElementCode(HtmlElement element, String htmlElementTemplate) {
     String elementCode = htmlElementTemplate;
     switch (element.getType()) {
       case CUSTOM:
@@ -315,10 +357,15 @@ public class FrontendComponentGenerator extends Generator {
    * @return the application script source code with inserted functions
    * 
    */
-  private static String addFunctions(String applicationScript, String functionTemplate,
+  private static String createApplicationScript(String applicationScript, String functionTemplate,
       String microserviceCallTemplate, String iwcResponseTemplate, String htmlElementTemplate,
       FrontendComponent frontendComponent) {
 
+    // first the endpoint
+    applicationScript = applicationScript.replace("$Microservice_Endpoint_Url$",
+        frontendComponent.getMicroserviceAddress());
+
+    // now to the functions
     for (Function function : frontendComponent.getFunctions().values()) {
 
       // start with (potential) IWC response creation
@@ -330,6 +377,7 @@ public class FrontendComponentGenerator extends Generator {
         applicationScript = applicationScript.replace("$IWC_Responses$", iwcResponseCode);
       }
 
+      // start creating the actual function
       String functionCode = functionTemplate;
       functionCode = functionCode.replace("$Function_Name$", function.getName());
 
@@ -389,7 +437,7 @@ public class FrontendComponentGenerator extends Generator {
       // element creations
       for (String elementId : function.getHtmlElementCreations()) {
         HtmlElement element = frontendComponent.getHtmlElements().get(elementId);
-        String htmlElementCode = createElementCode(element, htmlElementTemplate);
+        String htmlElementCode = createHtmlElementCode(element, htmlElementTemplate);
         functionCode = functionCode.replace("$Function_Body$",
             "$( \".container\" ).append(\"" + htmlElementCode + "\");\n$Function_Body$");
       }
@@ -414,6 +462,7 @@ public class FrontendComponentGenerator extends Generator {
       // add function to application script
       applicationScript = applicationScript.replace("$Functions$", functionCode);
     }
+
     return applicationScript;
   }
 
@@ -467,7 +516,7 @@ public class FrontendComponentGenerator extends Generator {
    * @return the updated application script source code
    * 
    */
-  private static String removeRemainingPlaceholder(String applicationScript) {
+  private static String removeRemainingAppScriptPlaceholder(String applicationScript) {
     applicationScript = applicationScript.replace("$Functions$\n\n", "");
     applicationScript = applicationScript.replace("$IWC_Responses$\n", "");
     applicationScript = applicationScript.replace("$Events$\n", "");
