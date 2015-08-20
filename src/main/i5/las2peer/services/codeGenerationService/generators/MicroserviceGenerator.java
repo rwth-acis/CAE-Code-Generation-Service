@@ -19,6 +19,8 @@ import i5.las2peer.services.codeGenerationService.models.microservice.HttpPayloa
 import i5.las2peer.services.codeGenerationService.models.microservice.HttpPayload.PayloadType;
 import i5.las2peer.services.codeGenerationService.models.microservice.HttpResponse;
 import i5.las2peer.services.codeGenerationService.models.microservice.HttpResponse.ResultType;
+import i5.las2peer.services.codeGenerationService.models.microservice.InternalCall;
+import i5.las2peer.services.codeGenerationService.models.microservice.InternalCallParam;
 import i5.las2peer.services.codeGenerationService.models.microservice.Microservice;
 
 /**
@@ -87,6 +89,7 @@ public class MicroserviceGenerator extends Generator {
     String genericTestCase = null;
     String databaseConfig = null;
     String databaseInstantiation = null;
+    String serviceInvocation = null;
 
     try {
       PersonIdent caeUser = new PersonIdent(gitHubUser, gitHubUserMail);
@@ -240,6 +243,9 @@ public class MicroserviceGenerator extends Generator {
             case "databaseInstantiation.txt":
               databaseInstantiation = new String(loader.getBytes(), "UTF-8");
               break;
+            case "genericServiceInvocation.txt":
+              serviceInvocation = new String(loader.getBytes(), "UTF-8");
+              break;
           }
         }
       } catch (Exception e) {
@@ -249,9 +255,9 @@ public class MicroserviceGenerator extends Generator {
 
       // generate service class and test
       String repositoryLocation = "https://github.com/" + gitHubOrganization + "/" + repositoryName;
-      serviceClass =
-          generateNewServiceClass(serviceClass, microservice, repositoryLocation, genericHttpMethod,
-              genericApiResponse, genericHttpResponse, databaseConfig, databaseInstantiation);
+      serviceClass = generateNewServiceClass(serviceClass, microservice, repositoryLocation,
+          genericHttpMethod, genericApiResponse, genericHttpResponse, databaseConfig,
+          databaseInstantiation, serviceInvocation);
       serviceTest = generateNewServiceTest(serviceTest, microservice, genericTestCase);
 
       // add files to new repository
@@ -348,13 +354,15 @@ public class MicroserviceGenerator extends Generator {
    * @param generiHttpResponse a generic http response template
    * @param databaseConfig a database configuration (source code) template
    * @param databaseInstantiation a database instantiation (source code) template
+   * @param serviceInvocation a service invocation (source code) template
    * 
    * @return the service class as a string
    * 
    */
   private static String generateNewServiceClass(String serviceClass, Microservice microservice,
       String repositoryLocation, String genericHttpMethod, String genericApiResponse,
-      String genericHttpResponse, String databaseConfig, String databaseInstantiation) {
+      String genericHttpResponse, String databaseConfig, String databaseInstantiation,
+      String serviceInvocation) {
     // helper variables
     String packageName = microservice.getResourceName().substring(0, 1).toLowerCase()
         + microservice.getResourceName().substring(1);
@@ -515,6 +523,32 @@ public class MicroserviceGenerator extends Generator {
           "@Consumes(" + consumesAnnotation + ")");
       // set the parameters
       currentMethodCode = currentMethodCode.replace("$HTTPMethod_Parameters$", parameterCode);
+
+      // now to the service invocations
+      for (InternalCall call : currentMethod.getInternalCalls()) {
+        String currentInvocation = serviceInvocation;
+        currentInvocation =
+            currentInvocation.replace("$Return_Variable$", call.getReturnVariableName());
+        currentInvocation =
+            currentInvocation.replace("$Remove_Service_Name$", call.getServiceClass());
+        currentInvocation =
+            currentInvocation.replace("$Remote_Service_Method$", call.getMethodName());
+        for (InternalCallParam parameter : call.getParameters()) {
+          System.out.println("Param one: " + parameter.getName());
+          currentInvocation = currentInvocation.replace("$Parameter_Init$",
+              "    Object " + parameter.getName() + " = null;\n$Parameter_Init$");
+          currentInvocation =
+              currentInvocation.replace("$Parameters$", parameter.getName() + ", $Parameters$");
+        }
+        // replace last init placeholder
+        currentInvocation = currentInvocation.replace("\n$Parameter_Init$", "");
+        // replace last parameter placeholder
+        currentInvocation = currentInvocation.replace(", $Parameters$", "");
+        // add invocation code to current method code
+        currentMethodCode = currentMethodCode.replace("$Invocations$", currentInvocation);
+      }
+      // replace last invocation placeholder
+      currentMethodCode = currentMethodCode.replace("$Invocations$\n", "");
 
       // finally insert currentMethodCode into serviceClass
       serviceClass = serviceClass.replace("$Service_Methods$", currentMethodCode);

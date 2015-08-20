@@ -47,6 +47,9 @@ public class Microservice {
     Map<String, Column> tempColumns = new HashMap<String, Column>();
     Map<String, HttpPayload> tempHttpPayloads = new HashMap<String, HttpPayload>();
     Map<String, HttpResponse> tempHttpResponses = new HashMap<String, HttpResponse>();
+    Map<String, InternalCall> tempInternalCalls = new HashMap<String, InternalCall>();
+    Map<String, InternalCallParam> tempInternalCallParameters =
+        new HashMap<String, InternalCallParam>();
 
     this.name = model.getName();
 
@@ -117,6 +120,12 @@ public class Microservice {
         case "HTTP Response":
           tempHttpResponses.put(node.getId(), new HttpResponse(node));
           break;
+        case "Internal Service Call":
+          tempInternalCalls.put(node.getId(), new InternalCall(node));
+          break;
+        case "Service Call Parameter":
+          tempInternalCallParameters.put(node.getId(), new InternalCallParam(node));
+          break;
         default:
           throw new ModelParseException("Unknown node type: " + node.getType());
       }
@@ -137,19 +146,40 @@ public class Microservice {
       String currentEdgeType = edges.get(edgeIndex).getType();
 
       switch (currentEdgeType) {
-        case "Internal Call":
-          if (httpMethods.containsKey(currentEdgeSource)
-              && httpMethods.containsKey(currentEdgeTarget)
-              && !currentEdgeSource.equals(currentEdgeTarget)) {
-            // add call to source method
-            httpMethods.get(currentEdgeSource).addInternalCall(currentEdgeTarget);
+        case "Parameter to Internal Service Call":
+          if (tempInternalCalls.containsKey(currentEdgeSource)
+              && tempInternalCallParameters.containsKey(currentEdgeTarget)) {
+            // Add parameter to internal call
+            tempInternalCalls.get(currentEdgeSource)
+                .addInternalCall(tempInternalCallParameters.get(currentEdgeTarget));
+            tempInternalCallParameters.remove(currentEdgeTarget);
+            // check if the internal call parameter is (at least) in temp list and internal call
+            // itself was already added to http method
+          } else if (tempInternalCallParameters.containsKey(currentEdgeTarget)) {
+            for (HttpMethod method : this.httpMethods.values()) {
+              for (InternalCall call : method.getInternalCalls()) {
+                if (call.getModelId().equals(currentEdgeSource)) {
+                  call.addInternalCall(tempInternalCallParameters.get(currentEdgeTarget));
+                  tempInternalCallParameters.remove(currentEdgeTarget);
+                  break;
+                }
+              }
+            }
           } else {
-            throw new ModelParseException("Internal call reference broken!");
+            throw new ModelParseException("Wrong Parameter to Internal Service Call edge!");
+          }
+          break;
+        case "Internal Call":
+          if (this.httpMethods.containsKey(currentEdgeSource)
+              && tempInternalCalls.containsKey(currentEdgeTarget)) {
+            this.httpMethods.get(currentEdgeSource)
+                .addInternalCall(tempInternalCalls.get(currentEdgeTarget));
+            tempInternalCalls.remove(currentEdgeTarget);
           }
           break;
         case "RESTful Resource to HTTP Method":
           if (!this.microserviceModelId.equals(currentEdgeSource)
-              || !httpMethods.containsKey(currentEdgeTarget)) {
+              || !this.httpMethods.containsKey(currentEdgeTarget)) {
             throw new ModelParseException("Wrong RESTful Resource to HTTP Method edge!");
           } else {
             httpMethodToResourceEdges++;
@@ -226,7 +256,15 @@ public class Microservice {
     if (!tempHttpResponses.isEmpty()) {
       throw new ModelParseException("All htp responses must be connected to an http metod!");
     }
-    // give the http methods the singal that they can check their payloads and responses
+    // check, if all internal call parameters were correctly connected to an internal call
+    if (!tempInternalCallParameters.isEmpty()) {
+      throw new ModelParseException("All call parameters must be connected to an internal call!");
+    }
+    // check, if all internal calls were correctly connected to an http method
+    if (!tempInternalCalls.isEmpty()) {
+      throw new ModelParseException("All internal calls must be connected to an http method!");
+    }
+    // give the http methods the signal that they can check their payloads and responses
     for (Map.Entry<String, HttpMethod> httpMethod : httpMethods.entrySet()) {
       httpMethod.getValue().checkPayloadAndResponses();
     }
@@ -302,7 +340,7 @@ public class Microservice {
 
 
   public float getVersion() {
-    return version;
+    return this.version;
   }
 
 
