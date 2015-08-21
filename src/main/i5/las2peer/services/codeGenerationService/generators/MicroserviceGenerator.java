@@ -14,6 +14,8 @@ import org.eclipse.jgit.treewalk.TreeWalk;
 import org.eclipse.jgit.treewalk.filter.PathFilter;
 
 import i5.las2peer.services.codeGenerationService.generators.exception.GitHubException;
+import i5.las2peer.services.codeGenerationService.models.microservice.Column;
+import i5.las2peer.services.codeGenerationService.models.microservice.Database;
 import i5.las2peer.services.codeGenerationService.models.microservice.HttpMethod;
 import i5.las2peer.services.codeGenerationService.models.microservice.HttpPayload;
 import i5.las2peer.services.codeGenerationService.models.microservice.HttpPayload.PayloadType;
@@ -22,6 +24,7 @@ import i5.las2peer.services.codeGenerationService.models.microservice.HttpRespon
 import i5.las2peer.services.codeGenerationService.models.microservice.InternalCall;
 import i5.las2peer.services.codeGenerationService.models.microservice.InternalCallParam;
 import i5.las2peer.services.codeGenerationService.models.microservice.Microservice;
+import i5.las2peer.services.codeGenerationService.models.microservice.Table;
 
 /**
  * 
@@ -90,6 +93,8 @@ public class MicroserviceGenerator extends Generator {
     String databaseConfig = null;
     String databaseInstantiation = null;
     String serviceInvocation = null;
+    String databaseScript = null;
+    String genericTable = null;
 
     try {
       PersonIdent caeUser = new PersonIdent(gitHubUser, gitHubUserMail);
@@ -175,7 +180,7 @@ public class MicroserviceGenerator extends Generator {
                         + "    <dependency org=\"org.apache.commons\" name=\"commons-pool2\" rev=\"2.2\" />\n"
                         + "    <dependency org=\"org.apache.commons\" name=\"commons-dbcp2\" rev=\"2.0\" />");
               } else {
-                ivy = ivy.replace("$MySQL_Dependencies$\n", "");
+                ivy = ivy.replace("    $MySQL_Dependencies$\n", "");
               }
               break;
             case "ivysettings.xml":
@@ -246,6 +251,12 @@ public class MicroserviceGenerator extends Generator {
             case "genericServiceInvocation.txt":
               serviceInvocation = new String(loader.getBytes(), "UTF-8");
               break;
+            case "database.sql":
+              databaseScript = new String(loader.getBytes(), "UTF-8");
+              break;
+            case "genericTable.txt":
+              genericTable = new String(loader.getBytes(), "UTF-8");
+              break;
           }
         }
       } catch (Exception e) {
@@ -259,7 +270,9 @@ public class MicroserviceGenerator extends Generator {
           genericHttpMethod, genericApiResponse, genericHttpResponse, databaseConfig,
           databaseInstantiation, serviceInvocation);
       serviceTest = generateNewServiceTest(serviceTest, microservice, genericTestCase);
-
+      if (microservice.getDatabase() != null) {
+        databaseScript = generateDatabaseScript(databaseScript, genericTable, microservice);
+      }
       // add files to new repository
       // configuration and build stuff
       microserviceRepository =
@@ -308,6 +321,9 @@ public class MicroserviceGenerator extends Generator {
         microserviceRepository = createTextFileInRepository(microserviceRepository,
             "src/main/i5/las2peer/services/" + packageName + "/database/", "DatabaseManager.java",
             databaseManager);
+        // database script (replace spaces in filename for better usability later on)
+        microserviceRepository = createTextFileInRepository(microserviceRepository, "db/",
+            microservice.getName().replace(" ", "_") + "_create_tables.sql", databaseScript);
       }
       microserviceRepository = createTextFileInRepository(microserviceRepository,
           "src/main/i5/las2peer/services/" + packageName + "/",
@@ -315,7 +331,6 @@ public class MicroserviceGenerator extends Generator {
       microserviceRepository = createTextFileInRepository(microserviceRepository,
           "src/test/i5/las2peer/services/" + packageName + "/",
           microservice.getResourceName() + "Test.java", serviceTest);
-
       // commit files
       try {
         Git.wrap(microserviceRepository).commit()
@@ -368,9 +383,8 @@ public class MicroserviceGenerator extends Generator {
         + microservice.getResourceName().substring(1);
     String relativeResourcePath =
         microservice.getPath().substring(microservice.getPath().indexOf("/", 8) + 1);
+    boolean hasServiceInvocations = false;
 
-    // package and import paths
-    serviceClass = serviceClass.replace("$Lower_Resource_Name$", packageName);
     // service name for documentation
     serviceClass = serviceClass.replace("$Microservice_Name$", microservice.getName());
     // relative resource path (resource base path)
@@ -386,6 +400,9 @@ public class MicroserviceGenerator extends Generator {
     serviceClass = serviceClass.replace("$Resource_Name$", microservice.getResourceName());
     // create database references only if microservice has database
     if (microservice.getDatabase() != null) {
+      // import
+      serviceClass = serviceClass.replace("$Database_Import$",
+          "import i5.las2peer.services.$Lower_Resource_Name$.database.DatabaseManager;");
       // variable names
       serviceClass = serviceClass.replace("$Database_Configuration$", databaseConfig);
       // instantiation
@@ -394,13 +411,16 @@ public class MicroserviceGenerator extends Generator {
       // set to empty string
       serviceClass = serviceClass.replace("$Database_Configuration$\n\n\n", "");
       serviceClass = serviceClass.replace("$Database_Instantiation$\n", "");
+      serviceClass = serviceClass.replace("$Database_Import$\n", "");
     }
+    // package and import paths
+    serviceClass = serviceClass.replace("$Lower_Resource_Name$", packageName);
     // http methods
     HttpMethod[] httpMethods = microservice.getHttpMethods().values().toArray(new HttpMethod[0]);
     for (int httpMethodIndex = 0; httpMethodIndex < httpMethods.length; httpMethodIndex++) {
       String currentMethodCode = genericHttpMethod; // copy content
       HttpMethod currentMethod = httpMethods[httpMethodIndex];
-      // replace currentMethodCode placeholders with content of currentMethod
+      // replace currentMethodCode placeholder with content of currentMethod
       currentMethodCode = currentMethodCode.replace("$HTTPMethod_Name$", currentMethod.getName());
       currentMethodCode = currentMethodCode.replace("$HTTP_Method_Type$",
           "@" + currentMethod.getMethodType().toString());
@@ -416,7 +436,7 @@ public class MicroserviceGenerator extends Generator {
         HttpResponse currentResponse = currentMethod.getHttpResponses().get(httpResponseIndex);
         // start with api response code
         apiResponseCode += genericApiResponse + "\n";
-        // replace just inserted placeholders
+        // replace just inserted placeholder
         apiResponseCode = apiResponseCode.replace("$HTTPResponse_Code$",
             currentResponse.getReturnStatusCode().toString());
         apiResponseCode = apiResponseCode.replace("$HTTPResponse_Name$", currentResponse.getName());
@@ -512,7 +532,7 @@ public class MicroserviceGenerator extends Generator {
       if (parameterCode.length() > 0) {
         parameterCode = parameterCode.substring(0, parameterCode.length() - 2);
       }
-      // remove last param placeholder (JavaDoc)
+      // remove last parameter placeholder (JavaDoc)
       currentMethodCode = currentMethodCode.replace("\n$HTTPMethod_Params$", "");
       // if no consumes annotation is set until here, we set it to text
       if (consumesAnnotation.equals("")) {
@@ -526,6 +546,7 @@ public class MicroserviceGenerator extends Generator {
 
       // now to the service invocations
       for (InternalCall call : currentMethod.getInternalCalls()) {
+        hasServiceInvocations = true; // marker for adding serializable import
         String currentInvocation = serviceInvocation;
         currentInvocation =
             currentInvocation.replace("$Return_Variable$", call.getReturnVariableName());
@@ -534,9 +555,8 @@ public class MicroserviceGenerator extends Generator {
         currentInvocation =
             currentInvocation.replace("$Remote_Service_Method$", call.getMethodName());
         for (InternalCallParam parameter : call.getParameters()) {
-          System.out.println("Param one: " + parameter.getName());
           currentInvocation = currentInvocation.replace("$Parameter_Init$",
-              "    Object " + parameter.getName() + " = null;\n$Parameter_Init$");
+              "    Serializable " + parameter.getName() + " = null;\n$Parameter_Init$");
           currentInvocation =
               currentInvocation.replace("$Parameters$", parameter.getName() + ", $Parameters$");
         }
@@ -552,6 +572,12 @@ public class MicroserviceGenerator extends Generator {
 
       // finally insert currentMethodCode into serviceClass
       serviceClass = serviceClass.replace("$Service_Methods$", currentMethodCode);
+    }
+    // add serializable import or remove placeholder
+    if (hasServiceInvocations) {
+      serviceClass = serviceClass.replace("$Additional_Import$", "import java.io.Serializable;");
+    } else {
+      serviceClass = serviceClass.replace("$Additional_Import$\n", "");
     }
     // remove last placeholder
     serviceClass = serviceClass.replace("\n\n\n$Service_Methods$", "");
@@ -605,7 +631,7 @@ public class MicroserviceGenerator extends Generator {
                   + currentPayload.getName() + " = new JSONObject();\n$TestMethod_Variables$");
           content = currentPayload.getName() + ".toJSONString()";
         }
-        // string param
+        // string parameter
         if (currentPayload.getPayloadType() == PayloadType.String) {
           currentMethodCode = currentMethodCode.replace("$TestMethod_Variables$", "      String "
               + currentPayload.getName() + " = \"initialized\";\n$TestMethod_Variables$");
@@ -626,7 +652,7 @@ public class MicroserviceGenerator extends Generator {
               "\" + " + currentPayload.getName() + " + \"");
         }
       }
-      // no JSON, no custom, set it to text (no payloads, string payload, only path params)
+      // no JSON, no custom, set it to text (no payloads, string payload, only path parameters)
       if (consumesAnnotation.equals("")) {
         consumesAnnotation = "MediaType.TEXT_PLAIN";
       }
@@ -663,6 +689,43 @@ public class MicroserviceGenerator extends Generator {
     serviceTest = serviceTest.replace("\n\n\n$Test_Methods$", "");
 
     return serviceTest;
+  }
+
+
+  /**
+   * 
+   * Creates the database script according to the passed database.
+   * 
+   * @param databaseScript a database script (template)
+   * @param tableTemplate a table template
+   * @param microservice the microservice model
+   * 
+   * @return the updated database script
+   * 
+   */
+  private static String generateDatabaseScript(String databaseScript, String tableTemplate,
+      Microservice microservice) {
+    Database database = microservice.getDatabase();
+    for (Table table : database.getTables()) {
+      String tableCode = tableTemplate;
+      tableCode = tableCode.replace("$Database_Table_Name$", table.getName());
+      for (Column column : table.getColumns()) {
+        tableCode = tableCode.replace("$Column$",
+            "  " + column.getName() + " " + column.getType() + ",\n$Column$");
+        if (column.isPrimaryKey()) {
+          tableCode = tableCode.replace("$PK_Name$", column.getName());
+
+        }
+      }
+      databaseScript = databaseScript.replace("$Database_Table$", tableCode);
+    }
+    databaseScript = databaseScript.replace("$Service_Name$", microservice.getName());
+    databaseScript = databaseScript.replace("$Database_Schema$", database.getSchema());
+    // remove last placeholder
+    databaseScript = databaseScript.replace("\n$Column$", "");
+    databaseScript = databaseScript.replace("\n$Database_Table$", "");
+
+    return databaseScript;
   }
 
 }
