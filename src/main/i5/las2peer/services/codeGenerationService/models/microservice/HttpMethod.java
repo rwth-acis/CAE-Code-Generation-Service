@@ -28,7 +28,7 @@ public class HttpMethod {
   private String modelId;
   private String name;
   private String path;
-  private ArrayList<String> internalCalls = new ArrayList<String>();
+  private ArrayList<InternalCall> internalCalls = new ArrayList<InternalCall>();
   private ArrayList<HttpPayload> payloads = new ArrayList<HttpPayload>();
   private ArrayList<HttpResponse> responses = new ArrayList<HttpResponse>();
 
@@ -94,7 +94,7 @@ public class HttpMethod {
   }
 
 
-  public ArrayList<String> getInternalCalls() {
+  public ArrayList<InternalCall> getInternalCalls() {
     return this.internalCalls;
   }
 
@@ -119,8 +119,8 @@ public class HttpMethod {
   }
 
 
-  public void addInternalCall(String targetMethodId) {
-    this.internalCalls.add(targetMethodId);
+  public void addInternalCall(InternalCall call) {
+    this.internalCalls.add(call);
   }
 
 
