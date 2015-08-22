@@ -61,7 +61,7 @@ public class CodeGenerationServiceTest {
     // load models
     String modelPath1 = "./testModels/My First Testservice.model";
     String modelPath2 = "./testModels/My First Testservice without DB.model";
-    String modelPath3 = "./testModels/minimal widget test.model";
+    String modelPath3 = "./testModels/My Test Widget.model";
     Properties properties = new Properties();
     String propertiesFile =
         "./etc/i5.las2peer.services.codeGenerationService.CodeGenerationService.properties";

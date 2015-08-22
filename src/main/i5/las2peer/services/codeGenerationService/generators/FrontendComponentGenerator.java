@@ -77,6 +77,7 @@ public class FrontendComponentGenerator extends Generator {
     String iwc = null;
     String yjsInit = null;
     String yjsBindCode = null;
+    String yjsSyncedCode = null;
 
     try {
       PersonIdent caeUser = new PersonIdent(gitHubUser, gitHubUserMail);
@@ -139,6 +140,9 @@ public class FrontendComponentGenerator extends Generator {
             case "yjsBindCode.txt":
               yjsBindCode = new String(loader.getBytes(), "UTF-8");
               break;
+            case "yjsSyncedTemplate.txt":
+              yjsSyncedCode = new String(loader.getBytes(), "UTF-8");
+              break;
             case "style.css":
               style = new String(loader.getBytes(), "UTF-8");
               break;
@@ -168,8 +172,8 @@ public class FrontendComponentGenerator extends Generator {
       applicationScript =
           addEventsToApplicationScript(applicationScript, eventTemplate, frontendComponent);
       // add (possible) Yjs collaboration stuff
-      applicationScript =
-          addYjsCollaboration(applicationScript, yjsInit, yjsBindCode, frontendComponent);
+      applicationScript = addYjsCollaboration(applicationScript, yjsInit, yjsBindCode,
+          yjsSyncedCode, frontendComponent);
       // and remove remaining placeholer in the end
       applicationScript = removeRemainingAppScriptPlaceholder(applicationScript);
       // add files to new repository
@@ -302,56 +306,55 @@ public class FrontendComponentGenerator extends Generator {
     String elementCode = htmlElementTemplate;
     switch (element.getType()) {
       case CUSTOM:
-        elementCode = htmlElementTemplate;
         elementCode = elementCode.replace("$Closing_Element$", "</$Element_Type$>");
         elementCode = elementCode.replace("$Element_Type$", element.getType().toString());
         elementCode = elementCode.replace("$Element_Id$", element.getId());
         break;
       case br:
-        elementCode = htmlElementTemplate;
-        elementCode = elementCode.replace("$Closing_Element$", "");
         elementCode = elementCode.replace("$Element_Type$", element.getType().toString());
         elementCode = elementCode.replace("$Element_Id$", element.getId());
         break;
       case button:
-        elementCode = htmlElementTemplate;
-        elementCode = elementCode.replace("$Closing_Element$", "</$Element_Type$>");
+        elementCode =
+            elementCode.replace("$Closing_Element$", element.getId() + "</$Element_Type$>");
         elementCode = elementCode.replace("$Element_Type$", element.getType().toString());
         elementCode = elementCode.replace("$Element_Id$", element.getId());
+        elementCode = elementCode.replace("$Additional_Values$", "class=\"btn btn-default\"");
         break;
       case div:
-        elementCode = htmlElementTemplate;
         elementCode = elementCode.replace("$Closing_Element$", "</$Element_Type$>");
         elementCode = elementCode.replace("$Element_Type$", element.getType().toString());
         elementCode = elementCode.replace("$Element_Id$", element.getId());
         break;
       case input:
-        elementCode = htmlElementTemplate;
         elementCode = elementCode.replace("$Closing_Element$", "</$Element_Type$>");
         elementCode = elementCode.replace("$Element_Type$", element.getType().toString());
         elementCode = elementCode.replace("$Element_Id$", element.getId());
         break;
       case p:
-        elementCode = htmlElementTemplate;
-        elementCode = elementCode.replace("$Closing_Element$", "</$Element_Type$>");
+        elementCode = elementCode.replace("$Closing_Element$", "some paragraph</$Element_Type$>");
         elementCode = elementCode.replace("$Element_Type$", element.getType().toString());
         elementCode = elementCode.replace("$Element_Id$", element.getId());
         break;
       case table:
-        elementCode = htmlElementTemplate;
         elementCode = elementCode.replace("$Closing_Element$", "</$Element_Type$>");
         elementCode = elementCode.replace("$Element_Type$", element.getType().toString());
         elementCode = elementCode.replace("$Element_Id$", element.getId());
         break;
       case textarea:
-        elementCode = htmlElementTemplate;
         elementCode = elementCode.replace("$Closing_Element$", "</$Element_Type$>");
+        elementCode =
+            elementCode.replace("$Additional_Values$", "class=\"form-control\" rows=\"5\"");
         elementCode = elementCode.replace("$Element_Type$", element.getType().toString());
         elementCode = elementCode.replace("$Element_Id$", element.getId());
         break;
       default:
         break;
     }
+    // remove (possible) remaining placeholder
+    // (type and id are needed for every element, rest is optional)
+    elementCode = elementCode.replace("$Closing_Element$", "");
+    elementCode = elementCode.replace(" $Additional_Values$", "");
     return elementCode;
   }
 
@@ -489,13 +492,14 @@ public class FrontendComponentGenerator extends Generator {
    * @param applicationScript the application script code
    * @param yjsInit a template for initializing the Yjs connector etc
    * @param yjsTemplate a template for binding an html element
+   * @param yjsSyncedCode a template for sync actions of an element
    * @param frontendComponent a {@link FrontendComponent}
    * 
    * @return the updated application script code
    * 
    */
   private static String addYjsCollaboration(String applicationScript, String yjsInit,
-      String yjsBindCode, FrontendComponent frontendComponent) {
+      String yjsBindCode, String yjsSyncedCode, FrontendComponent frontendComponent) {
     boolean foundCollaborativeElement = false; // helper so that the code only needs to run once
     for (HtmlElement element : frontendComponent.getHtmlElements().values()) {
       if (element.isCollaborativeElement()) {
@@ -503,17 +507,21 @@ public class FrontendComponentGenerator extends Generator {
           applicationScript = applicationScript.replace("$Yjs_Code$", yjsInit);
           foundCollaborativeElement = true;
         }
+        applicationScript = applicationScript.replace("$Sync_Code$", yjsSyncedCode);
         applicationScript = applicationScript.replace("$Variable_Init$", "  var " + element.getId()
             + " = document.getElementById(\"" + element.getId() + "\");\n$Variable_Init$");
+        applicationScript = applicationScript.replace("$Variable_Init$",
+            "  y.val(\"" + element.getId() + "\", new Y.Text(\"\"));\n$Variable_Init$");
+
         applicationScript = applicationScript.replace("$Variable_Observe_Code$", yjsBindCode);
-        // TODO also static "textfield" code in yjsInit template!!
-        applicationScript = applicationScript.replace("$Element_Type$", "textfield");
         applicationScript = applicationScript.replace("$Element_Id$", element.getId());
       }
     }
     // remove last placeholder
     applicationScript = applicationScript.replace("$Variable_Init$\n", "");
     applicationScript = applicationScript.replace("$Variable_Observe_Code$\n", "");
+    applicationScript = applicationScript.replace("$Sync_Code$\n", "");
+
     return applicationScript;
   }
 
