@@ -1,0 +1,1167 @@
+{
+    "attributes": {
+        "label": {
+            "id": "modelAttributes[label]",
+            "name": "Label",
+            "value": {
+                "id": "modelAttributes[label]",
+                "name": "Label",
+                "value": "My Test Widget"
+            }
+        },
+        "left": 0,
+        "top": 0,
+        "width": 0,
+        "height": 0,
+        "zIndex": 0,
+        "type": "ModelAttributesNode",
+        "attributes": {}
+    },
+    "nodes": {
+        "ac17d4269e5f157f9919f845": {
+            "label": {
+                "id": "ac17d4269e5f157f9919f845[label]",
+                "name": "Label",
+                "value": {
+                    "id": "ac17d4269e5f157f9919f845[label]",
+                    "name": "Label",
+                    "value": ""
+                }
+            },
+            "left": 4498,
+            "top": 4864,
+            "width": 100,
+            "height": 50,
+            "zIndex": 16019,
+            "type": "HTML Element",
+            "attributes": {
+                "f8b228ce6cb6e6ca97080624": {
+                    "id": "ac17d4269e5f157f9919f845[type]",
+                    "name": "type",
+                    "value": {
+                        "id": "ac17d4269e5f157f9919f845[type]",
+                        "name": "type",
+                        "value": "textarea"
+                    }
+                },
+                "d326bc315a5c9e11522b58e5": {
+                    "id": "ac17d4269e5f157f9919f845[id]",
+                    "name": "id",
+                    "value": {
+                        "id": "ac17d4269e5f157f9919f845[id]",
+                        "name": "id",
+                        "value": "collabo2"
+                    }
+                },
+                "8a1165e52b225727d3c4fd75": {
+                    "id": "ac17d4269e5f157f9919f845[static]",
+                    "name": "static",
+                    "value": {
+                        "id": "ac17d4269e5f157f9919f845[static]",
+                        "name": "static",
+                        "value": "true"
+                    }
+                },
+                "4a7fa8f9d5c8c37a64832eff": {
+                    "id": "ac17d4269e5f157f9919f845[collaborative]",
+                    "name": "collaborative",
+                    "value": {
+                        "id": "ac17d4269e5f157f9919f845[collaborative]",
+                        "name": "collaborative",
+                        "value": "true"
+                    }
+                }
+            }
+        },
+        "47395ae631fe3d7038291231": {
+            "label": {
+                "id": "47395ae631fe3d7038291231[label]",
+                "name": "Label",
+                "value": {
+                    "id": "47395ae631fe3d7038291231[label]",
+                    "name": "Label",
+                    "value": ""
+                }
+            },
+            "left": 4512,
+            "top": 4744,
+            "width": 100,
+            "height": 50,
+            "zIndex": 16007,
+            "type": "HTML Element",
+            "attributes": {
+                "f8b228ce6cb6e6ca97080624": {
+                    "id": "47395ae631fe3d7038291231[type]",
+                    "name": "type",
+                    "value": {
+                        "id": "47395ae631fe3d7038291231[type]",
+                        "name": "type",
+                        "value": "button"
+                    }
+                },
+                "d326bc315a5c9e11522b58e5": {
+                    "id": "47395ae631fe3d7038291231[id]",
+                    "name": "id",
+                    "value": {
+                        "id": "47395ae631fe3d7038291231[id]",
+                        "name": "id",
+                        "value": "someButton"
+                    }
+                },
+                "8a1165e52b225727d3c4fd75": {
+                    "id": "47395ae631fe3d7038291231[static]",
+                    "name": "static",
+                    "value": {
+                        "id": "47395ae631fe3d7038291231[static]",
+                        "name": "static",
+                        "value": true
+                    }
+                },
+                "4a7fa8f9d5c8c37a64832eff": {
+                    "id": "47395ae631fe3d7038291231[collaborative]",
+                    "name": "collaborative",
+                    "value": {
+                        "id": "47395ae631fe3d7038291231[collaborative]",
+                        "name": "collaborative",
+                        "value": false
+                    }
+                }
+            }
+        },
+        "ee7bf690def4fda64200c99b": {
+            "label": {
+                "id": "ee7bf690def4fda64200c99b[label]",
+                "name": "Label",
+                "value": {
+                    "id": "ee7bf690def4fda64200c99b[label]",
+                    "name": "Label",
+                    "value": ""
+                }
+            },
+            "left": 4565,
+            "top": 4336,
+            "width": 100,
+            "height": 50,
+            "zIndex": 16014,
+            "type": "IWC Response",
+            "attributes": {
+                "181d0177c3bfcc27ca3c9535": {
+                    "id": "ee7bf690def4fda64200c99b[intentaction]",
+                    "name": "intentAction",
+                    "value": {
+                        "id": "ee7bf690def4fda64200c99b[intentaction]",
+                        "name": "intentAction",
+                        "value": "updatePElement"
+                    }
+                },
+                "4392a3a0cbaafd160c127c7b": {
+                    "id": "ee7bf690def4fda64200c99b[content]",
+                    "name": "content",
+                    "value": {
+                        "id": "ee7bf690def4fda64200c99b[content]",
+                        "name": "content",
+                        "value": "modifiedPElement"
+                    }
+                }
+            }
+        },
+        "1eff441847ea580765b3c9b1": {
+            "label": {
+                "id": "1eff441847ea580765b3c9b1[name]",
+                "name": "name",
+                "value": {
+                    "id": "1eff441847ea580765b3c9b1[name]",
+                    "name": "name",
+                    "value": "myFunction"
+                }
+            },
+            "left": 4734,
+            "top": 4661,
+            "width": 100,
+            "height": 46,
+            "zIndex": 16004,
+            "type": "Function",
+            "attributes": {
+                "919c6c03fb051f16d8fef15f": {
+                    "id": "1eff441847ea580765b3c9b1[name]",
+                    "name": "name",
+                    "value": {
+                        "id": "1eff441847ea580765b3c9b1[name]",
+                        "name": "name",
+                        "value": "myFunction"
+                    }
+                },
+                "9cdca7cf182676e04bfd0a0b": {
+                    "id": "1eff441847ea580765b3c9b1[returnparameter]",
+                    "name": "returnParameter",
+                    "value": {
+                        "id": "1eff441847ea580765b3c9b1[returnparameter]",
+                        "name": "returnParameter",
+                        "value": ""
+                    }
+                }
+            }
+        },
+        "6297ce0a2d6d25a3706119b5": {
+            "label": {
+                "id": "6297ce0a2d6d25a3706119b5[label]",
+                "name": "Label",
+                "value": {
+                    "id": "6297ce0a2d6d25a3706119b5[label]",
+                    "name": "Label",
+                    "value": ""
+                }
+            },
+            "left": 4807,
+            "top": 4834,
+            "width": 100,
+            "height": 50,
+            "zIndex": 16009,
+            "type": "Event",
+            "attributes": {
+                "fadb9895b330d412f2128e78": {
+                    "id": "6297ce0a2d6d25a3706119b5[eventcause]",
+                    "name": "eventCause",
+                    "value": {
+                        "id": "6297ce0a2d6d25a3706119b5[eventcause]",
+                        "name": "eventCause",
+                        "value": "click"
+                    }
+                }
+            }
+        },
+        "30cb12477b76d7079766ab09": {
+            "label": {
+                "id": "30cb12477b76d7079766ab09[name]",
+                "name": "name",
+                "value": {
+                    "id": "30cb12477b76d7079766ab09[name]",
+                    "name": "name",
+                    "value": "My Test Widget"
+                }
+            },
+            "left": 4365,
+            "top": 4565,
+            "width": 100,
+            "height": 64,
+            "zIndex": 16001,
+            "type": "Widget",
+            "attributes": {
+                "8429a9c1eb8ecdc2b1dbd097": {
+                    "id": "30cb12477b76d7079766ab09[name]",
+                    "name": "name",
+                    "value": {
+                        "id": "30cb12477b76d7079766ab09[name]",
+                        "name": "name",
+                        "value": "My Test Widget"
+                    }
+                },
+                "22c9ff8652e8f0c06d062b02": {
+                    "id": "30cb12477b76d7079766ab09[description]",
+                    "name": "description",
+                    "value": {
+                        "id": "30cb12477b76d7079766ab09[description]",
+                        "name": "description",
+                        "value": "Some Description"
+                    }
+                },
+                "46981b3227d71acbe05331bf": {
+                    "id": "30cb12477b76d7079766ab09[developername]",
+                    "name": "developerName",
+                    "value": {
+                        "id": "30cb12477b76d7079766ab09[developername]",
+                        "name": "developerName",
+                        "value": "This IsMe"
+                    }
+                },
+                "140cc72cc3228a273326c450": {
+                    "id": "30cb12477b76d7079766ab09[developermail]",
+                    "name": "developerMail",
+                    "value": {
+                        "id": "30cb12477b76d7079766ab09[developermail]",
+                        "name": "developerMail",
+                        "value": "my@mail.com"
+                    }
+                },
+                "e21ce18ca763e433fcb16546": {
+                    "id": "30cb12477b76d7079766ab09[width]",
+                    "name": "width",
+                    "value": {
+                        "id": "30cb12477b76d7079766ab09[width]",
+                        "name": "width",
+                        "value": "400"
+                    }
+                },
+                "d36e79e0c322818ddcefd09c": {
+                    "id": "30cb12477b76d7079766ab09[height]",
+                    "name": "height",
+                    "value": {
+                        "id": "30cb12477b76d7079766ab09[height]",
+                        "name": "height",
+                        "value": "400"
+                    }
+                },
+                "0eb8e4a4a056d7198eb90eed": {
+                    "id": "30cb12477b76d7079766ab09[microserviceaddress]",
+                    "name": "microserviceAddress",
+                    "value": {
+                        "id": "30cb12477b76d7079766ab09[microserviceaddress]",
+                        "name": "microserviceAddress",
+                        "value": "http://localhost:80/myResource"
+                    }
+                }
+            }
+        },
+        "71e74ec3dde04808dff221e9": {
+            "label": {
+                "id": "71e74ec3dde04808dff221e9[label]",
+                "name": "Label",
+                "value": {
+                    "id": "71e74ec3dde04808dff221e9[label]",
+                    "name": "Label",
+                    "value": ""
+                }
+            },
+            "left": 4242,
+            "top": 4390,
+            "width": 100,
+            "height": 50,
+            "zIndex": 16002,
+            "type": "HTML Element",
+            "attributes": {
+                "f8b228ce6cb6e6ca97080624": {
+                    "id": "71e74ec3dde04808dff221e9[type]",
+                    "name": "type",
+                    "value": {
+                        "id": "71e74ec3dde04808dff221e9[type]",
+                        "name": "type",
+                        "value": "br"
+                    }
+                },
+                "d326bc315a5c9e11522b58e5": {
+                    "id": "71e74ec3dde04808dff221e9[id]",
+                    "name": "id",
+                    "value": {
+                        "id": "71e74ec3dde04808dff221e9[id]",
+                        "name": "id",
+                        "value": "someStaticId"
+                    }
+                },
+                "8a1165e52b225727d3c4fd75": {
+                    "id": "71e74ec3dde04808dff221e9[static]",
+                    "name": "static",
+                    "value": {
+                        "id": "71e74ec3dde04808dff221e9[static]",
+                        "name": "static",
+                        "value": true
+                    }
+                },
+                "4a7fa8f9d5c8c37a64832eff": {
+                    "id": "71e74ec3dde04808dff221e9[collaborative]",
+                    "name": "collaborative",
+                    "value": {
+                        "id": "71e74ec3dde04808dff221e9[collaborative]",
+                        "name": "collaborative",
+                        "value": false
+                    }
+                }
+            }
+        },
+        "8e247c5922e5db2264e0536f": {
+            "label": {
+                "id": "8e247c5922e5db2264e0536f[name]",
+                "name": "name",
+                "value": {
+                    "id": "8e247c5922e5db2264e0536f[name]",
+                    "name": "name",
+                    "value": "microserviceParameter"
+                }
+            },
+            "left": 4712,
+            "top": 4322,
+            "width": 100,
+            "height": 50,
+            "zIndex": 16006,
+            "type": "Input Parameter",
+            "attributes": {
+                "170b28736e01825bb6ebb131": {
+                    "id": "8e247c5922e5db2264e0536f[name]",
+                    "name": "name",
+                    "value": {
+                        "id": "8e247c5922e5db2264e0536f[name]",
+                        "name": "name",
+                        "value": "microserviceParameter"
+                    }
+                }
+            }
+        },
+        "d5d64bbb9baa6d7126a3330f": {
+            "label": {
+                "id": "d5d64bbb9baa6d7126a3330f[label]",
+                "name": "Label",
+                "value": {
+                    "id": "d5d64bbb9baa6d7126a3330f[label]",
+                    "name": "Label",
+                    "value": ""
+                }
+            },
+            "left": 4094,
+            "top": 4458,
+            "width": 100,
+            "height": 50,
+            "zIndex": 16016,
+            "type": "IWC Call",
+            "attributes": {
+                "68f96ac4cd5abc379fd65aba": {
+                    "id": "d5d64bbb9baa6d7126a3330f[intentaction]",
+                    "name": "intentAction",
+                    "value": {
+                        "id": "d5d64bbb9baa6d7126a3330f[intentaction]",
+                        "name": "intentAction",
+                        "value": "updatePElement"
+                    }
+                },
+                "4c047ef2a06f415381585a45": {
+                    "id": "d5d64bbb9baa6d7126a3330f[content]",
+                    "name": "content",
+                    "value": {
+                        "id": "d5d64bbb9baa6d7126a3330f[content]",
+                        "name": "content",
+                        "value": "modifiedpelement"
+                    }
+                }
+            }
+        },
+        "28c655ffad7b4013025a1d8c": {
+            "label": {
+                "id": "28c655ffad7b4013025a1d8c[label]",
+                "name": "Label",
+                "value": {
+                    "id": "28c655ffad7b4013025a1d8c[label]",
+                    "name": "Label",
+                    "value": ""
+                }
+            },
+            "left": 4706,
+            "top": 4556,
+            "width": 100,
+            "height": 50,
+            "zIndex": 16017,
+            "type": "HTML Element",
+            "attributes": {
+                "f8b228ce6cb6e6ca97080624": {
+                    "id": "28c655ffad7b4013025a1d8c[type]",
+                    "name": "type",
+                    "value": {
+                        "id": "28c655ffad7b4013025a1d8c[type]",
+                        "name": "type",
+                        "value": "div"
+                    }
+                },
+                "d326bc315a5c9e11522b58e5": {
+                    "id": "28c655ffad7b4013025a1d8c[id]",
+                    "name": "id",
+                    "value": {
+                        "id": "28c655ffad7b4013025a1d8c[id]",
+                        "name": "id",
+                        "value": "someElementDiv"
+                    }
+                },
+                "8a1165e52b225727d3c4fd75": {
+                    "id": "28c655ffad7b4013025a1d8c[static]",
+                    "name": "static",
+                    "value": {
+                        "id": "28c655ffad7b4013025a1d8c[static]",
+                        "name": "static",
+                        "value": false
+                    }
+                },
+                "4a7fa8f9d5c8c37a64832eff": {
+                    "id": "28c655ffad7b4013025a1d8c[collaborative]",
+                    "name": "collaborative",
+                    "value": {
+                        "id": "28c655ffad7b4013025a1d8c[collaborative]",
+                        "name": "collaborative",
+                        "value": false
+                    }
+                }
+            }
+        },
+        "612aab35eb79b38c53470734": {
+            "label": {
+                "id": "612aab35eb79b38c53470734[label]",
+                "name": "Label",
+                "value": {
+                    "id": "612aab35eb79b38c53470734[label]",
+                    "name": "Label",
+                    "value": ""
+                }
+            },
+            "left": 4323,
+            "top": 4826,
+            "width": 100,
+            "height": 50,
+            "zIndex": 16018,
+            "type": "HTML Element",
+            "attributes": {
+                "f8b228ce6cb6e6ca97080624": {
+                    "id": "612aab35eb79b38c53470734[type]",
+                    "name": "type",
+                    "value": {
+                        "id": "612aab35eb79b38c53470734[type]",
+                        "name": "type",
+                        "value": "textarea"
+                    }
+                },
+                "d326bc315a5c9e11522b58e5": {
+                    "id": "612aab35eb79b38c53470734[id]",
+                    "name": "id",
+                    "value": {
+                        "id": "612aab35eb79b38c53470734[id]",
+                        "name": "id",
+                        "value": "collabo1"
+                    }
+                },
+                "8a1165e52b225727d3c4fd75": {
+                    "id": "612aab35eb79b38c53470734[static]",
+                    "name": "static",
+                    "value": {
+                        "id": "612aab35eb79b38c53470734[static]",
+                        "name": "static",
+                        "value": "true"
+                    }
+                },
+                "4a7fa8f9d5c8c37a64832eff": {
+                    "id": "612aab35eb79b38c53470734[collaborative]",
+                    "name": "collaborative",
+                    "value": {
+                        "id": "612aab35eb79b38c53470734[collaborative]",
+                        "name": "collaborative",
+                        "value": "true"
+                    }
+                }
+            }
+        },
+        "1a80ed7b3a2fad53ff94692a": {
+            "label": {
+                "id": "1a80ed7b3a2fad53ff94692a[name]",
+                "name": "name",
+                "value": {
+                    "id": "1a80ed7b3a2fad53ff94692a[name]",
+                    "name": "name",
+                    "value": "someCreateFunction"
+                }
+            },
+            "left": 4557,
+            "top": 4502,
+            "width": 100,
+            "height": 50,
+            "zIndex": 16011,
+            "type": "Function",
+            "attributes": {
+                "919c6c03fb051f16d8fef15f": {
+                    "id": "1a80ed7b3a2fad53ff94692a[name]",
+                    "name": "name",
+                    "value": {
+                        "id": "1a80ed7b3a2fad53ff94692a[name]",
+                        "name": "name",
+                        "value": "someCreateFunction"
+                    }
+                },
+                "9cdca7cf182676e04bfd0a0b": {
+                    "id": "1a80ed7b3a2fad53ff94692a[returnparameter]",
+                    "name": "returnParameter",
+                    "value": {
+                        "id": "1a80ed7b3a2fad53ff94692a[returnparameter]",
+                        "name": "returnParameter",
+                        "value": "somePariraro"
+                    }
+                }
+            }
+        },
+        "c829af7d10eaf702a7a380b2": {
+            "label": {
+                "id": "c829af7d10eaf702a7a380b2[label]",
+                "name": "Label",
+                "value": {
+                    "id": "c829af7d10eaf702a7a380b2[label]",
+                    "name": "Label",
+                    "value": ""
+                }
+            },
+            "left": 4866,
+            "top": 4451,
+            "width": 100,
+            "height": 50,
+            "zIndex": 16005,
+            "type": "Microservice Call",
+            "attributes": {
+                "e13d6ee2f226d8f624204ad2": {
+                    "id": "c829af7d10eaf702a7a380b2[methodtype]",
+                    "name": "methodType",
+                    "value": {
+                        "id": "c829af7d10eaf702a7a380b2[methodtype]",
+                        "name": "methodType",
+                        "value": "GET"
+                    }
+                },
+                "6c9933251a6ebed9f1885e02": {
+                    "id": "c829af7d10eaf702a7a380b2[contenttype]",
+                    "name": "contentType",
+                    "value": {
+                        "id": "c829af7d10eaf702a7a380b2[contenttype]",
+                        "name": "contentType",
+                        "value": "text/plain"
+                    }
+                },
+                "2febb8dfca77f8344124d518": {
+                    "id": "c829af7d10eaf702a7a380b2[path]",
+                    "name": "path",
+                    "value": {
+                        "id": "c829af7d10eaf702a7a380b2[path]",
+                        "name": "path",
+                        "value": "somePath/"
+                    }
+                },
+                "6c2b12ca3ec957222d6d6812": {
+                    "id": "c829af7d10eaf702a7a380b2[authorize]",
+                    "name": "authorize",
+                    "value": {
+                        "id": "c829af7d10eaf702a7a380b2[authorize]",
+                        "name": "authorize",
+                        "value": "true"
+                    }
+                },
+                "decb3f05b6d0e014b6b93ecf": {
+                    "id": "c829af7d10eaf702a7a380b2[content]",
+                    "name": "content",
+                    "value": {
+                        "id": "c829af7d10eaf702a7a380b2[content]",
+                        "name": "content",
+                        "value": "myCallContent"
+                    }
+                }
+            }
+        },
+        "7da2e5591f7ca09fc759d36b": {
+            "label": {
+                "id": "7da2e5591f7ca09fc759d36b[label]",
+                "name": "Label",
+                "value": {
+                    "id": "7da2e5591f7ca09fc759d36b[label]",
+                    "name": "Label",
+                    "value": ""
+                }
+            },
+            "left": 4384,
+            "top": 4371,
+            "width": 100,
+            "height": 50,
+            "zIndex": 16008,
+            "type": "HTML Element",
+            "attributes": {
+                "f8b228ce6cb6e6ca97080624": {
+                    "id": "7da2e5591f7ca09fc759d36b[type]",
+                    "name": "type",
+                    "value": {
+                        "id": "7da2e5591f7ca09fc759d36b[type]",
+                        "name": "type",
+                        "value": "p"
+                    }
+                },
+                "d326bc315a5c9e11522b58e5": {
+                    "id": "7da2e5591f7ca09fc759d36b[id]",
+                    "name": "id",
+                    "value": {
+                        "id": "7da2e5591f7ca09fc759d36b[id]",
+                        "name": "id",
+                        "value": "someId2"
+                    }
+                },
+                "8a1165e52b225727d3c4fd75": {
+                    "id": "7da2e5591f7ca09fc759d36b[static]",
+                    "name": "static",
+                    "value": {
+                        "id": "7da2e5591f7ca09fc759d36b[static]",
+                        "name": "static",
+                        "value": false
+                    }
+                },
+                "4a7fa8f9d5c8c37a64832eff": {
+                    "id": "7da2e5591f7ca09fc759d36b[collaborative]",
+                    "name": "collaborative",
+                    "value": {
+                        "id": "7da2e5591f7ca09fc759d36b[collaborative]",
+                        "name": "collaborative",
+                        "value": false
+                    }
+                }
+            }
+        },
+        "2262ce36a7cfa29a532590ad": {
+            "label": {
+                "id": "2262ce36a7cfa29a532590ad[label]",
+                "name": "Label",
+                "value": {
+                    "id": "2262ce36a7cfa29a532590ad[label]",
+                    "name": "Label",
+                    "value": ""
+                }
+            },
+            "left": 4077,
+            "top": 4638,
+            "width": 100,
+            "height": 45,
+            "zIndex": 16013,
+            "type": "Event",
+            "attributes": {
+                "fadb9895b330d412f2128e78": {
+                    "id": "2262ce36a7cfa29a532590ad[eventcause]",
+                    "name": "eventCause",
+                    "value": {
+                        "id": "2262ce36a7cfa29a532590ad[eventcause]",
+                        "name": "eventCause",
+                        "value": "click"
+                    }
+                }
+            }
+        },
+        "771a56bd5ec3dd27fd5b04d5": {
+            "label": {
+                "id": "771a56bd5ec3dd27fd5b04d5[name]",
+                "name": "name",
+                "value": {
+                    "id": "771a56bd5ec3dd27fd5b04d5[name]",
+                    "name": "name",
+                    "value": "InitiateICW"
+                }
+            },
+            "left": 4221,
+            "top": 4564,
+            "width": 100,
+            "height": 50,
+            "zIndex": 16010,
+            "type": "Function",
+            "attributes": {
+                "919c6c03fb051f16d8fef15f": {
+                    "id": "771a56bd5ec3dd27fd5b04d5[name]",
+                    "name": "name",
+                    "value": {
+                        "id": "771a56bd5ec3dd27fd5b04d5[name]",
+                        "name": "name",
+                        "value": "InitiateICW"
+                    }
+                },
+                "9cdca7cf182676e04bfd0a0b": {
+                    "id": "771a56bd5ec3dd27fd5b04d5[returnparameter]",
+                    "name": "returnParameter",
+                    "value": {
+                        "id": "771a56bd5ec3dd27fd5b04d5[returnparameter]",
+                        "name": "returnParameter",
+                        "value": ""
+                    }
+                }
+            }
+        },
+        "3ecefd3bec05b26bf0b44ded": {
+            "label": {
+                "id": "3ecefd3bec05b26bf0b44ded[label]",
+                "name": "Label",
+                "value": {
+                    "id": "3ecefd3bec05b26bf0b44ded[label]",
+                    "name": "Label",
+                    "value": ""
+                }
+            },
+            "left": 4156,
+            "top": 4801,
+            "width": 100,
+            "height": 50,
+            "zIndex": 16015,
+            "type": "HTML Element",
+            "attributes": {
+                "f8b228ce6cb6e6ca97080624": {
+                    "id": "3ecefd3bec05b26bf0b44ded[type]",
+                    "name": "type",
+                    "value": {
+                        "id": "3ecefd3bec05b26bf0b44ded[type]",
+                        "name": "type",
+                        "value": "button"
+                    }
+                },
+                "d326bc315a5c9e11522b58e5": {
+                    "id": "3ecefd3bec05b26bf0b44ded[id]",
+                    "name": "id",
+                    "value": {
+                        "id": "3ecefd3bec05b26bf0b44ded[id]",
+                        "name": "id",
+                        "value": "clickElement"
+                    }
+                },
+                "8a1165e52b225727d3c4fd75": {
+                    "id": "3ecefd3bec05b26bf0b44ded[static]",
+                    "name": "static",
+                    "value": {
+                        "id": "3ecefd3bec05b26bf0b44ded[static]",
+                        "name": "static",
+                        "value": true
+                    }
+                },
+                "4a7fa8f9d5c8c37a64832eff": {
+                    "id": "3ecefd3bec05b26bf0b44ded[collaborative]",
+                    "name": "collaborative",
+                    "value": {
+                        "id": "3ecefd3bec05b26bf0b44ded[collaborative]",
+                        "name": "collaborative",
+                        "value": false
+                    }
+                }
+            }
+        },
+        "8d307e38201911401f3a09bb": {
+            "label": {
+                "id": "8d307e38201911401f3a09bb[name]",
+                "name": "name",
+                "value": {
+                    "id": "8d307e38201911401f3a09bb[name]",
+                    "name": "name",
+                    "value": "someParam"
+                }
+            },
+            "left": 5055,
+            "top": 4500,
+            "width": 100,
+            "height": 50,
+            "zIndex": 16003,
+            "type": "Input Parameter",
+            "attributes": {
+                "170b28736e01825bb6ebb131": {
+                    "id": "8d307e38201911401f3a09bb[name]",
+                    "name": "name",
+                    "value": {
+                        "id": "8d307e38201911401f3a09bb[name]",
+                        "name": "name",
+                        "value": "someParam"
+                    }
+                }
+            }
+        }
+    },
+    "edges": {
+        "9a6d06471a4834f548e27c95": {
+            "label": {
+                "id": "9a6d06471a4834f548e27c95[label]",
+                "name": "Label",
+                "value": {
+                    "id": "9a6d06471a4834f548e27c95[label]",
+                    "name": "Label",
+                    "value": ""
+                }
+            },
+            "source": "6297ce0a2d6d25a3706119b5",
+            "target": "1eff441847ea580765b3c9b1",
+            "attributes": {},
+            "type": "Event to Function Call"
+        },
+        "9ceba329800f85d5a4d0cf02": {
+            "label": {
+                "id": "9ceba329800f85d5a4d0cf02[label]",
+                "name": "Label",
+                "value": {
+                    "id": "9ceba329800f85d5a4d0cf02[label]",
+                    "name": "Label",
+                    "value": ""
+                }
+            },
+            "source": "47395ae631fe3d7038291231",
+            "target": "6297ce0a2d6d25a3706119b5",
+            "attributes": {},
+            "type": "HTML Element to Event"
+        },
+        "de0faf7b21dbaed3e7d2be5f": {
+            "label": {
+                "id": "de0faf7b21dbaed3e7d2be5f[label]",
+                "name": "Label",
+                "value": {
+                    "id": "de0faf7b21dbaed3e7d2be5f[label]",
+                    "name": "Label",
+                    "value": ""
+                }
+            },
+            "source": "30cb12477b76d7079766ab09",
+            "target": "1a80ed7b3a2fad53ff94692a",
+            "attributes": {},
+            "type": "Widget to Function"
+        },
+        "28b5ba2c9c3120dc8707166b": {
+            "label": {
+                "id": "28b5ba2c9c3120dc8707166b[label]",
+                "name": "Label",
+                "value": {
+                    "id": "28b5ba2c9c3120dc8707166b[label]",
+                    "name": "Label",
+                    "value": ""
+                }
+            },
+            "source": "30cb12477b76d7079766ab09",
+            "target": "28c655ffad7b4013025a1d8c",
+            "attributes": {},
+            "type": "Widget to HTML Element"
+        },
+        "685ba82dc010b4391873eba9": {
+            "label": {
+                "id": "685ba82dc010b4391873eba9[label]",
+                "name": "Label",
+                "value": {
+                    "id": "685ba82dc010b4391873eba9[label]",
+                    "name": "Label",
+                    "value": ""
+                }
+            },
+            "source": "30cb12477b76d7079766ab09",
+            "target": "3ecefd3bec05b26bf0b44ded",
+            "attributes": {},
+            "type": "Widget to HTML Element"
+        },
+        "c63e08ea1b771d4cc5ec33de": {
+            "label": {
+                "id": "c63e08ea1b771d4cc5ec33de[label]",
+                "name": "Label",
+                "value": {
+                    "id": "c63e08ea1b771d4cc5ec33de[label]",
+                    "name": "Label",
+                    "value": ""
+                }
+            },
+            "source": "30cb12477b76d7079766ab09",
+            "target": "7da2e5591f7ca09fc759d36b",
+            "attributes": {},
+            "type": "Widget to HTML Element"
+        },
+        "bf23de8d5217b73d6de1e5b9": {
+            "label": {
+                "id": "bf23de8d5217b73d6de1e5b9[label]",
+                "name": "Label",
+                "value": {
+                    "id": "bf23de8d5217b73d6de1e5b9[label]",
+                    "name": "Label",
+                    "value": ""
+                }
+            },
+            "source": "30cb12477b76d7079766ab09",
+            "target": "771a56bd5ec3dd27fd5b04d5",
+            "attributes": {},
+            "type": "Widget to Function"
+        },
+        "b2b682429ff29c53fe85971c": {
+            "label": {
+                "id": "b2b682429ff29c53fe85971c[label]",
+                "name": "Label",
+                "value": {
+                    "id": "b2b682429ff29c53fe85971c[label]",
+                    "name": "Label",
+                    "value": ""
+                }
+            },
+            "source": "30cb12477b76d7079766ab09",
+            "target": "47395ae631fe3d7038291231",
+            "attributes": {},
+            "type": "Widget to HTML Element"
+        },
+        "78b68624fad30e0dc9201b2e": {
+            "label": {
+                "id": "78b68624fad30e0dc9201b2e[label]",
+                "name": "Label",
+                "value": {
+                    "id": "78b68624fad30e0dc9201b2e[label]",
+                    "name": "Label",
+                    "value": ""
+                }
+            },
+            "source": "2262ce36a7cfa29a532590ad",
+            "target": "771a56bd5ec3dd27fd5b04d5",
+            "attributes": {},
+            "type": "Event to Function Call"
+        },
+        "e2e8b07f3bc002ef16dc7f80": {
+            "label": {
+                "id": "e2e8b07f3bc002ef16dc7f80[label]",
+                "name": "Label",
+                "value": {
+                    "id": "e2e8b07f3bc002ef16dc7f80[label]",
+                    "name": "Label",
+                    "value": ""
+                }
+            },
+            "source": "1a80ed7b3a2fad53ff94692a",
+            "target": "ee7bf690def4fda64200c99b",
+            "attributes": {},
+            "type": "Waits for"
+        },
+        "5b546bcd194caf3d8080d1a9": {
+            "label": {
+                "id": "5b546bcd194caf3d8080d1a9[label]",
+                "name": "Label",
+                "value": {
+                    "id": "5b546bcd194caf3d8080d1a9[label]",
+                    "name": "Label",
+                    "value": ""
+                }
+            },
+            "source": "30cb12477b76d7079766ab09",
+            "target": "612aab35eb79b38c53470734",
+            "attributes": {},
+            "type": "Widget to HTML Element"
+        },
+        "0b79cda073c9c8fe623e1934": {
+            "label": {
+                "id": "0b79cda073c9c8fe623e1934[label]",
+                "name": "Label",
+                "value": {
+                    "id": "0b79cda073c9c8fe623e1934[label]",
+                    "name": "Label",
+                    "value": ""
+                }
+            },
+            "source": "30cb12477b76d7079766ab09",
+            "target": "71e74ec3dde04808dff221e9",
+            "attributes": {},
+            "type": "Widget to HTML Element"
+        },
+        "391cd6025f5529acf69ec498": {
+            "label": {
+                "id": "391cd6025f5529acf69ec498[label]",
+                "name": "Label",
+                "value": {
+                    "id": "391cd6025f5529acf69ec498[label]",
+                    "name": "Label",
+                    "value": ""
+                }
+            },
+            "source": "1eff441847ea580765b3c9b1",
+            "target": "8d307e38201911401f3a09bb",
+            "attributes": {},
+            "type": "Parameter Connection"
+        },
+        "2b026d34b1a32df8b0488fd0": {
+            "label": {
+                "id": "2b026d34b1a32df8b0488fd0[label]",
+                "name": "Label",
+                "value": {
+                    "id": "2b026d34b1a32df8b0488fd0[label]",
+                    "name": "Label",
+                    "value": ""
+                }
+            },
+            "source": "30cb12477b76d7079766ab09",
+            "target": "ac17d4269e5f157f9919f845",
+            "attributes": {},
+            "type": "Widget to HTML Element"
+        },
+        "9120bce402876db900dec117": {
+            "label": {
+                "id": "9120bce402876db900dec117[label]",
+                "name": "Label",
+                "value": {
+                    "id": "9120bce402876db900dec117[label]",
+                    "name": "Label",
+                    "value": ""
+                }
+            },
+            "source": "1eff441847ea580765b3c9b1",
+            "target": "28c655ffad7b4013025a1d8c",
+            "attributes": {},
+            "type": "Element Update"
+        },
+        "628b86075efde905c9abe91c": {
+            "label": {
+                "id": "628b86075efde905c9abe91c[label]",
+                "name": "Label",
+                "value": {
+                    "id": "628b86075efde905c9abe91c[label]",
+                    "name": "Label",
+                    "value": ""
+                }
+            },
+            "source": "c829af7d10eaf702a7a380b2",
+            "target": "8e247c5922e5db2264e0536f",
+            "attributes": {},
+            "type": "Parameter Connection"
+        },
+        "8e2133038c78147066d7dbec": {
+            "label": {
+                "id": "8e2133038c78147066d7dbec[label]",
+                "name": "Label",
+                "value": {
+                    "id": "8e2133038c78147066d7dbec[label]",
+                    "name": "Label",
+                    "value": ""
+                }
+            },
+            "source": "30cb12477b76d7079766ab09",
+            "target": "1eff441847ea580765b3c9b1",
+            "attributes": {},
+            "type": "Widget to Function"
+        },
+        "3a95eed735084d1af7571139": {
+            "label": {
+                "id": "3a95eed735084d1af7571139[label]",
+                "name": "Label",
+                "value": {
+                    "id": "3a95eed735084d1af7571139[label]",
+                    "name": "Label",
+                    "value": ""
+                }
+            },
+            "source": "3ecefd3bec05b26bf0b44ded",
+            "target": "2262ce36a7cfa29a532590ad",
+            "attributes": {},
+            "type": "HTML Element to Event"
+        },
+        "9365332014ea8e09c5cedfb4": {
+            "label": {
+                "id": "9365332014ea8e09c5cedfb4[label]",
+                "name": "Label",
+                "value": {
+                    "id": "9365332014ea8e09c5cedfb4[label]",
+                    "name": "Label",
+                    "value": ""
+                }
+            },
+            "source": "771a56bd5ec3dd27fd5b04d5",
+            "target": "d5d64bbb9baa6d7126a3330f",
+            "attributes": {},
+            "type": "Initiates"
+        },
+        "304b88a2a9c9a3f7c5042789": {
+            "label": {
+                "id": "304b88a2a9c9a3f7c5042789[label]",
+                "name": "Label",
+                "value": {
+                    "id": "304b88a2a9c9a3f7c5042789[label]",
+                    "name": "Label",
+                    "value": ""
+                }
+            },
+            "source": "1eff441847ea580765b3c9b1",
+            "target": "c829af7d10eaf702a7a380b2",
+            "attributes": {},
+            "type": "Function To Microservice Call"
+        },
+        "761e7bd6b9d23cda576fb838": {
+            "label": {
+                "id": "761e7bd6b9d23cda576fb838[label]",
+                "name": "Label",
+                "value": {
+                    "id": "761e7bd6b9d23cda576fb838[label]",
+                    "name": "Label",
+                    "value": ""
+                }
+            },
+            "source": "1a80ed7b3a2fad53ff94692a",
+            "target": "7da2e5591f7ca09fc759d36b",
+            "attributes": {},
+            "type": "Element Creation"
+        }
+    }
+}

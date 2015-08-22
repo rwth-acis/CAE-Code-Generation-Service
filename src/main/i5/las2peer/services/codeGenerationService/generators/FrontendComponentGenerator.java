@@ -306,56 +306,55 @@ public class FrontendComponentGenerator extends Generator {
     String elementCode = htmlElementTemplate;
     switch (element.getType()) {
       case CUSTOM:
-        elementCode = htmlElementTemplate;
         elementCode = elementCode.replace("$Closing_Element$", "</$Element_Type$>");
         elementCode = elementCode.replace("$Element_Type$", element.getType().toString());
         elementCode = elementCode.replace("$Element_Id$", element.getId());
         break;
       case br:
-        elementCode = htmlElementTemplate;
-        elementCode = elementCode.replace("$Closing_Element$", "");
         elementCode = elementCode.replace("$Element_Type$", element.getType().toString());
         elementCode = elementCode.replace("$Element_Id$", element.getId());
         break;
       case button:
-        elementCode = htmlElementTemplate;
-        elementCode = elementCode.replace("$Closing_Element$", "</$Element_Type$>");
+        elementCode =
+            elementCode.replace("$Closing_Element$", element.getId() + "</$Element_Type$>");
         elementCode = elementCode.replace("$Element_Type$", element.getType().toString());
         elementCode = elementCode.replace("$Element_Id$", element.getId());
+        elementCode = elementCode.replace("$Additional_Values$", "class=\"btn btn-default\"");
         break;
       case div:
-        elementCode = htmlElementTemplate;
         elementCode = elementCode.replace("$Closing_Element$", "</$Element_Type$>");
         elementCode = elementCode.replace("$Element_Type$", element.getType().toString());
         elementCode = elementCode.replace("$Element_Id$", element.getId());
         break;
       case input:
-        elementCode = htmlElementTemplate;
         elementCode = elementCode.replace("$Closing_Element$", "</$Element_Type$>");
         elementCode = elementCode.replace("$Element_Type$", element.getType().toString());
         elementCode = elementCode.replace("$Element_Id$", element.getId());
         break;
       case p:
-        elementCode = htmlElementTemplate;
-        elementCode = elementCode.replace("$Closing_Element$", "</$Element_Type$>");
+        elementCode = elementCode.replace("$Closing_Element$", "some paragraph</$Element_Type$>");
         elementCode = elementCode.replace("$Element_Type$", element.getType().toString());
         elementCode = elementCode.replace("$Element_Id$", element.getId());
         break;
       case table:
-        elementCode = htmlElementTemplate;
         elementCode = elementCode.replace("$Closing_Element$", "</$Element_Type$>");
         elementCode = elementCode.replace("$Element_Type$", element.getType().toString());
         elementCode = elementCode.replace("$Element_Id$", element.getId());
         break;
       case textarea:
-        elementCode = htmlElementTemplate;
         elementCode = elementCode.replace("$Closing_Element$", "</$Element_Type$>");
+        elementCode =
+            elementCode.replace("$Additional_Values$", "class=\"form-control\" rows=\"5\"");
         elementCode = elementCode.replace("$Element_Type$", element.getType().toString());
         elementCode = elementCode.replace("$Element_Id$", element.getId());
         break;
       default:
         break;
     }
+    // remove (possible) remaining placeholder
+    // (type and id are needed for every element, rest is optional)
+    elementCode = elementCode.replace("$Closing_Element$", "");
+    elementCode = elementCode.replace(" $Additional_Values$", "");
     return elementCode;
   }
 
