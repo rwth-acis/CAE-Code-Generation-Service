@@ -512,10 +512,13 @@ public class FrontendComponentGenerator extends Generator {
             + " = document.getElementById(\"" + element.getId() + "\");\n$Variable_Init$");
         applicationScript = applicationScript.replace("$Variable_Init$",
             "  y.val(\"" + element.getId() + "\", new Y.Text(\"\"));\n$Variable_Init$");
-
         applicationScript = applicationScript.replace("$Variable_Observe_Code$", yjsBindCode);
         applicationScript = applicationScript.replace("$Element_Id$", element.getId());
       }
+    }
+    // remove yjs placeholder if no yjs collaboration is needed
+    if (!foundCollaborativeElement) {
+      applicationScript = applicationScript.replace("$Yjs_Code$\n", "");
     }
     // remove last placeholder
     applicationScript = applicationScript.replace("$Variable_Init$\n", "");
@@ -578,7 +581,7 @@ public class FrontendComponentGenerator extends Generator {
   private static String removeRemainingAppScriptPlaceholder(String applicationScript) {
     applicationScript = applicationScript.replace("$Functions$\n\n", "");
     applicationScript = applicationScript.replace("$IWC_Responses$\n", "");
-    applicationScript = applicationScript.replace("$Events$\n", "");
+    applicationScript = applicationScript.replace("$Events$\n\n", "");
     return applicationScript;
   }
 }
