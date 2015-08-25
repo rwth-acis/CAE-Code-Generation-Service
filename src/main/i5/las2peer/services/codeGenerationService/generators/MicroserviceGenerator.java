@@ -504,7 +504,7 @@ public class MicroserviceGenerator extends Generator {
         // check if payload is a JSON and cast if so
         if (currentPayload.getPayloadType() == PayloadType.JSONObject) {
           consumesAnnotation = "MediaType.APPLICATION_JSON";
-          parameterCode += "String " + currentPayload.getName() + ", ";
+          parameterCode += "@ContentParam String " + currentPayload.getName() + ", ";
           currentMethodCode =
               currentMethodCode.replace("$HTTPMethod_Casts$",
                   "    JSONObject " + currentPayload.getName()
@@ -513,12 +513,12 @@ public class MicroserviceGenerator extends Generator {
         }
         // string param
         if (currentPayload.getPayloadType() == PayloadType.String) {
-          parameterCode += "String " + currentPayload.getName() + ", ";
+          parameterCode += "@ContentParam String " + currentPayload.getName() + ", ";
         }
         // mark custom payload in consumes annotation and parameter type
         if (currentPayload.getPayloadType() == PayloadType.CUSTOM) {
           consumesAnnotation = "CUSTOM";
-          parameterCode += "CUSTOM " + currentPayload.getName() + ", ";
+          parameterCode += "@ContentParam CUSTOM " + currentPayload.getName() + ", ";
         }
         // path param
         if (currentPayload.getPayloadType() == PayloadType.PATH_PARAM) {
