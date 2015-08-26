@@ -455,14 +455,14 @@ public class FrontendComponentGenerator extends Generator {
         HtmlElement element = frontendComponent.getHtmlElements().get(elementId);
         String htmlElementCode = createHtmlElementCode(element, htmlElementTemplate);
         functionCode = functionCode.replace("$Function_Body$",
-            "$( \".container\" ).append(\"" + htmlElementCode + "\");\n$Function_Body$");
+            "  $( \".container\" ).append(\"" + htmlElementCode + "\");\n$Function_Body$");
       }
 
       // element updates
       for (String elementId : function.getHtmlElementUpdates()) {
         HtmlElement element = frontendComponent.getHtmlElements().get(elementId);
         functionCode = functionCode.replace("$Function_Body$",
-            "$(\"#" + element.getId() + "\").html(\"Upated Element\");\n$Function_Body$");
+            "  $(\"#" + element.getId() + "\").html(\"Upated Element\");\n$Function_Body$");
       }
 
       // iwc calls
