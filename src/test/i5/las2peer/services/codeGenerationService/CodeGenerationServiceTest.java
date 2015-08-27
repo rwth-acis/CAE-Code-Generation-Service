@@ -39,6 +39,7 @@ public class CodeGenerationServiceTest {
   private static SimpleModel model1;
   private static SimpleModel model2;
   private static SimpleModel model3;
+  private static SimpleModel model4;
 
   private static ServiceAgent testService;
   private static String gitHubOrganization = null;
@@ -48,6 +49,7 @@ public class CodeGenerationServiceTest {
   private static String gitHubUserMail = null;
   @SuppressWarnings("unused")
   private static String templateRepository = null;
+
 
   /**
    * 
@@ -62,6 +64,8 @@ public class CodeGenerationServiceTest {
     String modelPath1 = "./testModels/My First Testservice.model";
     String modelPath2 = "./testModels/My First Testservice without DB.model";
     String modelPath3 = "./testModels/My Test Widget.model";
+    String modelPath4 = "./testModels/CAE Example Application.model";
+
     Properties properties = new Properties();
     String propertiesFile =
         "./etc/i5.las2peer.services.codeGenerationService.CodeGenerationService.properties";
@@ -79,9 +83,14 @@ public class CodeGenerationServiceTest {
       InputStream buffer3 = new BufferedInputStream(file3);
       ObjectInput input3 = new ObjectInputStream(buffer3);
       model3 = (SimpleModel) input3.readObject();
+      InputStream file4 = new FileInputStream(modelPath4);
+      InputStream buffer4 = new BufferedInputStream(file4);
+      ObjectInput input4 = new ObjectInputStream(buffer4);
+      model4 = (SimpleModel) input4.readObject();
       input1.close();
       input2.close();
       input3.close();
+      input4.close();
 
       FileReader reader = new FileReader(propertiesFile);
       properties.load(reader);
@@ -129,7 +138,7 @@ public class CodeGenerationServiceTest {
     } catch (GitHubException e) {
       e.printStackTrace();
       // that's ok, maybe some error / failure in previous tests caused this
-      // catch this, to make sure that every other repository gets deleted
+      // catch it, to make sure that every other repository gets deleted
     }
     try {
       Generator.deleteRemoteRepository(model2GitHubName, gitHubOrganization, gitHubUser,
@@ -137,7 +146,7 @@ public class CodeGenerationServiceTest {
     } catch (GitHubException e) {
       e.printStackTrace();
       // that's ok, maybe some error / failure in previous tests caused this
-      // catch this, to make sure that every other repository gets deleted
+      // catch it, to make sure that every other repository gets deleted
     }
     try {
       Generator.deleteRemoteRepository(model3GitHubName, gitHubOrganization, gitHubUser,
@@ -145,7 +154,7 @@ public class CodeGenerationServiceTest {
     } catch (GitHubException e) {
       e.printStackTrace();
       // that's ok, maybe some error / failure in previous tests caused this
-      // catch this, to make sure that every other repository gets deleted
+      // catch it, to make sure that every other repository gets deleted
     }
     node.shutDown();
     node = null;
@@ -160,7 +169,29 @@ public class CodeGenerationServiceTest {
    */
   @Test
   public void testCreateMicroservice() {
-    Serializable[] parameters = {(Serializable) model1};
+    Serializable[] content = {(Serializable) model1};
+    Serializable[] parameters = {content};
+    try {
+      String returnMessage = (String) node.invokeLocally(testService.getId(),
+          "i5.las2peer.services.codeGenerationService.CodeGenerationService", "createFromModel",
+          parameters);
+      assertEquals("done", returnMessage);
+    } catch (Exception e) {
+      e.printStackTrace();
+      fail(e.getMessage());
+    }
+  }
+
+
+  /**
+   * 
+   * Posts a new application model to the service.
+   * 
+   */
+  @Test
+  public void testCreateApplication() {
+    Serializable[] content = {(Serializable) model4};
+    Serializable[] parameters = {content};
     try {
       String returnMessage = (String) node.invokeLocally(testService.getId(),
           "i5.las2peer.services.codeGenerationService.CodeGenerationService", "createFromModel",
@@ -180,7 +211,8 @@ public class CodeGenerationServiceTest {
    */
   @Test
   public void testCreateFrontendComponent() {
-    Serializable[] parameters = {(Serializable) model3};
+    Serializable[] content = {(Serializable) model3};
+    Serializable[] parameters = {content};
     try {
       String returnMessage = (String) node.invokeLocally(testService.getId(),
           "i5.las2peer.services.codeGenerationService.CodeGenerationService", "createFromModel",
@@ -200,12 +232,14 @@ public class CodeGenerationServiceTest {
    */
   @Test
   public void testDeleteModel() {
-    Serializable[] parameters = {(Serializable) model2};
+    Serializable[] content = {(Serializable) model2};
+    Serializable[] parameters = {content};
     try {
       String returnMessage = (String) node.invokeLocally(testService.getId(),
           "i5.las2peer.services.codeGenerationService.CodeGenerationService", "createFromModel",
           parameters);
       assertEquals("done", returnMessage);
+      parameters[0] = (Serializable) model2;
       returnMessage = (String) node.invokeLocally(testService.getId(),
           "i5.las2peer.services.codeGenerationService.CodeGenerationService",
           "deleteRepositoryOfModel", parameters);
@@ -224,7 +258,8 @@ public class CodeGenerationServiceTest {
    */
   @Test
   public void testUpdate() {
-    Serializable[] parameters = {(Serializable) model2};
+    Serializable[] content = {(Serializable) model2};
+    Serializable[] parameters = {content};
     try {
       String returnMessage = (String) node.invokeLocally(testService.getId(),
           "i5.las2peer.services.codeGenerationService.CodeGenerationService", "createFromModel",

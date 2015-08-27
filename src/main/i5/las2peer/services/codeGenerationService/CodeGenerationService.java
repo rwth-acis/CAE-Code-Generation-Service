@@ -38,14 +38,16 @@ public class CodeGenerationService extends Service {
    * 
    * Creates a new GitHub repository with the source code according to the passed on model.
    * 
-   * @param serializedModel a {@link i5.cae.simpleModel.SimpleModel} that contains the model
+   * @param serializedModel a {@link i5.cae.simpleModel.SimpleModel} that contains the model, or in
+   *        case of an application model also the model components as additional models
    * 
    * @return a string containing either the message "done" or, in case of an error, the error
    *         message
    * 
    */
-  public String createFromModel(Serializable serializedModel) {
-    SimpleModel model = (SimpleModel) serializedModel;
+  public String createFromModel(Serializable... serializedModel) {
+
+    SimpleModel model = (SimpleModel) serializedModel[0];
     logMessage("createFromModel: Received model with name " + model.getName());
 
     // TESTING: write as file
@@ -84,7 +86,7 @@ public class CodeGenerationService extends Service {
               return "done";
             case "application":
               logMessage("createFromModel: Creating application model now..");
-              Application application = new Application(model);
+              Application application = new Application(model, serializedModel);
               logMessage("createFromModel: Creating application source code now..");
               ApplicationGenerator.createSourceCode(application, this.templateRepository,
                   this.gitHubOrganization, this.gitHubUser, this.gitHubUserMail,
@@ -175,14 +177,15 @@ public class CodeGenerationService extends Service {
    * implementation does not really perform an update, but just deletes the old repository and
    * replaces it with the contents of the new model.
    * 
-   * @param serializedModel a {@link i5.cae.simpleModel.SimpleModel} that contains the model
+   * @param serializedModel a {@link i5.cae.simpleModel.SimpleModel} that contains the model, or in
+   *        case of an application model also the model components as additional models
    * 
    * @return a string containing either the message "done" or, in case of an error, the error
    *         message
    * 
    */
-  public String updateRepositoryOfModel(Serializable serializedModel) {
-    SimpleModel model = (SimpleModel) serializedModel;
+  public String updateRepositoryOfModel(Serializable... serializedModel) {
+    SimpleModel model = (SimpleModel) serializedModel[0];
     String modelName = model.getName();
     logMessage("updateRepositoryOfModel: Received model with name " + modelName);
     for (int i = 0; i < model.getAttributes().size(); i++) {
@@ -196,7 +199,7 @@ public class CodeGenerationService extends Service {
               // (in case of an invalid model, keep the old repository)
               new Microservice(model);
               logMessage("updateRepositoryOfModel: Calling delete (old) repository method now..");
-              String deleteReturnMessage = deleteRepositoryOfModel(serializedModel);
+              String deleteReturnMessage = deleteRepositoryOfModel(serializedModel[0]);
               if (!deleteReturnMessage.equals("done")) {
                 return deleteReturnMessage; // error happened
               }
@@ -208,7 +211,7 @@ public class CodeGenerationService extends Service {
               // (in case of an invalid model, keep the old repository)
               new FrontendComponent(model);
               logMessage("updateRepositoryOfModel: Calling delete (old) repository method now..");
-              deleteReturnMessage = deleteRepositoryOfModel(serializedModel);
+              deleteReturnMessage = deleteRepositoryOfModel(serializedModel[0]);
               if (!deleteReturnMessage.equals("done")) {
                 return deleteReturnMessage; // error happened
               }
@@ -218,9 +221,9 @@ public class CodeGenerationService extends Service {
               logMessage("updateRepositoryOfModel: Checking application model now..");
               // check first if model can be constructed
               // (in case of an invalid model, keep the old repository)
-              new Application(model);
+              new Application(model, serializedModel);
               logMessage("updateRepositoryOfModel: Calling delete (old) repository method now..");
-              deleteReturnMessage = deleteRepositoryOfModel(serializedModel);
+              deleteReturnMessage = deleteRepositoryOfModel(serializedModel[0]);
               if (!deleteReturnMessage.equals("done")) {
                 return deleteReturnMessage; // error happened
               }
