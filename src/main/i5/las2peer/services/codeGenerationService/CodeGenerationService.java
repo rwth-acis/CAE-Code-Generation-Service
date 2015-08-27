@@ -87,7 +87,7 @@ public class CodeGenerationService extends Service {
               return "done";
             case "application":
               logMessage("createFromModel: Creating application model now..");
-              Application application = new Application(model, serializedModel);
+              Application application = new Application(serializedModel);
               logMessage("createFromModel: Creating application source code now..");
               ApplicationGenerator.createSourceCode(application, this.templateRepository,
                   this.gitHubOrganization, this.gitHubUser, this.gitHubUserMail,
@@ -222,7 +222,7 @@ public class CodeGenerationService extends Service {
               logMessage("updateRepositoryOfModel: Checking application model now..");
               // check first if model can be constructed
               // (in case of an invalid model, keep the old repository)
-              new Application(model, serializedModel);
+              new Application(serializedModel);
               logMessage("updateRepositoryOfModel: Calling delete (old) repository method now..");
               deleteReturnMessage = deleteRepositoryOfModel(serializedModel[0]);
               if (!deleteReturnMessage.equals("done")) {

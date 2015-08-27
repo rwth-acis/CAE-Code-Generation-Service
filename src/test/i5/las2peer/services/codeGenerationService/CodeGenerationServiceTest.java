@@ -97,7 +97,6 @@ public class CodeGenerationServiceTest {
         InputStream buffer4 = new BufferedInputStream(file4);
         ObjectInput input4 = new ObjectInputStream(buffer4);
         model4[i] = (SimpleModel) input4.readObject();
-        System.out.println(model4[i].getName());
         input4.close();
         i++;
       }
