@@ -7,7 +7,8 @@ import i5.cae.simpleModel.SimpleModel;
 public class Application {
 
   public Application(SimpleModel model, Serializable[] serializedModel) {
-    // TODO Auto-generated constructor stub
+    for (int i = 0; i < serializedModel.length; i++)
+      System.out.println(((SimpleModel) serializedModel[i]).getName());
   }
 
 }

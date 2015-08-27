@@ -39,7 +39,7 @@ public class CodeGenerationServiceTest {
   private static SimpleModel model1;
   private static SimpleModel model2;
   private static SimpleModel model3;
-  private static SimpleModel model4;
+  private static SimpleModel[] model4;
 
   private static ServiceAgent testService;
   private static String gitHubOrganization = null;
@@ -64,7 +64,14 @@ public class CodeGenerationServiceTest {
     String modelPath1 = "./testModels/My First Testservice.model";
     String modelPath2 = "./testModels/My First Testservice without DB.model";
     String modelPath3 = "./testModels/My Test Widget.model";
-    String modelPath4 = "./testModels/applicationTestModel/CAE Example Application.model";
+    String[] modelPathes4 = new String[7];
+    modelPathes4[0] = "./testModels/applicationTestModel/CAE Example Application.model";
+    modelPathes4[1] = "./testModels/applicationTestModel/Graph Widget.model";
+    modelPathes4[2] = "./testModels/applicationTestModel/LAS2peer Load Store Graph Service.model";
+    modelPathes4[3] = "./testModels/applicationTestModel/LAS2peer Video List Service.model";
+    modelPathes4[4] = "./testModels/applicationTestModel/Load Store Widget.model";
+    modelPathes4[5] = "./testModels/applicationTestModel/Video List Widget.model";
+    modelPathes4[6] = "./testModels/applicationTestModel/Video Player Widget.model";
 
     Properties properties = new Properties();
     String propertiesFile =
@@ -83,14 +90,20 @@ public class CodeGenerationServiceTest {
       InputStream buffer3 = new BufferedInputStream(file3);
       ObjectInput input3 = new ObjectInputStream(buffer3);
       model3 = (SimpleModel) input3.readObject();
-      InputStream file4 = new FileInputStream(modelPath4);
-      InputStream buffer4 = new BufferedInputStream(file4);
-      ObjectInput input4 = new ObjectInputStream(buffer4);
-      model4 = (SimpleModel) input4.readObject();
+      model4 = new SimpleModel[modelPathes4.length];
+      int i = 0;
+      for (String modelPath4 : modelPathes4) {
+        InputStream file4 = new FileInputStream(modelPath4);
+        InputStream buffer4 = new BufferedInputStream(file4);
+        ObjectInput input4 = new ObjectInputStream(buffer4);
+        model4[i] = (SimpleModel) input4.readObject();
+        System.out.println(model4[i].getName());
+        input4.close();
+        i++;
+      }
       input1.close();
       input2.close();
       input3.close();
-      input4.close();
 
       FileReader reader = new FileReader(propertiesFile);
       properties.load(reader);
@@ -190,8 +203,7 @@ public class CodeGenerationServiceTest {
    */
   @Test
   public void testCreateApplication() {
-    Serializable[] content = {(Serializable) model4};
-    Serializable[] parameters = {content};
+    Serializable[] parameters = {(Serializable) model4};
     try {
       String returnMessage = (String) node.invokeLocally(testService.getId(),
           "i5.las2peer.services.codeGenerationService.CodeGenerationService", "createFromModel",
