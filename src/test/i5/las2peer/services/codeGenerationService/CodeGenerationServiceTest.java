@@ -64,7 +64,7 @@ public class CodeGenerationServiceTest {
     String modelPath1 = "./testModels/My First Testservice.model";
     String modelPath2 = "./testModels/My First Testservice without DB.model";
     String modelPath3 = "./testModels/My Test Widget.model";
-    String modelPath4 = "./testModels/CAE Example Application.model";
+    String modelPath4 = "./testModels/applicationTestModel/CAE Example Application.model";
 
     Properties properties = new Properties();
     String propertiesFile =
