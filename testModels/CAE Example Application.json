@@ -1,0 +1,191 @@
+{
+    "attributes": {
+        "label": {
+            "id": "modelAttributes[label]",
+            "name": "Label",
+            "value": {
+                "id": "modelAttributes[label]",
+                "name": "Label",
+                "value": "Model attributes"
+            }
+        },
+        "left": 0,
+        "top": 0,
+        "width": 0,
+        "height": 0,
+        "zIndex": 0,
+        "type": "ModelAttributesNode",
+        "attributes": {}
+    },
+    "nodes": {
+        "2688056df2473d5fd567df07": {
+            "label": {
+                "id": "2688056df2473d5fd567df07[label]",
+                "name": "Label",
+                "value": {
+                    "id": "2688056df2473d5fd567df07[label]",
+                    "name": "Label",
+                    "value": "Video List Widget"
+                }
+            },
+            "left": 4548,
+            "top": 4360,
+            "width": 100,
+            "height": 50,
+            "zIndex": 16004,
+            "type": "Frontend Component",
+            "attributes": {
+                "93641f72fb49c4f74264a780": {
+                    "id": "2688056df2473d5fd567df07[label]",
+                    "name": "label",
+                    "value": {
+                        "id": "2688056df2473d5fd567df07[label]",
+                        "name": "label",
+                        "value": "Video List Widget"
+                    }
+                }
+            }
+        },
+        "f64c3e590c336bcc03158822": {
+            "label": {
+                "id": "f64c3e590c336bcc03158822[label]",
+                "name": "Label",
+                "value": {
+                    "id": "f64c3e590c336bcc03158822[label]",
+                    "name": "Label",
+                    "value": "Graph Widget"
+                }
+            },
+            "left": 4544,
+            "top": 4446,
+            "width": 100,
+            "height": 50,
+            "zIndex": 16005,
+            "type": "Frontend Component",
+            "attributes": {
+                "93641f72fb49c4f74264a780": {
+                    "id": "f64c3e590c336bcc03158822[label]",
+                    "name": "label",
+                    "value": {
+                        "id": "f64c3e590c336bcc03158822[label]",
+                        "name": "label",
+                        "value": "Graph Widget"
+                    }
+                }
+            }
+        },
+        "28e4b78826d59e3c72d5c7b1": {
+            "label": {
+                "id": "28e4b78826d59e3c72d5c7b1[label]",
+                "name": "Label",
+                "value": {
+                    "id": "28e4b78826d59e3c72d5c7b1[label]",
+                    "name": "Label",
+                    "value": "Load Store Widget"
+                }
+            },
+            "left": 4724,
+            "top": 4356,
+            "width": 100,
+            "height": 50,
+            "zIndex": 16006,
+            "type": "Frontend Component",
+            "attributes": {
+                "93641f72fb49c4f74264a780": {
+                    "id": "28e4b78826d59e3c72d5c7b1[label]",
+                    "name": "label",
+                    "value": {
+                        "id": "28e4b78826d59e3c72d5c7b1[label]",
+                        "name": "label",
+                        "value": "Load Store Widget"
+                    }
+                }
+            }
+        },
+        "426a8c820ac92cecc5fec886": {
+            "label": {
+                "id": "426a8c820ac92cecc5fec886[label]",
+                "name": "Label",
+                "value": {
+                    "id": "426a8c820ac92cecc5fec886[label]",
+                    "name": "Label",
+                    "value": "Video Player Widget"
+                }
+            },
+            "left": 4725,
+            "top": 4440,
+            "width": 100,
+            "height": 50,
+            "zIndex": 16007,
+            "type": "Frontend Component",
+            "attributes": {
+                "93641f72fb49c4f74264a780": {
+                    "id": "426a8c820ac92cecc5fec886[label]",
+                    "name": "label",
+                    "value": {
+                        "id": "426a8c820ac92cecc5fec886[label]",
+                        "name": "label",
+                        "value": "Video Player Widget"
+                    }
+                }
+            }
+        },
+        "66f733907f1ed77a749ecebc": {
+            "label": {
+                "id": "66f733907f1ed77a749ecebc[label]",
+                "name": "Label",
+                "value": {
+                    "id": "66f733907f1ed77a749ecebc[label]",
+                    "name": "Label",
+                    "value": "LAS2peer Load Store Graph Service"
+                }
+            },
+            "left": 4359,
+            "top": 4355,
+            "width": 100,
+            "height": 50,
+            "zIndex": 16008,
+            "type": "Microservice",
+            "attributes": {
+                "6a4e681cd6b9d6b21e765c45": {
+                    "id": "66f733907f1ed77a749ecebc[label]",
+                    "name": "label",
+                    "value": {
+                        "id": "66f733907f1ed77a749ecebc[label]",
+                        "name": "label",
+                        "value": "LAS2peer Load Store Graph Service"
+                    }
+                }
+            }
+        },
+        "0c242880bff6f93042418126": {
+            "label": {
+                "id": "0c242880bff6f93042418126[label]",
+                "name": "Label",
+                "value": {
+                    "id": "0c242880bff6f93042418126[label]",
+                    "name": "Label",
+                    "value": "LAS2peer Video List Service"
+                }
+            },
+            "left": 4368,
+            "top": 4444,
+            "width": 100,
+            "height": 50,
+            "zIndex": 16009,
+            "type": "Microservice",
+            "attributes": {
+                "6a4e681cd6b9d6b21e765c45": {
+                    "id": "0c242880bff6f93042418126[label]",
+                    "name": "label",
+                    "value": {
+                        "id": "0c242880bff6f93042418126[label]",
+                        "name": "label",
+                        "value": "LAS2peer Video List Service"
+                    }
+                }
+            }
+        }
+    },
+    "edges": {}
+}
