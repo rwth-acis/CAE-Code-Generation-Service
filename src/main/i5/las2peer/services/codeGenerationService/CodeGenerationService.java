@@ -4,13 +4,13 @@ import java.io.Serializable;
 
 import i5.cae.simpleModel.SimpleModel;
 import i5.las2peer.api.Service;
+import i5.las2peer.services.codeGenerationService.exception.GitHubException;
+import i5.las2peer.services.codeGenerationService.exception.ModelParseException;
 import i5.las2peer.services.codeGenerationService.generators.ApplicationGenerator;
 import i5.las2peer.services.codeGenerationService.generators.FrontendComponentGenerator;
 import i5.las2peer.services.codeGenerationService.generators.Generator;
 import i5.las2peer.services.codeGenerationService.generators.MicroserviceGenerator;
-import i5.las2peer.services.codeGenerationService.generators.exception.GitHubException;
 import i5.las2peer.services.codeGenerationService.models.application.Application;
-import i5.las2peer.services.codeGenerationService.models.exception.ModelParseException;
 import i5.las2peer.services.codeGenerationService.models.frontendComponent.FrontendComponent;
 import i5.las2peer.services.codeGenerationService.models.microservice.Microservice;
 

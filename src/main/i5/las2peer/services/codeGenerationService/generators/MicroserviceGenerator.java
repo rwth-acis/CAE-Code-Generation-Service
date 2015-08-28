@@ -13,7 +13,7 @@ import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.treewalk.TreeWalk;
 import org.eclipse.jgit.treewalk.filter.PathFilter;
 
-import i5.las2peer.services.codeGenerationService.generators.exception.GitHubException;
+import i5.las2peer.services.codeGenerationService.exception.GitHubException;
 import i5.las2peer.services.codeGenerationService.models.microservice.Column;
 import i5.las2peer.services.codeGenerationService.models.microservice.Database;
 import i5.las2peer.services.codeGenerationService.models.microservice.HttpMethod;
@@ -29,7 +29,7 @@ import i5.las2peer.services.codeGenerationService.models.microservice.Table;
 /**
  * 
  * Generates microservice source code from passed on
- * {@link i5.las2peer.services.codeGenerationService.models.microservice} models.
+ * {@link i5.las2peer.services.codeGenerationService.models.microservice.Microservice} models.
  * 
  */
 public class MicroserviceGenerator extends Generator {

@@ -33,7 +33,7 @@ import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider;
 import org.eclipse.jgit.treewalk.TreeWalk;
 import org.json.simple.JSONObject;
 
-import i5.las2peer.services.codeGenerationService.generators.exception.GitHubException;
+import i5.las2peer.services.codeGenerationService.exception.GitHubException;
 
 /**
  * 

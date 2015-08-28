@@ -8,7 +8,7 @@ import i5.cae.simpleModel.SimpleEntityAttribute;
 import i5.cae.simpleModel.SimpleModel;
 import i5.cae.simpleModel.edge.SimpleEdge;
 import i5.cae.simpleModel.node.SimpleNode;
-import i5.las2peer.services.codeGenerationService.models.exception.ModelParseException;
+import i5.las2peer.services.codeGenerationService.exception.ModelParseException;
 
 /**
  * 

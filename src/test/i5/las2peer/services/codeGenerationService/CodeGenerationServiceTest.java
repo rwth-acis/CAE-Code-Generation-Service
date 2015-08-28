@@ -20,8 +20,8 @@ import org.junit.Test;
 import i5.cae.simpleModel.SimpleModel;
 import i5.las2peer.p2p.LocalNode;
 import i5.las2peer.security.ServiceAgent;
+import i5.las2peer.services.codeGenerationService.exception.GitHubException;
 import i5.las2peer.services.codeGenerationService.generators.Generator;
-import i5.las2peer.services.codeGenerationService.generators.exception.GitHubException;
 
 
 /**

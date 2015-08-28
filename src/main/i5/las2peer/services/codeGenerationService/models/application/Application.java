@@ -4,7 +4,7 @@ import java.io.Serializable;
 import java.util.HashMap;
 
 import i5.cae.simpleModel.SimpleModel;
-import i5.las2peer.services.codeGenerationService.models.exception.ModelParseException;
+import i5.las2peer.services.codeGenerationService.exception.ModelParseException;
 import i5.las2peer.services.codeGenerationService.models.frontendComponent.FrontendComponent;
 import i5.las2peer.services.codeGenerationService.models.microservice.Microservice;
 
@@ -111,4 +111,8 @@ public class Application {
     this.frontendComponents = frontendComponents;
   }
 
+
+  public SimpleModel toCommunicationModel() {
+    return null;
+  }
 }

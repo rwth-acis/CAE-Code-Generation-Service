@@ -16,7 +16,7 @@ import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.treewalk.TreeWalk;
 import org.eclipse.jgit.treewalk.filter.PathFilter;
 
-import i5.las2peer.services.codeGenerationService.generators.exception.GitHubException;
+import i5.las2peer.services.codeGenerationService.exception.GitHubException;
 import i5.las2peer.services.codeGenerationService.models.frontendComponent.Event;
 import i5.las2peer.services.codeGenerationService.models.frontendComponent.FrontendComponent;
 import i5.las2peer.services.codeGenerationService.models.frontendComponent.Function;
@@ -29,7 +29,8 @@ import i5.las2peer.services.codeGenerationService.models.frontendComponent.Micro
 /**
  * 
  * Generates frontend component source code from passed on
- * {@link i5.las2peer.services.codeGenerationService.models.frontendComponent} models.
+ * {@link i5.las2peer.services.codeGenerationService.models.frontendComponent.FrontendComponent}
+ * models.
  * 
  */
 public class FrontendComponentGenerator extends Generator {

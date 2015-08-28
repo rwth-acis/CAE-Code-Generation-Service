@@ -4,7 +4,7 @@ import java.util.ArrayList;
 
 import i5.cae.simpleModel.SimpleEntityAttribute;
 import i5.cae.simpleModel.node.SimpleNode;
-import i5.las2peer.services.codeGenerationService.models.exception.ModelParseException;
+import i5.las2peer.services.codeGenerationService.exception.ModelParseException;
 import i5.las2peer.services.codeGenerationService.models.microservice.HttpPayload.PayloadType;
 
 /**
