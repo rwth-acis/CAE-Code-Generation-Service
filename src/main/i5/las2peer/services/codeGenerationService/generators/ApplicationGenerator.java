@@ -103,7 +103,66 @@ public class ApplicationGenerator extends Generator {
       for (String microserviceName : application.getMicroservices().keySet()) {
         String microserviceRepositoryName = "microservice-" + microserviceName.replace(" ", "-");
         treeWalk = getRepositoryContent(microserviceRepositoryName, gitHubOrganization);
-        // TODO
+        reader = treeWalk.getObjectReader();
+        try {
+          while (treeWalk.next()) {
+            ObjectId objectId = treeWalk.getObjectId(0);
+            ObjectLoader loader = reader.open(objectId);
+            // copy the content of the repository and switch out the "old" paths
+            String oldLogoAddress = "https://github.com/" + gitHubOrganization + "/"
+                + microserviceRepositoryName + "/blob/master/img/logo.png";
+            String newLogoAddress = "https://github.com/" + gitHubOrganization + "/"
+                + repositoryName + "/blob/master/" + microserviceRepositoryName + "/img/logo.png";
+            switch (treeWalk.getNameString()) {
+              case "README.md":
+                String frontendReadme = new String(loader.getBytes(), "UTF-8");
+                frontendReadme = frontendReadme.replace(oldLogoAddress, newLogoAddress);
+                applicationRepository = createTextFileInRepository(applicationRepository,
+                    microserviceRepositoryName + "/", "README.md", frontendReadme);
+                break;
+              default:
+                // determine type and then "pass it on"
+                // TODO: I'm sure there is a more elegant way to do this
+                String fileName = treeWalk.getNameString();
+                treeWalk.getObjectReader();
+                // text
+                if (fileName.contains(".js") || fileName.contains(".txt")
+                    || fileName.contains(".css") || fileName.contains(".html")
+                    || fileName.contains(".java") || fileName.contains(".bat")
+                    || fileName.contains(".sh") || fileName.contains(".md")
+                    || fileName.contains(".classpath") || fileName.contains(".gitignore")
+                    || fileName.contains(".project") || fileName.contains(".xml")
+                    || fileName.contains(".sql") || fileName.contains(".properties")) {
+                  String file = new String(loader.getBytes(), "UTF-8");
+                  applicationRepository =
+                      createTextFileInRepository(applicationRepository, microserviceRepositoryName
+                          + "/" + treeWalk.getPathString().replace(fileName, ""), fileName, file);
+                }
+                // image
+                else if (fileName.contains(".jpg") || fileName.contains(".jpeg")
+                    || fileName.contains(".png") || fileName.contains(".bmp")
+                    || fileName.contains(".gif")) {
+                  BufferedImage image = ImageIO.read(loader.openStream());
+                  applicationRepository =
+                      createImageFileInRepository(applicationRepository, microserviceRepositoryName
+                          + "/" + treeWalk.getPathString().replace(fileName, ""), fileName, image);
+                }
+                // binary
+                else {
+                  Object binaryObject = loader.getBytes();
+                  applicationRepository =
+                      createBinaryFileInRepository(applicationRepository,
+                          microserviceRepositoryName + "/"
+                              + treeWalk.getPathString().replace(fileName, ""),
+                          fileName, binaryObject);
+                }
+                break;
+            }
+          }
+        } catch (Exception e) {
+          e.printStackTrace();
+          throw new GitHubException(e.getMessage());
+        }
         treeWalk.close();
         // commit files
         try {
@@ -135,7 +194,79 @@ public class ApplicationGenerator extends Generator {
         String frontendComponentRepositoryName =
             "frontendComponent-" + frontendComponentName.replace(" ", "-");
         treeWalk = getRepositoryContent(frontendComponentRepositoryName, gitHubOrganization);
-        // TODO
+        reader = treeWalk.getObjectReader();
+        try {
+          while (treeWalk.next()) {
+            ObjectId objectId = treeWalk.getObjectId(0);
+            ObjectLoader loader = reader.open(objectId);
+            // copy the content of the repository and switch out the "old" paths
+            String oldWidgetHome =
+                "http://" + gitHubOrganization + ".github.io/" + frontendComponentRepositoryName;
+            String newWidgetHome = "http://" + gitHubOrganization + ".github.io/" + repositoryName
+                + "/" + frontendComponentRepositoryName;
+            String oldLogoAddress = "https://github.com/" + gitHubOrganization + "/"
+                + frontendComponentRepositoryName + "/blob/gh-pages/img/logo.png";
+            String newLogoAddress =
+                "https://github.com/" + gitHubOrganization + "/" + repositoryName
+                    + "/blob/gh-pages/" + frontendComponentRepositoryName + "/img/logo.png";
+            switch (treeWalk.getNameString()) {
+              case "README.md":
+                String frontendReadme = new String(loader.getBytes(), "UTF-8");
+                frontendReadme = frontendReadme.replace(oldLogoAddress, newLogoAddress);
+                applicationRepository = createTextFileInRepository(applicationRepository,
+                    frontendComponentRepositoryName + "/", "README.md", frontendReadme);
+                break;
+              case "widget.xml":
+                String widget = new String(loader.getBytes(), "UTF-8");
+                widget = widget.replace(oldWidgetHome, newWidgetHome);
+                applicationRepository = createTextFileInRepository(applicationRepository,
+                    frontendComponentRepositoryName + "/", "widget.xml", widget);
+                break;
+              default:
+                // determine type and then "pass it on"
+                // TODO: I'm sure there is a more elegant way to do this
+                String fileName = treeWalk.getNameString();
+                treeWalk.getObjectReader();
+                // text
+                if (fileName.contains(".js") || fileName.contains(".txt")
+                    || fileName.contains(".css") || fileName.contains(".html")
+                    || fileName.contains(".java") || fileName.contains(".bat")
+                    || fileName.contains(".sh") || fileName.contains(".md")
+                    || fileName.contains(".classpath") || fileName.contains(".gitignore")
+                    || fileName.contains(".project") || fileName.contains(".xml")
+                    || fileName.contains(".sql") || fileName.contains(".properties")) {
+                  String file = new String(loader.getBytes(), "UTF-8");
+                  applicationRepository = createTextFileInRepository(applicationRepository,
+                      frontendComponentRepositoryName + "/"
+                          + treeWalk.getPathString().replace(fileName, ""),
+                      fileName, file);
+                }
+                // image
+                else if (fileName.contains(".jpg") || fileName.contains(".jpeg")
+                    || fileName.contains(".png") || fileName.contains(".bmp")
+                    || fileName.contains(".gif")) {
+                  BufferedImage image = ImageIO.read(loader.openStream());
+                  applicationRepository = createImageFileInRepository(applicationRepository,
+                      frontendComponentRepositoryName + "/"
+                          + treeWalk.getPathString().replace(fileName, ""),
+                      fileName, image);
+                }
+                // binary
+                else {
+                  Object binaryObject = loader.getBytes();
+                  applicationRepository =
+                      createBinaryFileInRepository(applicationRepository,
+                          frontendComponentRepositoryName + "/"
+                              + treeWalk.getPathString().replace(fileName, ""),
+                          fileName, binaryObject);
+                }
+                break;
+            }
+          }
+        } catch (Exception e) {
+          e.printStackTrace();
+          throw new GitHubException(e.getMessage());
+        }
         treeWalk.close();
         // commit files
         try {
