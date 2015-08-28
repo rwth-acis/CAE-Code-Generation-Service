@@ -144,6 +144,8 @@ public class CodeGenerationServiceTest {
     String model1GitHubName = "microservice-" + model1.getName().replace(" ", "-");
     String model2GitHubName = "microservice-" + model2.getName().replace(" ", "-");
     String model3GitHubName = "frontendComponent-" + model3.getName().replace(" ", "-");
+    String model4GitHubName = "application-" + model4[0].getName().replace(" ", "-");
+
     try {
       Generator.deleteRemoteRepository(model1GitHubName, gitHubOrganization, gitHubUser,
           gitHubPassword);
@@ -162,6 +164,14 @@ public class CodeGenerationServiceTest {
     }
     try {
       Generator.deleteRemoteRepository(model3GitHubName, gitHubOrganization, gitHubUser,
+          gitHubPassword);
+    } catch (GitHubException e) {
+      e.printStackTrace();
+      // that's ok, maybe some error / failure in previous tests caused this
+      // catch it, to make sure that every other repository gets deleted
+    }
+    try {
+      Generator.deleteRemoteRepository(model4GitHubName, gitHubOrganization, gitHubUser,
           gitHubPassword);
     } catch (GitHubException e) {
       e.printStackTrace();

@@ -152,7 +152,7 @@ public class FrontendComponentGenerator extends Generator {
               readMe = readMe.replace("$Widget_Name$", frontendComponent.getName());
               readMe = readMe.replace("$Organization_Name$", gitHubOrganization);
               break;
-            case "logo_services.png":
+            case "logo_frontend.png":
               logo = ImageIO.read(loader.openStream());
               break;
           }
@@ -214,7 +214,8 @@ public class FrontendComponentGenerator extends Generator {
 
       // push (local) repository content to GitHub repository "gh-pages" branch
       try {
-        pushToRemoteRepository(frontendComponentRepository, gitHubUser, gitHubPassword, "gh-pages");
+        pushToRemoteRepository(frontendComponentRepository, gitHubUser, gitHubPassword, "master",
+            "gh-pages");
       } catch (Exception e) {
         e.printStackTrace();
         throw new GitHubException(e.getMessage());

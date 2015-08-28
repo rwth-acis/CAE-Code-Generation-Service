@@ -154,39 +154,14 @@ public abstract class Generator {
    */
   public static TreeWalk getTemplateRepositoryContent(String templateRepositoryName,
       String gitHubOrganization) throws GitHubException {
-    String templateRepositoryAddress =
-        "https://github.com/" + gitHubOrganization + "/" + templateRepositoryName + ".git";
-
-    Repository templateRepository = null;
-    // prepare a new folder for the template repository (to be cloned)
-    File localPath = null;
-
-    try {
-      localPath = File.createTempFile("TemplateRepository", "");
-    } catch (IOException e) {
-      e.printStackTrace();
-      throw new GitHubException(e.getMessage());
-    }
-    localPath.delete();
-
-    // then clone
-    try {
-      templateRepository = Git.cloneRepository().setURI(templateRepositoryAddress)
-          .setDirectory(localPath).call().getRepository();
-    } catch (Exception e) {
-      e.printStackTrace();
-      throw new GitHubException(e.getMessage());
-    }
-
+    Repository templateRepository = getRemoteRepository(templateRepositoryName, gitHubOrganization);
     // get the content of the repository
     RevWalk revWalk = null;
     TreeWalk treeWalk = null;
     try {
       ObjectId lastCommitId = templateRepository.resolve(Constants.HEAD);
-
       treeWalk = new TreeWalk(templateRepository);
       revWalk = new RevWalk(templateRepository);
-
       RevTree tree = revWalk.parseCommit(lastCommitId).getTree();
       treeWalk.addTree(tree);
       treeWalk.setRecursive(true);
@@ -199,6 +174,88 @@ public abstract class Generator {
     }
     return treeWalk;
   }
+
+
+
+  /**
+   * 
+   * Clones a repository from GitHub to the local machine and returns a
+   * {@link org.eclipse.jgit.treewalk.TreeWalk} that can be used to retrieve the repository's
+   * content. Repository is used "read-only" here.
+   * 
+   * @param repositoryName the name of the template repository
+   * @param gitHubOrganization the organization that is used in the CAE
+   * 
+   * @return a {@link org.eclipse.jgit.treewalk.TreeWalk}
+   * 
+   * @throws GitHubException if anything goes wrong during retrieving the repository's content
+   * 
+   */
+  public static TreeWalk getRepositoryContent(String repositoryName, String gitHubOrganization)
+      throws GitHubException {
+    Repository repository = getRemoteRepository(repositoryName, gitHubOrganization);
+    // get the content of the repository
+    RevWalk revWalk = null;
+    TreeWalk treeWalk = null;
+    try {
+      ObjectId lastCommitId = repository.resolve(Constants.HEAD);
+      treeWalk = new TreeWalk(repository);
+      revWalk = new RevWalk(repository);
+      RevTree tree = revWalk.parseCommit(lastCommitId).getTree();
+      treeWalk.addTree(tree);
+      treeWalk.setRecursive(true);
+    } catch (Exception e) {
+      e.printStackTrace();
+      throw new GitHubException(e.getMessage());
+    } finally {
+      repository.close();
+      revWalk.close();
+    }
+    return treeWalk;
+  }
+
+
+
+  /**
+   * 
+   * Clones a repository from GitHub to the local machine and returns it.
+   * 
+   * @param repositoryName the name of the repository
+   * @param gitHubOrganization the organization that is used in the CAE
+   * 
+   * @return a {@link org.eclipse.jgit.lib.Repository}
+   * 
+   * @throws GitHubException if anything goes wrong during retrieving the repository's content
+   * 
+   */
+  private static Repository getRemoteRepository(String repositoryName, String gitHubOrganization)
+      throws GitHubException {
+    String repositoryAddress =
+        "https://github.com/" + gitHubOrganization + "/" + repositoryName + ".git";
+
+    Repository repository = null;
+    // prepare a new folder for the template repository (to be cloned)
+    File localPath = null;
+    try {
+      localPath = File.createTempFile(repositoryName, "");
+    } catch (IOException e) {
+      e.printStackTrace();
+      throw new GitHubException(e.getMessage());
+    }
+    localPath.delete();
+
+    // then clone
+    try {
+      repository = Git.cloneRepository().setURI(repositoryAddress).setDirectory(localPath).call()
+          .getRepository();
+    } catch (Exception e) {
+      e.printStackTrace();
+      throw new GitHubException(e.getMessage());
+    }
+
+    return repository;
+  }
+
 
 
   /**
@@ -334,8 +391,8 @@ public abstract class Generator {
 
   /**
    * 
-   * Pushes a local repository to the "master" branch on GitHub. This method only works with
-   * repositories previously created by {@link #generateNewRepository}.
+   * Pushes a local repository (from and) to the "master" branch on GitHub. This method only works
+   * with repositories previously created by {@link #generateNewRepository}.
    * 
    * @param repository the {@link org.eclipse.jgit.lib.Repository} to be pushed to GitHub
    * @param gitHubUser the CAE user
@@ -348,7 +405,7 @@ public abstract class Generator {
    */
   public static Repository pushToRemoteRepository(Repository repository, String gitHubUser,
       String gitHubPassword) throws GitHubException {
-    return pushToRemoteRepository(repository, gitHubUser, gitHubPassword, "master");
+    return pushToRemoteRepository(repository, gitHubUser, gitHubPassword, "master", "master");
   }
 
 
@@ -360,7 +417,8 @@ public abstract class Generator {
    * @param repository the {@link org.eclipse.jgit.lib.Repository} to be pushed to GitHub
    * @param gitHubUser the CAE user
    * @param gitHubPassword the password of the CAE user
-   * @param branchName the name of the branch that should be pushed to
+   * @param localBranchName the name of the branch that should be pushed from
+   * @param remoteBranchName the name of the branch that should be pushed to
    * 
    * @return the {@link org.eclipse.jgit.lib.Repository} that was pushed
    * 
@@ -368,12 +426,14 @@ public abstract class Generator {
    * 
    */
   public static Repository pushToRemoteRepository(Repository repository, String gitHubUser,
-      String gitHubPassword, String branchName) throws GitHubException {
+      String gitHubPassword, String localBranchName, String remoteBranchName)
+          throws GitHubException {
     CredentialsProvider credentialsProvider =
         new UsernamePasswordCredentialsProvider(gitHubUser, gitHubPassword);
     try {
-      // the "setRemote" parameter name is set in the generateNewRepository method
-      RefSpec spec = new RefSpec("refs/heads/master:refs/heads/" + branchName);
+      // the "setRemote" parameter name is defined in the generateNewRepository method
+      RefSpec spec =
+          new RefSpec("refs/heads/" + localBranchName + ":refs/heads/" + remoteBranchName);
       Git.wrap(repository).push().setRemote("GitHub").setCredentialsProvider(credentialsProvider)
           .setRefSpecs(spec).call();
     } catch (Exception e) {
