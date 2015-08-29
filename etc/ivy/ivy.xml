@@ -6,7 +6,7 @@
 	</publications>
     <dependencies>
       <dependency org="i5" name="las2peer" rev="0.4-SNAPSHOT" changing="true" />
-      <dependency org="i5" name="cae-simple-model-representation" rev="0.1"/>
+      <dependency org="i5" name="cae-simple-model-representation" rev="0.2"/>
       <dependency org="junit" name="junit" rev="4.11"/>
       <dependency org="org.eclipse.jgit" name="org.eclipse.jgit" rev="4.0.1.201506240215-r"/>
       <dependency org="org.slf4j" name="slf4j-nop" rev="1.7.12"/>
