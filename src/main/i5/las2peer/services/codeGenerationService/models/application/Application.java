@@ -5,6 +5,7 @@ import java.util.HashMap;
 
 import i5.cae.simpleModel.SimpleModel;
 import i5.las2peer.services.codeGenerationService.exception.ModelParseException;
+import i5.las2peer.services.codeGenerationService.models.application.communicationModel.CommunicationViewModel;
 import i5.las2peer.services.codeGenerationService.models.frontendComponent.FrontendComponent;
 import i5.las2peer.services.codeGenerationService.models.microservice.Microservice;
 
@@ -55,10 +56,18 @@ public class Application {
           String type = modelComponents[i].getAttributes().get(j).getValue();
           switch (type) {
             case "microservice":
+              if (this.microservices.containsKey(modelComponents[i].getName())) {
+                throw new ModelParseException(
+                    "Error: More than one microservice with name " + modelComponents[i].getName());
+              }
               this.microservices.put(modelComponents[i].getName(),
                   new Microservice(modelComponents[i]));
               break;
             case "frontend-component":
+              if (this.frontendComponents.containsKey(modelComponents[i].getName())) {
+                throw new ModelParseException("Error: More than one frontend-component with name "
+                    + modelComponents[i].getName());
+              }
               this.frontendComponents.put(modelComponents[i].getName(),
                   new FrontendComponent(modelComponents[i]));
               break;
@@ -113,6 +122,8 @@ public class Application {
 
 
   public SimpleModel toCommunicationModel() {
-    return null;
+    CommunicationViewModel commViewModel = new CommunicationViewModel(this.name, this.version,
+        this.microservices, this.frontendComponents);
+    return commViewModel.toSimpleModel();
   }
 }
