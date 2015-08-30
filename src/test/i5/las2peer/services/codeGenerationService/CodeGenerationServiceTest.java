@@ -281,7 +281,6 @@ public class CodeGenerationServiceTest {
           "i5.las2peer.services.codeGenerationService.CodeGenerationService", "createFromModel",
           parameters);
       assertEquals("done", returnMessage);
-      parameters[0] = (Serializable) model2;
       returnMessage = (String) node.invokeLocally(testService.getId(),
           "i5.las2peer.services.codeGenerationService.CodeGenerationService",
           "deleteRepositoryOfModel", parameters);

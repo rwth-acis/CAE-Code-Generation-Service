@@ -126,8 +126,8 @@ public class CodeGenerationService extends Service {
    *         message
    * 
    */
-  public String deleteRepositoryOfModel(Serializable serializedModel) {
-    SimpleModel model = (SimpleModel) serializedModel;
+  public String deleteRepositoryOfModel(Serializable... serializedModel) {
+    SimpleModel model = (SimpleModel) serializedModel[0];
     String modelName = model.getName();
     logMessage("deleteRepositoryOfModel: Received model with name " + modelName);
     for (int i = 0; i < model.getAttributes().size(); i++) {
@@ -200,7 +200,7 @@ public class CodeGenerationService extends Service {
               // (in case of an invalid model, keep the old repository)
               new Microservice(model);
               logMessage("updateRepositoryOfModel: Calling delete (old) repository method now..");
-              String deleteReturnMessage = deleteRepositoryOfModel(serializedModel[0]);
+              String deleteReturnMessage = deleteRepositoryOfModel(serializedModel);
               if (!deleteReturnMessage.equals("done")) {
                 return deleteReturnMessage; // error happened
               }
@@ -212,7 +212,7 @@ public class CodeGenerationService extends Service {
               // (in case of an invalid model, keep the old repository)
               new FrontendComponent(model);
               logMessage("updateRepositoryOfModel: Calling delete (old) repository method now..");
-              deleteReturnMessage = deleteRepositoryOfModel(serializedModel[0]);
+              deleteReturnMessage = deleteRepositoryOfModel(serializedModel);
               if (!deleteReturnMessage.equals("done")) {
                 return deleteReturnMessage; // error happened
               }
@@ -224,7 +224,7 @@ public class CodeGenerationService extends Service {
               // (in case of an invalid model, keep the old repository)
               new Application(serializedModel);
               logMessage("updateRepositoryOfModel: Calling delete (old) repository method now..");
-              deleteReturnMessage = deleteRepositoryOfModel(serializedModel[0]);
+              deleteReturnMessage = deleteRepositoryOfModel(serializedModel);
               if (!deleteReturnMessage.equals("done")) {
                 return deleteReturnMessage; // error happened
               }
