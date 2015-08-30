@@ -78,7 +78,7 @@ public class InternalCall {
   }
 
 
-  public void addInternalCall(InternalCallParam internalCallParam) {
+  public void addInternalCallParam(InternalCallParam internalCallParam) {
     this.parameters.add(internalCallParam);
   }
 

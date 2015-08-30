@@ -151,7 +151,7 @@ public class Microservice {
               && tempInternalCallParameters.containsKey(currentEdgeTarget)) {
             // Add parameter to internal call
             tempInternalCalls.get(currentEdgeSource)
-                .addInternalCall(tempInternalCallParameters.get(currentEdgeTarget));
+                .addInternalCallParam(tempInternalCallParameters.get(currentEdgeTarget));
             tempInternalCallParameters.remove(currentEdgeTarget);
             // check if the internal call parameter is (at least) in temp list and internal call
             // itself was already added to http method
@@ -159,7 +159,7 @@ public class Microservice {
             for (HttpMethod method : this.httpMethods.values()) {
               for (InternalCall call : method.getInternalCalls()) {
                 if (call.getModelId().equals(currentEdgeSource)) {
-                  call.addInternalCall(tempInternalCallParameters.get(currentEdgeTarget));
+                  call.addInternalCallParam(tempInternalCallParameters.get(currentEdgeTarget));
                   tempInternalCallParameters.remove(currentEdgeTarget);
                   break;
                 }
@@ -276,6 +276,16 @@ public class Microservice {
     if (this.database != null) {
       this.database.addTables((Table[]) tempTables.values().toArray(new Table[tempTables.size()]));
     }
+  }
+
+
+  public void setMicroserviceModelId(String microserviceModelId) {
+    this.microserviceModelId = microserviceModelId;
+  }
+
+
+  public String getMicroserviceModelId() {
+    return microserviceModelId;
   }
 
 
