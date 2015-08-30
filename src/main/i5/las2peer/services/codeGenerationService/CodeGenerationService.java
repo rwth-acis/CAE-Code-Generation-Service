@@ -99,7 +99,7 @@ public class CodeGenerationService extends Service {
                   + "'microservice', 'frontend-component' or 'application'!";
           }
         } catch (ModelParseException e1) {
-          logError("createFromModel: Model Parsing exception: " + e1.getMessage());
+          logError("createFromModel: Model parsing exception: " + e1.getMessage());
           e1.printStackTrace();
           return "Error: Parsing model failed with " + e1.getMessage();
         } catch (GitHubException e2) {
@@ -110,7 +110,7 @@ public class CodeGenerationService extends Service {
         }
       }
     }
-    return "Unknown Error!";
+    return "Model has no attribute 'type'!";
   }
 
 
@@ -126,8 +126,8 @@ public class CodeGenerationService extends Service {
    *         message
    * 
    */
-  public String deleteRepositoryOfModel(Serializable serializedModel) {
-    SimpleModel model = (SimpleModel) serializedModel;
+  public String deleteRepositoryOfModel(Serializable... serializedModel) {
+    SimpleModel model = (SimpleModel) serializedModel[0];
     String modelName = model.getName();
     logMessage("deleteRepositoryOfModel: Received model with name " + modelName);
     for (int i = 0; i < model.getAttributes().size(); i++) {
@@ -168,7 +168,7 @@ public class CodeGenerationService extends Service {
         }
       }
     }
-    return "Unknown Error!";
+    return "Model has no attribute 'type'!";
   }
 
 
@@ -200,7 +200,7 @@ public class CodeGenerationService extends Service {
               // (in case of an invalid model, keep the old repository)
               new Microservice(model);
               logMessage("updateRepositoryOfModel: Calling delete (old) repository method now..");
-              String deleteReturnMessage = deleteRepositoryOfModel(serializedModel[0]);
+              String deleteReturnMessage = deleteRepositoryOfModel(serializedModel);
               if (!deleteReturnMessage.equals("done")) {
                 return deleteReturnMessage; // error happened
               }
@@ -212,7 +212,7 @@ public class CodeGenerationService extends Service {
               // (in case of an invalid model, keep the old repository)
               new FrontendComponent(model);
               logMessage("updateRepositoryOfModel: Calling delete (old) repository method now..");
-              deleteReturnMessage = deleteRepositoryOfModel(serializedModel[0]);
+              deleteReturnMessage = deleteRepositoryOfModel(serializedModel);
               if (!deleteReturnMessage.equals("done")) {
                 return deleteReturnMessage; // error happened
               }
@@ -224,7 +224,7 @@ public class CodeGenerationService extends Service {
               // (in case of an invalid model, keep the old repository)
               new Application(serializedModel);
               logMessage("updateRepositoryOfModel: Calling delete (old) repository method now..");
-              deleteReturnMessage = deleteRepositoryOfModel(serializedModel[0]);
+              deleteReturnMessage = deleteRepositoryOfModel(serializedModel);
               if (!deleteReturnMessage.equals("done")) {
                 return deleteReturnMessage; // error happened
               }
@@ -241,6 +241,50 @@ public class CodeGenerationService extends Service {
         }
       }
     }
-    return "Unknown Error!";
+    return "Model has no attribute 'type'!";
   }
+
+  /**
+   * 
+   * Creates an
+   * {@link i5.las2peer.services.codeGenerationService.models.application.communicationModel.CommunicationModel}
+   * from a passed {@link i5.cae.simpleModel.SimpleModel} containing an application.
+   * 
+   * @param serializedModel the application model
+   * 
+   * @return a {@link i5.cae.simpleModel.SimpleModel} containing the communication model
+   * 
+   * @throws ModelParseException if the passed model cannot be parsed to an application
+   * 
+   */
+  public SimpleModel getCommunicationViewOfApplicationModel(Serializable... serializedModel)
+      throws ModelParseException {
+    SimpleModel model = (SimpleModel) serializedModel[0];
+    logMessage(
+        "getCommunicationViewOfApplicationModel: Received model with name " + model.getName());
+    for (int i = 0; i < model.getAttributes().size(); i++) {
+      if (model.getAttributes().get(i).getName().equals("type")) {
+        String type = model.getAttributes().get(i).getValue();
+        try {
+          if (!type.equals("application")) {
+            throw new ModelParseException("Model is not an application!");
+          }
+          logMessage("getCommunicationViewOfApplicationModel: Creating application model now..");
+          Application application = new Application(serializedModel);
+          logMessage(
+              "getCommunicationViewOfApplicationModel: Creating communication view model now..");
+          SimpleModel commViewModel = application.toCommunicationModel();
+          logMessage("getCommunicationViewOfApplicationModel: Created!");
+          return commViewModel;
+        } catch (ModelParseException e) {
+          logError(
+              "getCommunicationViewOfApplicationModel: Model parsing exception: " + e.getMessage());
+          e.printStackTrace();
+          throw e;
+        }
+      }
+    }
+    throw new ModelParseException("Model has no attribute 'type'!");
+  }
+
 }

@@ -227,6 +227,27 @@ public class CodeGenerationServiceTest {
 
   /**
    * 
+   * Posts a new application model to the service.
+   * 
+   */
+  @Test
+  public void testGetCommViewModel() {
+    Serializable[] parameters = {(Serializable) model4};
+    try {
+      SimpleModel simpleModel = (SimpleModel) node.invokeLocally(testService.getId(),
+          "i5.las2peer.services.codeGenerationService.CodeGenerationService",
+          "getCommunicationViewOfApplicationModel", parameters);
+      assertEquals("CAE Example Application", simpleModel.getName());
+      // TODO more attributes of model checking
+    } catch (Exception e) {
+      e.printStackTrace();
+      fail(e.getMessage());
+    }
+  }
+
+
+  /**
+   * 
    * Posts a new frontend component model to the service.
    * 
    */
@@ -260,7 +281,6 @@ public class CodeGenerationServiceTest {
           "i5.las2peer.services.codeGenerationService.CodeGenerationService", "createFromModel",
           parameters);
       assertEquals("done", returnMessage);
-      parameters[0] = (Serializable) model2;
       returnMessage = (String) node.invokeLocally(testService.getId(),
           "i5.las2peer.services.codeGenerationService.CodeGenerationService",
           "deleteRepositoryOfModel", parameters);
