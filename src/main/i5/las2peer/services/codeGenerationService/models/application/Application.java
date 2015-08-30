@@ -5,7 +5,7 @@ import java.util.HashMap;
 
 import i5.cae.simpleModel.SimpleModel;
 import i5.las2peer.services.codeGenerationService.exception.ModelParseException;
-import i5.las2peer.services.codeGenerationService.models.application.communicationModel.CommunicationViewModel;
+import i5.las2peer.services.codeGenerationService.models.application.communicationModel.CommunicationModel;
 import i5.las2peer.services.codeGenerationService.models.frontendComponent.FrontendComponent;
 import i5.las2peer.services.codeGenerationService.models.microservice.Microservice;
 
@@ -122,7 +122,7 @@ public class Application {
 
 
   public SimpleModel toCommunicationModel() {
-    CommunicationViewModel commViewModel = new CommunicationViewModel(this.name, this.version,
+    CommunicationModel commViewModel = new CommunicationModel(this.name, this.version,
         this.microservices, this.frontendComponents);
     return commViewModel.toSimpleModel();
   }

@@ -27,7 +27,7 @@ import i5.las2peer.services.codeGenerationService.models.microservice.Microservi
  * representing the communication between its different components.
  * 
  */
-public class CommunicationViewModel {
+public class CommunicationModel {
   // HashMaps have their SyncMeta id as key attribute
   private HashMap<String, CommCollaborativeElement> collaborativeElements;
   private HashMap<String, CommIWCCall> iwcCalls;
@@ -56,8 +56,7 @@ public class CommunicationViewModel {
    * @param frontendComponents a map of frontend components
    * 
    */
-  public CommunicationViewModel(String name, float version,
-      HashMap<String, Microservice> microservices,
+  public CommunicationModel(String name, float version, HashMap<String, Microservice> microservices,
       HashMap<String, FrontendComponent> frontendComponents) {
 
     // initialize maps, list and give random id to application environment object
@@ -244,44 +243,44 @@ public class CommunicationViewModel {
     nodes.add(new SimpleNode(applicationEnvironemntId, "Application Environment", attributes));
     // collaborativeElements
     for (Entry<String, CommCollaborativeElement> element : this.collaborativeElements.entrySet()) {
-      attributes = (ArrayList<SimpleEntityAttribute>) Arrays.asList(new SimpleEntityAttribute(
-          generateNewRandomSyncMetaId(), "label", element.getValue().getLabel()));
+      attributes = new ArrayList<SimpleEntityAttribute>(Arrays.asList(new SimpleEntityAttribute(
+          generateNewRandomSyncMetaId(), "label", element.getValue().getLabel())));
       nodes.add(new SimpleNode(element.getKey(), "Collaborative Element", attributes));
     }
     // iwcCalls
     for (Entry<String, CommIWCCall> element : this.iwcCalls.entrySet()) {
-      attributes = (ArrayList<SimpleEntityAttribute>) Arrays.asList(new SimpleEntityAttribute(
-          generateNewRandomSyncMetaId(), "label", element.getValue().getLabel()));
+      attributes = new ArrayList<SimpleEntityAttribute>(Arrays.asList(new SimpleEntityAttribute(
+          generateNewRandomSyncMetaId(), "label", element.getValue().getLabel())));
       nodes.add(new SimpleNode(element.getKey(), "IWC Call", attributes));
     }
     // iwcResponses
     for (Entry<String, CommIWCResponse> element : this.iwcResponses.entrySet()) {
-      attributes = (ArrayList<SimpleEntityAttribute>) Arrays.asList(new SimpleEntityAttribute(
-          generateNewRandomSyncMetaId(), "label", element.getValue().getLabel()));
+      attributes = new ArrayList<SimpleEntityAttribute>(Arrays.asList(new SimpleEntityAttribute(
+          generateNewRandomSyncMetaId(), "label", element.getValue().getLabel())));
       nodes.add(new SimpleNode(element.getKey(), "IWC Response", attributes));
     }
     // microserviceCalls
     for (Entry<String, CommMicroserviceCall> element : this.microserviceCalls.entrySet()) {
-      attributes = (ArrayList<SimpleEntityAttribute>) Arrays.asList(new SimpleEntityAttribute(
-          generateNewRandomSyncMetaId(), "label", element.getValue().getLabel()));
+      attributes = new ArrayList<SimpleEntityAttribute>(Arrays.asList(new SimpleEntityAttribute(
+          generateNewRandomSyncMetaId(), "label", element.getValue().getLabel())));
       nodes.add(new SimpleNode(element.getKey(), "Microservice Call", attributes));
     }
     // otherServices
     for (Entry<String, CommOtherService> element : this.otherServices.entrySet()) {
-      attributes = (ArrayList<SimpleEntityAttribute>) Arrays.asList(new SimpleEntityAttribute(
-          generateNewRandomSyncMetaId(), "label", element.getValue().getLabel()));
+      attributes = new ArrayList<SimpleEntityAttribute>(Arrays.asList(new SimpleEntityAttribute(
+          generateNewRandomSyncMetaId(), "label", element.getValue().getLabel())));
       nodes.add(new SimpleNode(element.getKey(), "Other Service", attributes));
     }
     // restfulResources
     for (Entry<String, CommRestfulResource> element : this.restfulResources.entrySet()) {
-      attributes = (ArrayList<SimpleEntityAttribute>) Arrays.asList(new SimpleEntityAttribute(
-          generateNewRandomSyncMetaId(), "label", element.getValue().getLabel()));
+      attributes = new ArrayList<SimpleEntityAttribute>(Arrays.asList(new SimpleEntityAttribute(
+          generateNewRandomSyncMetaId(), "label", element.getValue().getLabel())));
       nodes.add(new SimpleNode(element.getKey(), "Restful Resource", attributes));
     }
     // widgets
     for (Entry<String, CommWidget> element : this.widgets.entrySet()) {
-      attributes = (ArrayList<SimpleEntityAttribute>) Arrays.asList(new SimpleEntityAttribute(
-          generateNewRandomSyncMetaId(), "label", element.getValue().getLabel()));
+      attributes = new ArrayList<SimpleEntityAttribute>(Arrays.asList(new SimpleEntityAttribute(
+          generateNewRandomSyncMetaId(), "label", element.getValue().getLabel())));
       nodes.add(new SimpleNode(element.getKey(), "Widget", attributes));
     }
 
