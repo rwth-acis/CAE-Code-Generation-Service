@@ -182,8 +182,8 @@ public class CommunicationModel {
         for (Entry<String, Microservice> microservice : microservices.entrySet()) {
           if (frontendComponentMicroservicePath.equals(microservice.getValue().getPath())) {
             for (MicroserviceCall microserviceCall : function.getMicroserviceCalls()) {
-              this.commEdges.add(new CommEdge(microserviceCall.getModelId(), microservice.getKey(),
-                  EdgeType.HTTP_CALL));
+              this.commEdges.add(new CommEdge(microserviceCall.getModelId(),
+                  microservice.getValue().getMicroserviceModelId(), EdgeType.HTTP_CALL));
             }
           }
         }
@@ -199,7 +199,7 @@ public class CommunicationModel {
     // iwc communication edges (check for matching intent action)
     for (Entry<String, CommIWCResponse> response : this.iwcResponses.entrySet()) {
       for (Entry<String, CommIWCCall> call : this.iwcCalls.entrySet()) {
-        if (response.getValue().equals(call.getValue())) {
+        if (response.getValue().getLabel().equals(call.getValue().getLabel())) {
           this.commEdges
               .add(new CommEdge(call.getKey(), response.getKey(), EdgeType.IWC_COMMUNICATION));
         }
@@ -225,8 +225,7 @@ public class CommunicationModel {
    * 
    * Converts the Communication View Model to a {@link i5.cae.simpleModel.SimpleModel}.
    * 
-   * TODO: Test with randomID for attributes. If this turns out to be not working, hardcode the id's
-   * from the meta-model..
+   * TODO: hardcoded the id's from the meta-model..
    * 
    * @return a {@link i5.cae.simpleModel.SimpleModel} representation of the communication view model
    * 
@@ -236,51 +235,54 @@ public class CommunicationModel {
     ArrayList<SimpleNode> nodes = new ArrayList<SimpleNode>();
     // application environment
     ArrayList<SimpleEntityAttribute> attributes = new ArrayList<SimpleEntityAttribute>();
-    attributes.add(new SimpleEntityAttribute(generateNewRandomSyncMetaId(), "label",
-        this.applicationEnvironment.getLabel()));
-    attributes.add(new SimpleEntityAttribute(generateNewRandomSyncMetaId(), "version",
-        this.applicationEnvironment.getVersion() + ""));
+    attributes.add(new SimpleEntityAttribute(AttributeIds.APPLICATION_ENVIRONMENT_LABEL.toString(),
+        "label", this.applicationEnvironment.getLabel()));
+    attributes
+        .add(new SimpleEntityAttribute(AttributeIds.APPLICATION_ENVIRONMENT_VERSION.toString(),
+            "version", this.applicationEnvironment.getVersion() + ""));
     nodes.add(new SimpleNode(applicationEnvironemntId, "Application Environment", attributes));
     // collaborativeElements
     for (Entry<String, CommCollaborativeElement> element : this.collaborativeElements.entrySet()) {
-      attributes = new ArrayList<SimpleEntityAttribute>(Arrays.asList(new SimpleEntityAttribute(
-          generateNewRandomSyncMetaId(), "label", element.getValue().getLabel())));
+      attributes = new ArrayList<SimpleEntityAttribute>(Arrays
+          .asList(new SimpleEntityAttribute(AttributeIds.COLLABORATIVE_ELEMENT_LABEL.toString(),
+              "label", element.getValue().getLabel())));
       nodes.add(new SimpleNode(element.getKey(), "Collaborative Element", attributes));
     }
     // iwcCalls
     for (Entry<String, CommIWCCall> element : this.iwcCalls.entrySet()) {
       attributes = new ArrayList<SimpleEntityAttribute>(Arrays.asList(new SimpleEntityAttribute(
-          generateNewRandomSyncMetaId(), "label", element.getValue().getLabel())));
+          AttributeIds.IWC_CALL_LABEL.toString(), "label", element.getValue().getLabel())));
       nodes.add(new SimpleNode(element.getKey(), "IWC Call", attributes));
     }
     // iwcResponses
     for (Entry<String, CommIWCResponse> element : this.iwcResponses.entrySet()) {
       attributes = new ArrayList<SimpleEntityAttribute>(Arrays.asList(new SimpleEntityAttribute(
-          generateNewRandomSyncMetaId(), "label", element.getValue().getLabel())));
+          AttributeIds.IWC_RESPONSE_LABEL.toString(), "label", element.getValue().getLabel())));
       nodes.add(new SimpleNode(element.getKey(), "IWC Response", attributes));
     }
     // microserviceCalls
     for (Entry<String, CommMicroserviceCall> element : this.microserviceCalls.entrySet()) {
-      attributes = new ArrayList<SimpleEntityAttribute>(Arrays.asList(new SimpleEntityAttribute(
-          generateNewRandomSyncMetaId(), "label", element.getValue().getLabel())));
+      attributes = new ArrayList<SimpleEntityAttribute>(
+          Arrays.asList(new SimpleEntityAttribute(AttributeIds.MICROSERVICE_CALL_LABEL.toString(),
+              "label", element.getValue().getLabel())));
       nodes.add(new SimpleNode(element.getKey(), "Microservice Call", attributes));
     }
     // otherServices
     for (Entry<String, CommOtherService> element : this.otherServices.entrySet()) {
       attributes = new ArrayList<SimpleEntityAttribute>(Arrays.asList(new SimpleEntityAttribute(
-          generateNewRandomSyncMetaId(), "label", element.getValue().getLabel())));
+          AttributeIds.OTHER_SERVICE_LABEL.toString(), "label", element.getValue().getLabel())));
       nodes.add(new SimpleNode(element.getKey(), "Other Service", attributes));
     }
     // restfulResources
     for (Entry<String, CommRestfulResource> element : this.restfulResources.entrySet()) {
       attributes = new ArrayList<SimpleEntityAttribute>(Arrays.asList(new SimpleEntityAttribute(
-          generateNewRandomSyncMetaId(), "label", element.getValue().getLabel())));
+          AttributeIds.RESTFUL_RESOURCE_LABEL.toString(), "label", element.getValue().getLabel())));
       nodes.add(new SimpleNode(element.getKey(), "Restful Resource", attributes));
     }
     // widgets
     for (Entry<String, CommWidget> element : this.widgets.entrySet()) {
       attributes = new ArrayList<SimpleEntityAttribute>(Arrays.asList(new SimpleEntityAttribute(
-          generateNewRandomSyncMetaId(), "label", element.getValue().getLabel())));
+          AttributeIds.WIDGET_LABEL.toString(), "label", element.getValue().getLabel())));
       nodes.add(new SimpleNode(element.getKey(), "Widget", attributes));
     }
 
@@ -288,7 +290,7 @@ public class CommunicationModel {
     ArrayList<SimpleEdge> edges = new ArrayList<SimpleEdge>();
     for (CommEdge edge : this.commEdges) {
       edges.add(new SimpleEdge(generateNewRandomSyncMetaId(), edge.getSource(), edge.getTarget(),
-          edge.getType().toString(), "", null));
+          edge.getType().toString(), "", new ArrayList<>()));
     }
 
     // ATTRIBUTES
@@ -300,6 +302,36 @@ public class CommunicationModel {
     SimpleModel model =
         new SimpleModel(this.applicationEnvironment.getLabel(), nodes, edges, attributes);
     return model;
+  }
+
+
+  /**
+   * 
+   * Temporary solution, need to find a better way to do this (sometime..) But currently needed,
+   * since SyncMeta attributes rely on their parent meta-model attribute id, which cannot be
+   * randomly generated, but has to be passed on to this service from the model (JSON) file.
+   * 
+   */
+  public enum AttributeIds {
+    IWC_CALL_LABEL("e06a85d121d12e5c6b4442bb"), IWC_RESPONSE_LABEL(
+        "15a477687f37ed702f9ea235"), MICROSERVICE_CALL_LABEL(
+            "5789ce97def22cf74c41d454"), APPLICATION_ENVIRONMENT_LABEL(
+                "695450a0bbbca8556b24868b"), APPLICATION_ENVIRONMENT_VERSION(
+                    "e8ceef5fec841d6db6f65e0f"), RESTFUL_RESOURCE_LABEL(
+                        "18ca0a76756191969557c5ee"), WIDGET_LABEL(
+                            "f8d9e72ff7f31966fd274c9c"), COLLABORATIVE_ELEMENT_LABEL(
+                                "aac860c27f30fd44e43425a8"), OTHER_SERVICE_LABEL(
+                                    "158dd42ccdef60b1f1a333de");
+    private String name;
+
+    AttributeIds(String name) {
+      this.name = name;
+    }
+
+    @Override
+    public String toString() {
+      return name;
+    }
   }
 
 

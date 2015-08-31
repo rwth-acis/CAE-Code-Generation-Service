@@ -16,6 +16,10 @@ public class CommMicroserviceCall {
 
   public CommMicroserviceCall(MicroserviceCall microserviceCall) {
     this.label = microserviceCall.getPath();
+    // add a "/" to empty paths
+    if (this.label.length() == 0) {
+      this.label = "/";
+    }
   }
 
 
