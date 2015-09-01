@@ -434,6 +434,11 @@ public class FrontendComponentGenerator extends Generator {
             microserviceCall.getMethodType().toString());
         microserviceCallCode =
             microserviceCallCode.replace("$Method_Path$", microserviceCall.getPath());
+        if (microserviceCall.isAuthorize()) {
+          microserviceCallCode = microserviceCallCode.replace("$Authenticate$", "true");
+        } else {
+          microserviceCallCode = microserviceCallCode.replace("$Authenticate$", "false");
+        }
         if (!microserviceCall.getContent().isEmpty()) {
           // add variable initialization
           functionCode = functionCode.replace("$Function_Body$",
