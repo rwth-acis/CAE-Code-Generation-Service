@@ -121,7 +121,7 @@ public class CodeGenerationServiceTest {
     node = LocalNode.newNode();
     node.launch();
 
-    testService = ServiceAgent.generateNewAgent(codeGenerationService, "a pass");
+    testService = ServiceAgent.createServiceAgent(codeGenerationService, "a pass");
     testService.unlockPrivateKey("a pass");
 
     node.registerReceiver(testService);
