@@ -13,6 +13,7 @@ import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.treewalk.TreeWalk;
 import org.eclipse.jgit.treewalk.filter.PathFilter;
 
+import i5.las2peer.logging.L2pLogger;
 import i5.las2peer.services.codeGenerationService.exception.GitHubException;
 import i5.las2peer.services.codeGenerationService.models.application.Application;
 
@@ -23,6 +24,9 @@ import i5.las2peer.services.codeGenerationService.models.application.Application
  * 
  */
 public class ApplicationGenerator extends Generator {
+
+  private static final L2pLogger logger =
+      L2pLogger.getInstance(ApplicationGenerator.class.getName());
 
 
   /**
@@ -87,7 +91,7 @@ public class ApplicationGenerator extends Generator {
                 "Initialized repository for application with version " + application.getVersion())
             .setCommitter(caeUser).call();
       } catch (Exception e) {
-        e.printStackTrace();
+        logger.printStackTrace(e);
         throw new GitHubException(e.getMessage());
       }
 
@@ -95,7 +99,7 @@ public class ApplicationGenerator extends Generator {
       try {
         Git.wrap(applicationRepository).branchCreate().setName("gh-pages").call();
       } catch (Exception e) {
-        e.printStackTrace();
+        logger.printStackTrace(e);
         throw new GitHubException(e.getMessage());
       }
 
@@ -160,7 +164,7 @@ public class ApplicationGenerator extends Generator {
             }
           }
         } catch (Exception e) {
-          e.printStackTrace();
+          logger.printStackTrace(e);
           throw new GitHubException(e.getMessage());
         }
         treeWalk.close();
@@ -169,7 +173,7 @@ public class ApplicationGenerator extends Generator {
           Git.wrap(applicationRepository).commit()
               .setMessage("Added microservice " + microserviceName).setCommitter(caeUser).call();
         } catch (Exception e) {
-          e.printStackTrace();
+          logger.printStackTrace(e);
           throw new GitHubException(e.getMessage());
         }
       }
@@ -177,7 +181,7 @@ public class ApplicationGenerator extends Generator {
       try {
         pushToRemoteRepository(applicationRepository, gitHubUser, gitHubPassword);
       } catch (Exception e) {
-        e.printStackTrace();
+        logger.printStackTrace(e);
         throw new GitHubException(e.getMessage());
       }
 
@@ -185,7 +189,7 @@ public class ApplicationGenerator extends Generator {
       try {
         Git.wrap(applicationRepository).checkout().setName("gh-pages").call();
       } catch (Exception e) {
-        e.printStackTrace();
+        logger.printStackTrace(e);
         throw new GitHubException(e.getMessage());
       }
 
@@ -264,7 +268,7 @@ public class ApplicationGenerator extends Generator {
             }
           }
         } catch (Exception e) {
-          e.printStackTrace();
+          logger.printStackTrace(e);
           throw new GitHubException(e.getMessage());
         }
         treeWalk.close();
@@ -274,7 +278,7 @@ public class ApplicationGenerator extends Generator {
               .setMessage("Added frontend component " + frontendComponentName).setCommitter(caeUser)
               .call();
         } catch (Exception e) {
-          e.printStackTrace();
+          logger.printStackTrace(e);
           throw new GitHubException(e.getMessage());
         }
       }
@@ -283,7 +287,7 @@ public class ApplicationGenerator extends Generator {
         pushToRemoteRepository(applicationRepository, gitHubUser, gitHubPassword, "gh-pages",
             "gh-pages");
       } catch (Exception e) {
-        e.printStackTrace();
+        logger.printStackTrace(e);
         throw new GitHubException(e.getMessage());
       }
 

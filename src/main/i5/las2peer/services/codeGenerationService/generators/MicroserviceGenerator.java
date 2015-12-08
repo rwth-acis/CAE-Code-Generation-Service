@@ -13,6 +13,7 @@ import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.treewalk.TreeWalk;
 import org.eclipse.jgit.treewalk.filter.PathFilter;
 
+import i5.las2peer.logging.L2pLogger;
 import i5.las2peer.services.codeGenerationService.exception.GitHubException;
 import i5.las2peer.services.codeGenerationService.models.microservice.Column;
 import i5.las2peer.services.codeGenerationService.models.microservice.Database;
@@ -33,6 +34,10 @@ import i5.las2peer.services.codeGenerationService.models.microservice.Table;
  * 
  */
 public class MicroserviceGenerator extends Generator {
+
+  private static final L2pLogger logger =
+      L2pLogger.getInstance(ApplicationGenerator.class.getName());
+
 
   /**
    * 
@@ -260,7 +265,7 @@ public class MicroserviceGenerator extends Generator {
           }
         }
       } catch (Exception e) {
-        e.printStackTrace();
+        logger.printStackTrace(e);
         throw new GitHubException(e.getMessage());
       }
 
@@ -337,7 +342,7 @@ public class MicroserviceGenerator extends Generator {
             .setMessage("Generated microservice version " + microservice.getVersion())
             .setCommitter(caeUser).call();
       } catch (Exception e) {
-        e.printStackTrace();
+        logger.printStackTrace(e);
         throw new GitHubException(e.getMessage());
       }
 
@@ -345,7 +350,7 @@ public class MicroserviceGenerator extends Generator {
       try {
         pushToRemoteRepository(microserviceRepository, gitHubUser, gitHubPassword);
       } catch (Exception e) {
-        e.printStackTrace();
+        logger.printStackTrace(e);
         throw new GitHubException(e.getMessage());
       }
 

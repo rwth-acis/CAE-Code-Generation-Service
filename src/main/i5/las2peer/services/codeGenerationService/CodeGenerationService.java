@@ -4,6 +4,8 @@ import java.io.Serializable;
 
 import i5.cae.simpleModel.SimpleModel;
 import i5.las2peer.api.Service;
+import i5.las2peer.logging.L2pLogger;
+import i5.las2peer.logging.NodeObserver.Event;
 import i5.las2peer.services.codeGenerationService.exception.GitHubException;
 import i5.las2peer.services.codeGenerationService.exception.ModelParseException;
 import i5.las2peer.services.codeGenerationService.generators.ApplicationGenerator;
@@ -28,6 +30,7 @@ public class CodeGenerationService extends Service {
   private String gitHubOrganization;
   private String templateRepository;
   private String gitHubUserMail;
+  private final L2pLogger logger = L2pLogger.getInstance(CodeGenerationService.class.getName());
 
   public CodeGenerationService() {
     // read and set properties-file values
@@ -49,8 +52,8 @@ public class CodeGenerationService extends Service {
   public String createFromModel(Serializable... serializedModel) {
 
     SimpleModel model = (SimpleModel) serializedModel[0];
-    logMessage("createFromModel: Received model with name " + model.getName());
 
+    L2pLogger.logEvent(Event.SERVICE_MESSAGE, "createFromModel: Received model with name " + model.getName());
     // TESTING: write as file
     // try {
     // OutputStream file = new FileOutputStream("testModels/" + model.getName() + ".model");
@@ -68,43 +71,47 @@ public class CodeGenerationService extends Service {
         try {
           switch (type) {
             case "microservice":
-              logMessage("createFromModel: Creating microservice model now..");
+            	L2pLogger.logEvent(Event.SERVICE_MESSAGE, "createFromModel: Creating microservice model now..");
               Microservice microservice = new Microservice(model);
-              logMessage("createFromModel: Creating microservice source code now..");
+              L2pLogger.logEvent(Event.SERVICE_MESSAGE, "createFromModel: Creating microservice source code now..");
               MicroserviceGenerator.createSourceCode(microservice, this.templateRepository,
                   this.gitHubOrganization, this.gitHubUser, this.gitHubUserMail,
                   this.gitHubPassword);
-              logMessage("createFromModel: Created!");
+              L2pLogger.logEvent(Event.SERVICE_MESSAGE, "createFromModel: Created!");
               return "done";
             case "frontend-component":
-              logMessage("createFromModel: Creating frontend component model now..");
+              L2pLogger.logEvent(Event.SERVICE_MESSAGE, "createFromModel: Creating frontend component model now..");
               FrontendComponent frontendComponent = new FrontendComponent(model);
-              logMessage("createFromModel: Creating frontend component source code now..");
+              L2pLogger.logEvent(Event.SERVICE_MESSAGE, "createFromModel: Creating frontend component source code now..");
               FrontendComponentGenerator.createSourceCode(frontendComponent,
                   this.templateRepository, this.gitHubOrganization, this.gitHubUser,
                   this.gitHubUserMail, this.gitHubPassword);;
-              logMessage("createFromModel: Created!");
+              L2pLogger.logEvent(Event.SERVICE_MESSAGE, "createFromModel: Created!");
               return "done";
             case "application":
-              logMessage("createFromModel: Creating application model now..");
+              L2pLogger.logEvent(Event.SERVICE_MESSAGE,
+                  "createFromModel: Creating application model now..");
               Application application = new Application(serializedModel);
-              logMessage("createFromModel: Creating application source code now..");
+              L2pLogger.logEvent(Event.SERVICE_MESSAGE,
+                  "createFromModel: Creating application source code now..");
               ApplicationGenerator.createSourceCode(application, this.templateRepository,
                   this.gitHubOrganization, this.gitHubUser, this.gitHubUserMail,
                   this.gitHubPassword);
-              logMessage("createFromModel: Created!");
+              L2pLogger.logEvent(Event.SERVICE_MESSAGE, "createFromModel: Created!");
               return "done";
             default:
               return "Error: Model has to have an attribute 'type' that is either "
                   + "'microservice', 'frontend-component' or 'application'!";
           }
         } catch (ModelParseException e1) {
-          logError("createFromModel: Model parsing exception: " + e1.getMessage());
-          e1.printStackTrace();
+          L2pLogger.logEvent(Event.SERVICE_MESSAGE,
+              "createFromModel: Model parsing exception: " + e1.getMessage());
+          logger.printStackTrace(e1);
           return "Error: Parsing model failed with " + e1.getMessage();
         } catch (GitHubException e2) {
-          logError("createFromModel: GitHub access exception: " + e2.getMessage());
-          e2.printStackTrace();
+          L2pLogger.logEvent(Event.SERVICE_MESSAGE,
+              "createFromModel: GitHub access exception: " + e2.getMessage());
+          logger.printStackTrace(e2);
           return "Error: Generating code failed because of failing GitHub access: "
               + e2.getMessage();
         }
@@ -129,40 +136,45 @@ public class CodeGenerationService extends Service {
   public String deleteRepositoryOfModel(Serializable... serializedModel) {
     SimpleModel model = (SimpleModel) serializedModel[0];
     String modelName = model.getName();
-    logMessage("deleteRepositoryOfModel: Received model with name " + modelName);
+    L2pLogger.logEvent(Event.SERVICE_MESSAGE,
+        "deleteRepositoryOfModel: Received model with name " + modelName);
     for (int i = 0; i < model.getAttributes().size(); i++) {
       if (model.getAttributes().get(i).getName().equals("type")) {
         String type = model.getAttributes().get(i).getValue();
         try {
           switch (type) {
             case "microservice":
-              logMessage("deleteRepositoryOfModel: Deleting microservice repository now..");
+              L2pLogger.logEvent(Event.SERVICE_MESSAGE,
+                  "deleteRepositoryOfModel: Deleting microservice repository now..");
               modelName = "microservice-" + modelName.replace(" ", "-");
               Generator.deleteRemoteRepository(modelName, this.gitHubOrganization, this.gitHubUser,
                   this.gitHubPassword);
-              logMessage("deleteRepositoryOfModel: Deleted!");
+              L2pLogger.logEvent(Event.SERVICE_MESSAGE, "deleteRepositoryOfModel: Deleted!");
               return "done";
             case "frontend-component":
-              logMessage("deleteRepositoryOfModel: Deleting frontend-component repository now..");
+              L2pLogger.logEvent(Event.SERVICE_MESSAGE,
+                  "deleteRepositoryOfModel: Deleting frontend-component repository now..");
               modelName = "frontendComponent-" + modelName.replace(" ", "-");
               Generator.deleteRemoteRepository(modelName, this.gitHubOrganization, this.gitHubUser,
                   this.gitHubPassword);
-              logMessage("deleteRepositoryOfModel: Deleted!");
+              L2pLogger.logEvent(Event.SERVICE_MESSAGE, "deleteRepositoryOfModel: Deleted!");
               return "done";
             case "application":
-              logMessage("deleteRepositoryOfModel: Deleting application repository now..");
+              L2pLogger.logEvent(Event.SERVICE_MESSAGE,
+                  "deleteRepositoryOfModel: Deleting application repository now..");
               modelName = "application-" + modelName.replace(" ", "-");
               Generator.deleteRemoteRepository(modelName, this.gitHubOrganization, this.gitHubUser,
                   this.gitHubPassword);
-              logMessage("deleteRepositoryOfModel: Deleted!");
+              L2pLogger.logEvent(Event.SERVICE_MESSAGE, "deleteRepositoryOfModel: Deleted!");
               return "done";
             default:
               return "Error: Model has to have an attribute 'type' that is either "
                   + "'microservice', 'frontend-component' or 'application'!";
           }
         } catch (GitHubException e) {
-          logError("deleteRepositoryOfModel: GitHub access exception: " + e.getMessage());
-          e.printStackTrace();
+          L2pLogger.logEvent(Event.SERVICE_MESSAGE,
+              "deleteRepositoryOfModel: GitHub access exception: " + e.getMessage());
+          logger.printStackTrace(e);
           return "Error: Deleting repository failed because of failing GitHub access: "
               + e.getMessage();
         }
@@ -188,55 +200,66 @@ public class CodeGenerationService extends Service {
   public String updateRepositoryOfModel(Serializable... serializedModel) {
     SimpleModel model = (SimpleModel) serializedModel[0];
     String modelName = model.getName();
-    logMessage("updateRepositoryOfModel: Received model with name " + modelName);
+    L2pLogger.logEvent(Event.SERVICE_MESSAGE,
+        "updateRepositoryOfModel: Received model with name " + modelName);
     for (int i = 0; i < model.getAttributes().size(); i++) {
       if (model.getAttributes().get(i).getName().equals("type")) {
         String type = model.getAttributes().get(i).getValue();
         try {
           switch (type) {
             case "microservice":
-              logMessage("updateRepositoryOfModel: Checking microservice model now..");
+              L2pLogger.logEvent(Event.SERVICE_MESSAGE,
+                  "updateRepositoryOfModel: Checking microservice model now..");
               // check first if model can be constructed
               // (in case of an invalid model, keep the old repository)
               new Microservice(model);
-              logMessage("updateRepositoryOfModel: Calling delete (old) repository method now..");
+              L2pLogger.logEvent(Event.SERVICE_MESSAGE,
+                  "updateRepositoryOfModel: Calling delete (old) repository method now..");
               String deleteReturnMessage = deleteRepositoryOfModel(serializedModel);
               if (!deleteReturnMessage.equals("done")) {
                 return deleteReturnMessage; // error happened
               }
-              logMessage("updateRepositoryOfModel: Calling createFromModel now..");
+              L2pLogger.logEvent(Event.SERVICE_MESSAGE,
+                  "updateRepositoryOfModel: Calling createFromModel now..");
               return createFromModel(serializedModel);
             case "frontend-component":
-              logMessage("updateRepositoryOfModel: Checking frontend-component model now..");
+              L2pLogger.logEvent(Event.SERVICE_MESSAGE,
+                  "updateRepositoryOfModel: Checking frontend-component model now..");
               // check first if model can be constructed
               // (in case of an invalid model, keep the old repository)
               new FrontendComponent(model);
-              logMessage("updateRepositoryOfModel: Calling delete (old) repository method now..");
+              L2pLogger.logEvent(Event.SERVICE_MESSAGE,
+                  "updateRepositoryOfModel: Calling delete (old) repository method now..");
               deleteReturnMessage = deleteRepositoryOfModel(serializedModel);
               if (!deleteReturnMessage.equals("done")) {
                 return deleteReturnMessage; // error happened
               }
-              logMessage("updateRepositoryOfModel: Calling createFromModel now..");
+              L2pLogger.logEvent(Event.SERVICE_MESSAGE,
+                  "updateRepositoryOfModel: Calling createFromModel now..");
               return createFromModel(serializedModel);
             case "application":
-              logMessage("updateRepositoryOfModel: Checking application model now..");
+              L2pLogger.logEvent(Event.SERVICE_MESSAGE,
+                  "updateRepositoryOfModel: Checking application model now..");
               // check first if model can be constructed
               // (in case of an invalid model, keep the old repository)
               new Application(serializedModel);
-              logMessage("updateRepositoryOfModel: Calling delete (old) repository method now..");
+              L2pLogger.logEvent(Event.SERVICE_MESSAGE,
+                  "updateRepositoryOfModel: Calling delete (old) repository method now..");
               deleteReturnMessage = deleteRepositoryOfModel(serializedModel);
               if (!deleteReturnMessage.equals("done")) {
                 return deleteReturnMessage; // error happened
               }
-              logMessage("updateRepositoryOfModel: Calling createFromModel now..");
+              L2pLogger.logEvent(Event.SERVICE_ERROR,
+                  "updateRepositoryOfModel: Calling createFromModel now..");
               return createFromModel(serializedModel);
             default:
               return "Error: Model has to have an attribute 'type' that is either "
                   + "'microservice', 'frontend-component' or 'application'!";
           }
         } catch (ModelParseException e) {
-          logError("updateRepositoryOfModel: Model Parsing exception: " + e.getMessage());
-          e.printStackTrace();
+          L2pLogger.logEvent(Event.SERVICE_ERROR,
+              "updateRepositoryOfModel: Model Parsing exception: " + e.getMessage());
+          logger.printStackTrace(e);
           return "Error: Parsing model failed with " + e.getMessage();
         }
       }
@@ -260,7 +283,7 @@ public class CodeGenerationService extends Service {
   public SimpleModel getCommunicationViewOfApplicationModel(Serializable... serializedModel)
       throws ModelParseException {
     SimpleModel model = (SimpleModel) serializedModel[0];
-    logMessage(
+    L2pLogger.logEvent(Event.SERVICE_MESSAGE,
         "getCommunicationViewOfApplicationModel: Received model with name " + model.getName());
     for (int i = 0; i < model.getAttributes().size(); i++) {
       if (model.getAttributes().get(i).getName().equals("type")) {
@@ -269,17 +292,19 @@ public class CodeGenerationService extends Service {
           if (!type.equals("application")) {
             throw new ModelParseException("Model is not an application!");
           }
-          logMessage("getCommunicationViewOfApplicationModel: Creating application model now..");
+          L2pLogger.logEvent(Event.SERVICE_MESSAGE,
+              "getCommunicationViewOfApplicationModel: Creating application model now..");
           Application application = new Application(serializedModel);
-          logMessage(
+          L2pLogger.logEvent(Event.SERVICE_MESSAGE,
               "getCommunicationViewOfApplicationModel: Creating communication view model now..");
           SimpleModel commViewModel = application.toCommunicationModel();
-          logMessage("getCommunicationViewOfApplicationModel: Created!");
+          L2pLogger.logEvent(Event.SERVICE_MESSAGE,
+              "getCommunicationViewOfApplicationModel: Created!");
           return commViewModel;
         } catch (ModelParseException e) {
-          logError(
+          L2pLogger.logEvent(Event.SERVICE_ERROR,
               "getCommunicationViewOfApplicationModel: Model parsing exception: " + e.getMessage());
-          e.printStackTrace();
+          logger.printStackTrace(e);
           throw e;
         }
       }
