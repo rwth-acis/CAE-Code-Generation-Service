@@ -33,6 +33,7 @@ import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider;
 import org.eclipse.jgit.treewalk.TreeWalk;
 import org.json.simple.JSONObject;
 
+import i5.las2peer.logging.L2pLogger;
 import i5.las2peer.services.codeGenerationService.exception.GitHubException;
 
 /**
@@ -42,6 +43,10 @@ import i5.las2peer.services.codeGenerationService.exception.GitHubException;
  *
  */
 public abstract class Generator {
+
+
+  private static final L2pLogger logger =
+      L2pLogger.getInstance(ApplicationGenerator.class.getName());
 
   /**
    * 
@@ -71,7 +76,7 @@ public abstract class Generator {
       localPath = File.createTempFile(name, "");
       localPath.delete();
     } catch (IOException e) {
-      e.printStackTrace();
+      logger.printStackTrace(e);
       throw new GitHubException(e.getMessage());
     }
 
@@ -84,7 +89,7 @@ public abstract class Generator {
       remoteConfig.update(config);
       config.save();
     } catch (Exception e) {
-      e.printStackTrace();
+      logger.printStackTrace(e);
       throw new GitHubException(e.getMessage());
     }
 
@@ -131,7 +136,7 @@ public abstract class Generator {
       }
 
     } catch (Exception e) {
-      e.printStackTrace();
+      logger.printStackTrace(e);
       throw new GitHubException(e.getMessage());
     }
     return git.getRepository();
@@ -166,7 +171,7 @@ public abstract class Generator {
       treeWalk.addTree(tree);
       treeWalk.setRecursive(true);
     } catch (Exception e) {
-      e.printStackTrace();
+      logger.printStackTrace(e);
       throw new GitHubException(e.getMessage());
     } finally {
       templateRepository.close();
@@ -205,7 +210,7 @@ public abstract class Generator {
       treeWalk.addTree(tree);
       treeWalk.setRecursive(true);
     } catch (Exception e) {
-      e.printStackTrace();
+      logger.printStackTrace(e);
       throw new GitHubException(e.getMessage());
     } finally {
       repository.close();
@@ -239,7 +244,7 @@ public abstract class Generator {
     try {
       localPath = File.createTempFile(repositoryName, "");
     } catch (IOException e) {
-      e.printStackTrace();
+      logger.printStackTrace(e);
       throw new GitHubException(e.getMessage());
     }
     localPath.delete();
@@ -249,7 +254,7 @@ public abstract class Generator {
       repository = Git.cloneRepository().setURI(repositoryAddress).setDirectory(localPath).call()
           .getRepository();
     } catch (Exception e) {
-      e.printStackTrace();
+      logger.printStackTrace(e);
       throw new GitHubException(e.getMessage());
     }
 
@@ -287,7 +292,7 @@ public abstract class Generator {
       printStream.print(content);
       printStream.close();
     } catch (IOException e) {
-      e.printStackTrace();
+      logger.printStackTrace(e);
       throw new GitHubException(e.getMessage());
     }
 
@@ -295,7 +300,7 @@ public abstract class Generator {
     try {
       Git.wrap(repository).add().addFilepattern(".").call();
     } catch (Exception e) {
-      e.printStackTrace();
+      logger.printStackTrace(e);
       throw new GitHubException(e.getMessage());
     }
     return repository;
@@ -332,7 +337,7 @@ public abstract class Generator {
       output.writeObject(content);
       output.close();
     } catch (IOException e) {
-      e.printStackTrace();
+      logger.printStackTrace(e);
       throw new GitHubException(e.getMessage());
     }
 
@@ -340,7 +345,7 @@ public abstract class Generator {
     try {
       Git.wrap(repository).add().addFilepattern(".").call();
     } catch (Exception e) {
-      e.printStackTrace();
+      logger.printStackTrace(e);
       throw new GitHubException(e.getMessage());
     }
     return repository;
@@ -373,7 +378,7 @@ public abstract class Generator {
       File file = new File(repository.getDirectory().getParent() + "/" + relativePath + fileName);
       ImageIO.write(content, fileName.substring(fileName.lastIndexOf(".") + 1), file);
     } catch (IOException e) {
-      e.printStackTrace();
+      logger.printStackTrace(e);
       throw new GitHubException(e.getMessage());
     }
 
@@ -381,7 +386,7 @@ public abstract class Generator {
     try {
       Git.wrap(repository).add().addFilepattern(".").call();
     } catch (Exception e) {
-      e.printStackTrace();
+      logger.printStackTrace(e);
       throw new GitHubException(e.getMessage());
     }
     return repository;
@@ -437,7 +442,7 @@ public abstract class Generator {
       Git.wrap(repository).push().setRemote("GitHub").setCredentialsProvider(credentialsProvider)
           .setRefSpecs(spec).call();
     } catch (Exception e) {
-      e.printStackTrace();
+      logger.printStackTrace(e);
       throw new GitHubException(e.getMessage());
     }
     return repository;
@@ -481,7 +486,7 @@ public abstract class Generator {
       }
 
     } catch (Exception e) {
-      e.printStackTrace();
+      logger.printStackTrace(e);
       throw new GitHubException(e.getMessage());
     }
   }
