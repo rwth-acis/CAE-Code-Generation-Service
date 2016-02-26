@@ -19,6 +19,7 @@ import org.junit.Test;
 
 import i5.cae.simpleModel.SimpleModel;
 import i5.las2peer.p2p.LocalNode;
+import i5.las2peer.p2p.ServiceNameVersion;
 import i5.las2peer.security.ServiceAgent;
 import i5.las2peer.services.codeGenerationService.exception.GitHubException;
 import i5.las2peer.services.codeGenerationService.generators.Generator;
@@ -40,8 +41,8 @@ public class CodeGenerationServiceTest {
   private static SimpleModel model2;
   private static SimpleModel model3;
   private static SimpleModel[] model4;
-
   private static ServiceAgent testService;
+  private static ServiceNameVersion serviceNameVersion;
   private static String gitHubOrganization = null;
   private static String gitHubUser = null;
   private static String gitHubPassword = null;
@@ -120,8 +121,10 @@ public class CodeGenerationServiceTest {
     // start node
     node = LocalNode.newNode();
     node.launch();
-
-    testService = ServiceAgent.createServiceAgent(codeGenerationService, "a pass");
+    
+    serviceNameVersion = 
+    		new ServiceNameVersion(codeGenerationService,"0.1");
+    testService = ServiceAgent.createServiceAgent(serviceNameVersion, "a pass");
     testService.unlockPrivateKey("a pass");
 
     node.registerReceiver(testService);
@@ -195,7 +198,7 @@ public class CodeGenerationServiceTest {
     Serializable[] parameters = {content};
     try {
       String returnMessage = (String) node.invokeLocally(testService.getId(),
-          "i5.las2peer.services.codeGenerationService.CodeGenerationService", "createFromModel",
+    		  serviceNameVersion, "createFromModel",
           parameters);
       assertEquals("done", returnMessage);
     } catch (Exception e) {
@@ -215,7 +218,7 @@ public class CodeGenerationServiceTest {
     Serializable[] parameters = {(Serializable) model4};
     try {
       String returnMessage = (String) node.invokeLocally(testService.getId(),
-          "i5.las2peer.services.codeGenerationService.CodeGenerationService", "createFromModel",
+    		  serviceNameVersion, "createFromModel",
           parameters);
       assertEquals("done", returnMessage);
     } catch (Exception e) {
@@ -235,8 +238,7 @@ public class CodeGenerationServiceTest {
     Serializable[] parameters = {(Serializable) model4};
     try {
       SimpleModel simpleModel = (SimpleModel) node.invokeLocally(testService.getId(),
-          "i5.las2peer.services.codeGenerationService.CodeGenerationService",
-          "getCommunicationViewOfApplicationModel", parameters);
+    		  serviceNameVersion, "getCommunicationViewOfApplicationModel", parameters);
       assertEquals("CAE Example Application", simpleModel.getName());
       // TODO more attributes of model checking
     } catch (Exception e) {
@@ -257,7 +259,7 @@ public class CodeGenerationServiceTest {
     Serializable[] parameters = {content};
     try {
       String returnMessage = (String) node.invokeLocally(testService.getId(),
-          "i5.las2peer.services.codeGenerationService.CodeGenerationService", "createFromModel",
+    		  serviceNameVersion, "createFromModel",
           parameters);
       assertEquals("done", returnMessage);
     } catch (Exception e) {
@@ -278,12 +280,11 @@ public class CodeGenerationServiceTest {
     Serializable[] parameters = {content};
     try {
       String returnMessage = (String) node.invokeLocally(testService.getId(),
-          "i5.las2peer.services.codeGenerationService.CodeGenerationService", "createFromModel",
+    		  serviceNameVersion, "createFromModel",
           parameters);
       assertEquals("done", returnMessage);
       returnMessage = (String) node.invokeLocally(testService.getId(),
-          "i5.las2peer.services.codeGenerationService.CodeGenerationService",
-          "deleteRepositoryOfModel", parameters);
+          serviceNameVersion, "deleteRepositoryOfModel", parameters);
       assertEquals("done", returnMessage);
     } catch (Exception e) {
       e.printStackTrace();
@@ -303,12 +304,11 @@ public class CodeGenerationServiceTest {
     Serializable[] parameters = {content};
     try {
       String returnMessage = (String) node.invokeLocally(testService.getId(),
-          "i5.las2peer.services.codeGenerationService.CodeGenerationService", "createFromModel",
+    		  serviceNameVersion, "createFromModel",
           parameters);
       assertEquals("done", returnMessage);
       returnMessage = (String) node.invokeLocally(testService.getId(),
-          "i5.las2peer.services.codeGenerationService.CodeGenerationService",
-          "updateRepositoryOfModel", parameters);
+    		  serviceNameVersion, "updateRepositoryOfModel", parameters);
       assertEquals("done", returnMessage);
     } catch (Exception e) {
       e.printStackTrace();
