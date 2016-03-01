@@ -532,11 +532,9 @@ public class FrontendComponentGenerator extends Generator {
           foundCollaborativeElement = true;
         }
         applicationScript = applicationScript.replace("$Sync_Code$", yjsSyncedCode);
-        applicationScript = applicationScript.replace("$Variable_Init$", element.getId());
-       // applicationScript = applicationScript.replace("$Variable_Init$",
-       //    "  y.val(\"" + element.getId() + "\", new Y.Text(\"\"));\n$Variable_Init$");
-       // applicationScript = applicationScript.replace("$Variable_Observe_Code$", yjsBindCode);
-        applicationScript = applicationScript.replace("$Element_Id$", element.getId());
+        applicationScript = applicationScript.replace("$Variable_Init$", element.getId()+":\'Text \'"+"\n,$Variable_Init$");
+       
+        applicationScript = applicationScript.replace("$Share_Element$", "y.share."+element.getId())+".bind(document.getElementById('"+element.getId()+"'))"+"\n$Share_Element$";
       }
     }
     // remove yjs placeholder if no yjs collaboration is needed
@@ -544,9 +542,11 @@ public class FrontendComponentGenerator extends Generator {
       applicationScript = applicationScript.replace("$Yjs_Code$\n", "");
     }
     // remove last placeholder
-    applicationScript = applicationScript.replace("$Variable_Init$\n", "");
-    applicationScript = applicationScript.replace("$Variable_Observe_Code$\n", "");
-    applicationScript = applicationScript.replace("$Sync_Code$\n", "");
+    applicationScript = applicationScript.replace("\n,$Variable_Init$", "");
+    applicationScript = applicationScript.replace("$Variable_Init$", "");
+    applicationScript = applicationScript.replace("\n$Share_Element$", "");
+    applicationScript = applicationScript.replace("$Share_Element$", "");
+
 
     return applicationScript;
   }
