@@ -49,6 +49,9 @@ public class Event {
               throw new ModelParseException("Unknown Event cause: " + attribute.getValue());
           }
           break;
+          case "name":
+            //do nothing right now, just for display reasons
+      	  break;
         default:
           throw new ModelParseException("Unknown Event attribute: " + attribute.getName());
       }
