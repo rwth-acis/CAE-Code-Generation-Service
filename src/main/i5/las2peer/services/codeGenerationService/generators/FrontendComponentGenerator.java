@@ -79,7 +79,9 @@ public class FrontendComponentGenerator extends Generator {
     String yjsImports = null;
     String yjs = null;
     String yText = null;
-    String yXmpp = null;
+    String yWebsockets = null;
+    String yArray = null;
+    String yMemory = null;
     String iwc = null;
     String yjsInit = null;
     String yjsBindCode = null;
@@ -134,21 +136,27 @@ public class FrontendComponentGenerator extends Generator {
             case "y.js":
               yjs = new String(loader.getBytes(), "UTF-8");
               break;
+            case "y-array.js":
+                yArray = new String(loader.getBytes(), "UTF-8");
+                break;
             case "y-text.js":
               yText = new String(loader.getBytes(), "UTF-8");
               break;
-            case "y-xmpp.js":
-              yXmpp = new String(loader.getBytes(), "UTF-8");
+            case "y-websockets-client.js":
+              yWebsockets = new String(loader.getBytes(), "UTF-8");
               break;
+            case "y-memory.js":
+                yMemory = new String(loader.getBytes(), "UTF-8");
+                break;
             case "yjsInit.txt":
               yjsInit = new String(loader.getBytes(), "UTF-8");
               break;
-            case "yjsBindCode.txt":
-              yjsBindCode = new String(loader.getBytes(), "UTF-8");
-              break;
-            case "yjsSyncedTemplate.txt":
-              yjsSyncedCode = new String(loader.getBytes(), "UTF-8");
-              break;
+         //   case "yjsBindCode.txt":
+         //     yjsBindCode = new String(loader.getBytes(), "UTF-8");
+         //     break;
+         //   case "yjsSyncedTemplate.txt":
+         //     yjsSyncedCode = new String(loader.getBytes(), "UTF-8");
+         //     break;
             case "style.css":
               style = new String(loader.getBytes(), "UTF-8");
               break;
@@ -197,9 +205,13 @@ public class FrontendComponentGenerator extends Generator {
         frontendComponentRepository =
             createTextFileInRepository(frontendComponentRepository, "js/lib/", "y.js", yjs);
         frontendComponentRepository =
+                createTextFileInRepository(frontendComponentRepository, "js/lib/", "y-array.js", yArray);
+        frontendComponentRepository =
             createTextFileInRepository(frontendComponentRepository, "js/lib/", "y-text.js", yText);
         frontendComponentRepository =
-            createTextFileInRepository(frontendComponentRepository, "js/lib/", "y-xmpp.js", yXmpp);
+            createTextFileInRepository(frontendComponentRepository, "js/lib/", "y-xmpp.js", yWebsockets);
+        frontendComponentRepository =
+                createTextFileInRepository(frontendComponentRepository, "js/lib/", "y-memory.js", yMemory);
       }
       frontendComponentRepository =
           createTextFileInRepository(frontendComponentRepository, "css/", "style.css", style);
@@ -520,11 +532,10 @@ public class FrontendComponentGenerator extends Generator {
           foundCollaborativeElement = true;
         }
         applicationScript = applicationScript.replace("$Sync_Code$", yjsSyncedCode);
-        applicationScript = applicationScript.replace("$Variable_Init$", "  var " + element.getId()
-            + " = document.getElementById(\"" + element.getId() + "\");\n$Variable_Init$");
-        applicationScript = applicationScript.replace("$Variable_Init$",
-            "  y.val(\"" + element.getId() + "\", new Y.Text(\"\"));\n$Variable_Init$");
-        applicationScript = applicationScript.replace("$Variable_Observe_Code$", yjsBindCode);
+        applicationScript = applicationScript.replace("$Variable_Init$", element.getId());
+       // applicationScript = applicationScript.replace("$Variable_Init$",
+       //    "  y.val(\"" + element.getId() + "\", new Y.Text(\"\"));\n$Variable_Init$");
+       // applicationScript = applicationScript.replace("$Variable_Observe_Code$", yjsBindCode);
         applicationScript = applicationScript.replace("$Element_Id$", element.getId());
       }
     }
