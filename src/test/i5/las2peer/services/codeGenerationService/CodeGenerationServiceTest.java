@@ -141,7 +141,7 @@ public class CodeGenerationServiceTest {
    * 
    * @throws Exception
    * 
-   */
+  **/
   @AfterClass
   public static void shutDownServer() throws Exception {
     String model1GitHubName = "microservice-" + model1.getName().replace(" ", "-");

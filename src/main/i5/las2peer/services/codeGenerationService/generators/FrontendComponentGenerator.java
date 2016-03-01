@@ -84,8 +84,6 @@ public class FrontendComponentGenerator extends Generator {
     String yMemory = null;
     String iwc = null;
     String yjsInit = null;
-    String yjsBindCode = null;
-    String yjsSyncedCode = null;
 
     try {
       PersonIdent caeUser = new PersonIdent(gitHubUser, gitHubUserMail);
@@ -186,8 +184,7 @@ public class FrontendComponentGenerator extends Generator {
       applicationScript =
           addEventsToApplicationScript(applicationScript, eventTemplate, frontendComponent);
       // add (possible) Yjs collaboration stuff
-      applicationScript = addYjsCollaboration(applicationScript, yjsInit, yjsBindCode,
-          yjsSyncedCode, frontendComponent);
+      applicationScript = addYjsCollaboration(applicationScript, yjsInit, frontendComponent);
       // and remove remaining placeholer in the end
       applicationScript = removeRemainingAppScriptPlaceholder(applicationScript);
       // add files to new repository
@@ -522,8 +519,7 @@ public class FrontendComponentGenerator extends Generator {
    * @return the updated application script code
    * 
    */
-  private static String addYjsCollaboration(String applicationScript, String yjsInit,
-      String yjsBindCode, String yjsSyncedCode, FrontendComponent frontendComponent) {
+  private static String addYjsCollaboration(String applicationScript, String yjsInit, FrontendComponent frontendComponent) {
     boolean foundCollaborativeElement = false; // helper so that the code only needs to run once
     for (HtmlElement element : frontendComponent.getHtmlElements().values()) {
       if (element.isCollaborativeElement()) {
@@ -531,10 +527,10 @@ public class FrontendComponentGenerator extends Generator {
           applicationScript = applicationScript.replace("$Yjs_Code$", yjsInit);
           foundCollaborativeElement = true;
         }
-        applicationScript = applicationScript.replace("$Sync_Code$", yjsSyncedCode);
+      //  applicationScript = applicationScript.replace("$Sync_Code$", yjsSyncedCode);
         applicationScript = applicationScript.replace("$Variable_Init$", element.getId()+":\'Text \'"+"\n,$Variable_Init$");
        
-        applicationScript = applicationScript.replace("$Share_Element$", "y.share."+element.getId())+".bind(document.getElementById('"+element.getId()+"'))"+"\n$Share_Element$";
+        applicationScript = applicationScript.replace("$Share_Element$", "y.share."+element.getId()+".bind(document.getElementById('"+element.getId()+"'))"+"\n$Share_Element$");
       }
     }
     // remove yjs placeholder if no yjs collaboration is needed
