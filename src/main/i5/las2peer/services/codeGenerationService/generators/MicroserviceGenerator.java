@@ -144,12 +144,14 @@ public class MicroserviceGenerator extends Generator {
               startScriptWindows =
                   startScriptWindows.replace("$Resource_Name$", microservice.getResourceName());
               startScriptWindows = startScriptWindows.replace("$Lower_Resource_Name$", packageName);
+              startScriptWindows = startScriptWindows.replace("$Microservice_Version$", microservice.getVersion() + "");
               break;
             case "start_network.sh":
               startScriptUnix = new String(loader.getBytes(), "UTF-8");
               startScriptUnix =
                   startScriptUnix.replace("$Resource_Name$", microservice.getResourceName());
               startScriptUnix = startScriptUnix.replace("$Lower_Resource_Name$", packageName);
+              startScriptUnix = startScriptUnix.replace("$Microservice_Version$", microservice.getVersion() + "");
               break;
             case "start_UserAgentGenerator.bat":
               userAgentGeneratorWindows = new String(loader.getBytes(), "UTF-8");
