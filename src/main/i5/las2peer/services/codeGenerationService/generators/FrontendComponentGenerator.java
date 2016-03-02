@@ -206,7 +206,7 @@ public class FrontendComponentGenerator extends Generator {
         frontendComponentRepository =
             createTextFileInRepository(frontendComponentRepository, "js/lib/", "y-text.js", yText);
         frontendComponentRepository =
-            createTextFileInRepository(frontendComponentRepository, "js/lib/", "y-xmpp.js", yWebsockets);
+            createTextFileInRepository(frontendComponentRepository, "js/lib/", "y-websockets-client.js", yWebsockets);
         frontendComponentRepository =
                 createTextFileInRepository(frontendComponentRepository, "js/lib/", "y-memory.js", yMemory);
       }
