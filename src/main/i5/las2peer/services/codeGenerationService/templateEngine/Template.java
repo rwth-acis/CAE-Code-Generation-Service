@@ -5,22 +5,57 @@ import i5.las2peer.services.codeGenerationService.traces.segments.CompositeSegme
 import i5.las2peer.services.codeGenerationService.traces.segments.ContentSegment;
 import i5.las2peer.services.codeGenerationService.traces.segments.Segment;
 
+/**
+ * A class representing a single template. Provides methods to set variables, defined in template source files
+ * 
+ * @author Thomas Winkler
+ *
+ */
+
 public class Template {
+	
+	//each template holds a private composite segment
 	private CompositeSegment segment;
+	
+	//the reference to its template engine
 	private final TemplateEngine templateEngine;
+	
+	/**
+	 * Creates a new Template by a given composite segment and a template engine
+	 * 
+	 * @param segment					- The private composite segment of the template
+	 * @param templateEngine	-	The template engine of the template
+	 */
 	
 	public Template(CompositeSegment segment, TemplateEngine templateEngine){
 		this.segment = segment;
 		this.templateEngine = templateEngine;
 	}
 	
+	/**
+	 * Get the trace model of the template engine
+	 * 
+	 * @return	The trace model of the template engine
+	 */
+	
 	public FileTraceModel getFileTraceModel(){
 		return this.templateEngine.getFileTraceModel();
 	}
 	
+	/**
+	 * Get the template engine of the template
+	 * 
+	 * @return	The template engine of the template
+	 */
+	
 	public TemplateEngine getTemplateEngine() {
 		return this.templateEngine;
 	}
+	
+	/**
+	 * Sets the composite segment, needed for model synchronization
+	 * @param segment	-	The new composite segment
+	 */
 	
 	public void setSegment(CompositeSegment segment){
 		this.segment=segment;
@@ -38,22 +73,35 @@ public class Template {
 		return this.segment.toString();
 	}
 	
-	public void setVariable(String id, String content){
-		this.segment.setSegmentContent(id, content);
-	}
 	
-	public void appendVariable(String id, Template file){
-		CompositeSegment containerNew = new CompositeSegment(this.getId() + ":" + id);
-		CompositeSegment container = (CompositeSegment) templateEngine.getSegment( this.getId() + ":" + id, containerNew );
+	/**
+	 * Sets the content of a variable within this template
+	 * 
+	 * @param variableName	- The name of the variable to set its content
+	 * @param content				-	The content that will be set
+	 */
+	
+	public void setVariable(String variableName, String content){
+		this.segment.setSegmentContent(variableName, content);
+	}
 
-		CompositeSegment segment = (CompositeSegment) templateEngine.getSegment(file.getSegment().getId(), file.getSegment());
-		System.out.println(this.getId() + ":" + id);
-		System.out.println(container == containerNew );
-		if(segment == file.getSegment()){
+	/**
+	 * Adds a template to a variable within this template
+	 * 
+	 * @param variableName	-	The name of the variable
+	 * @param template			- The template that sould be added to the variable
+	 */
+	
+	public void appendVariable(String variableName, Template template){
+		CompositeSegment containerNew = new CompositeSegment(this.getId() + ":" + variableName);
+		CompositeSegment container = (CompositeSegment) templateEngine.getSegment( this.getId() + ":" + variableName, containerNew );
+		CompositeSegment segment = (CompositeSegment) templateEngine.getSegment(template.getSegment().getId(), template.getSegment());
+
+		if(segment == template.getSegment()){
 			container.add(segment);
 		}
 			
-		this.segment.setSegment(id,container);
+		this.segment.setSegment(variableName,container);
 	}
 
 	public void setVariableIfNotSet(String id, String content) {
