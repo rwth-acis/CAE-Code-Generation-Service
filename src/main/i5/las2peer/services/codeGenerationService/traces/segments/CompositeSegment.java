@@ -256,22 +256,6 @@ public class CompositeSegment extends Segment{
 		
 	}
 
-//	public boolean contains2(String id){
-//		for(String segmentId:this.children){
-//			if(segmentId.equals(id)){
-//				return true;
-//			}else{
-//				Segment segment = this.getChild(segmentId);
-//				if(segment instanceof CompositeSegment){
-//					if( ((CompositeSegment)segment).contains2(id) ){
-//						return true;
-//					}
-//				}
-//			}
-//		}
-//		return false;
-//	}
-
 	public Segment getChildRecursive(String id) {
 		for(String segmentId:this.children){
 			if(segmentId.equals(id)){
