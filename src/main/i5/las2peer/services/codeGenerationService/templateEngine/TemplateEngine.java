@@ -139,9 +139,14 @@ public class TemplateEngine {
   }
 
   public void addTrace(String modelId, String modelName, Template template) {
+    this.addTrace(modelId, modelName, template.getSegment());
+  }
+
+  @SuppressWarnings("unchecked")
+  public void addTrace(String modelId, String modelName, Segment segment) {
     JSONObject metaInformation = new JSONObject();
     metaInformation.put("name", modelName);
-    this.traceModel.addTrace(modelId, metaInformation, template.getSegment());
+    this.traceModel.addTrace(modelId, metaInformation, segment);
   }
 
   private static String removeUnprotectedBlocks(String code) {

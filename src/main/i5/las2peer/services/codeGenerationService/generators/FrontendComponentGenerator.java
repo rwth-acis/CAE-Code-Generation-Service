@@ -314,6 +314,8 @@ public class FrontendComponentGenerator extends Generator {
 
     Map<String, HtmlElement> htmlElementsToAdd = new HashMap<String, HtmlElement>();
 
+
+
     // add all static elements and check for collaborative elements
     for (HtmlElement element : frontendComponent.getHtmlElements().values()) {
 
@@ -325,8 +327,15 @@ public class FrontendComponentGenerator extends Generator {
         Template importTemplate = templateEngine
             .createTemplate(widgetTemplate.getId() + ":addiionalImports", importTemplateFile);
         widgetTemplate.appendVariable("$Additional_Imports$", importTemplate);
+
       }
     }
+
+    // add own additional script trace
+    templateEngine.addTrace(frontendComponent.getWidgetModelId(), "Own additional scripts",
+        widgetTemplate.getSegment()
+            .getChildRecursive(frontendComponent.getWidgetModelId() + ":unprotected[0]"));
+
     // now, get all "updated", but not "created" elements (since these are there "from the start")
     ArrayList<String> idsToAdd = new ArrayList<String>();
     ArrayList<String> htmlElementsCreated = new ArrayList<String>();
