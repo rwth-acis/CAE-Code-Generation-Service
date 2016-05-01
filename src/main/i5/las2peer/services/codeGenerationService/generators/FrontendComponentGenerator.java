@@ -46,6 +46,10 @@ public class FrontendComponentGenerator extends Generator {
       L2pLogger.getInstance(ApplicationGenerator.class.getName());
 
 
+  public static String getRepositoryName(FrontendComponent frontendComponent) {
+    return "frontendComponent-" + frontendComponent.getName().replace(" ", "-");
+  }
+
   /**
    * 
    * Creates source code from a CAE frontend component model and pushes it to GitHub.
@@ -93,9 +97,11 @@ public class FrontendComponentGenerator extends Generator {
 
     try {
       PersonIdent caeUser = new PersonIdent(gitHubUser, gitHubUserMail);
-      String repositoryName = "frontendComponent-" + frontendComponent.getName().replace(" ", "-");
+      String repositoryName = getRepositoryName(frontendComponent);
       frontendComponentRepository =
           generateNewRepository(repositoryName, gitHubOrganization, gitHubUser, gitHubPassword);
+
+
       try {
         // now load the TreeWalk containing the template repository content
         treeWalk = getTemplateRepositoryContent(templateRepositoryName, gitHubOrganization);
@@ -224,7 +230,7 @@ public class FrontendComponentGenerator extends Generator {
       // add files to new repository
 
       frontendComponentRepository = createTextFileInRepository(frontendComponentRepository,
-          "/traces", "tracedFiles.json", traceModel.toJSONObject().toJSONString());
+          "traces/", "tracedFiles.json", traceModel.toJSONObject().toJSONString());
 
       frontendComponentRepository = createTextFileInRepository(frontendComponentRepository, "",
           "widget.xml", widgetTemplateEngine.getContent());
@@ -300,8 +306,6 @@ public class FrontendComponentGenerator extends Generator {
    * @param gitHubOrganization the organization name (for correct paths)
    * @param repositoryName the repository's name (for correct paths)
    * @param frontendComponent a {@link FrontendComponent}
-   * 
-   * @return the widget code with the inserted HTML elements
    * 
    */
   public static void createWidgetCode(TemplateEngine templateEngine, String widgetTemplateFile,
@@ -456,14 +460,13 @@ public class FrontendComponentGenerator extends Generator {
    * 
    * Adds functions to the passed application script code, according to a frontend component model.
    * 
-   * @param applicationScript the application script source code
-   * @param functionTemplate a template representing a generic function
-   * @param microserviceCallTemplate a template representing a generic microservice call
-   * @param iwcResponseTemplate a template representing a generic IWC response (with function call)
-   * @param htmlElementTemplate a template representing a generic HTML template
+   * @param applicationTemplate the template of the application script
+   * @param functionTemplateFile a template representing a generic function
+   * @param microserviceCallTemplateFile a template representing a generic microservice call
+   * @param iwcResponseTemplateFile a template representing a generic IWC response (with function
+   *        call)
+   * @param htmlElementTemplateFile a template representing a generic HTML template
    * @param frontendComponent a {@link FrontendComponent}
-   * 
-   * @return the application script source code with inserted functions
    * 
    */
   public static void createApplicationScript(Template applicationTemplate,
@@ -640,7 +643,7 @@ public class FrontendComponentGenerator extends Generator {
    * 
    * @param applicationScriptTemplate the template of the application script code
    * @param templateEngine the template engine used during the code generation
-   * @param yjsInit a template for initializing the Yjs connector etc
+   * @param yjsInitTemplateFile a template for initializing the Yjs connector etc
    * @param frontendComponent a {@link FrontendComponent}
    * 
    */
@@ -687,11 +690,10 @@ public class FrontendComponentGenerator extends Generator {
    * 
    * Adds events to the passed application script for all HTML elements.
    * 
-   * @param applicationScript the application script code
-   * @param eventTemplate a template for an event
+   * @param applicationScriptTemplate the template of the application script
+   * @param templateEngine a template engine to use
+   * @param eventTemplateFile a template for an event
    * @param frontendComponent a {@link FrontendComponent}
-   * 
-   * @return the updated application script code
    * 
    */
   public static void addEventsToApplicationScript(Template applicationScriptTemplate,
