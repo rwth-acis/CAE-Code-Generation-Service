@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
@@ -22,6 +23,13 @@ public class TraceModel {
   private Map<String, FileTraceModel> filenameToFileTraceModel =
       new HashMap<String, FileTraceModel>();
   private Map<String, List<String>> modelIdToFilenames = new HashMap<String, List<String>>();
+  private String randomId;
+
+  public TraceModel() {
+    // generate a random id to distinguish between different code generations
+    UUID id = UUID.randomUUID();
+    this.randomId = id.toString();
+  }
 
 
   public void addFileTraceModel(String fileName, FileTraceModel fileTraceModel) {
@@ -71,6 +79,7 @@ public class TraceModel {
     for (String id : this.filenameToFileTraceModel.keySet()) {
       jArray.add(id);
     }
+    jObj.put("id", this.randomId);
     jObj.put("tracedFiles", jArray);
     return jObj;
   }
