@@ -10,6 +10,7 @@ import org.json.simple.JSONObject;
 
 import i5.las2peer.services.codeGenerationService.models.traceModel.FileTraceModel;
 import i5.las2peer.services.codeGenerationService.traces.segments.CompositeSegment;
+import i5.las2peer.services.codeGenerationService.traces.segments.ProxyCompositeSegment;
 import i5.las2peer.services.codeGenerationService.traces.segments.Segment;
 
 /**
@@ -57,9 +58,9 @@ public class TemplateEngine {
    */
 
   public Segment getSegment(String segmentId, Segment segment) {
-    Segment result = this.traceModel.getRecursiveSegment(segmentId);
+    Segment result = this.strategy.getSegment(segmentId);
     if (result != null) {
-      if (result.getClass() == segment.getClass()) {
+      if (result instanceof ProxyCompositeSegment || result.getClass() == segment.getClass()) {
         return result;
       } else {
         return segment;
@@ -72,23 +73,14 @@ public class TemplateEngine {
 
 
   public Segment getSegment(String segmentId, Segment segment, Template context) {
-    Segment result = this.traceModel.getRecursiveSegment(segmentId);
-    if (result != null) {
-      if (result.getClass() == segment.getClass()) {
-        return result;
-      } else {
-        return segment;
-      }
-    } else {
-      return segment;
-    }
+    return this.getSegment(segmentId, segment);
   }
 
-  public Segment addSegmentById(String segmentId, Segment segment) {
+  protected Segment addSegmentById(String segmentId, Segment segment) {
     return this.strategy.addSegment(segmentId, segment);
   }
 
-  public Segment addSegment(Segment segment) {
+  protected Segment addSegment(Segment segment) {
     return this.addSegmentById(segment.getId(), segment);
   }
 
@@ -125,14 +117,24 @@ public class TemplateEngine {
   public Template createTemplate(String id, String sourceCode) {
     JSONObject traces = TemplateEngine.generateTraces(sourceCode);
     String code = TemplateEngine.removeUnprotectedBlocks(sourceCode);
-    CompositeSegment segment =
-        FileTraceModel.createCompositeSegmentByTraces(id, traces.toJSONString(), code);
-    return new Template(segment, this);
+    // the strategy determines whether we should reuse a segment or not
+    Segment segment = this.strategy.getSegment(id);
+
+    CompositeSegment cSegment = null;
+    if (segment instanceof CompositeSegment) {
+      cSegment = (CompositeSegment) segment;
+    } else {
+      cSegment = FileTraceModel.createCompositeSegmentByTraces(id, traces.toJSONString(), code);
+    }
+
+
+    return new Template(cSegment, this);
   }
 
   public void addTemplate(Template templateFile) {
     CompositeSegment segment = templateFile.getSegment();
     segment = (CompositeSegment) this.addSegmentById(segment.getId(), segment);
+    // if the segment was already added, use that one
     if (segment != templateFile.getSegment()) {
       templateFile.setSegment(segment);
     }

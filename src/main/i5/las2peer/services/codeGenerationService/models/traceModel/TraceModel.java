@@ -76,11 +76,42 @@ public class TraceModel {
   public JSONObject toJSONObject() {
     JSONObject jObj = new JSONObject();
     JSONArray jArray = new JSONArray();
+    JSONObject jModel = new JSONObject();
+
     for (String id : this.filenameToFileTraceModel.keySet()) {
       jArray.add(id);
     }
+
+    for (String modelId : this.modelIdToFilenames.keySet()) {
+      List<String> fileList = this.modelIdToFilenames.get(modelId);
+      JSONObject jModelObject = new JSONObject();
+
+      JSONArray jFilesArray = new JSONArray();
+      jModelObject.put("files", jFilesArray);
+
+      for (String file : fileList) {
+        jFilesArray.add(file);
+      }
+
+      jModel.put(modelId, jModelObject);
+    }
+
     jObj.put("id", this.randomId);
     jObj.put("tracedFiles", jArray);
+    jObj.put("modelsToFile", jModel);
     return jObj;
+  }
+
+
+  public void addTrace(String modelId, String fileName) {
+
+    if (!this.modelIdToFilenames.containsKey(modelId)) {
+      List<String> fileList = new ArrayList<String>();
+      this.modelIdToFilenames.put(modelId, fileList);
+    }
+
+
+    List<String> fileList = this.modelIdToFilenames.get(modelId);
+    fileList.add(fileName);
   }
 }

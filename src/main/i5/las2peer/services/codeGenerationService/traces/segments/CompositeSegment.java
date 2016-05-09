@@ -12,12 +12,30 @@ import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 
 public class CompositeSegment extends Segment {
+
+  final private List<String> children;
+  final private Map<String, Segment> map;
+
   public CompositeSegment(String id) {
     super(id);
+    children = new ArrayList<String>();
+    map = new HashMap<String, Segment>();
   }
 
-  final private List<String> children = new ArrayList<String>();
-  final private Map<String, Segment> map = new HashMap<String, Segment>();
+  protected CompositeSegment(CompositeSegment segment) {
+    super(segment.getId());
+    children = segment.getChildrenList();
+    map = segment.getMap();
+  }
+
+  protected Map<String, Segment> getMap() {
+    return this.map;
+  }
+
+
+  public List<String> getChildrenList() {
+    return this.children;
+  }
 
   public void add(final Segment comp) {
     String id = comp.getId();
@@ -39,16 +57,19 @@ public class CompositeSegment extends Segment {
     children.remove(comp.getId());
   }
 
+  public void replaceSegment(Segment oldSegment, CompositeSegment segment) {
+    map.put(oldSegment.getId(), segment);
+  }
+
   public void setSegment(String id, CompositeSegment segment) {
-    map.put(id, segment);
+    map.put(this.getId() + ":" + id, segment);
   }
 
 
   public void setSegmentContent(String id, String content) {
-
     // if this composite segment holds a segment with the given id, set its content
-    if (map.containsKey(id)) {
-      Segment segment = map.get(id);
+    if (map.containsKey(this.getId() + ":" + id)) {
+      Segment segment = map.get(this.getId() + ":" + id);
       if (segment instanceof ContentSegment) {
         ((ContentSegment) segment).setContent(content);
       }
@@ -113,10 +134,10 @@ public class CompositeSegment extends Segment {
         if (matcher.find()) {
           // if a variable name was found, we need to check if a segment for that specific variable
           // has already been created
-          if (!cS.hasChild(matcher.group(1))) {
-            cS.add(createSegment(type, matcher.group(1), sourcePart));
+          if (!cS.hasChild(id + ":" + matcher.group(1))) {
+            cS.add(createSegment(type, id + ":" + matcher.group(1), sourcePart));
           } else {
-            cS.add(cS.getChild(matcher.group(1)));
+            cS.add(cS.getChild(id + ":" + matcher.group(1)));
           }
         } else {
           // a variable name was not found, so we use the idSuffix
@@ -275,6 +296,10 @@ public class CompositeSegment extends Segment {
 
   public void remove(String segmentId) {
     this.map.remove(segmentId);
+  }
+
+  public Map<String, Segment> getChildren() {
+    return this.map;
   }
 
 }

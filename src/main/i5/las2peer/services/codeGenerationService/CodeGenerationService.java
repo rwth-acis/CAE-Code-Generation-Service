@@ -1,6 +1,9 @@
 package i5.las2peer.services.codeGenerationService;
 
 import java.io.Serializable;
+import java.util.HashMap;
+
+import org.json.simple.JSONObject;
 
 import i5.cae.simpleModel.SimpleModel;
 import i5.las2peer.api.Service;
@@ -53,7 +56,15 @@ public class CodeGenerationService extends Service {
 
     SimpleModel model = (SimpleModel) serializedModel[0];
 
-    L2pLogger.logEvent(Event.SERVICE_MESSAGE, "createFromModel: Received model with name " + model.getName());
+    // old model only used for microservice and frontend components
+    SimpleModel oldModel = null;
+
+    if (serializedModel.length > 1) {
+      oldModel = (SimpleModel) serializedModel[1];
+    }
+
+    L2pLogger.logEvent(Event.SERVICE_MESSAGE,
+        "createFromModel: Received model with name " + model.getName());
     // TESTING: write as file
     // try {
     // OutputStream file = new FileOutputStream("testModels/" + model.getName() + ".model");
@@ -71,22 +82,62 @@ public class CodeGenerationService extends Service {
         try {
           switch (type) {
             case "microservice":
-            	L2pLogger.logEvent(Event.SERVICE_MESSAGE, "createFromModel: Creating microservice model now..");
+              L2pLogger.logEvent(Event.SERVICE_MESSAGE,
+                  "createFromModel: Creating microservice model now..");
               Microservice microservice = new Microservice(model);
-              L2pLogger.logEvent(Event.SERVICE_MESSAGE, "createFromModel: Creating microservice source code now..");
+              L2pLogger.logEvent(Event.SERVICE_MESSAGE,
+                  "createFromModel: Creating microservice source code now..");
               MicroserviceGenerator.createSourceCode(microservice, this.templateRepository,
                   this.gitHubOrganization, this.gitHubUser, this.gitHubUserMail,
                   this.gitHubPassword);
               L2pLogger.logEvent(Event.SERVICE_MESSAGE, "createFromModel: Created!");
               return "done";
             case "frontend-component":
-              L2pLogger.logEvent(Event.SERVICE_MESSAGE, "createFromModel: Creating frontend component model now..");
+              L2pLogger.logEvent(Event.SERVICE_MESSAGE,
+                  "createFromModel: Creating frontend component model now..");
               FrontendComponent frontendComponent = new FrontendComponent(model);
-              L2pLogger.logEvent(Event.SERVICE_MESSAGE, "createFromModel: Creating frontend component source code now..");
-              FrontendComponentGenerator.createSourceCode(frontendComponent,
-                  this.templateRepository, this.gitHubOrganization, this.gitHubUser,
-                  this.gitHubUserMail, this.gitHubPassword);;
-              L2pLogger.logEvent(Event.SERVICE_MESSAGE, "createFromModel: Created!");
+              L2pLogger.logEvent(Event.SERVICE_MESSAGE,
+                  "createFromModel: Creating frontend component source code now..");
+
+              // only if there is an old model and a remote repository exists, we can synchronize
+              // the model
+
+              if (oldModel != null && Generator.existsRemoteRepository(
+                  FrontendComponentGenerator.getRepositoryName(frontendComponent),
+                  this.gitHubOrganization, this.gitHubUser, this.gitHubPassword)) {
+                FrontendComponent oldFrontendComponent = new FrontendComponent(oldModel);
+
+                FrontendComponentGenerator.synchronizeSourceCode(frontendComponent,
+                    oldFrontendComponent,
+                    this.getTracedFiles(
+                        FrontendComponentGenerator.getRepositoryName(frontendComponent)),
+                    this.templateRepository, this.gitHubOrganization, this);
+
+                L2pLogger.logEvent(Event.SERVICE_MESSAGE, "createFromModel: Synchronized!");
+
+              } else {
+
+                FrontendComponentGenerator.createSourceCode(frontendComponent,
+                    this.templateRepository, this.gitHubOrganization, this.gitHubUser,
+                    this.gitHubUserMail, this.gitHubPassword);;
+                L2pLogger.logEvent(Event.SERVICE_MESSAGE, "createFromModel: Created!");
+
+                // inform the GitHubProxy service that we may have deleted an existing repository
+
+                try {
+                  Serializable[] payload =
+                      {FrontendComponentGenerator.getRepositoryName(frontendComponent)};
+
+                  this.invokeServiceMethod(
+                      "i5.las2peer.services.gitHubProxyService.GitHubProxyService@0.1",
+                      "deleteLocalRepository", payload);
+
+                } catch (Exception e) {
+                  logger.printStackTrace(e);
+                }
+
+              }
+
               return "done";
             case "application":
               L2pLogger.logEvent(Event.SERVICE_MESSAGE,
@@ -230,10 +281,10 @@ public class CodeGenerationService extends Service {
               new FrontendComponent(model);
               L2pLogger.logEvent(Event.SERVICE_MESSAGE,
                   "updateRepositoryOfModel: Calling delete (old) repository method now..");
-              deleteReturnMessage = deleteRepositoryOfModel(serializedModel);
-              if (!deleteReturnMessage.equals("done")) {
-                return deleteReturnMessage; // error happened
-              }
+              // deleteReturnMessage = deleteRepositoryOfModel(serializedModel);
+              // if (!deleteReturnMessage.equals("done")) {
+              // return deleteReturnMessage; // error happened
+              // }
               L2pLogger.logEvent(Event.SERVICE_MESSAGE,
                   "updateRepositoryOfModel: Calling createFromModel now..");
               return createFromModel(serializedModel);
@@ -310,6 +361,42 @@ public class CodeGenerationService extends Service {
       }
     }
     throw new ModelParseException("Model has no attribute 'type'!");
+  }
+
+  public void commitFile(String repositoryName, JSONObject obj) {
+    Serializable[] payload = {repositoryName, obj.toJSONString()};
+    try {
+      this.invokeServiceMethod("i5.las2peer.services.gitHubProxyService.GitHubProxyService@0.1",
+          "storeAndCommitFle", payload);
+    } catch (Exception e) {
+      logger.printStackTrace(e);
+    }
+  }
+
+  @SuppressWarnings("unchecked")
+  private HashMap<String, JSONObject> getTracedFiles(String repositoryName) {
+    Serializable[] payload = {repositoryName};
+    HashMap<String, JSONObject> files = new HashMap<String, JSONObject>();
+    try {
+      files = (HashMap<String, JSONObject>) this.invokeServiceMethod(
+          "i5.las2peer.services.gitHubProxyService.GitHubProxyService@0.1", "getAllTracedFiles",
+          payload);
+    } catch (Exception e) {
+      logger.printStackTrace(e);
+    }
+    return files;
+  }
+
+
+  public void commitFileRaw(String repositoryName, String fileName, String encodeToString) {
+    Serializable[] payload = {repositoryName, fileName, encodeToString};
+    try {
+      this.invokeServiceMethod("i5.las2peer.services.gitHubProxyService.GitHubProxyService@0.1",
+          "storeAndCommitFleRaw", payload);
+    } catch (Exception e) {
+      logger.printStackTrace(e);
+    }
+
   }
 
 }

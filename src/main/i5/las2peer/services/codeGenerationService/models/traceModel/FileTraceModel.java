@@ -24,10 +24,12 @@ public class FileTraceModel {
   private Map<String, List<Segment>> model2Segment = new HashMap<String, List<Segment>>();
   private Map<String, Segment> segmentMap = new HashMap<String, Segment>();
   private Map<String, JSONObject> modelMetaInformation = new HashMap<String, JSONObject>();
+  private String fileName;
 
   private final TraceModel traceModel;
 
-  public FileTraceModel(TraceModel traceModel) {
+  public FileTraceModel(TraceModel traceModel, String fileName) {
+    this.fileName = fileName;
     this.traceModel = traceModel;
   }
 
@@ -36,16 +38,6 @@ public class FileTraceModel {
     return CompositeSegment.createByTraces(id, traces, template);
   }
 
-  public void printSegments() {
-    for (Segment segment : this.segmentList) {
-      System.out.println(segment.getId());
-    }
-
-    for (String id : this.segmentMap.keySet()) {
-      System.out.println(this.segmentMap.get(id));
-    }
-
-  }
 
   public Segment getRecursiveSegment(String segmentId) {
     for (Segment segment : this.segmentList) {
@@ -80,6 +72,13 @@ public class FileTraceModel {
   }
 
   public void addTrace(String modelId, JSONObject metaInformation, Segment segment) {
+
+    if (segment == null) {
+      return;
+    }
+
+    this.traceModel.addTrace(modelId, this.fileName);
+
     if (!this.model2Segment.containsKey(modelId)) {
       List<Segment> segmentList = new ArrayList<Segment>();
       this.model2Segment.put(modelId, segmentList);
@@ -100,8 +99,8 @@ public class FileTraceModel {
   }
 
   public static FileTraceModel parseFileTraceModel(String source, String traceSource,
-      TraceModel traceModel) {
-    FileTraceModel fileTraceModel = new FileTraceModel(traceModel);
+      TraceModel traceModel, String fileName) {
+    FileTraceModel fileTraceModel = new FileTraceModel(traceModel, fileName);
     JSONParser parser = new JSONParser();
     JSONObject jobj;
 
@@ -205,9 +204,10 @@ public class FileTraceModel {
       jModelObject.put("segments", jSegmentArray);
 
       for (Segment segment : segmentList) {
-        jSegmentArray.add(segment.getId());
+        if (segment != null) {
+          jSegmentArray.add(segment.getId());
+        }
       }
-
 
       traces.put(modelId, jModelObject);
     }

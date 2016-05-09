@@ -96,38 +96,25 @@ public class Template {
    */
 
   public void appendVariable(String variableName, Template template) {
-    String id = variableName;
+    String id = this.getId() + ":" + variableName;
     CompositeSegment containerNew = new CompositeSegment(id);
     CompositeSegment container = containerNew;
-    // (CompositeSegment) templateEngine.getSegment(id, containerNew, this);
 
     CompositeSegment segment = (CompositeSegment) templateEngine
         .getSegment(template.getSegment().getId(), template.getSegment());
 
-    Segment recursiveChild = this.segment.getChildRecursive(variableName);
-    System.out.println(recursiveChild.getClass());
+    Segment recursiveChild = this.segment.getChildRecursive(id);
     if (recursiveChild instanceof CompositeSegment) {
       container = (CompositeSegment) recursiveChild;
     }
 
-    if (segment == template.getSegment()) {
-      System.out.println(template.getId() + " created!");
-      container.add(segment);
-    } else {
-      System.out.println(template.getSegment().getId() + " found!");
-    }
-
-    if (container == containerNew) {
-      // System.out.println(variableName + " created");
-    } else {
-      // System.out.println(id + " found!");
-    }
+    container.add(segment);
 
     this.segment.setSegment(variableName, container);
   }
 
   public void setVariableIfNotSet(String id, String content) {
-    String segmentId = id;
+    String segmentId = this.getId() + ":" + id;
     Segment segment = (Segment) templateEngine.getSegment(segmentId);
 
     if (segment instanceof ContentSegment && segment.getId().equals(segmentId)) {
@@ -159,12 +146,21 @@ public class Template {
    * Factory method to create new templates more easily
    */
 
-  public static Template createInitialTemplate(String id, String content, TraceModel traceModel) {
-    FileTraceModel fileTraceModel = new FileTraceModel(traceModel);
+  public static Template createInitialTemplate(String id, String content, TraceModel traceModel,
+      String fileName) {
+    FileTraceModel fileTraceModel = new FileTraceModel(traceModel, fileName);
     TemplateEngine engine =
         new TemplateEngine(new InitialGenerationStrategy(fileTraceModel), fileTraceModel);
     Template template = engine.createTemplate(id, content);
     return template;
+  }
+
+  public void addTrace(String modelId, String modelName, Segment segment) {
+    this.templateEngine.addTrace(modelId, modelName, segment);
+  }
+
+  public void addTrace(String modelId, String modelName, Template template) {
+    this.templateEngine.addTrace(modelId, modelName, template);
   }
 
 }
