@@ -19,6 +19,7 @@ import java.util.Base64;
 import javax.imageio.ImageIO;
 
 import org.eclipse.jgit.api.Git;
+import org.eclipse.jgit.api.LsRemoteCommand;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Repository;
@@ -432,7 +433,7 @@ public abstract class Generator {
    */
   public static Repository pushToRemoteRepository(Repository repository, String gitHubUser,
       String gitHubPassword, String localBranchName, String remoteBranchName)
-          throws GitHubException {
+      throws GitHubException {
     CredentialsProvider credentialsProvider =
         new UsernamePasswordCredentialsProvider(gitHubUser, gitHubPassword);
     try {
@@ -491,4 +492,22 @@ public abstract class Generator {
     }
   }
 
+  public static boolean existsRemoteRepository(String name, String gitHubOrganization,
+      String gitHubUser, String gitHubPassword) {
+    CredentialsProvider credentialsProvider =
+        new UsernamePasswordCredentialsProvider(gitHubUser, gitHubPassword);
+    LsRemoteCommand lsCmd = new LsRemoteCommand(null);
+    String url = "https://github.com/" + gitHubOrganization + "/" + name + ".git";
+    lsCmd.setRemote(url);
+    lsCmd.setHeads(true);
+    lsCmd.setCredentialsProvider(credentialsProvider);
+    boolean exists = true;
+    try {
+      lsCmd.call();
+    } catch (Exception e) {
+      logger.printStackTrace(e);
+      exists = false;
+    }
+    return exists;
+  }
 }
