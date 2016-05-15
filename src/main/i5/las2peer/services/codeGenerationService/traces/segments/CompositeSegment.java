@@ -4,23 +4,43 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
-import org.json.simple.parser.JSONParser;
+
+/**
+ * A class representing a composition of segments. Such a composition is used for model elements
+ * that are made up of a sequence of segments. In addition, compositions are also used as containers
+ * for templates and variables that should hold multiple templates, e.g. the $Main_Content$ variable
+ * holding the templates of the html elements
+ * 
+ * 
+ * @author Thomas Winkler
+ *
+ */
 
 public class CompositeSegment extends Segment {
 
   final private List<String> children;
   final private Map<String, Segment> map;
 
-  public CompositeSegment(String id) {
-    super(id);
+  /**
+   * Creates a new and therefore empty composition of segments with the given id
+   * 
+   * @param segmentId The id of the composition
+   */
+
+  public CompositeSegment(String segmentId) {
+    super(segmentId);
     children = new ArrayList<String>();
     map = new HashMap<String, Segment>();
   }
+
+  /**
+   * Creates a composition of segments with the id and the children of the given id, respectively
+   * 
+   * @param segment The segment whose id and children should be used
+   */
 
   protected CompositeSegment(CompositeSegment segment) {
     super(segment.getId());
@@ -28,37 +48,110 @@ public class CompositeSegment extends Segment {
     map = segment.getMap();
   }
 
+  /**
+   * Get the map containing all children segments
+   * 
+   * @return The map containing all children segments
+   */
+
   protected Map<String, Segment> getMap() {
     return this.map;
   }
 
+  /**
+   * Get the list of ids of the children
+   * 
+   * @return The list of ids of the children
+   */
 
   public List<String> getChildrenList() {
     return this.children;
   }
 
-  public void add(final Segment comp) {
-    String id = comp.getId();
+  /**
+   * Get the segment with the give id from the children of this composition. A recursive lookup is
+   * not performed.
+   * 
+   * @param segmentId The id of the needed segment
+   * @return The segment or null if not found in the composition
+   */
+
+  public Segment getChild(String segmentId) {
+    return this.map.get(segmentId);
+  }
+
+  /**
+   * Get the segment with the given id from the children of the composition. In addition to
+   * getChild, it performs a recursive lookup in its children.
+   * 
+   * @param segmentId The id of the needed segment
+   * @return The segment or null if not found in the composition or in its children
+   */
+
+  public Segment getChildRecursive(String segmentId) {
+    for (String childSegmentId : this.children) {
+      if (childSegmentId.equals(segmentId)) {
+        return this.getChild(childSegmentId);
+      } else {
+        Segment segment = this.getChild(childSegmentId);
+        // recursively look up for the segment if the child is also a composition
+        if (segment instanceof CompositeSegment) {
+          CompositeSegment cS = (CompositeSegment) segment;
+          Segment recursiveChild = cS.getChildRecursive(segmentId);
+          if (recursiveChild != null) {
+            return recursiveChild;
+          }
+        }
+      }
+    }
+    // if the segment was not found we will return null
+    return null;
+  }
+
+  /**
+   * Get the length of the source code of the composition
+   * 
+   * @return The length of the source code of the composition
+   */
+
+  public int getLength() {
+    return this.toString().length();
+  }
+
+  @Override
+  public String getTypeString() {
+    return "composite";
+  }
+
+  public void addSegment(final Segment segment) {
+    String id = segment.getId();
     if (!map.containsKey(id)) {
-      map.put(id, comp);
+      map.put(id, segment);
     }
     children.add(id);
   }
 
-  public Segment getChild(String id) {
-    return this.map.get(id);
+
+  public void remove(final Segment segment) {
+    children.remove(segment.getId());
+  }
+
+  public void remove(String segmentId) {
+    this.map.remove(segmentId);
   }
 
   public boolean hasChild(String id) {
     return this.map.containsKey(id);
   }
 
-  public void remove(final Segment comp) {
-    children.remove(comp.getId());
-  }
-
   public void replaceSegment(Segment oldSegment, CompositeSegment segment) {
     map.put(oldSegment.getId(), segment);
+  }
+
+  @Override
+  public void replace(String pattern, String replacement) {
+    // the content of compositions cannot be directly modified, you need to use the replaceSegment
+    // method
   }
 
   public void setSegment(String id, CompositeSegment segment) {
@@ -66,12 +159,12 @@ public class CompositeSegment extends Segment {
   }
 
 
-  public void setSegmentContent(String id, String content) {
+  public void setSegmentContent(String id, String content, boolean integrityCheck) {
     // if this composite segment holds a segment with the given id, set its content
     if (map.containsKey(this.getId() + ":" + id)) {
       Segment segment = map.get(this.getId() + ":" + id);
       if (segment instanceof ContentSegment) {
-        ((ContentSegment) segment).setContent(content);
+        ((ContentSegment) segment).setContent(content, integrityCheck);
       }
     }
 
@@ -79,138 +172,11 @@ public class CompositeSegment extends Segment {
     for (String cid : this.children) {
       Segment segment = this.map.get(cid);
       if (segment instanceof CompositeSegment) {
-        ((CompositeSegment) segment).setSegmentContent(id, content);
+        ((CompositeSegment) segment).setSegmentContent(id, content, integrityCheck);
       }
     }
   }
 
-  public void deleteSegment(String id) {
-    this.map.remove(this.getId() + ":" + id);
-  }
-
-  @SuppressWarnings("unchecked")
-  public static JSONObject createJSONSegment(int length, String id, String type) {
-    JSONObject obj = new JSONObject();
-    obj.put("id", id);
-    obj.put("length", length);
-    obj.put("type", type);
-    return obj;
-  }
-
-  public static Segment createSegment(String type, String id, String content) {
-    ContentSegment segment = null;
-    if (type.equals("protected")) {
-      segment = new ProtectedSegment(id);
-      segment.setContent(content);
-    } else if (type.equals("unprotected")) {
-      segment = new UnprotectedSegment(id);
-      segment.setContent(content);
-    }
-    return segment;
-  }
-
-
-  public static CompositeSegment createByTraces(String id, String traces, String source) {
-    JSONParser parser = new JSONParser();
-    CompositeSegment cS = new CompositeSegment(id);
-
-    try {
-      Object obj = parser.parse(traces);
-      JSONObject jobj = (JSONObject) obj;
-      JSONArray jarray = (JSONArray) jobj.get("traceSegments");
-      Long start = 0L;
-      Pattern pattern = Pattern.compile("(\\$([a-zA-Z_]*)\\$)");
-
-      for (int i = 0; i < jarray.size(); i++) {
-        JSONObject entry = (JSONObject) jarray.get(i);
-        Long length = (Long) entry.get("length");
-        String type = (String) entry.get("type");
-        String idSuffix = (String) entry.get("id");
-        String sourcePart =
-            source.substring(Math.toIntExact(start), Math.toIntExact(start + length));
-        Matcher matcher = pattern.matcher(sourcePart);
-
-        // check for variable name
-        if (matcher.find()) {
-          // if a variable name was found, we need to check if a segment for that specific variable
-          // has already been created
-          if (!cS.hasChild(id + ":" + matcher.group(1))) {
-            cS.add(createSegment(type, id + ":" + matcher.group(1), sourcePart));
-          } else {
-            cS.add(cS.getChild(id + ":" + matcher.group(1)));
-          }
-        } else {
-          // a variable name was not found, so we use the idSuffix
-          cS.add(createSegment(type, id + ":" + idSuffix, sourcePart));
-        }
-
-        start += length;
-      }
-
-    } catch (Exception e) {
-      e.printStackTrace();
-    }
-    return cS;
-
-  }
-
-  public static int incrementElementCount(Map<String, Integer> map, String id) {
-    if (!map.containsKey(id)) {
-      map.put(id, 0);
-    } else {
-      map.put(id, map.get(id) + 1);
-    }
-    return map.get(id);
-  }
-
-
-  @SuppressWarnings("unchecked")
-  public static String generateTraces(String content) {
-    JSONObject outerObject = new JSONObject();
-    JSONArray segments = new JSONArray();
-    Map<String, Integer> elementCountMap = new HashMap<String, Integer>();
-
-    Pattern pattern = Pattern.compile("(\\$[^\\$]*\\$)");
-    Matcher matcher = pattern.matcher(content);
-
-    Pattern r2 = Pattern.compile("^\\$\\{([^\\$\\}]*)\\}\\$$");
-
-    int s = 0;
-    while (matcher.find()) {
-      int start = matcher.start();
-      int end = matcher.end();
-      String segmentName = matcher.group();
-      Matcher m = r2.matcher(segmentName);
-
-      String id = matcher.group();
-      boolean unprotected = false;
-
-      if (m.find()) {
-        unprotected = true;
-        id = "unprotected";
-        id += "[" + incrementElementCount(elementCountMap, id) + "]";
-      }
-
-      if (start - s > 0) {
-        String key = id + "before";
-        key += "[" + incrementElementCount(elementCountMap, key) + "]";
-        segments.add(createJSONSegment(start - s, key, "protected"));
-      }
-
-      if (unprotected) {
-        segments.add(createJSONSegment(m.group(1).length(), id, "unprotected"));
-      } else {
-        segments.add(createJSONSegment(end - start, id, "protected"));
-      }
-
-      s = end;
-    }
-
-    String id = "End";
-    segments.add(createJSONSegment(content.length() - s, id, "protected"));
-    outerObject.put("traceableSegments", segments);
-    return outerObject.toString();
-  }
 
 
   public String toString(List<String> childrenList) {
@@ -225,12 +191,6 @@ public class CompositeSegment extends Segment {
 
   public String toString() {
     return this.toString(this.getChildrenList());
-  }
-
-  @Override
-  public void replace(String pattern, String replacement) {
-    // TODO Auto-generated method stub
-
   }
 
   @SuppressWarnings("unchecked")
@@ -255,58 +215,11 @@ public class CompositeSegment extends Segment {
     return this.toJSONObject(this.getChildrenList());
   }
 
-  public int getLength() {
-    return this.toString().length();
-  }
-
-
-  public void removeLastBreakLine() {
-    String id = this.children.get(this.children.size() - 1);
-    Segment segm = this.map.get(id);
-    if (segm instanceof CompositeSegment) {
-      ((CompositeSegment) segm).removeLastBreakLine();
-    } else if (segm instanceof ContentSegment) {
-      ((ContentSegment) segm).setContent(segm.toString().trim());
-    }
-
-  }
-
-  @Override
-  public String getTypeString() {
-    return "composite";
-  }
-
   public void addAllSegments(List<Segment> parseTraces) {
     for (Segment segment : parseTraces) {
-      this.add(segment);
+      this.addSegment(segment);
     }
 
-  }
-
-  public Segment getChildRecursive(String id) {
-    for (String segmentId : this.children) {
-      if (segmentId.equals(id)) {
-        return this.getChild(segmentId);
-      } else {
-        Segment segment = this.getChild(segmentId);
-        if (segment instanceof CompositeSegment) {
-          CompositeSegment cS = (CompositeSegment) segment;
-          Segment recursiveChild = cS.getChildRecursive(id);
-          if (recursiveChild != null) {
-            return recursiveChild;
-          }
-        }
-      }
-    }
-    return null;
-  }
-
-  public void remove(String segmentId) {
-    this.map.remove(segmentId);
-  }
-
-  public Map<String, Segment> getChildren() {
-    return this.map;
   }
 
 }
