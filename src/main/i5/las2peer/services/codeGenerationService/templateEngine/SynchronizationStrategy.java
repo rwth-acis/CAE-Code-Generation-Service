@@ -5,8 +5,8 @@ import java.util.List;
 import i5.las2peer.services.codeGenerationService.models.traceModel.FileTraceModel;
 import i5.las2peer.services.codeGenerationService.traces.segments.CompositeSegment;
 import i5.las2peer.services.codeGenerationService.traces.segments.ContentSegment;
-import i5.las2peer.services.codeGenerationService.traces.segments.ProxyCompositeSegment;
 import i5.las2peer.services.codeGenerationService.traces.segments.Segment;
+import i5.las2peer.services.codeGenerationService.traces.segments.SynchronizeCompositeSegment;
 
 public class SynchronizationStrategy extends TemplateStrategy {
   private final FileTraceModel fileTraceModel;
@@ -45,9 +45,9 @@ public class SynchronizationStrategy extends TemplateStrategy {
         Segment child = cSegment.getChild(childId);
         // inner composite segments are used to add templates that corresponds to mode element
 
-        if (!(child instanceof ProxyCompositeSegment) && child instanceof CompositeSegment) {
-          ProxyCompositeSegment pCSegment =
-              new ProxyCompositeSegment(child.getId(), (CompositeSegment) child);
+        if (!(child instanceof SynchronizeCompositeSegment) && child instanceof CompositeSegment) {
+          SynchronizeCompositeSegment pCSegment =
+              new SynchronizeCompositeSegment(child.getId(), (CompositeSegment) child);
           cSegment.replaceSegment(child, pCSegment);
         }
       }
@@ -76,10 +76,10 @@ public class SynchronizationStrategy extends TemplateStrategy {
       for (String childId : childrenList) {
         Segment child = cSegment.getChild(childId);
         // inner composite segments are used to add templates that corresponds to mode element
-
-        if (!(child instanceof ProxyCompositeSegment) && child instanceof CompositeSegment) {
-          ProxyCompositeSegment pCSegment =
-              new ProxyCompositeSegment(child.getId(), (CompositeSegment) child);
+        // we replace them with synchronize composite segments implicitly synchronize them
+        if (!(child instanceof SynchronizeCompositeSegment) && child instanceof CompositeSegment) {
+          SynchronizeCompositeSegment pCSegment =
+              new SynchronizeCompositeSegment(child.getId(), (CompositeSegment) child);
           cSegment.replaceSegment(child, pCSegment);
         }
       }

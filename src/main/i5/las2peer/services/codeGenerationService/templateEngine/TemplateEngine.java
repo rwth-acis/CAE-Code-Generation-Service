@@ -10,8 +10,8 @@ import org.json.simple.JSONObject;
 
 import i5.las2peer.services.codeGenerationService.models.traceModel.FileTraceModel;
 import i5.las2peer.services.codeGenerationService.traces.segments.CompositeSegment;
-import i5.las2peer.services.codeGenerationService.traces.segments.ProxyCompositeSegment;
 import i5.las2peer.services.codeGenerationService.traces.segments.Segment;
+import i5.las2peer.services.codeGenerationService.traces.segments.SynchronizeCompositeSegment;
 
 /**
  * A template engine that provides an advanced mechanism to generate and regenerate source code of a
@@ -60,7 +60,8 @@ public class TemplateEngine {
   public Segment getSegment(String segmentId, Segment segment) {
     Segment result = this.strategy.getSegment(segmentId);
     if (result != null) {
-      if (result instanceof ProxyCompositeSegment || result.getClass() == segment.getClass()) {
+      if (result instanceof SynchronizeCompositeSegment
+          || result.getClass() == segment.getClass()) {
         return result;
       } else {
         return segment;
@@ -68,12 +69,6 @@ public class TemplateEngine {
     } else {
       return segment;
     }
-  }
-
-
-
-  public Segment getSegment(String segmentId, Segment segment, Template context) {
-    return this.getSegment(segmentId, segment);
   }
 
   protected Segment addSegmentById(String segmentId, Segment segment) {

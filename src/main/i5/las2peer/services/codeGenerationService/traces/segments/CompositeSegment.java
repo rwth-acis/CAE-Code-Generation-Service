@@ -213,15 +213,18 @@ public class CompositeSegment extends Segment {
   }
 
 
-
-  public String toString() {
+  public String toString(List<String> childrenList) {
     String content = "";
-    for (String id : this.children) {
+    for (String id : childrenList) {
       if (this.map.containsKey(id)) {
         content += this.map.get(id).toString();// this.map.get(id).getContent();
       }
     }
     return content;
+  }
+
+  public String toString() {
+    return this.toString(this.getChildrenList());
   }
 
   @Override
@@ -231,14 +234,13 @@ public class CompositeSegment extends Segment {
   }
 
   @SuppressWarnings("unchecked")
-  @Override
-  public JSONObject toJSONObject() {
+  public JSONObject toJSONObject(List<String> childrenList) {
     JSONObject jObject = new JSONObject();
     jObject.put("type", this.getTypeString());
     jObject.put("id", this.getId());
     JSONArray jArray = new JSONArray();
 
-    for (String id : this.children) {
+    for (String id : childrenList) {
       Segment segment = this.getChild(id);
       jArray.add(segment.toJSONObject());
     }
@@ -246,6 +248,11 @@ public class CompositeSegment extends Segment {
     jObject.put("traceSegments", jArray);
 
     return jObject;
+  }
+
+  @Override
+  public JSONObject toJSONObject() {
+    return this.toJSONObject(this.getChildrenList());
   }
 
   public int getLength() {
