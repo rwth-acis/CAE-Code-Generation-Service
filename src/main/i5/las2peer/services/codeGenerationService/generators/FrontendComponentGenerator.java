@@ -197,8 +197,8 @@ public class FrontendComponentGenerator extends Generator {
       FileTraceModel widgetTraceModel = new FileTraceModel(traceModel, "widget.xml");
       TemplateStrategy strategy = new InitialGenerationStrategy(widgetTraceModel);
       TemplateEngine widgetTemplateEngine = new TemplateEngine(strategy, widgetTraceModel);
-      // add html elements to widget source code
 
+      // add html elements to widget source code
       createWidgetCode(widgetTemplateEngine, widget, htmlElementTemplate, yjsImports,
           gitHubOrganization, repositoryName, frontendComponent);
 
@@ -319,7 +319,7 @@ public class FrontendComponentGenerator extends Generator {
   public static void createWidgetCode(TemplateEngine templateEngine, String widgetTemplateFile,
       String htmlElementTemplateFile, String importTemplateFile, String gitHubOrganization,
       String repositoryName, FrontendComponent frontendComponent) {
-
+    System.out.println("'" + htmlElementTemplateFile + "'");
     Template widgetTemplate =
         templateEngine.createTemplate(frontendComponent.getWidgetModelId(), widgetTemplateFile);
     templateEngine.addTemplate(widgetTemplate);
@@ -411,51 +411,58 @@ public class FrontendComponentGenerator extends Generator {
       case CUSTOM:
         elementTemplate.setVariable("$Element_Type$", element.getType().toString());
         elementTemplate.setVariable("$Element_Id$", element.getId());
-        elementTemplate.setVariable("$Additional_Values$", "");
+        elementTemplate.setVariable("$Additional_Values$", " ");
+        elementTemplate.setVariable("$Element_Content$", " ");
         elementTemplate.setVariable("$Closing_Element$", "</" + element.getType().toString() + ">");
         break;
       case br:
         elementTemplate.setVariable("$Element_Type$", element.getType().toString());
         elementTemplate.setVariable("$Element_Id$", element.getId());
-        elementTemplate.setVariable("$Additional_Values$", "");
+        elementTemplate.setVariable("$Additional_Values$", " ");
+        elementTemplate.setVariable("$Element_Content$", " ");
         elementTemplate.setVariable("$Closing_Element$", "");
         break;
       case button:
         elementTemplate.setVariable("$Element_Type$", element.getType().toString());
         elementTemplate.setVariable("$Element_Id$", element.getId());
         elementTemplate.setVariable("$Additional_Values$", " class=\"btn btn-default\"");
-        elementTemplate.setVariable("$Closing_Element$",
-            element.getId() + "</" + element.getType().toString() + ">");
+        elementTemplate.setVariable("$Element_Content$", element.getId());
+        elementTemplate.setVariable("$Closing_Element$", "</" + element.getType().toString() + ">");
 
         break;
       case div:
         elementTemplate.setVariable("$Element_Type$", element.getType().toString());
         elementTemplate.setVariable("$Element_Id$", element.getId());
-        elementTemplate.setVariable("$Additional_Values$", "");
+        elementTemplate.setVariable("$Additional_Values$", " ");
+        elementTemplate.setVariable("$Element_Content$", " ");
         elementTemplate.setVariable("$Closing_Element$", "</" + element.getType().toString() + ">");
         break;
       case input:
         elementTemplate.setVariable("$Element_Type$", element.getType().toString());
         elementTemplate.setVariable("$Element_Id$", element.getId());
-        elementTemplate.setVariable("$Additional_Values$", "");
+        elementTemplate.setVariable("$Additional_Values$", " ");
+        elementTemplate.setVariable("$Element_Content$", " ");
         elementTemplate.setVariable("$Closing_Element$", "</" + element.getType().toString() + ">");
         break;
       case p:
         elementTemplate.setVariable("$Element_Type$", element.getType().toString());
         elementTemplate.setVariable("$Element_Id$", element.getId());
-        elementTemplate.setVariable("$Additional_Values$", "");
+        elementTemplate.setVariable("$Additional_Values$", " ");
+        elementTemplate.setVariable("$Element_Content$", " ");
         elementTemplate.setVariable("$Closing_Element$", "</" + element.getType().toString() + ">");
         break;
       case table:
         elementTemplate.setVariable("$Element_Type$", element.getType().toString());
         elementTemplate.setVariable("$Element_Id$", element.getId());
-        elementTemplate.setVariable("$Additional_Values$", "");
+        elementTemplate.setVariable("$Additional_Values$", " ");
+        elementTemplate.setVariable("$Element_Content$", " ");
         elementTemplate.setVariable("$Closing_Element$", "</" + element.getType().toString() + ">");
         break;
       case textarea:
         elementTemplate.setVariable("$Element_Type$", element.getType().toString());
         elementTemplate.setVariable("$Element_Id$", element.getId());
         elementTemplate.setVariable("$Additional_Values$", " class=\"form-control\" rows=\"5\"");
+        elementTemplate.setVariable("$Element_Content$", " ");
         elementTemplate.setVariable("$Closing_Element$", "</" + element.getType().toString() + ">");
         break;
       default:

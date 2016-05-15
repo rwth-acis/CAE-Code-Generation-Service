@@ -18,11 +18,11 @@ public class InitialGenerationStrategy extends TemplateStrategy {
     // if the segment is a composition, we need to set the content recursively by the
     // setSegmentContent function
     if (segment instanceof CompositeSegment) {
-      ((CompositeSegment) segment).setSegmentContent(id, content);
+      ((CompositeSegment) segment).setSegmentContent(id, content, false);
     }
     // otherwise we can directly set the new content
     else if (segment instanceof ContentSegment) {
-      ((ContentSegment) segment).setContent(content);
+      ((ContentSegment) segment).setContent(content, false);
     }
   }
 

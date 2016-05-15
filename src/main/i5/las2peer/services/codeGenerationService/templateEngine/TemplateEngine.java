@@ -38,26 +38,41 @@ public class TemplateEngine {
     this.strategy = strategy;
   }
 
+  /**
+   * Gets the trace model of the tepmlate engine
+   * 
+   * @return The trace model of the source code / template engine
+   */
+
   public FileTraceModel getFileTraceModel() {
     return this.traceModel;
   }
 
-  public Segment getSegment(String segmentId) {
+  /**
+   * Get the segment with the given id within the template engine. Therefore, a recursive lookup in
+   * the trace model of the engine is performed. Returns null, if non segment with the given id is
+   * found
+   * 
+   * @param segmentId The id of the segment that should be returned
+   * @return If the segment is found the requested segment within the template engine, or null if
+   *         not found
+   */
+
+  public Segment getSegmentFromTraceModel(String segmentId) {
     return this.traceModel.getRecursiveSegment(segmentId);
   }
 
   /**
-   * Returns the corresponding segment of a given id when it already exists otherwise it returns the
-   * given one
-   * 
-   * TODO: Move to TemplateStrategy
+   * Get the segment with the given id by using the current template strategy. If the template
+   * strategy has found a segment with the given id, it will return that segment. Otherwise it
+   * returns the given segment to signal, that non segment with such an id was found
    * 
    * @param segmentId The id of the needed segment
    * @param segment The segment that is returned if the needed segment is not found
    * @return
    */
 
-  public Segment getSegment(String segmentId, Segment segment) {
+  public Segment getSegmentByStrategy(String segmentId, Segment segment) {
     Segment result = this.strategy.getSegment(segmentId);
     if (result != null) {
       if (result instanceof SynchronizeCompositeSegment
@@ -71,9 +86,26 @@ public class TemplateEngine {
     }
   }
 
+  /**
+   * Add a segment to the template engine, i.e. the trace model of the engine.
+   * 
+   * @param segmentId The id of the segment that should be added
+   * @param segment The segment that should be added
+   * @return The added segment. Based on the template strategy this needs not to be the same object
+   *         as the given segment.
+   */
+
   protected Segment addSegmentById(String segmentId, Segment segment) {
     return this.strategy.addSegment(segmentId, segment);
   }
+
+  /**
+   * Add a segment to the template engine.
+   * 
+   * @param segment The segment that should be added
+   * @return The added segment. Based on the template strategy this needs not to be the same object
+   *         as the given segment.
+   */
 
   protected Segment addSegment(Segment segment) {
     return this.addSegmentById(segment.getId(), segment);
@@ -87,6 +119,10 @@ public class TemplateEngine {
 
   public String getContent() {
     return this.traceModel.getContent();
+  }
+
+  public void setSegmentContent(CompositeSegment segment, String variableName, String content) {
+    this.strategy.setSegmentContent(segment, content, variableName);
   }
 
   /**
@@ -168,60 +204,99 @@ public class TemplateEngine {
 
   /**
    * 
-   * Generates initial traces from a given source code
+   * Generates initial traces of a given source code
    * 
    * @param content The source code that should be used to generate the traces
-   * 
-   * @return Initial traces represented as json object
+   * @return Initial traces of the given source code as a json object
    * 
    */
 
   @SuppressWarnings("unchecked")
-  public static JSONObject generateTraces(String content) {
+  private static JSONObject generateTraces(String content) {
     JSONObject outerObject = new JSONObject();
     JSONArray segments = new JSONArray();
     Map<String, Integer> elementCountMap = new HashMap<String, Integer>();
 
-    Pattern segmentPattern = Pattern.compile("(\\$[a-zA-Z_]*?\\$)|(-\\{.*?\\}-)", Pattern.DOTALL);
+    Pattern segmentPattern = Pattern.compile("(\\$[a-zA-Z_]*?\\$)|(-\\{(.*?)\\}-)", Pattern.DOTALL);
     Matcher matcher = segmentPattern.matcher(content);
 
     Pattern unprotectedBlockPattern = Pattern.compile("^-\\{(.*?)\\}-$", Pattern.DOTALL);
-
+    Pattern unprotectedBlockIdTokenPattern =
+        Pattern.compile("^(\\$[a-zA-Z_]*?\\$)", Pattern.DOTALL);
     int s = 0;
+    // loop through all found variables or unprotected blocks
     while (matcher.find()) {
       int start = matcher.start();
       int end = matcher.end();
       String segmentName = matcher.group();
-      Matcher m = unprotectedBlockPattern.matcher(segmentName);
+      Matcher unprotectedBlockMatcher = unprotectedBlockPattern.matcher(segmentName);
 
       String id = matcher.group();
       boolean unprotected = false;
+      boolean unprotectedIntegrityCheck = false;
+      // unprotected block?
+      if (unprotectedBlockMatcher.find()) {
+        String inner = unprotectedBlockMatcher.group(1);
 
-      if (m.find()) {
+        Matcher unprotectedBlockIdTokenMatcher = unprotectedBlockIdTokenPattern.matcher(inner);
+        // is a id for the unprotected block defined
+        if (unprotectedBlockIdTokenMatcher.find()) {
+          id = unprotectedBlockIdTokenMatcher.group();
+          unprotectedIntegrityCheck = true;
+        } else {
+          id = "unprotected";
+          id += "[" + incrementElementCount(elementCountMap, id) + "]";
+        }
+
         unprotected = true;
-        id = "unprotected";
-        id += "[" + CompositeSegment.incrementElementCount(elementCountMap, id) + "]";
       }
 
+      // add the segment before this variable or unprotected block
       if (start - s > 0) {
+
         String key = id + "before";
-        key += "[" + CompositeSegment.incrementElementCount(elementCountMap, key) + "]";
-        segments.add(CompositeSegment.createJSONSegment(start - s, key, "protected"));
+        key += "[" + incrementElementCount(elementCountMap, key) + "]";
+        segments.add(Segment.createJSONSegment(start - s, key, "protected"));
       }
 
       if (unprotected) {
-        segments.add(CompositeSegment.createJSONSegment(m.group(1).length(), id, "unprotected"));
+        String type = "unprotected";
+        if (unprotectedIntegrityCheck) {
+          type += "Integrity";
+        }
+        segments
+            .add(Segment.createJSONSegment(unprotectedBlockMatcher.group(1).length(), id, type));
       } else {
-        segments.add(CompositeSegment.createJSONSegment(end - start, id, "protected"));
+        segments.add(Segment.createJSONSegment(end - start, id, "protected"));
       }
 
       s = end;
     }
 
+    // add the last trailing segment
     String id = "End";
-    segments.add(CompositeSegment.createJSONSegment(content.length() - s, id, "protected"));
+
+    System.out.println("end '" + content.substring(s, content.length()) + "'");
+    segments.add(Segment.createJSONSegment(content.length() - s, id, "protected"));
     outerObject.put("traceSegments", segments);
     return outerObject;
+  }
+
+  /**
+   * A helper method to count up ids of segments
+   * 
+   * @param map The map containing ids
+   * @param id The id to count
+   * @return The count of the given id incremented by one
+   */
+
+  private static int incrementElementCount(Map<String, Integer> map, String id) {
+    if (!map.containsKey(id)) {
+      map.put(id, 0);
+    } else {
+      map.put(id, map.get(id) + 1);
+    }
+    return map.get(id);
   }
 
 }

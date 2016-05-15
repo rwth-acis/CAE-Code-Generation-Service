@@ -14,6 +14,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
 import i5.las2peer.services.codeGenerationService.traces.segments.CompositeSegment;
+import i5.las2peer.services.codeGenerationService.traces.segments.CompositeSegmentFactory;
 import i5.las2peer.services.codeGenerationService.traces.segments.ContentSegment;
 import i5.las2peer.services.codeGenerationService.traces.segments.ProtectedSegment;
 import i5.las2peer.services.codeGenerationService.traces.segments.Segment;
@@ -35,7 +36,7 @@ public class FileTraceModel {
 
   public static CompositeSegment createCompositeSegmentByTraces(String id, String traces,
       String template) {
-    return CompositeSegment.createByTraces(id, traces, template);
+    return CompositeSegmentFactory.createByTraces(id, traces, template);
   }
 
 
@@ -150,7 +151,14 @@ public class FileTraceModel {
           break;
         case "unprotected": {
           Long length = getLength(entry);
-          ContentSegment segment = new UnprotectedSegment(segmentId);
+          UnprotectedSegment segment = new UnprotectedSegment(segmentId);
+
+          boolean integrityCheck = (boolean) entry.get("integrityCheck");
+          if (integrityCheck) {
+            String hash = (String) entry.get("hash");
+            segment.setHash(hash);
+          }
+
           segment.setContent(
               template.substring(Math.toIntExact(start), Math.toIntExact(start + length)));
           list.add(segment);

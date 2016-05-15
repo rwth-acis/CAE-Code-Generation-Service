@@ -78,14 +78,14 @@ public class Template {
 
 
   /**
-   * Sets the content of a variable within this template
+   * Set the content of a variable within this template
    * 
    * @param variableName - The name of the variable to set its content
    * @param content - The content that will be set
    */
 
   public void setVariable(String variableName, String content) {
-    this.segment.setSegmentContent(variableName, content);
+    this.templateEngine.setSegmentContent(segment, variableName, content);
   }
 
 
@@ -93,7 +93,7 @@ public class Template {
    * Adds a template to a variable within this template
    * 
    * @param variableName - The name of the variable
-   * @param template - The template that sould be added to the variable
+   * @param template - The template that should be added to the variable
    * @param once - If true, you can only append one template to the variable
    */
 
@@ -103,9 +103,7 @@ public class Template {
     CompositeSegment container = containerNew;
 
     CompositeSegment segment = (CompositeSegment) templateEngine
-        .getSegment(template.getSegment().getId(), template.getSegment());
-
-
+        .getSegmentByStrategy(template.getSegment().getId(), template.getSegment());
 
     Segment recursiveChild = this.segment.getChildRecursive(id);
     if (recursiveChild instanceof CompositeSegment) {
@@ -117,7 +115,7 @@ public class Template {
       return;
     }
 
-    container.add(segment);
+    container.addSegment(segment);
 
     this.segment.setSegment(variableName, container);
   }
@@ -133,11 +131,11 @@ public class Template {
 
   public void setVariableIfNotSet(String id, String content) {
     String segmentId = this.getId() + ":" + id;
-    Segment segment = (Segment) templateEngine.getSegment(segmentId);
+    Segment segment = (Segment) templateEngine.getSegmentFromTraceModel(segmentId);
 
     if (segment instanceof ContentSegment && segment.getId().equals(segmentId)) {
       if (segment.toString().equals(id)) {
-        ((ContentSegment) segment).setContent(content);
+        ((ContentSegment) segment).setContent(content, false);
       }
     }
   }
