@@ -88,14 +88,16 @@ public class Template {
     this.segment.setSegmentContent(variableName, content);
   }
 
+
   /**
    * Adds a template to a variable within this template
    * 
    * @param variableName - The name of the variable
    * @param template - The template that sould be added to the variable
+   * @param once - If true, you can only append one template to the variable
    */
 
-  public void appendVariable(String variableName, Template template) {
+  public void appendVariable(String variableName, Template template, boolean once) {
     String id = this.getId() + ":" + variableName;
     CompositeSegment containerNew = new CompositeSegment(id);
     CompositeSegment container = containerNew;
@@ -103,14 +105,30 @@ public class Template {
     CompositeSegment segment = (CompositeSegment) templateEngine
         .getSegment(template.getSegment().getId(), template.getSegment());
 
+
+
     Segment recursiveChild = this.segment.getChildRecursive(id);
     if (recursiveChild instanceof CompositeSegment) {
       container = (CompositeSegment) recursiveChild;
     }
 
+    // only add once if ask to do so
+    if (once && container.hasChild(segment.getId())) {
+      return;
+    }
+
     container.add(segment);
 
     this.segment.setSegment(variableName, container);
+  }
+
+
+  public void appendVariable(String variableName, Template template) {
+    this.appendVariable(variableName, template, false);
+  }
+
+  public void appendVariableOnce(String variableName, Template template) {
+    this.appendVariable(variableName, template, true);
   }
 
   public void setVariableIfNotSet(String id, String content) {

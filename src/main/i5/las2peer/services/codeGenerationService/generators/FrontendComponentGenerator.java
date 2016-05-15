@@ -338,7 +338,7 @@ public class FrontendComponentGenerator extends Generator {
         // currently, only textareas are supported
         Template importTemplate = templateEngine
             .createTemplate(widgetTemplate.getId() + ":addiionalImports", importTemplateFile);
-        widgetTemplate.appendVariable("$Additional_Imports$", importTemplate);
+        widgetTemplate.appendVariableOnce("$Additional_Imports$", importTemplate);
 
       }
     }
@@ -929,7 +929,7 @@ public class FrontendComponentGenerator extends Generator {
   }
 
 
-  @SuppressWarnings({"unused", "unchecked"})
+  @SuppressWarnings("unchecked")
   private static void commitFile(String fileName, TemplateEngine templateEngine, String message,
       CodeGenerationService service, String repositoryName) throws UnsupportedEncodingException {
     JSONObject obj = new JSONObject();
