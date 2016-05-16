@@ -505,7 +505,7 @@ public abstract class Generator {
     try {
       lsCmd.call();
     } catch (Exception e) {
-      logger.printStackTrace(e);
+      // ignore the exception, as this the way we determine if a remote repository exists
       exists = false;
     }
     return exists;

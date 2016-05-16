@@ -118,8 +118,8 @@ public class FileTraceModel {
     return fileTraceModel;
   }
 
-  public static Long getLength(JSONObject entry) {
-    Object length = entry.get("length");
+  public static Long getLong(JSONObject entry, String key) {
+    Object length = entry.get(key);
     // if the entry is already an instance of the Long class, we can directly cast it
     if (length instanceof Long) {
       return ((Long) length);
@@ -150,7 +150,7 @@ public class FileTraceModel {
           start += c.getLength();
           break;
         case "unprotected": {
-          Long length = getLength(entry);
+          Long length = getLong(entry, "length");
           UnprotectedSegment segment = new UnprotectedSegment(segmentId);
 
           boolean integrityCheck = (boolean) entry.get("integrityCheck");
@@ -166,7 +166,7 @@ public class FileTraceModel {
           break;
         }
         case "protected": {
-          Long length = getLength(entry);
+          Long length = getLong(entry, "length");
           ContentSegment segment = new ProtectedSegment(segmentId);
           segment.setContent(
               template.substring(Math.toIntExact(start), Math.toIntExact(start + length)));
@@ -177,7 +177,6 @@ public class FileTraceModel {
       }
 
     }
-
 
     return list;
   }

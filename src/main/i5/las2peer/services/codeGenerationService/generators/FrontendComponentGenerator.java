@@ -369,7 +369,7 @@ public class FrontendComponentGenerator extends Generator {
           createHtmlElementTemplate(element, htmlElementTemplateFile, widgetTemplate);
 
       widgetTemplate.appendVariable("$Main_Content$", elementTemplate);
-      templateEngine.addTrace(element.getModelId(), "HTML Element[" + element.getId() + "]",
+      templateEngine.addTrace(element.getModelId(), "HTML Element", element.getId(),
           elementTemplate);
     }
 

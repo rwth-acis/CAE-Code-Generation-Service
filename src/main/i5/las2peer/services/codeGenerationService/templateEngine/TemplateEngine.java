@@ -175,10 +175,23 @@ public class TemplateEngine {
     this.addTrace(modelId, modelName, template.getSegment());
   }
 
+  public void addTrace(String modelId, String modelType, String modelName,
+      Template elementTemplate) {
+    this.addTrace(modelId, modelType, modelName, elementTemplate.getSegment());
+  }
+
   @SuppressWarnings("unchecked")
   public void addTrace(String modelId, String modelName, Segment segment) {
     JSONObject metaInformation = new JSONObject();
     metaInformation.put("name", modelName);
+    this.traceModel.addTrace(modelId, metaInformation, segment);
+  }
+
+  @SuppressWarnings("unchecked")
+  public void addTrace(String modelId, String modelType, String modelName, Segment segment) {
+    JSONObject metaInformation = new JSONObject();
+    metaInformation.put("name", modelName);
+    metaInformation.put("type", modelType);
     this.traceModel.addTrace(modelId, metaInformation, segment);
   }
 

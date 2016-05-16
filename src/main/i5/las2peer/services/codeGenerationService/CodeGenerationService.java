@@ -3,6 +3,7 @@ package i5.las2peer.services.codeGenerationService;
 import java.io.Serializable;
 import java.util.HashMap;
 
+import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 
 import i5.cae.simpleModel.SimpleModel;
@@ -18,6 +19,7 @@ import i5.las2peer.services.codeGenerationService.generators.MicroserviceGenerat
 import i5.las2peer.services.codeGenerationService.models.application.Application;
 import i5.las2peer.services.codeGenerationService.models.frontendComponent.FrontendComponent;
 import i5.las2peer.services.codeGenerationService.models.microservice.Microservice;
+import i5.las2peer.services.codeGenerationService.templateEngine.ModelChecker;
 
 /**
  * 
@@ -399,4 +401,14 @@ public class CodeGenerationService extends Service {
 
   }
 
+  /**
+   * Performs a model violation check against the files located in the given repository
+   * 
+   * @param repositoryName The name of the repository
+   * @return A json array containing guidances of found violations
+   */
+  public JSONArray checkModel(String repositoryName) {
+    return ModelChecker.performViolationCheck(this.getTracedFiles(repositoryName),
+        templateRepository, gitHubOrganization);
+  }
 }

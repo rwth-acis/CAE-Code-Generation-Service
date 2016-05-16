@@ -7,6 +7,14 @@ import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 
+/**
+ * A factory class to create new compositions of segments by given traces and source code. The
+ * compositions are then used for templates.
+ * 
+ * @author Thomas Winkler
+ *
+ */
+
 public class CompositeSegmentFactory {
   public static Segment createSegment(JSONObject entry, String id, String content) {
     ContentSegment segment = null;
