@@ -8,6 +8,10 @@ public abstract class ContentSegment extends Segment {
     super(id);
   }
 
+  public ContentSegment(JSONObject entry) {
+    super((String) entry.get("id"));
+  }
+
   public abstract int getLength();
 
   public abstract void setContent(String content);
@@ -16,6 +20,7 @@ public abstract class ContentSegment extends Segment {
 
   public abstract String getContent();
 
+  @SuppressWarnings("unchecked")
   public JSONObject toJSONObject() {
     JSONObject jObject = new JSONObject();
     jObject.put("id", this.getId());

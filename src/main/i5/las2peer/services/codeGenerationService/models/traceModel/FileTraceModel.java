@@ -7,18 +7,13 @@ import java.util.Map;
 
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
-import org.json.simple.parser.JSONParser;
-import org.json.simple.parser.ParseException;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
 import i5.las2peer.services.codeGenerationService.traces.segments.CompositeSegment;
-import i5.las2peer.services.codeGenerationService.traces.segments.CompositeSegmentFactory;
 import i5.las2peer.services.codeGenerationService.traces.segments.ContentSegment;
-import i5.las2peer.services.codeGenerationService.traces.segments.ProtectedSegment;
 import i5.las2peer.services.codeGenerationService.traces.segments.Segment;
-import i5.las2peer.services.codeGenerationService.traces.segments.UnprotectedSegment;
 
 public class FileTraceModel {
   private List<Segment> segmentList = new ArrayList<Segment>();
@@ -33,12 +28,6 @@ public class FileTraceModel {
     this.fileName = fileName;
     this.traceModel = traceModel;
   }
-
-  public static CompositeSegment createCompositeSegmentByTraces(String id, String traces,
-      String template) {
-    return CompositeSegmentFactory.createByTraces(id, traces, template);
-  }
-
 
   public Segment getRecursiveSegment(String segmentId) {
     for (Segment segment : this.segmentList) {
@@ -94,91 +83,10 @@ public class FileTraceModel {
 
   public void setSegmentContent(String content, String context) {
     Segment segment = this.segmentMap.get(context);
+    // we can only set the content of ContentSegments
     if (segment instanceof ContentSegment) {
       ((ContentSegment) segment).setContent(content);
     }
-  }
-
-  public static FileTraceModel parseFileTraceModel(String source, String traceSource,
-      TraceModel traceModel, String fileName) {
-    FileTraceModel fileTraceModel = new FileTraceModel(traceModel, fileName);
-    JSONParser parser = new JSONParser();
-    JSONObject jobj;
-
-    try {
-      jobj = (JSONObject) parser.parse(traceSource);
-      JSONArray segments = (JSONArray) jobj.get("traceSegments");
-      JSONObject traces = (JSONObject) jobj.get("traces");
-
-      fileTraceModel.addSegments(parseSegments(segments, source, 0L));
-    } catch (ParseException e) {
-      e.printStackTrace();
-    }
-
-    return fileTraceModel;
-  }
-
-  public static Long getLong(JSONObject entry, String key) {
-    Object length = entry.get(key);
-    // if the entry is already an instance of the Long class, we can directly cast it
-    if (length instanceof Long) {
-      return ((Long) length);
-    }
-    // otherwise we need to parse it as a long value
-    else {
-      return Long.parseLong(length.toString() + "");
-    }
-  }
-
-  public static List<Segment> parseSegments(JSONArray jSegments, String template, Long start) {
-
-    List<Segment> list = new ArrayList<Segment>();
-
-    for (int i = 0; i < jSegments.size(); i++) {
-      JSONObject entry = (JSONObject) jSegments.get(i);
-
-      String type = (String) entry.get("type");
-      String segmentId = (String) entry.get("id");
-      switch (type) {
-        case "composite":
-          JSONArray subSegments = (JSONArray) entry.get("traceSegments");
-          CompositeSegment c = new CompositeSegment(segmentId);
-          if (subSegments != null) {
-            c.addAllSegments(parseSegments(subSegments, template, start));
-          }
-          list.add(c);
-          start += c.getLength();
-          break;
-        case "unprotected": {
-          Long length = getLong(entry, "length");
-          UnprotectedSegment segment = new UnprotectedSegment(segmentId);
-
-          boolean integrityCheck = (boolean) entry.get("integrityCheck");
-          if (integrityCheck) {
-            String hash = (String) entry.get("hash");
-            segment.setHash(hash);
-          }
-
-          segment.setContent(
-              template.substring(Math.toIntExact(start), Math.toIntExact(start + length)));
-          list.add(segment);
-          start += segment.getLength();
-          break;
-        }
-        case "protected": {
-          Long length = getLong(entry, "length");
-          ContentSegment segment = new ProtectedSegment(segmentId);
-          segment.setContent(
-              template.substring(Math.toIntExact(start), Math.toIntExact(start + length)));
-          list.add(segment);
-          start += segment.getLength();
-          break;
-        }
-      }
-
-    }
-
-    return list;
   }
 
   public String getContent() {

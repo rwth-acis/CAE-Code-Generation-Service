@@ -7,8 +7,8 @@ import i5.las2peer.services.codeGenerationService.traces.segments.ContentSegment
 import i5.las2peer.services.codeGenerationService.traces.segments.Segment;
 
 /**
- * A class representing a single template. Provides methods to set variables, defined in template
- * source files
+ * A class representing a single template. Provides methods to set and append variables, that are
+ * defined in the template source files
  * 
  * @author Thomas Winkler
  *
@@ -16,14 +16,14 @@ import i5.las2peer.services.codeGenerationService.traces.segments.Segment;
 
 public class Template {
 
-  // each template holds a private composite segment
+  // each template holds a private composition of segments
   private CompositeSegment segment;
 
   // the reference to its template engine
   private final TemplateEngine templateEngine;
 
   /**
-   * Creates a new Template by a given composite segment and a template engine
+   * Creates a new Template by a given compositions of segment and a template engine
    * 
    * @param segment - The private composite segment of the template
    * @param templateEngine - The template engine of the template

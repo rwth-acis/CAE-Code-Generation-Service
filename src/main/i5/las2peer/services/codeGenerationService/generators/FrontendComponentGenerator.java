@@ -32,6 +32,7 @@ import i5.las2peer.services.codeGenerationService.models.frontendComponent.IWCRe
 import i5.las2peer.services.codeGenerationService.models.frontendComponent.InputParameter;
 import i5.las2peer.services.codeGenerationService.models.frontendComponent.MicroserviceCall;
 import i5.las2peer.services.codeGenerationService.models.traceModel.FileTraceModel;
+import i5.las2peer.services.codeGenerationService.models.traceModel.FileTraceModelFactory;
 import i5.las2peer.services.codeGenerationService.models.traceModel.TraceModel;
 import i5.las2peer.services.codeGenerationService.templateEngine.InitialGenerationStrategy;
 import i5.las2peer.services.codeGenerationService.templateEngine.SynchronizationStrategy;
@@ -869,8 +870,8 @@ public class FrontendComponentGenerator extends Generator {
 
         JSONObject fileTraces = (JSONObject) fileObject.get("fileTraces");
         FileTraceModel fileTraceModel = new FileTraceModel(traceModel, fileName);
-        FileTraceModel oldFileTraceModel = FileTraceModel.parseFileTraceModel(content,
-            fileTraces.toJSONString(), traceModel, fileName);
+        FileTraceModel oldFileTraceModel = FileTraceModelFactory
+            .createFileTraceModelFromJSON(content, fileTraces.toJSONString(), traceModel, fileName);
         TemplateStrategy strategy = new SynchronizationStrategy(oldFileTraceModel, fileTraceModel);
 
         switch (fileName) {

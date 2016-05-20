@@ -1,9 +1,15 @@
 package i5.las2peer.services.codeGenerationService.traces.segments;
 
+import org.json.simple.JSONObject;
+
 public class ProtectedSegment extends ContentSegment {
 
   public ProtectedSegment(String id) {
     super(id);
+  }
+
+  public ProtectedSegment(JSONObject entry) {
+    this((String) entry.get("id"));
   }
 
   private String content;
@@ -26,11 +32,6 @@ public class ProtectedSegment extends ContentSegment {
   @Override
   public String getContent() {
     return this.content;
-  }
-
-  @Override
-  public void replace(String pattern, String replacement) {
-    this.content = this.content.replace(pattern, replacement);
   }
 
   @Override

@@ -3,7 +3,7 @@ package i5.las2peer.services.codeGenerationService.templateEngine;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 
-import i5.las2peer.services.codeGenerationService.models.traceModel.FileTraceModel;
+import i5.las2peer.services.codeGenerationService.traces.segments.SegmentFactory;
 
 /**
  * A class representing a single guidance. An abstraction of the json object of the guidance
@@ -47,7 +47,7 @@ public class Guidance {
    * 
    */
   public int getGroup() {
-    Long group = FileTraceModel.getLong(this.jsonObject, "group");
+    Long group = SegmentFactory.getLong(this.jsonObject, "group");
     return Math.toIntExact(group);
   }
 

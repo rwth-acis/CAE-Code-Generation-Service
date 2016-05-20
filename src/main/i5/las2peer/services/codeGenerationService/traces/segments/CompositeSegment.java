@@ -11,8 +11,9 @@ import org.json.simple.JSONObject;
 /**
  * A class representing a composition of segments. Such a composition is used for model elements
  * that are made up of a sequence of segments. In addition, compositions are also used as containers
- * for templates and variables that should hold multiple templates, e.g. the $Main_Content$ variable
- * holding the templates of the html elements
+ * for {@link i5.las2peer.services.codeGenerationService.templateEngine.Template} and variables that
+ * should hold multiple templates, e.g. the $Main_Content$ variable holding the templates of the
+ * html elements
  * 
  * 
  * @author Thomas Winkler
@@ -109,14 +110,17 @@ public class CompositeSegment extends Segment {
   }
 
   /**
-   * Get the length of the source code of the composition
-   * 
-   * @return The length of the source code of the composition
+   * {@inheritDoc}
    */
 
+  @Override
   public int getLength() {
     return this.toString().length();
   }
+
+  /**
+   * {@inheritDoc}
+   */
 
   @Override
   public String getTypeString() {
@@ -148,12 +152,6 @@ public class CompositeSegment extends Segment {
     map.put(oldSegment.getId(), segment);
   }
 
-  @Override
-  public void replace(String pattern, String replacement) {
-    // the content of compositions cannot be directly modified, you need to use the replaceSegment
-    // method
-  }
-
   public void setSegment(String id, CompositeSegment segment) {
     map.put(this.getId() + ":" + id, segment);
   }
@@ -183,7 +181,7 @@ public class CompositeSegment extends Segment {
     String content = "";
     for (String id : childrenList) {
       if (this.map.containsKey(id)) {
-        content += this.map.get(id).toString();// this.map.get(id).getContent();
+        content += this.map.get(id).toString();
       }
     }
     return content;
@@ -209,6 +207,10 @@ public class CompositeSegment extends Segment {
 
     return jObject;
   }
+
+  /**
+   * {@inheritDoc}
+   */
 
   @Override
   public JSONObject toJSONObject() {

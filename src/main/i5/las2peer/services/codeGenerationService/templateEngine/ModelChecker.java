@@ -17,9 +17,9 @@ import org.json.simple.JSONObject;
 import i5.las2peer.logging.L2pLogger;
 import i5.las2peer.services.codeGenerationService.generators.ApplicationGenerator;
 import i5.las2peer.services.codeGenerationService.generators.Generator;
-import i5.las2peer.services.codeGenerationService.models.traceModel.FileTraceModel;
 import i5.las2peer.services.codeGenerationService.traces.segments.CompositeSegment;
 import i5.las2peer.services.codeGenerationService.traces.segments.Segment;
+import i5.las2peer.services.codeGenerationService.traces.segments.SegmentFactory;
 import i5.las2peer.services.codeGenerationService.traces.segments.UnprotectedSegment;
 
 /**
@@ -97,7 +97,7 @@ public class ModelChecker {
         JSONArray traceSegments = (JSONArray) fileTraces.get("traceSegments");
         JSONObject traces = (JSONObject) fileTraces.get("traces");
 
-        List<Segment> segments = FileTraceModel.parseSegments(traceSegments, content, 0L);
+        List<Segment> segments = SegmentFactory.createSegments(traceSegments, content, 0L);
         System.out.println(traces);
         for (Segment segment : segments) {
 

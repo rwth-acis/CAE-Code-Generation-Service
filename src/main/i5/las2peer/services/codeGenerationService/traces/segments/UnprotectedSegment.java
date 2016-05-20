@@ -5,18 +5,68 @@ import java.security.MessageDigest;
 
 import org.json.simple.JSONObject;
 
+/**
+ * A class representing an unprotected segments. Unprotected segments are the segments, which can be
+ * edited by a user in the editor.
+ * 
+ * @author Thomas Winkler
+ *
+ */
+
 public class UnprotectedSegment extends ContentSegment {
   private String content;
   private String hash = null;
   private boolean needsIntegrityCheck = false;
 
+  /**
+   * Create a new unprotected segment with the given id
+   * 
+   * @param id The id of the new unprotected segment
+   */
+
   public UnprotectedSegment(String id) {
     super(id);
   }
 
-  public void setHash(String hash) {
+  public UnprotectedSegment(JSONObject entry) {
+    this((String) entry.get("id"));
+
+    boolean integrityCheck = false;
+    if (entry.get("integrityCheck") != null) {
+      integrityCheck = (boolean) entry.get("integrityCheck");
+    }
+
+    if (integrityCheck) {
+      this.enableIntegrityCheck();
+      // check if we already have a hash
+      if (entry.containsKey("hash")) {
+        String hash = (String) entry.get("hash");
+        this.setHash(hash);
+      }
+    }
+
+  }
+
+  /**
+   * Enable the integrity check for the unprotected segment. The segment will be protected such
+   * that, it is only updated during the model synchronization process if the content of the segment
+   * is equal to the content of the last generation / model synchronization process. Therefore, a
+   * hash value is used.
+   */
+
+  public void enableIntegrityCheck() {
+    this.needsIntegrityCheck = true;
+  }
+
+  /**
+   * Set the hash value of the segment and enable the integrity check
+   * 
+   * @param hash
+   */
+
+  private void setHash(String hash) {
     this.hash = hash;
-    needsIntegrityCheck = true;
+    this.enableIntegrityCheck();
   }
 
   public void calculateHash() {
@@ -46,7 +96,7 @@ public class UnprotectedSegment extends ContentSegment {
     return this.getContent().length();
   }
 
-  @Override
+
   public void setContent(String content, boolean integrityCheck) {
 
     if (this.hash != null && integrityCheck) {
@@ -85,9 +135,6 @@ public class UnprotectedSegment extends ContentSegment {
 
     return jObject;
   }
-
-  @Override
-  public void replace(String pattern, String replacement) {}
 
   @Override
   public String getTypeString() {
