@@ -1,5 +1,7 @@
 package i5.las2peer.services.codeGenerationService.templateEngine;
 
+import java.util.List;
+
 import i5.las2peer.services.codeGenerationService.models.traceModel.FileTraceModel;
 import i5.las2peer.services.codeGenerationService.models.traceModel.TraceModel;
 import i5.las2peer.services.codeGenerationService.traces.segments.CompositeSegment;
@@ -102,6 +104,9 @@ public class Template {
     CompositeSegment containerNew = new CompositeSegment(id);
     CompositeSegment container = containerNew;
 
+    // we can safety cast to a composition as the given "fallback" segment is a composition and
+    // getSegmentByStrategy ensures that a segment of
+    // the same class is returned
     CompositeSegment segment = (CompositeSegment) templateEngine
         .getSegmentByStrategy(template.getSegment().getId(), template.getSegment());
 
@@ -131,8 +136,9 @@ public class Template {
 
   public void setVariableIfNotSet(String id, String content) {
     String segmentId = this.getId() + ":" + id;
-    Segment segment = (Segment) templateEngine.getSegmentFromTraceModel(segmentId);
 
+    // Segment segment = (Segment) templateEngine.getSegmentFromTraceModel(segmentId);
+    Segment segment = this.segment.getChildRecursive(segmentId);
     if (segment instanceof ContentSegment && segment.getId().equals(segmentId)) {
       if (segment.toString().equals(id)) {
         ((ContentSegment) segment).setContent(content, false);
@@ -157,9 +163,23 @@ public class Template {
         this.templateEngine.createTemplate(this.getId() + ":breakLine:" + idSuffix, "\n"));
   }
 
+  /**
+   * @see #getContent()
+   */
+
+  public String toString() {
+    return this.getContent();
+  }
+
 
   /**
    * Factory method to create new templates more easily
+   * 
+   * @param id Id of the new Template
+   * @param content The source code of the template
+   * @param traceModel The trace model to which this template should belong to
+   * @param fileName The file name of the template
+   * @return
    */
 
   public static Template createInitialTemplate(String id, String content, TraceModel traceModel,
@@ -177,6 +197,27 @@ public class Template {
 
   public void addTrace(String modelId, String modelName, Template template) {
     this.templateEngine.addTrace(modelId, modelName, template);
+  }
+
+
+  /**
+   * Remove the last appearance of the given character from the last content segment of the template
+   * 
+   * @param character The character to remove
+   */
+
+  public void removeLastCharacter(char character) {
+    List<String> childrenList = this.getSegment().getChildrenList();
+    if (childrenList.size() > 0) {
+      Segment lastSegment = this.getSegment().getChild(childrenList.get(childrenList.size() - 1));
+      if (lastSegment instanceof ContentSegment) {
+        ContentSegment contentSegment = (ContentSegment) lastSegment;
+        String content = contentSegment.getContent();
+        String result = content.substring(0, content.lastIndexOf(character));
+        contentSegment.setContent(result);
+      }
+    }
+
   }
 
 }
