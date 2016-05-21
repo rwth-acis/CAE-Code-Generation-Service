@@ -320,7 +320,7 @@ public class FrontendComponentGenerator extends Generator {
   public static void createWidgetCode(TemplateEngine templateEngine, String widgetTemplateFile,
       String htmlElementTemplateFile, String importTemplateFile, String gitHubOrganization,
       String repositoryName, FrontendComponent frontendComponent) {
-    System.out.println("'" + htmlElementTemplateFile + "'");
+
     Template widgetTemplate =
         templateEngine.createTemplate(frontendComponent.getWidgetModelId(), widgetTemplateFile);
     templateEngine.addTemplate(widgetTemplate);

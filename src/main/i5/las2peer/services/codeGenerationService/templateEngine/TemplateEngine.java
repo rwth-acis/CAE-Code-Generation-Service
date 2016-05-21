@@ -10,8 +10,8 @@ import org.json.simple.JSONObject;
 
 import i5.las2peer.services.codeGenerationService.models.traceModel.FileTraceModel;
 import i5.las2peer.services.codeGenerationService.traces.segments.CompositeSegment;
-import i5.las2peer.services.codeGenerationService.traces.segments.SegmentFactory;
 import i5.las2peer.services.codeGenerationService.traces.segments.Segment;
+import i5.las2peer.services.codeGenerationService.traces.segments.SegmentFactory;
 import i5.las2peer.services.codeGenerationService.traces.segments.SynchronizeCompositeSegment;
 
 /**
@@ -156,7 +156,8 @@ public class TemplateEngine {
     if (segment instanceof CompositeSegment) {
       cSegment = (CompositeSegment) segment;
     } else {
-      cSegment = SegmentFactory.createCompositeSegmentByInitialTraces(id, traces.toJSONString(), code);
+      cSegment =
+          SegmentFactory.createCompositeSegmentByInitialTraces(id, traces.toJSONString(), code);
     }
 
 
@@ -290,7 +291,6 @@ public class TemplateEngine {
     // add the last trailing segment
     String id = "End";
 
-    System.out.println("end '" + content.substring(s, content.length()) + "'");
     segments.add(Segment.createJSONSegment(content.length() - s, id, "protected"));
     outerObject.put("traceSegments", segments);
     return outerObject;
