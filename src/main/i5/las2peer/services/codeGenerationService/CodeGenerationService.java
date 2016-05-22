@@ -16,6 +16,7 @@ import i5.las2peer.services.codeGenerationService.generators.ApplicationGenerato
 import i5.las2peer.services.codeGenerationService.generators.FrontendComponentGenerator;
 import i5.las2peer.services.codeGenerationService.generators.Generator;
 import i5.las2peer.services.codeGenerationService.generators.MicroserviceGenerator;
+import i5.las2peer.services.codeGenerationService.generators.MicroserviceSynchronization;
 import i5.las2peer.services.codeGenerationService.models.application.Application;
 import i5.las2peer.services.codeGenerationService.models.frontendComponent.FrontendComponent;
 import i5.las2peer.services.codeGenerationService.models.microservice.Microservice;
@@ -255,9 +256,20 @@ public class CodeGenerationService extends Service {
     String modelName = model.getName();
     L2pLogger.logEvent(Event.SERVICE_MESSAGE,
         "updateRepositoryOfModel: Received model with name " + modelName);
+
+    // old model only used for microservice and frontend components
+    SimpleModel oldModel = null;
+
+    if (serializedModel.length > 1) {
+      oldModel = (SimpleModel) serializedModel[1];
+      L2pLogger.logEvent(Event.SERVICE_MESSAGE,
+          "updateRepositoryOfModel: Received old model with name " + oldModel.getName());
+    }
+
     for (int i = 0; i < model.getAttributes().size(); i++) {
       if (model.getAttributes().get(i).getName().equals("type")) {
         String type = model.getAttributes().get(i).getValue();
+        String deleteReturnMessage;
         try {
           switch (type) {
             case "microservice":
@@ -265,16 +277,28 @@ public class CodeGenerationService extends Service {
                   "updateRepositoryOfModel: Checking microservice model now..");
               // check first if model can be constructed
               // (in case of an invalid model, keep the old repository)
-              new Microservice(model);
-              L2pLogger.logEvent(Event.SERVICE_MESSAGE,
-                  "updateRepositoryOfModel: Calling delete (old) repository method now..");
-              String deleteReturnMessage = deleteRepositoryOfModel(serializedModel);
-              if (!deleteReturnMessage.equals("done")) {
-                return deleteReturnMessage; // error happened
+              Microservice microservice = new Microservice(model);
+
+              // only if there is an old model and a remote repository exists, we can synchronize
+              // the model
+
+              if (oldModel != null && Generator.existsRemoteRepository(
+                  MicroserviceGenerator.getRepositoryName(microservice), this.gitHubOrganization,
+                  this.gitHubUser, this.gitHubPassword)) {
+                Microservice oldMicroservice = new Microservice(oldModel);
+
+                MicroserviceSynchronization.synchronizeSourceCode(microservice, oldMicroservice,
+                    this.getTracedFiles(MicroserviceGenerator.getRepositoryName(microservice)),
+                    this.templateRepository, this.gitHubOrganization, this);
+
+                L2pLogger.logEvent(Event.SERVICE_MESSAGE, "updateRepositoryOfModel: Synchronized!");
+                return "done";
+              } else {
+                L2pLogger.logEvent(Event.SERVICE_MESSAGE,
+                    "updateRepositoryOfModel: Calling createFromModel now..");
+                return createFromModel(serializedModel);
               }
-              L2pLogger.logEvent(Event.SERVICE_MESSAGE,
-                  "updateRepositoryOfModel: Calling createFromModel now..");
-              return createFromModel(serializedModel);
+
             case "frontend-component":
               L2pLogger.logEvent(Event.SERVICE_MESSAGE,
                   "updateRepositoryOfModel: Checking frontend-component model now..");
@@ -364,6 +388,8 @@ public class CodeGenerationService extends Service {
     }
     throw new ModelParseException("Model has no attribute 'type'!");
   }
+
+
 
   public void commitFile(String repositoryName, JSONObject obj) {
     Serializable[] payload = {repositoryName, obj.toJSONString()};

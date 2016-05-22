@@ -46,13 +46,13 @@ public class MicroserviceGenerator extends Generator {
 
 
   /**
-   * Returns the repository name for the given microservice
+   * Returns the repository name for the given microservice model
    * 
-   * @param microservice
-   * @return
+   * @param microservice the mircoservice model
+   * @return The name of the repository
    */
 
-  protected static String getRepositoryName(Microservice microservice) {
+  public static String getRepositoryName(Microservice microservice) {
     String repositoryName = "microservice-" + microservice.getName().replace(" ", "-");
     return repositoryName;
   }
@@ -175,7 +175,7 @@ public class MicroserviceGenerator extends Generator {
 
               Template buildFileTemplate = Template.createInitialTemplate(
                   microservice.getMicroserviceModelId() + ":buildFile", buildFile, traceModel,
-                  treeWalk.getNameString());
+                  treeWalk.getPathString());
               buildFileTemplate.setVariable("$Microservice_Name$", microservice.getName());
 
               buildFile = buildFileTemplate.getContent();
@@ -185,7 +185,7 @@ public class MicroserviceGenerator extends Generator {
 
               Template startScriptWindowsTemplate = Template.createInitialTemplate(
                   microservice.getMicroserviceModelId() + ":startScriptWindows", startScriptWindows,
-                  traceModel, treeWalk.getNameString());
+                  traceModel, treeWalk.getPathString());
 
               startScriptWindowsTemplate.setVariable("$Resource_Name$",
                   microservice.getResourceName());
@@ -200,7 +200,7 @@ public class MicroserviceGenerator extends Generator {
 
               Template startScriptUnixTemplate = Template.createInitialTemplate(
                   microservice.getMicroserviceModelId() + ":startScriptUnix", startScriptUnix,
-                  traceModel, treeWalk.getNameString());
+                  traceModel, treeWalk.getPathString());
 
               startScriptUnixTemplate.setVariable("$Resource_Name$",
                   microservice.getResourceName());
@@ -221,7 +221,7 @@ public class MicroserviceGenerator extends Generator {
 
               Template nodeInfoTemplate = Template.createInitialTemplate(
                   microservice.getMicroserviceModelId() + ":nodeInfo", nodeInfo, traceModel,
-                  treeWalk.getNameString());
+                  treeWalk.getPathString());
 
 
               nodeInfoTemplate.setVariable("$Developer$", microservice.getDeveloper());
@@ -234,7 +234,7 @@ public class MicroserviceGenerator extends Generator {
 
               Template antServicePropertiesTemplate = Template.createInitialTemplate(
                   microservice.getMicroserviceModelId() + ":antServiceProperties",
-                  antServiceProperties, traceModel, treeWalk.getNameString());
+                  antServiceProperties, traceModel, treeWalk.getPathString());
 
               antServicePropertiesTemplate.setVariable("$Microservice_Version$",
                   microservice.getVersion() + "");
@@ -254,7 +254,7 @@ public class MicroserviceGenerator extends Generator {
 
               Template ivyTemplate =
                   Template.createInitialTemplate(microservice.getMicroserviceModelId() + ":ivy",
-                      ivy, traceModel, treeWalk.getNameString());
+                      ivy, traceModel, treeWalk.getPathString());
 
               // add mysql dependency only if a database exists
               if (microservice.getDatabase() != null) {
@@ -279,7 +279,7 @@ public class MicroserviceGenerator extends Generator {
 
                 Template servicePropertiesTemplate = Template.createInitialTemplate(
                     microservice.getMicroserviceModelId() + ":serviceProperties", serviceProperties,
-                    traceModel, treeWalk.getNameString());
+                    traceModel, treeWalk.getPathString());
 
                 servicePropertiesTemplate.setVariable("$Database_Address$",
                     microservice.getDatabase().getAddress());
@@ -296,7 +296,7 @@ public class MicroserviceGenerator extends Generator {
               webConnectorConfig = new String(loader.getBytes(), "UTF-8");
               Template webConnectorConfigTemplate = Template.createInitialTemplate(
                   microservice.getMicroserviceModelId() + ":webConnectorConfig", serviceProperties,
-                  traceModel, treeWalk.getNameString());
+                  traceModel, treeWalk.getPathString());
               webConnectorConfigTemplate.setVariable("$HTTP_Port$", port);
               webConnectorConfig = webConnectorConfigTemplate.getContent();
               break;
@@ -306,14 +306,14 @@ public class MicroserviceGenerator extends Generator {
             case ".classpath":
               classpath = new String(loader.getBytes(), "UTF-8");
               Template classpathTemplate = Template.createInitialTemplate(
-                  microservice.getMicroserviceModelId() + ":classpath", serviceProperties,
-                  traceModel, treeWalk.getNameString());
+                  microservice.getMicroserviceModelId() + ":classpath", classpath, traceModel,
+                  treeWalk.getPathString());
               if (microservice.getDatabase() != null) {
                 classpathTemplate.setVariable("$Database_Libraries$",
                     "<classpathentry kind=\"lib\" path=\"lib/mysql-connector-java-5.1.6.jar\"/>\n"
                         + "  <classpathentry kind=\"lib\" path=\"lib/commons-dbcp2-2.0.jar\"/>");
               } else {
-                classpathTemplate.setVariable("$Database_Libraries$\n", "");
+                classpathTemplate.setVariable("$Database_Libraries$", "");
               }
               classpath = classpathTemplate.getContent();
               break;
@@ -368,18 +368,29 @@ public class MicroserviceGenerator extends Generator {
 
       // generate service class and test
       String repositoryLocation = "https://github.com/" + gitHubOrganization + "/" + repositoryName;
-      // the global traceModel
 
       FileTraceModel serviceClassTraceModel =
           new FileTraceModel(traceModel, "src/main/i5/las2peer/services/" + packageName + "/"
               + microservice.getResourceName() + ".java");
+      traceModel.addFileTraceModel(serviceClassTraceModel);
+
       TemplateStrategy strategy = new InitialGenerationStrategy(serviceClassTraceModel);
       TemplateEngine serviceTemplateEngine = new TemplateEngine(strategy, serviceClassTraceModel);
 
       serviceClass = generateNewServiceClass(serviceTemplateEngine, serviceClass, microservice,
           repositoryLocation, genericHttpMethod, genericHttpMethodBody, genericApiResponse,
           genericHttpResponse, databaseConfig, databaseInstantiation, serviceInvocation);
-      serviceTest = generateNewServiceTest(serviceTest, microservice, genericTestCase);
+
+      FileTraceModel serviceTestTraceModel =
+          new FileTraceModel(traceModel, "src/test/i5/las2peer/services/" + packageName + "/"
+              + microservice.getResourceName() + ".java");
+      traceModel.addFileTraceModel(serviceTestTraceModel);
+
+      TemplateEngine serviceTestTemplateEngine = new TemplateEngine(
+          new InitialGenerationStrategy(serviceTestTraceModel), serviceTestTraceModel);
+
+      serviceTest = generateNewServiceTest(serviceTestTemplateEngine, serviceTest, microservice,
+          genericTestCase);
       if (microservice.getDatabase() != null) {
         databaseScript = generateDatabaseScript(databaseScript, genericTable, microservice);
       }
@@ -389,16 +400,15 @@ public class MicroserviceGenerator extends Generator {
           createTextFileInRepository(microserviceRepository, "etc/ivy/", "ivy.xml", ivy);
       microserviceRepository = createTextFileInRepository(microserviceRepository, "etc/ivy/",
           "ivysettings.xml", ivySettings);
-      microserviceRepository =
-          createTextFileInRepository(microserviceRepository, "", "build.xml", buildFile);
+
       microserviceRepository = createTextFileInRepository(microserviceRepository,
           "etc/ant_configuration/", "user.properties", antUserProperties);
       microserviceRepository = createTextFileInRepository(microserviceRepository,
           "etc/ant_configuration/", "service.properties", antServiceProperties);
       microserviceRepository =
           createTextFileInRepository(microserviceRepository, "etc/", "nodeInfo.xml", nodeInfo);
-      microserviceRepository =
-          createTextFileInRepository(microserviceRepository, "", ".project", projectFile);
+
+
       microserviceRepository =
           createTextFileInRepository(microserviceRepository, "", ".gitignore", gitignore);
       microserviceRepository =
@@ -421,8 +431,6 @@ public class MicroserviceGenerator extends Generator {
           "start_UserAgentGenerator.sh", userAgentGeneratorUnix);
       // doc
       microserviceRepository =
-          createTextFileInRepository(microserviceRepository, "", "README.md", readMe);
-      microserviceRepository =
           createTextFileInRepository(microserviceRepository, "", "LICENSE.txt", license);
       microserviceRepository =
           createImageFileInRepository(microserviceRepository, "img/", "logo.png", logo);
@@ -435,12 +443,13 @@ public class MicroserviceGenerator extends Generator {
         microserviceRepository = createTextFileInRepository(microserviceRepository, "db/",
             microservice.getName().replace(" ", "_") + "_create_tables.sql", databaseScript);
       }
-      microserviceRepository = createTextFileInRepository(microserviceRepository,
-          "src/main/i5/las2peer/services/" + packageName + "/",
-          microservice.getResourceName() + ".java", serviceClass);
+
       microserviceRepository = createTextFileInRepository(microserviceRepository,
           "src/test/i5/las2peer/services/" + packageName + "/",
           microservice.getResourceName() + "Test.java", serviceTest);
+
+      createTracedFilesInRepository(traceModel, microserviceRepository);
+
       // commit files
       try {
         Git.wrap(microserviceRepository).commit()
@@ -476,9 +485,9 @@ public class MicroserviceGenerator extends Generator {
    * @param microservice the microservice model
    * @param repositoryLocation the location of the service's repository
    * @param genericHttpMethod a generic http method template
-   * @param genericHttpMethod a generic http method body template
+   * @param genericHttpMethodBody a generic http method body template
    * @param genericApiResponse a generic api response template
-   * @param generiHttpResponse a generic http response template
+   * @param genericHttpResponse a generic http response template
    * @param databaseConfig a database configuration (source code) template
    * @param databaseInstantiation a database instantiation (source code) template
    * @param serviceInvocation a service invocation (source code) template
@@ -504,57 +513,40 @@ public class MicroserviceGenerator extends Generator {
 
     // service name for documentation
     serviceClassTemplate.setVariable("$Microservice_Name$", microservice.getName());
-    serviceClass = serviceClass.replace("$Microservice_Name$", microservice.getName());
     // relative resource path (resource base path)
     serviceClassTemplate.setVariable("$Relative_Resource_Path$", relativeResourcePath);
-    serviceClass = serviceClass.replace("$Relative_Resource_Path$", relativeResourcePath);
     // version
     serviceClassTemplate.setVariable("$Microservice_Version$", microservice.getVersion() + "");
-    serviceClass = serviceClass.replace("$Microservice_Version$", microservice.getVersion() + "");
     // developer
     serviceClassTemplate.setVariable("$Developer$", microservice.getDeveloper());
-    serviceClass = serviceClass.replace("$Developer$", microservice.getDeveloper());
     // link to license file
     serviceClassTemplate.setVariable("$License_File_Address$",
         repositoryLocation + "/blob/master/LICENSE.txt");
-    serviceClass = serviceClass.replace("$License_File_Address$",
-        repositoryLocation + "/blob/master/LICENSE.txt");
     // resource name
     serviceClassTemplate.setVariable("$Resource_Name$", microservice.getResourceName());
-    serviceClass = serviceClass.replace("$Resource_Name$", microservice.getResourceName());
     // create database references only if microservice has database
     if (microservice.getDatabase() != null) {
       // import
       serviceClassTemplate.setVariable("$Database_Import$",
-          "import i5.las2peer.services.$Lower_Resource_Name$.database.DatabaseManager;");
-      serviceClass = serviceClass.replace("$Database_Import$",
-          "import i5.las2peer.services.$Lower_Resource_Name$.database.DatabaseManager;");
+          "import i5.las2peer.services." + packageName + ".database.DatabaseManager;");
       // variable names
       serviceClassTemplate.setVariable("$Database_Configuration$", databaseConfig);
-      serviceClass = serviceClass.replace("$Database_Configuration$", databaseConfig);
       // instantiation
       serviceClassTemplate.setVariable("$Database_Instantiation$", databaseInstantiation);
-      serviceClass = serviceClass.replace("$Database_Instantiation$", databaseInstantiation);
     } else {
       // set to empty string
       serviceClassTemplate.setVariable("$Database_Configuration$", "");
       serviceClassTemplate.setVariable("$Database_Instantiation$", "");
       serviceClassTemplate.setVariable("$Database_Import$", "");
-      serviceClass = serviceClass.replace("$Database_Configuration$\n\n\n", "");
-      serviceClass = serviceClass.replace("$Database_Instantiation$\n", "");
-      serviceClass = serviceClass.replace("$Database_Import$\n", "");
     }
     // package and import paths
     serviceClassTemplate.setVariable("$Lower_Resource_Name$", packageName);
-    serviceClass = serviceClass.replace("$Lower_Resource_Name$", packageName);
+
     // http methods
     HttpMethod[] httpMethods = microservice.getHttpMethods().values().toArray(new HttpMethod[0]);
     for (int httpMethodIndex = 0; httpMethodIndex < httpMethods.length; httpMethodIndex++) {
       String currentMethodCode = genericHttpMethod; // copy content
-
-
       HttpMethod currentMethod = httpMethods[httpMethodIndex];
-
 
       // create new template for the current method
       Template currentMethodTemplate = templateEngine
@@ -572,23 +564,12 @@ public class MicroserviceGenerator extends Generator {
 
       // replace currentMethodCode placeholder with content of currentMethod
       currentMethodTemplate.setVariable("$HTTPMethod_Name$", currentMethod.getName());
-      currentMethodCode = currentMethodCode.replace("$HTTPMethod_Name$", currentMethod.getName());
-
       currentMethodTemplate.setVariable("$HTTP_Method_Type$",
           "@" + currentMethod.getMethodType().toString());
-      currentMethodCode = currentMethodCode.replace("$HTTP_Method_Type$",
-          "@" + currentMethod.getMethodType().toString());
-
       currentMethodTemplate.setVariable("$HTTPMethod_Path$", "/" + currentMethod.getPath());
-      currentMethodCode =
-          currentMethodCode.replace("$HTTPMethod_Path$", "/" + currentMethod.getPath());
 
-      // responses
+      // helper variable for storing the produces annotation
       String producesAnnotation = "";
-      String apiResponseCode = "";
-      String httpResponsesCode = "";
-
-      System.out.println(genericApiResponse);
 
       for (int httpResponseIndex = 0; httpResponseIndex < currentMethod.getHttpResponses()
           .size(); httpResponseIndex++) {
@@ -603,17 +584,11 @@ public class MicroserviceGenerator extends Generator {
         // first add the api response template to the current method template
         currentMethodTemplate.appendVariable("$HTTPMethod_Api_Responses$", apiResponseTemplate);
 
-        apiResponseCode += genericApiResponse + "\n";
-
         // replace just inserted placeholder
         apiResponseTemplate.setVariable("$HTTPResponse_Code$",
             currentResponse.getReturnStatusCode().toString());
-        apiResponseCode = apiResponseCode.replace("$HTTPResponse_Code$",
-            currentResponse.getReturnStatusCode().toString());
 
-        apiResponseCode = apiResponseCode.replace("$HTTPResponse_Name$", currentResponse.getName());
         apiResponseTemplate.setVariable("$HTTPResponse_Name$", currentResponse.getName());
-
 
         // now to the http responses
         Template httpResponseTemplate =
@@ -623,14 +598,8 @@ public class MicroserviceGenerator extends Generator {
         // first add the http response to the current method template
         currentMethodBodyTemplate.appendVariable("$HTTPMethod_Responses$", httpResponseTemplate);
 
-        httpResponsesCode += genericHttpResponse + "\n";
-
-        httpResponsesCode =
-            httpResponsesCode.replace("$HTTPResponse_Name$", currentResponse.getName());
         httpResponseTemplate.setVariable("$HTTPResponse_Name$", currentResponse.getName());
 
-        httpResponsesCode =
-            httpResponsesCode.replace("$HTTPResponse_ResultName$", currentResponse.getResultName());
         httpResponseTemplate.setVariable("$HTTPResponse_ResultName$",
             currentResponse.getResultName());
         httpResponseTemplate.setVariable("$HTTPResponse_ResultName_Argument$",
@@ -640,40 +609,30 @@ public class MicroserviceGenerator extends Generator {
         // httpResponsesCode.replace("$HTTPResponse_ResultName$", currentResponse.getResultName());
 
 
-        httpResponsesCode = httpResponsesCode.replace("$HTTPResponse_Code$",
-            currentResponse.getReturnStatusCode().toString());
         httpResponseTemplate.setVariable("$HTTPResponse_Code$",
             currentResponse.getReturnStatusCode().toString());
 
-        httpResponsesCode = httpResponsesCode.replace("$HTTPResponse_ResultType$",
-            currentResponse.getResultType().toString());
         httpResponseTemplate.setVariable("$HTTPResponse_ResultType$",
             currentResponse.getResultType().toString());
 
         // JSON objects have to be transformed to strings first (a bit ugly, but works:-) )
         // additionally, if there exists a JSON response, we can set the produces annotation
         if (currentResponse.getResultType() == ResultType.JSONObject) {
-          httpResponsesCode =
-              httpResponsesCode.replace("HttpResponse(" + currentResponse.getResultName(),
-                  "HttpResponse(" + currentResponse.getResultName() + ".toJSONString()");
+
           httpResponseTemplate.setVariable("$HTTPResponse_ResultName_Argument$",
               currentResponse.getResultName() + ".toJSONString()");
 
           producesAnnotation = "MediaType.APPLICATION_JSON";
-          httpResponsesCode =
-              httpResponsesCode.replace("$HTTP_Response_Result_Init$", "new JSONObject()");
+
           httpResponseTemplate.setVariable("$HTTP_Response_Result_Init$", "new JSONObject()");
 
         }
         // check for custom return type and mark it in produces annotation if found
         if (currentResponse.getResultType() == ResultType.CUSTOM) {
           producesAnnotation = "CUSTOM";
-          httpResponsesCode = httpResponsesCode.replace("$HTTP_Response_Result_Init$", "CUSTOM");
           httpResponseTemplate.setVariable("$HTTP_Response_Result_Init$", "CUSTOM");
         }
         if (currentResponse.getResultType() == ResultType.String) {
-          httpResponsesCode =
-              httpResponsesCode.replace("$HTTP_Response_Result_Init$", "\"Some String\"");
           httpResponseTemplate.setVariable("$HTTP_Response_Result_Init$", "\"Some String\"");
         }
       }
@@ -681,28 +640,20 @@ public class MicroserviceGenerator extends Generator {
       if (producesAnnotation.equals("")) {
         producesAnnotation = "MediaType.TEXT_PLAIN";
       }
-      // remove last comma and empty line from api response string
-      apiResponseCode = apiResponseCode.substring(0, apiResponseCode.length() - 2);
-      // remove last empty line from http responses string
-      httpResponsesCode = httpResponsesCode.substring(0, httpResponsesCode.length() - 1);
-      // add both code fragments to method
-      currentMethodCode = currentMethodCode.replace("$HTTPMethod_Api_Responses$", apiResponseCode);
-      currentMethodCode = currentMethodCode.replace("$HTTPMethod_Responses$", httpResponsesCode);
 
       // insert produces annotation
-      currentMethodCode = currentMethodCode.replace("$HTTPMethod_Produces$",
-          "@Produces(" + producesAnnotation + ")");
       currentMethodTemplate.setVariable("$HTTPMethod_Produces$",
           "@Produces(" + producesAnnotation + ")");
-
       currentMethodBodyTemplate.setVariableIfNotSet("$HTTPMethod_Responses$", "");
 
       // payload
       String consumesAnnotation = "";
       String parameterCode = "";
-      Template paramTemplate = null;
       for (int httpPayloadIndex = 0; httpPayloadIndex < currentMethod.getHttpPayloads()
           .size(); httpPayloadIndex++) {
+
+        boolean isLast = httpPayloadIndex == currentMethod.getHttpPayloads().size() - 1;
+
         HttpPayload currentPayload = currentMethod.getHttpPayloads().get(httpPayloadIndex);
         // add param for JavaDoc
         // dirty, but works:-)
@@ -710,11 +661,17 @@ public class MicroserviceGenerator extends Generator {
         if (type.equals("PATH_PARAM")) {
           type = "String";
         }
-        currentMethodCode = currentMethodCode.replace("$HTTPMethod_Params$",
-            "   * @param " + currentPayload.getName() + " a " + type + "\n$HTTPMethod_Params$");
 
-        paramTemplate = currentMethodTemplate.createTemplate(currentPayload.getModelId() + ":param",
-            "   * @param " + currentPayload.getName() + " a " + type + "-{ }-\n");
+        Template paramTemplate = currentMethodTemplate.createTemplate(
+            currentPayload.getModelId() + ":param", "   * @param $name$ a $type$-{ }-");
+
+        paramTemplate.setVariable("$name$", currentPayload.getName());
+        paramTemplate.setVariable("$type$", type);
+
+        if (!isLast) {
+          paramTemplate.removeLastCharacter('\n');
+          paramTemplate.appendContent('\n');
+        }
 
         currentMethodTemplate.appendVariable("$HTTPMethod_Params$", paramTemplate);
 
@@ -765,11 +722,6 @@ public class MicroserviceGenerator extends Generator {
       currentMethodCode = currentMethodCode.replace("\n$HTTPMethod_Params$", "");
       currentMethodTemplate.setVariableIfNotSet("$HTTPMethod_Params$", "   *");
 
-      // remove trailing breakline from parameter (JavaDoc)
-      if (paramTemplate != null) {
-        paramTemplate.removeLastCharacter('\n');
-      }
-
       // if no consumes annotation is set until here, we set it to text
       if (consumesAnnotation.equals("")) {
         consumesAnnotation = "MediaType.TEXT_PLAIN";
@@ -777,8 +729,12 @@ public class MicroserviceGenerator extends Generator {
       // set the consumes annotation
       currentMethodCode = currentMethodCode.replace("$HTTPMethod_Consumes$",
           "@Consumes(" + consumesAnnotation + ")");
-      currentMethodTemplate.setVariable("$HTTPMethod_Consumes$",
-          "@Consumes(" + consumesAnnotation + ")");
+
+      Template consumeTemplate = templateEngine
+          .createTemplate(currentMethod.getModelId() + ":consumes", "@Consumes(-{$type$}-)");
+      consumeTemplate.setVariable("$type$", consumesAnnotation);
+
+      currentMethodTemplate.appendVariable("$HTTPMethod_Consumes$", consumeTemplate);
 
       // set the parameters
       currentMethodCode = currentMethodCode.replace("$HTTPMethod_Parameters$", parameterCode);
@@ -813,16 +769,19 @@ public class MicroserviceGenerator extends Generator {
 
           currentInvocation = currentInvocation.replace("$Parameter_Init$",
               "    Serializable " + parameter.getName() + " = null;\n$Parameter_Init$");
-          internalParameter +=
-              internalParameter.replace("$Parameters$", parameter.getName() + ", ");
+          internalParameter =
+              internalParameter.replace("$Parameters$", parameter.getName() + ", $Parameters$");
           currentInvocation =
               currentInvocation.replace("$Parameters$", parameter.getName() + ", $Parameters$");
         }
         // replace last init placeholder
+        currentInvocationTemplate.setVariableIfNotSet("$Parameter_Init$", "");
         currentInvocation = currentInvocation.replace("\n$Parameter_Init$", "");
         // replace last parameter placeholder
         currentInvocation = currentInvocation.replace(", $Parameters$", "");
         internalParameter = internalParameter.replace(", $Parameters$", "");
+        internalParameter = internalParameter.replace("$Parameters$", "new Serializable[] {}");
+        currentInvocationTemplate.setVariable("$Parameters$", internalParameter);
 
         // add invocation code to current method code
         currentMethodCode = currentMethodCode.replace("$Invocations$", currentInvocation);
@@ -850,6 +809,7 @@ public class MicroserviceGenerator extends Generator {
       serviceClassTemplate.setVariable("$Additional_Import$", "");
     }
     // remove last placeholder
+    serviceClassTemplate.setVariableIfNotSet("$Service_Methods$", "");
     serviceClass = serviceClass.replace("\n\n\n$Service_Methods$", "");
 
     return serviceClass;
@@ -860,6 +820,7 @@ public class MicroserviceGenerator extends Generator {
    * 
    * Generates the service test class.
    * 
+   * @param templateEngine The template engine to use
    * @param serviceTest the service test class file
    * @param microservice the microservice model
    * @param genericTestCase a generic test class file
@@ -867,27 +828,50 @@ public class MicroserviceGenerator extends Generator {
    * @return the service test as a string
    * 
    */
-  private static String generateNewServiceTest(String serviceTest, Microservice microservice,
-      String genericTestCase) {
+  private static String generateNewServiceTest(TemplateEngine templateEngine, String serviceTest,
+      Microservice microservice, String genericTestCase) {
+
+    // create template and add to template engine
+    Template serviceTestTemplate =
+        templateEngine.createTemplate(microservice.getMicroserviceModelId(), serviceTest);
+    templateEngine.addTemplate(serviceTestTemplate);
+
     // general replacements
+
+    serviceTestTemplate.setVariable("$Resource_Name$", microservice.getResourceName());
+    serviceTestTemplate.setVariable("$Microservice_Name$", microservice.getName());
+
     serviceTest = serviceTest.replace("$Resource_Name$", microservice.getResourceName());
     serviceTest = serviceTest.replace("$Microservice_Name$", microservice.getName());
     // get the resource address: (skip first /)
     String relativeResourcePath =
         microservice.getPath().substring(microservice.getPath().indexOf("/", 8) + 1);
+    serviceTestTemplate.setVariable("$Resource_Path$", relativeResourcePath);
     serviceTest = serviceTest.replace("$Resource_Path$", relativeResourcePath);
     String packageName = microservice.getResourceName().substring(0, 1).toLowerCase()
         + microservice.getResourceName().substring(1);
     serviceTest = serviceTest.replace("$Lower_Resource_Name$", packageName);
+    serviceTestTemplate.setVariable("$Lower_Resource_Name$", packageName);
 
     // test cases
     HttpMethod[] httpMethods = microservice.getHttpMethods().values().toArray(new HttpMethod[0]);
     for (int httpMethodIndex = 0; httpMethodIndex < httpMethods.length; httpMethodIndex++) {
+
       String currentMethodCode = genericTestCase; // copy content
       HttpMethod currentMethod = httpMethods[httpMethodIndex];
+
+      Template currentMethodTemplate = templateEngine
+          .createTemplate(currentMethod.getModelId() + ":httpMethod", genericTestCase);
+
+      serviceTestTemplate.appendVariable("$Test_Methods$", currentMethodTemplate);
+
       String content = "\"\"";
       String consumesAnnotation = "";
       // replace placeholder of current method code
+
+      currentMethodTemplate.setVariable("$HTTP_Method_Name$", currentMethod.getName());
+      currentMethodTemplate.setVariable("$HTTPMethod_Path$", currentMethod.getPath());
+
       currentMethodCode = currentMethodCode.replace("$HTTP_Method_Name$", currentMethod.getName());
       currentMethodCode = currentMethodCode.replace("$HTTPMethod_Path$", currentMethod.getPath());
       for (int httpPayloadIndex = 0; httpPayloadIndex < currentMethod.getHttpPayloads()
@@ -896,6 +880,14 @@ public class MicroserviceGenerator extends Generator {
         // get the payload and create variables for it, if needed, cast in sendRequest code
         if (currentPayload.getPayloadType() == PayloadType.JSONObject) {
           consumesAnnotation = "MediaType.APPLICATION_JSON";
+
+          Template currentPayloadTemplate =
+              templateEngine.createTemplate(currentPayload.getModelId() + ":payloadJSON",
+                  "      JSONObject $Payload_Name$ = new JSONObject();");
+          currentPayloadTemplate.setVariable("$Payload_Name$", currentPayload.getName());
+
+          currentMethodTemplate.appendVariable("$TestMethod_Variables$", currentPayloadTemplate);
+
           currentMethodCode =
               currentMethodCode.replace("$TestMethod_Variables$", "      JSONObject "
                   + currentPayload.getName() + " = new JSONObject();\n$TestMethod_Variables$");
@@ -903,6 +895,13 @@ public class MicroserviceGenerator extends Generator {
         }
         // string parameter
         if (currentPayload.getPayloadType() == PayloadType.String) {
+          Template currentPayloadTemplate =
+              templateEngine.createTemplate(currentPayload.getModelId() + ":payloadString",
+                  "      String $Payload_Name$ = \"-{initialized}-\";");
+          currentPayloadTemplate.setVariable("$Payload_Name$", currentPayload.getName());
+
+          currentMethodTemplate.appendVariable("$TestMethod_Variables$", currentPayloadTemplate);
+
           currentMethodCode = currentMethodCode.replace("$TestMethod_Variables$", "      String "
               + currentPayload.getName() + " = \"initialized\";\n$TestMethod_Variables$");
           content = currentPayload.getName();
@@ -910,12 +909,28 @@ public class MicroserviceGenerator extends Generator {
         // mark custom payload in consumes annotation and parameter type
         if (currentPayload.getPayloadType() == PayloadType.CUSTOM) {
           consumesAnnotation = "CUSTOM";
+
+          Template currentPayloadTemplate =
+              templateEngine.createTemplate(currentPayload.getModelId() + ":payloadCustom",
+                  "      -{CUSTOM}- $Payload_Name$ = \"-{null-\";");
+          currentPayloadTemplate.setVariable("$Payload_Name$", currentPayload.getName());
+
+          currentMethodTemplate.appendVariable("$TestMethod_Variables$", currentPayloadTemplate);
+
           currentMethodCode = currentMethodCode.replace("$TestMethod_Variables$",
               "      CUSTOM " + currentPayload.getName() + " = null;\n$TestMethod_Variables$");
           content = currentPayload.getName();
         }
         // path param: replace strings in method call path
         if (currentPayload.getPayloadType() == PayloadType.PATH_PARAM) {
+
+          Template currentPayloadTemplate =
+              templateEngine.createTemplate(currentPayload.getModelId() + ":payloadPathParam",
+                  "      String $Payload_Name$ = \"-{initialized}-\";");
+          currentPayloadTemplate.setVariable("$Payload_Name$", currentPayload.getName());
+
+          currentMethodTemplate.appendVariable("$TestMethod_Variables$", currentPayloadTemplate);
+
           currentMethodCode = currentMethodCode.replace("$TestMethod_Variables$", "      String "
               + currentPayload.getName() + " = \"initialized\";\n$TestMethod_Variables$");
           currentMethodCode = currentMethodCode.replace("{" + currentPayload.getName() + "}",
@@ -928,10 +943,13 @@ public class MicroserviceGenerator extends Generator {
       }
       // might still be empty, if only path parameter were parsed
       currentMethodCode = currentMethodCode.replace("$HTTPMethod_Content$", content);
+      currentMethodTemplate.setVariable("$HTTPMethod_Content$", content);
       // remove last method variable placeholder
       currentMethodCode = currentMethodCode.replace("\n$TestMethod_Variables$", "");
       currentMethodCode =
           currentMethodCode.replace("$HTTP_Method_Type$", currentMethod.getMethodType().toString());
+      currentMethodTemplate.setVariable("$HTTP_Method_Type$",
+          currentMethod.getMethodType().toString());
       // produces annotation
       String producesAnnotation = "";
       for (int httpResponseIndex = 0; httpResponseIndex < currentMethod.getHttpResponses()
@@ -949,6 +967,8 @@ public class MicroserviceGenerator extends Generator {
       if (producesAnnotation.equals("")) {
         producesAnnotation = "MediaType.TEXT_PLAIN";
       }
+      currentMethodTemplate.setVariable("$HTTPMethod_Produces$", producesAnnotation);
+      currentMethodTemplate.setVariable("$HTTPMethod_Consumes$", consumesAnnotation);
       currentMethodCode = currentMethodCode.replace("$HTTPMethod_Produces$", producesAnnotation);
       // consumes annotation
       currentMethodCode = currentMethodCode.replace("$HTTPMethod_Consumes$", consumesAnnotation);
