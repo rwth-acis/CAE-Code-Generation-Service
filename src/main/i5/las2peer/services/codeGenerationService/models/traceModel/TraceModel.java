@@ -10,15 +10,14 @@ import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 
 /**
- * Global trace model that provides the information about which model elements are located in which
- * files
+ * A global trace model that provides the information about which model elements are located in
+ * which files
  * 
  * @author Thomas Winkler
  *
  */
 
 public class TraceModel {
-
 
   private Map<String, FileTraceModel> filenameToFileTraceModel =
       new HashMap<String, FileTraceModel>();
@@ -31,39 +30,14 @@ public class TraceModel {
     this.randomId = id.toString();
   }
 
+  /**
+   * Add a file trace model the global trace model
+   * 
+   * @param fileTraceModel The file trace model to add
+   */
 
-  public void addFileTraceModel(String fileName, FileTraceModel fileTraceModel) {
-    this.filenameToFileTraceModel.put(fileName, fileTraceModel);
-  }
-
-  public List<String> getFilenameListByModelId(String modelId) {
-    if (this.modelIdToFilenames.containsKey(modelId)) {
-      return this.modelIdToFilenames.get(modelId);
-    } else {
-      List<String> list = new ArrayList<String>();
-      this.modelIdToFilenames.put(modelId, list);
-      return list;
-    }
-  }
-
-  public void addModelElement(String modelId, String fileName, int position) {
-    List<String> list = this.getFilenameListByModelId(modelId);
-
-    // if position is lower than 0, we put the new filename at the end of the list
-    if (position < 0) {
-      position = list.size() - 1;
-    }
-
-    // only add a filename once
-    if (!list.contains(fileName)) {
-      list.add(position, fileName);
-    }
-
-  }
-
-  public void addModelElement(String modelId, String fileName) {
-    // put the new filename at the end of the list
-    this.addModelElement(modelId, fileName, -1);
+  public void addFileTraceModel(FileTraceModel fileTraceModel) {
+    this.filenameToFileTraceModel.put(fileTraceModel.getFileName(), fileTraceModel);
   }
 
   /**
@@ -102,6 +76,12 @@ public class TraceModel {
     return jObj;
   }
 
+  /**
+   * Add trace information about which model element belongs to the given segment
+   * 
+   * @param modelId The id of the model element the segment belongs to
+   * @param segment The segment that should be linked to the model element
+   */
 
   public void addTrace(String modelId, String fileName) {
 
@@ -109,7 +89,6 @@ public class TraceModel {
       List<String> fileList = new ArrayList<String>();
       this.modelIdToFilenames.put(modelId, fileList);
     }
-
 
     List<String> fileList = this.modelIdToFilenames.get(modelId);
     fileList.add(fileName);

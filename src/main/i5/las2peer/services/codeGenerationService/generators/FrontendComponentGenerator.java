@@ -205,7 +205,7 @@ public class FrontendComponentGenerator extends Generator {
 
       // add widget file trace model to gloabl trace model
 
-      traceModel.addFileTraceModel("widget.xml", widgetTraceModel);
+      traceModel.addFileTraceModel(widgetTraceModel);
 
       // add functions to application script
 
@@ -233,7 +233,7 @@ public class FrontendComponentGenerator extends Generator {
 
       // add applicationscript file trace model to gloabl trace model
 
-      traceModel.addFileTraceModel("js/applicationScript.js", applicationScriptTraceModel);
+      traceModel.addFileTraceModel(applicationScriptTraceModel);
 
       // add files to new repository
 
@@ -895,7 +895,7 @@ public class FrontendComponentGenerator extends Generator {
       FrontendComponentGenerator.createWidgetCode(widgetTemplateEngine, widget, htmlElementTemplate,
           yjsImports, gitHubOrganization, getRepositoryName(frontendComponent), frontendComponent);
 
-      traceModel.addFileTraceModel("widget.xml", widgetTemplateEngine.getFileTraceModel());
+      traceModel.addFileTraceModel(widgetTemplateEngine.getFileTraceModel());
 
 
       // regenerate applicationScript code
@@ -915,8 +915,7 @@ public class FrontendComponentGenerator extends Generator {
       addYjsCollaboration(applicationTemplate, applicationTemplateEngine, yjsInit,
           frontendComponent);
 
-      traceModel.addFileTraceModel("js/applicationScript.js",
-          applicationTemplateEngine.getFileTraceModel());
+      traceModel.addFileTraceModel(applicationTemplateEngine.getFileTraceModel());
 
 
       // commit changes
