@@ -41,6 +41,16 @@ public class TraceModel {
   }
 
   /**
+   * Get the map containing all traced files
+   * 
+   * @return The map containing the traced files and their file trace model
+   */
+
+  public Map<String, FileTraceModel> getFilenameToFileTraceModelMap() {
+    return this.filenameToFileTraceModel;
+  }
+
+  /**
    * Generates a JSON representation of the trace model
    * 
    * @return A corresponding JSON Object of the trace model
@@ -77,10 +87,10 @@ public class TraceModel {
   }
 
   /**
-   * Add trace information about which model element belongs to the given segment
+   * Add trace information about which model element belongs to the given file name
    * 
-   * @param modelId The id of the model element the segment belongs to
-   * @param segment The segment that should be linked to the model element
+   * @param modelId The id of the model element the file name belongs to
+   * @param fileName The file name to which the model element belongs o
    */
 
   public void addTrace(String modelId, String fileName) {

@@ -12,9 +12,11 @@ import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.PrintStream;
+import java.io.UnsupportedEncodingException;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.Base64;
+import java.util.Map;
 
 import javax.imageio.ImageIO;
 
@@ -35,7 +37,11 @@ import org.eclipse.jgit.treewalk.TreeWalk;
 import org.json.simple.JSONObject;
 
 import i5.las2peer.logging.L2pLogger;
+import i5.las2peer.services.codeGenerationService.CodeGenerationService;
 import i5.las2peer.services.codeGenerationService.exception.GitHubException;
+import i5.las2peer.services.codeGenerationService.models.traceModel.FileTraceModel;
+import i5.las2peer.services.codeGenerationService.models.traceModel.TraceModel;
+import i5.las2peer.services.codeGenerationService.templateEngine.TemplateEngine;
 
 /**
  * 
@@ -492,6 +498,17 @@ public abstract class Generator {
     }
   }
 
+  /**
+   * Checks whether a repository with the given name in the given git hub organization exists. Uses
+   * the ls remote git command to determine if the repository exists.
+   * 
+   * @param name The name of the repository
+   * @param gitHubOrganization The git hub organization
+   * @param gitHubUser The git hub user
+   * @param gitHubPassword The git hub password
+   * @return True, if the repository exists, otherwise false
+   */
+
   public static boolean existsRemoteRepository(String name, String gitHubOrganization,
       String gitHubUser, String gitHubPassword) {
     CredentialsProvider credentialsProvider =
@@ -510,4 +527,63 @@ public abstract class Generator {
     }
     return exists;
   }
+
+  /**
+   * Creates the traced files contained in the given global trace model in the given repository
+   * 
+   * @param traceModel The global trace model containing the traced files that should be created in
+   *        the repository
+   * @param repository The repository in which the files should be created
+   * 
+   * @return The {@link org.eclipse.jgit.lib.Repository}, now containing the traced files of the
+   *         trace model
+   * @throws GitHubException if anything goes wrong during the creation of the traced files
+   */
+
+  protected static Repository createTracedFilesInRepository(TraceModel traceModel,
+      Repository repository) throws GitHubException {
+    Map<String, FileTraceModel> fileTraceMap = traceModel.getFilenameToFileTraceModelMap();
+
+    for (String fullPath : fileTraceMap.keySet()) {
+      FileTraceModel fileTraceModel = fileTraceMap.get(fullPath);
+
+      String fileName = fullPath;
+      String relativePath = "";
+      int index = fullPath.lastIndexOf(File.separator);
+      if (index > -1) {
+        fileName = fullPath.substring(index + 1);
+        relativePath = fullPath.substring(0, index) + "/";
+      }
+
+      System.out.println(fileName);
+      System.out.println(fullPath);
+
+      repository = createTextFileInRepository(repository, relativePath, fileName,
+          fileTraceModel.getContent());
+
+      repository = createTextFileInRepository(repository, "traces/", fileName + ".traces",
+          fileTraceModel.toJSONObject().toJSONString());
+    }
+
+    repository = createTextFileInRepository(repository, "traces/", "tracedFiles.json",
+        traceModel.toJSONObject().toJSONString().replace("\\", ""));
+
+    return repository;
+  }
+
+
+  @SuppressWarnings("unchecked")
+  protected static void commitTracedFile(String fileName, TemplateEngine templateEngine,
+      String message, CodeGenerationService service, String repositoryName)
+      throws UnsupportedEncodingException {
+    JSONObject obj = new JSONObject();
+    obj.put("filename", fileName);
+    obj.put("content",
+        Base64.getEncoder().encodeToString(templateEngine.getContent().getBytes("utf-8")));
+    obj.put("commitMessage", "code regeneration");
+    obj.put("traces", templateEngine.toJSONObject());
+
+    service.commitFile(repositoryName, obj);
+  }
+
 }

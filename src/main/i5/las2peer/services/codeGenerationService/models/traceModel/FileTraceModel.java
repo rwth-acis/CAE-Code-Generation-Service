@@ -1,6 +1,7 @@
 package i5.las2peer.services.codeGenerationService.models.traceModel;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -66,7 +67,7 @@ public class FileTraceModel {
     }
   }
 
-  public void addSegments(List<Segment> segments) {
+  public void addSegments(Collection<Segment> segments) {
     for (Segment segment : segments) {
       this.addSegment(segment);
     }

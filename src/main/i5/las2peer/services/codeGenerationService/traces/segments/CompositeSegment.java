@@ -1,6 +1,7 @@
 package i5.las2peer.services.codeGenerationService.traces.segments;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -222,6 +223,15 @@ public class CompositeSegment extends Segment {
       this.addSegment(segment);
     }
 
+  }
+
+  public Collection<Segment> getChildSegments() {
+    List<Segment> segmentList = new ArrayList<Segment>();
+    for (String id : this.children) {
+      Segment segment = this.getChild(id);
+      segmentList.add(segment);
+    }
+    return segmentList;
   }
 
 }

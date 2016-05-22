@@ -492,8 +492,8 @@ public class FrontendComponentGenerator extends Generator {
       FrontendComponent frontendComponent) {
 
     // add trace to application script
-    applicationTemplate.addTrace(frontendComponent.getWidgetModelId(), "ApplicationScript",
-        applicationTemplate.getSegment());
+    applicationTemplate.getTemplateEngine().addTrace(frontendComponent.getWidgetModelId(),
+        "ApplicationScript", applicationTemplate.getSegment());
 
     // first the endpoint
     applicationTemplate.setVariable("$Microservice_Endpoint_Url$",
@@ -504,8 +504,8 @@ public class FrontendComponentGenerator extends Generator {
       Template functionTemplate = applicationTemplate.createTemplate(
           applicationTemplate.getId() + function.getModelId(), functionTemplateFile);
 
-      applicationTemplate.addTrace(function.getModelId(), "Function[" + function.getName() + "]",
-          functionTemplate);
+      applicationTemplate.getTemplateEngine().addTrace(function.getModelId(),
+          "Function[" + function.getName() + "]", functionTemplate);
       // add function to application script
       applicationTemplate.appendVariable("$Functions$", functionTemplate);
 
@@ -520,7 +520,7 @@ public class FrontendComponentGenerator extends Generator {
 
         // add IWC response to application script
         applicationTemplate.appendVariable("$IWC_Responses$", iwcResponseTemplate);
-        applicationTemplate.addTrace(response.getModelId(),
+        applicationTemplate.getTemplateEngine().addTrace(response.getModelId(),
             "IWC Response[" + response.getIntentAction() + "]", iwcResponseTemplate);
       }
 
@@ -920,9 +920,9 @@ public class FrontendComponentGenerator extends Generator {
 
       // commit changes
 
-      commitFile("widget.xml", widgetTemplateEngine, "code regeneration", service,
+      commitTracedFile("widget.xml", widgetTemplateEngine, "code regeneration", service,
           getRepositoryName(frontendComponent));
-      commitFile("js/applicationScript.js", applicationTemplateEngine, "code regeneration", service,
+      commitTracedFile("js/applicationScript.js", applicationTemplateEngine, "code regeneration", service,
           getRepositoryName(frontendComponent));
 
       String tracedFiles = traceModel.toJSONObject().toJSONString().replace("\\", "");
@@ -935,19 +935,6 @@ public class FrontendComponentGenerator extends Generator {
 
   }
 
-
-  @SuppressWarnings("unchecked")
-  private static void commitFile(String fileName, TemplateEngine templateEngine, String message,
-      CodeGenerationService service, String repositoryName) throws UnsupportedEncodingException {
-    JSONObject obj = new JSONObject();
-    obj.put("filename", fileName);
-    obj.put("content",
-        Base64.getEncoder().encodeToString(templateEngine.getContent().getBytes("utf-8")));
-    obj.put("commitMessage", "code regeneration");
-    obj.put("traces", templateEngine.toJSONObject());
-
-    service.commitFile(repositoryName, obj);
-  }
 
 
 }

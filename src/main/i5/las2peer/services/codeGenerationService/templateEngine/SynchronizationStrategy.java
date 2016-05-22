@@ -33,24 +33,13 @@ public class SynchronizationStrategy extends TemplateStrategy {
 
   @Override
   public Segment addSegment(String id, Segment segment) {
-    // check if a segment with the given id already exists
+    // check if a segment with the given id already exists in the old file trace model
     Segment result = this.oldFileTraceModel.getRecursiveSegment(id);
 
+    // if the segment exists and is a composition, we need to synchronize children that are also
+    // compositions
     if (result instanceof CompositeSegment) {
-
-      CompositeSegment cSegment = (CompositeSegment) result;
-
-      List<String> childrenList = cSegment.getChildrenList();
-      for (String childId : childrenList) {
-        Segment child = cSegment.getChild(childId);
-        // inner composite segments are used to add templates that corresponds to mode element
-
-        if (!(child instanceof SynchronizeCompositeSegment) && child instanceof CompositeSegment) {
-          SynchronizeCompositeSegment pCSegment =
-              new SynchronizeCompositeSegment(child.getId(), (CompositeSegment) child);
-          cSegment.replaceSegment(child, pCSegment);
-        }
-      }
+      this.synchronizeChildren((CompositeSegment) result);
     }
 
     // if so, return it
@@ -68,24 +57,35 @@ public class SynchronizationStrategy extends TemplateStrategy {
   public Segment getSegment(String segmentId) {
     Segment segment = this.oldFileTraceModel.getRecursiveSegment(segmentId);
 
+    // if the segment exists and is a composition, we need to synchronize children that are also
+    // compositions
     if (segment instanceof CompositeSegment) {
-
-      CompositeSegment cSegment = (CompositeSegment) segment;
-
-      List<String> childrenList = cSegment.getChildrenList();
-      for (String childId : childrenList) {
-        Segment child = cSegment.getChild(childId);
-        // inner composite segments are used to add templates that corresponds to mode element
-        // we replace them with synchronize composite segments implicitly synchronize them
-        if (!(child instanceof SynchronizeCompositeSegment) && child instanceof CompositeSegment) {
-          SynchronizeCompositeSegment pCSegment =
-              new SynchronizeCompositeSegment(child.getId(), (CompositeSegment) child);
-          cSegment.replaceSegment(child, pCSegment);
-        }
-      }
+      this.synchronizeChildren((CompositeSegment) segment);
     }
 
     return segment;
+  }
+
+  /**
+   * Synchronizes the children of a compositions of segments
+   * 
+   * @param cSegment The composition whose children should be synchronized
+   */
+
+  private void synchronizeChildren(CompositeSegment cSegment) {
+    List<String> childrenList = cSegment.getChildrenList();
+    for (String childId : childrenList) {
+      Segment child = cSegment.getChild(childId);
+      // inner compositions of segments are used as placeholder to add templates
+      // so we use a special kind of compositions that still know the segments of the old
+      // file trace model but only use them during the content generation if they were actually
+      // used
+      if (!(child instanceof SynchronizeCompositeSegment) && child instanceof CompositeSegment) {
+        SynchronizeCompositeSegment pCSegment =
+            new SynchronizeCompositeSegment(child.getId(), (CompositeSegment) child);
+        cSegment.replaceSegment(child, pCSegment);
+      }
+    }
   }
 
 }

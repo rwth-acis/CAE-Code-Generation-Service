@@ -37,16 +37,6 @@ public class Template {
   }
 
   /**
-   * Get the trace model of the template engine
-   * 
-   * @return The trace model of the template engine
-   */
-
-  public FileTraceModel getFileTraceModel() {
-    return this.templateEngine.getFileTraceModel();
-  }
-
-  /**
    * Get the template engine of the template
    * 
    * @return The template engine of the template
@@ -66,13 +56,31 @@ public class Template {
     this.segment = segment;
   }
 
+  /**
+   * Get the segment hold by the template
+   * 
+   * @return The segment of the template
+   */
+
   public CompositeSegment getSegment() {
     return this.segment;
   }
 
+  /**
+   * Get the id of the template, i.e. the id of the segment hold by the template
+   * 
+   * @return The id of the template
+   */
+
   public String getId() {
     return this.segment.getId();
   }
+
+  /**
+   * Get the content of the template
+   * 
+   * @return The content of the template
+   */
 
   public String getContent() {
     return this.segment.toString();
@@ -100,29 +108,22 @@ public class Template {
    */
 
   public void appendVariable(String variableName, Template template, boolean once) {
-    String id = this.getId() + ":" + variableName;
-    CompositeSegment containerNew = new CompositeSegment(id);
-    CompositeSegment container = containerNew;
+    CompositeSegment container = this.getVariableContainer(variableName);
 
-    // we can safety cast to a composition as the given "fallback" segment is a composition and
+    // we can safely cast to a composition as the given "fallback" segment is a composition and
     // getSegmentByStrategy ensures that a segment of
-    // the same class is returned
+    // the same class as the fallback is returned
     CompositeSegment segment = (CompositeSegment) templateEngine
         .getSegmentByStrategy(template.getSegment().getId(), template.getSegment());
-
-    Segment recursiveChild = this.segment.getChildRecursive(id);
-    if (recursiveChild instanceof CompositeSegment) {
-      container = (CompositeSegment) recursiveChild;
-    }
 
     // only add once if ask to do so
     if (once && container.hasChild(segment.getId())) {
       return;
     }
 
+    // add the segment
     container.addSegment(segment);
 
-    this.segment.setSegment(variableName, container);
   }
 
 
@@ -173,13 +174,14 @@ public class Template {
 
 
   /**
-   * Factory method to create new templates more easily
+   * Factory method to create a template of a template engine using the initial generation template
+   * strategy.
    * 
-   * @param id Id of the new Template
+   * @param id The Id of the new Template
    * @param content The source code of the template
-   * @param traceModel The trace model to which this template should belong to
+   * @param traceModel The trace model to which the template should belong to
    * @param fileName The file name of the template
-   * @return
+   * @return A new template
    */
 
   public static Template createInitialTemplate(String id, String content, TraceModel traceModel,
@@ -187,37 +189,87 @@ public class Template {
     FileTraceModel fileTraceModel = new FileTraceModel(traceModel, fileName);
     TemplateEngine engine =
         new TemplateEngine(new InitialGenerationStrategy(fileTraceModel), fileTraceModel);
+
+    traceModel.addFileTraceModel(fileTraceModel);
+
     Template template = engine.createTemplate(id, content);
+    fileTraceModel.addSegments(template.getSegment().getChildSegments());
     return template;
-  }
-
-  public void addTrace(String modelId, String modelName, Segment segment) {
-    this.templateEngine.addTrace(modelId, modelName, segment);
-  }
-
-  public void addTrace(String modelId, String modelName, Template template) {
-    this.templateEngine.addTrace(modelId, modelName, template);
   }
 
 
   /**
-   * Remove the last appearance of the given character from the last content segment of the template
+   * Return the container for the variable name that will hold the appended templates. If it does
+   * not exist yet, it will be created.
+   * 
+   * @param variableName The variable name
+   * @return The container for the variable name
+   */
+
+  private CompositeSegment getVariableContainer(String variableName) {
+    String id = this.getId() + ":" + variableName;
+    CompositeSegment container = new CompositeSegment(id);
+
+    Segment recursiveChild = this.segment.getChildRecursive(id);
+    if (recursiveChild instanceof CompositeSegment) {
+      container = (CompositeSegment) recursiveChild;
+    }
+
+    // set the container
+    this.segment.setSegment(variableName, container);
+
+    return container;
+  }
+
+  /**
+   * Get the last segment of the template if this is a content segment, otherwise null is returned.
+   * 
+   * @return The last segment if this is a content segment, otherwise null
+   */
+
+  private ContentSegment getLastContentSegment() {
+    List<String> childrenList = this.getSegment().getChildrenList();
+    if (childrenList.size() > 0) {
+      Segment lastSegment = this.getSegment().getChild(childrenList.get(childrenList.size() - 1));
+      if (lastSegment instanceof ContentSegment) {
+        return (ContentSegment) lastSegment;
+      }
+    }
+
+    return null;
+  }
+
+  /**
+   * Remove the last appearance of the given character from the last segment of the template if it
+   * is not a composition
    * 
    * @param character The character to remove
    */
 
   public void removeLastCharacter(char character) {
-    List<String> childrenList = this.getSegment().getChildrenList();
-    if (childrenList.size() > 0) {
-      Segment lastSegment = this.getSegment().getChild(childrenList.get(childrenList.size() - 1));
-      if (lastSegment instanceof ContentSegment) {
-        ContentSegment contentSegment = (ContentSegment) lastSegment;
-        String content = contentSegment.getContent();
+    ContentSegment contentSegment = this.getLastContentSegment();
+    if (contentSegment != null) {
+      String content = contentSegment.getContent();
+      int characterIndex = content.lastIndexOf(character);
+      if (characterIndex > -1) {
         String result = content.substring(0, content.lastIndexOf(character));
         contentSegment.setContent(result);
       }
     }
+  }
 
+  /**
+   * Append a character to the last segment of the template if it is not a composition
+   * 
+   * @param character The character to add
+   */
+
+  public void appendContent(char character) {
+    ContentSegment contentSegment = this.getLastContentSegment();
+    if (contentSegment != null) {
+      String content = contentSegment.getContent() + character;
+      contentSegment.setContent(content);
+    }
   }
 
 }

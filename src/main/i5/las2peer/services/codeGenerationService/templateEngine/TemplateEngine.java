@@ -16,8 +16,9 @@ import i5.las2peer.services.codeGenerationService.traces.segments.SynchronizeCom
 
 /**
  * A template engine that provides an advanced mechanism to generate and regenerate source code of a
- * model with respect to a trace model. By using the trace model it allows to locate the variables
- * even after the first variable assignment, i.e. the first code generation.
+ * CAE model with the help of a file trace model. Using the file trace model allows to locate the
+ * positions of placeholder of the variables even after the first variable assignment, i.e. the
+ * first code generation.
  *
  */
 
@@ -88,7 +89,7 @@ public class TemplateEngine {
   }
 
   /**
-   * Add a segment to the template engine, i.e. the trace model of the engine.
+   * Add a segment to the template engine, i.e. add it to the file trace model of the engine.
    * 
    * @param segmentId The id of the segment that should be added
    * @param segment The segment that should be added
@@ -146,30 +147,48 @@ public class TemplateEngine {
     return this.getContent();
   }
 
+  /**
+   * Creates or return a template of the template engine for the given source code. Depending on the
+   * used template strategy of the template engine, this can also be an already existing template
+   * 
+   * @param id The id of the template
+   * @param sourceCode The source code of the template
+   * @return A template of the template engine for the source code
+   */
+
   public Template createTemplate(String id, String sourceCode) {
-    JSONObject traces = TemplateEngine.generateTraces(sourceCode);
-    String code = TemplateEngine.removeUnprotectedBlocks(sourceCode);
+
     // the strategy determines whether we should reuse a segment or not
     Segment segment = this.strategy.getSegment(id);
 
     CompositeSegment cSegment = null;
     if (segment instanceof CompositeSegment) {
+      // "reuse" an existing template, i.e. the segment hold by the template is set to an already
+      // existing one
       cSegment = (CompositeSegment) segment;
     } else {
+      // create a new composition of segments for the template
+      JSONObject traces = TemplateEngine.generateTraces(sourceCode);
+      String code = TemplateEngine.removeUnprotectedSurroundings(sourceCode);
       cSegment =
           SegmentFactory.createCompositeSegmentByInitialTraces(id, traces.toJSONString(), code);
     }
 
-
     return new Template(cSegment, this);
   }
 
-  public void addTemplate(Template templateFile) {
-    CompositeSegment segment = templateFile.getSegment();
+  /**
+   * Add a template to the template engine. Typically used to add a "root" template to the engine.
+   * 
+   * @param template The template to add
+   */
+
+  public void addTemplate(Template template) {
+    CompositeSegment segment = template.getSegment();
     segment = (CompositeSegment) this.addSegmentById(segment.getId(), segment);
     // if the segment was already added, use that one
-    if (segment != templateFile.getSegment()) {
-      templateFile.setSegment(segment);
+    if (segment != template.getSegment()) {
+      template.setSegment(segment);
     }
   }
 
@@ -197,7 +216,14 @@ public class TemplateEngine {
     this.traceModel.addTrace(modelId, metaInformation, segment);
   }
 
-  private static String removeUnprotectedBlocks(String code) {
+  /**
+   * A helper method that removes the surrounding syntax of unprotected blocks
+   * 
+   * @param code The code from which the surroundings should be removed
+   * @return The updated code
+   */
+
+  private static String removeUnprotectedSurroundings(String code) {
     Pattern unprotectedBlocks = Pattern.compile("(-\\{(.*?)\\}-)", Pattern.DOTALL);
     Matcher matcher = unprotectedBlocks.matcher(code);
 
@@ -219,10 +245,10 @@ public class TemplateEngine {
 
   /**
    * 
-   * Generates initial traces of a given source code
+   * Generates initial traces for a given source code
    * 
    * @param content The source code that should be used to generate the traces
-   * @return Initial traces of the given source code as a json object
+   * @return Initial traces for the given source code as a json object
    * 
    */
 
