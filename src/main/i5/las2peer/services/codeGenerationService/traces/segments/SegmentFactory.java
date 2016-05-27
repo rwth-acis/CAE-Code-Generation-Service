@@ -41,8 +41,8 @@ public class SegmentFactory {
   }
 
   /**
-   * Create a list of segments from a given json array representing them and extract the content of
-   * each segment from a given source code
+   * Create a list of segments from a given json array and extract the content of each segment from
+   * a given source code
    * 
    * @param jSegments An array of json objects representing the segments
    * @param source The source code of the segments
@@ -73,16 +73,17 @@ public class SegmentFactory {
    */
 
 
-  public static Segment createSegment(JSONObject entry, String source, Long start) {
+  private static Segment createSegment(JSONObject entry, String source, Long start) {
     Segment segment = null;
 
     String type = (String) entry.get("type");
     switch (type) {
-      case "composite":
+      case CompositeSegment.TYPE:
+      case AppendableVariableSegment.TYPE:
         segment = createCompositeSegment(entry, source, start);
         break;
-      case "unprotected":
-      case "protected":
+      case UnprotectedSegment.TYPE:
+      case ProtectedSegment.TYPE:
         Long length = getLong(entry, "length");
         String segmentContent =
             source.substring(Math.toIntExact(start), Math.toIntExact(start + length));
@@ -93,8 +94,8 @@ public class SegmentFactory {
   }
 
   /**
-   * Create a composition of segments from a json object. It creates and extract the content of all
-   * its children from the given source code
+   * Create a composition of segments from a json object. It extracts the content of its children
+   * from the given source code and creates the corresponding content segments
    * 
    * @param entry The json object of the composition
    * @param source The source code of the composition
@@ -102,11 +103,19 @@ public class SegmentFactory {
    * @return The created composition containing its children
    */
 
-  public static CompositeSegment createCompositeSegment(JSONObject entry, String source,
+  private static CompositeSegment createCompositeSegment(JSONObject entry, String source,
       Long start) {
 
     String segmentId = (String) entry.get("id");
-    CompositeSegment segment = new CompositeSegment(segmentId);
+    String type = (String) entry.get("type");
+
+    CompositeSegment segment;
+    if (type.equals(AppendableVariableSegment.TYPE)) {
+      segment = new AppendableVariableSegment(segmentId);
+    } else {
+      segment = new CompositeSegment(segmentId);
+    }
+
     JSONArray subSegments = (JSONArray) entry.get("traceSegments");
     if (subSegments != null) {
       segment.addAllSegments(createSegments(subSegments, source, start));
@@ -128,10 +137,10 @@ public class SegmentFactory {
     ContentSegment segment = null;
     String type = (String) entry.get("type");
 
-    if (type.equals("protected")) {
+    if (type.equals(ProtectedSegment.TYPE)) {
       segment = new ProtectedSegment(entry);
       segment.setContent(content);
-    } else if (type.equals("unprotected")) {
+    } else if (type.equals(UnprotectedSegment.TYPE)) {
       segment = new UnprotectedSegment(entry);
       segment.setContent(content);
     }

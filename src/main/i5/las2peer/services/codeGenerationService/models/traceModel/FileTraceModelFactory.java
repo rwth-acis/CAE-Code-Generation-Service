@@ -26,7 +26,6 @@ public class FileTraceModelFactory {
     try {
       jobj = (JSONObject) parser.parse(traceSource);
       JSONArray segments = (JSONArray) jobj.get("traceSegments");
-
       fileTraceModel.addSegments(SegmentFactory.createSegments(segments, source, 0L));
     } catch (ParseException e) {
       e.printStackTrace();

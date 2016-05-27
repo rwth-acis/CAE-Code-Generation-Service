@@ -36,12 +36,11 @@ public class ModelChecker {
       L2pLogger.getInstance(ApplicationGenerator.class.getName());
 
   /**
-   * Retrieves the guidances from the template repository and returns the corresponding guidance
-   * model
+   * Retrieves the guidance model from the template repository model
    * 
-   * @param templateRepositoryName the name of the template repository
-   * @param gitHubOrganization the organization that is used in the CAE
-   * @return
+   * @param templateRepositoryName The name of the template repository
+   * @param gitHubOrganization The organization that is used in the CAE
+   * @return A guidance model
    */
 
   public static GuidanceModel getGuidances(String templateRepositoryName,
@@ -76,8 +75,11 @@ public class ModelChecker {
    * The actual method that performs the checking.
    * 
    * @param files The files of the repository of the component that should be tested
-   * @return A json array containing corresponding guidance of the found violations
+   * @param templateRepositoryName The name of the template repository
+   * @param gitHubOrganization The organization that is used in the CAE
+   * @return A json array containing corresponding guidances of the found violations
    */
+  @SuppressWarnings("unchecked")
   public static JSONArray performViolationCheck(HashMap<String, JSONObject> files,
       String templateRepositoryName, String gitHubOrganization) {
 
@@ -98,15 +100,12 @@ public class ModelChecker {
         JSONObject traces = (JSONObject) fileTraces.get("traces");
 
         List<Segment> segments = SegmentFactory.createSegments(traceSegments, content, 0L);
-        System.out.println(traces);
         for (Segment segment : segments) {
-
           guidances.addAll(checkSegment(segment, traces, guidanceModel));
-
         }
 
       } catch (Exception e) {
-        e.printStackTrace();
+        logger.printStackTrace(e);
       }
     }
 

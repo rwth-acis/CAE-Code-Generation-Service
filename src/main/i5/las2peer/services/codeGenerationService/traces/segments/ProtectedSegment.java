@@ -4,6 +4,8 @@ import org.json.simple.JSONObject;
 
 public class ProtectedSegment extends ContentSegment {
 
+  public static final String TYPE = "protected";
+
   public ProtectedSegment(String id) {
     super(id);
   }
@@ -36,7 +38,7 @@ public class ProtectedSegment extends ContentSegment {
 
   @Override
   public String getTypeString() {
-    return "protected";
+    return ProtectedSegment.TYPE;
   }
 
 

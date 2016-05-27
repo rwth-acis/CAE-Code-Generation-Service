@@ -12,7 +12,6 @@ import i5.las2peer.services.codeGenerationService.models.traceModel.FileTraceMod
 import i5.las2peer.services.codeGenerationService.traces.segments.CompositeSegment;
 import i5.las2peer.services.codeGenerationService.traces.segments.Segment;
 import i5.las2peer.services.codeGenerationService.traces.segments.SegmentFactory;
-import i5.las2peer.services.codeGenerationService.traces.segments.SynchronizeCompositeSegment;
 
 /**
  * A template engine that provides an advanced mechanism to generate and regenerate source code of a
@@ -65,40 +64,37 @@ public class TemplateEngine {
   }
 
   /**
-   * Get the segment with the given id by using the current template strategy. If the template
-   * strategy has found a segment with the given id, it will return that segment. Otherwise it
-   * returns the given segment to signal, that non segment with such an id was found
+   * Get the segment for the given template instance using the current template strategy. If the
+   * template strategy decided to reuse an existing segment, it will return that segment. Otherwise
+   * it returns the segment of the given template to signal.
    * 
-   * @param segmentId The id of the needed segment
-   * @param segment The segment that is returned if the needed segment is not found
-   * @return
+   * @param template The template whose segment is requested
+   * @return The needed segment of the template
    */
 
-  public Segment getSegmentByStrategy(String segmentId, Segment segment) {
-    Segment result = this.strategy.getSegment(segmentId);
+  public Segment getTemplateSegmentByStrategy(Template template) {
+    Segment result = this.strategy.getSegment(template.getSegment().getId());
     if (result != null) {
-      if (result instanceof SynchronizeCompositeSegment
-          || result.getClass() == segment.getClass()) {
+      // ensure that the class of an existing segment object is an instance of the class of the
+      // template segment
+      if (result.getClass().isInstance(template.getSegment())) {
         return result;
       } else {
-        return segment;
+        return template.getSegment();
       }
     } else {
-      return segment;
+      return template.getSegment();
     }
   }
 
   /**
-   * Add a segment to the template engine, i.e. add it to the file trace model of the engine.
+   * Get the file name the template engine belongs to
    * 
-   * @param segmentId The id of the segment that should be added
-   * @param segment The segment that should be added
-   * @return The added segment. Based on the template strategy this needs not to be the same object
-   *         as the given segment.
+   * @return The file name the template engine belongs to
    */
 
-  protected Segment addSegmentById(String segmentId, Segment segment) {
-    return this.strategy.addSegment(segmentId, segment);
+  public String getFileName() {
+    return this.getFileTraceModel().getFileName();
   }
 
   /**
@@ -110,7 +106,24 @@ public class TemplateEngine {
    */
 
   protected Segment addSegment(Segment segment) {
-    return this.addSegmentById(segment.getId(), segment);
+    // return this.strategy.addSegment(segment.getId(), segment);
+
+    // check if a segment with the given id already exists
+    Segment result = this.strategy.getSegment(segment.getId());
+    // if so, return it
+    if (result != null) {
+      if (result.getClass() == segment.getClass()) {
+        return result;
+      } else {
+        return segment;
+      }
+    }
+    // otherwise add it to the trace model
+    else {
+      this.getFileTraceModel().addSegment(segment);
+    }
+    return segment;
+
   }
 
   /**
@@ -158,7 +171,7 @@ public class TemplateEngine {
 
   public Template createTemplate(String id, String sourceCode) {
 
-    // the strategy determines whether we should reuse a segment or not
+    // the strategy determines whether we should reuse a segment for a template or not
     Segment segment = this.strategy.getSegment(id);
 
     CompositeSegment cSegment = null;
@@ -185,7 +198,7 @@ public class TemplateEngine {
 
   public void addTemplate(Template template) {
     CompositeSegment segment = template.getSegment();
-    segment = (CompositeSegment) this.addSegmentById(segment.getId(), segment);
+    segment = (CompositeSegment) this.addSegment(segment);
     // if the segment was already added, use that one
     if (segment != template.getSegment()) {
       template.setSegment(segment);

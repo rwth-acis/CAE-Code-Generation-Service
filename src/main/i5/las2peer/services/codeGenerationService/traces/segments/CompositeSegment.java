@@ -23,6 +23,7 @@ import org.json.simple.JSONObject;
 
 public class CompositeSegment extends Segment {
 
+  public static final String TYPE = "composite";
   final private List<String> children;
   final private Map<String, Segment> map;
 
@@ -125,7 +126,7 @@ public class CompositeSegment extends Segment {
 
   @Override
   public String getTypeString() {
-    return "composite";
+    return CompositeSegment.TYPE;
   }
 
   public void addSegment(final Segment segment) {

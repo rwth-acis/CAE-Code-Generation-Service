@@ -4,6 +4,7 @@ import java.util.List;
 
 import i5.las2peer.services.codeGenerationService.models.traceModel.FileTraceModel;
 import i5.las2peer.services.codeGenerationService.models.traceModel.TraceModel;
+import i5.las2peer.services.codeGenerationService.traces.segments.AppendableVariableSegment;
 import i5.las2peer.services.codeGenerationService.traces.segments.CompositeSegment;
 import i5.las2peer.services.codeGenerationService.traces.segments.ContentSegment;
 import i5.las2peer.services.codeGenerationService.traces.segments.Segment;
@@ -47,6 +48,16 @@ public class Template {
   }
 
   /**
+   * Get the file name the template belongs to
+   * 
+   * @return The file name the template belongs to
+   */
+
+  public String getTemplateFileName() {
+    return this.getTemplateEngine().getFileTraceModel().getFileName();
+  }
+
+  /**
    * Sets the composite segment, needed for model synchronization
    * 
    * @param segment - The new composite segment
@@ -57,7 +68,7 @@ public class Template {
   }
 
   /**
-   * Get the segment hold by the template
+   * Get the segment that is hold by the template
    * 
    * @return The segment of the template
    */
@@ -108,13 +119,14 @@ public class Template {
    */
 
   public void appendVariable(String variableName, Template template, boolean once) {
-    CompositeSegment container = this.getVariableContainer(variableName);
+    System.out.println("appendVariable " + variableName);
+    AppendableVariableSegment container = this.getAppendableVariableSegment(variableName);
 
     // we can safely cast to a composition as the given "fallback" segment is a composition and
     // getSegmentByStrategy ensures that a segment of
     // the same class as the fallback is returned
-    CompositeSegment segment = (CompositeSegment) templateEngine
-        .getSegmentByStrategy(template.getSegment().getId(), template.getSegment());
+    CompositeSegment segment =
+        (CompositeSegment) templateEngine.getTemplateSegmentByStrategy(template);
 
     // only add once if ask to do so
     if (once && container.hasChild(segment.getId())) {
@@ -138,7 +150,6 @@ public class Template {
   public void setVariableIfNotSet(String id, String content) {
     String segmentId = this.getId() + ":" + id;
 
-    // Segment segment = (Segment) templateEngine.getSegmentFromTraceModel(segmentId);
     Segment segment = this.segment.getChildRecursive(segmentId);
     if (segment instanceof ContentSegment && segment.getId().equals(segmentId)) {
       if (segment.toString().equals(id)) {
@@ -177,42 +188,37 @@ public class Template {
    * Factory method to create a template of a template engine using the initial generation template
    * strategy.
    * 
-   * @param id The Id of the new Template
-   * @param content The source code of the template
    * @param traceModel The trace model to which the template should belong to
    * @param fileName The file name of the template
    * @return A new template
    */
 
-  public static Template createInitialTemplate(String id, String content, TraceModel traceModel,
-      String fileName) {
+  public static TemplateEngine createInitialTemplateEngine(TraceModel traceModel, String fileName) {
     FileTraceModel fileTraceModel = new FileTraceModel(traceModel, fileName);
     TemplateEngine engine =
         new TemplateEngine(new InitialGenerationStrategy(fileTraceModel), fileTraceModel);
 
     traceModel.addFileTraceModel(fileTraceModel);
 
-    Template template = engine.createTemplate(id, content);
-    fileTraceModel.addSegments(template.getSegment().getChildSegments());
-    return template;
+    return engine;
   }
 
 
   /**
-   * Return the container for the variable name that will hold the appended templates. If it does
-   * not exist yet, it will be created.
+   * Get a appendable segment for variables. That is a container for a variable name that can held
+   * the appended templates. If it does not exist yet, it will be created.
    * 
    * @param variableName The variable name
-   * @return The container for the variable name
+   * @return The appendable segment for the given variable name
    */
 
-  private CompositeSegment getVariableContainer(String variableName) {
+  private AppendableVariableSegment getAppendableVariableSegment(String variableName) {
     String id = this.getId() + ":" + variableName;
-    CompositeSegment container = new CompositeSegment(id);
+    AppendableVariableSegment container = new AppendableVariableSegment(id);
 
     Segment recursiveChild = this.segment.getChildRecursive(id);
-    if (recursiveChild instanceof CompositeSegment) {
-      container = (CompositeSegment) recursiveChild;
+    if (recursiveChild instanceof AppendableVariableSegment) {
+      container = (AppendableVariableSegment) recursiveChild;
     }
 
     // set the container

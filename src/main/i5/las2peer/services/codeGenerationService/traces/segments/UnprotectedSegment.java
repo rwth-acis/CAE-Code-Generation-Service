@@ -14,6 +14,7 @@ import org.json.simple.JSONObject;
  */
 
 public class UnprotectedSegment extends ContentSegment {
+  public static final String TYPE = "unprotected";
   private String content;
   private String hash = null;
   private boolean needsIntegrityCheck = false;
@@ -138,6 +139,6 @@ public class UnprotectedSegment extends ContentSegment {
 
   @Override
   public String getTypeString() {
-    return "unprotected";
+    return UnprotectedSegment.TYPE;
   }
 }

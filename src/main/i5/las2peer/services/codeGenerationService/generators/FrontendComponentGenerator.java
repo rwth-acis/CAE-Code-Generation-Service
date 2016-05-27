@@ -872,7 +872,7 @@ public class FrontendComponentGenerator extends Generator {
         FileTraceModel fileTraceModel = new FileTraceModel(traceModel, fileName);
         FileTraceModel oldFileTraceModel = FileTraceModelFactory
             .createFileTraceModelFromJSON(content, fileTraces.toJSONString(), traceModel, fileName);
-        TemplateStrategy strategy = new SynchronizationStrategy(oldFileTraceModel, fileTraceModel);
+        TemplateStrategy strategy = new SynchronizationStrategy(oldFileTraceModel);
 
         switch (fileName) {
           case "widget.xml":

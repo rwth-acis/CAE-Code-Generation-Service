@@ -186,4 +186,15 @@ public class FileTraceModel {
   public Segment getSegment(String segmentId) {
     return this.segmentMap.get(segmentId);
   }
+
+  /**
+   * Set the name of the file
+   * 
+   * @param fileName The new name of the file
+   */
+
+  public void setFileName(String fileName) {
+    this.fileName = fileName;
+  }
+
 }
