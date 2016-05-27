@@ -23,13 +23,22 @@ import i5.las2peer.services.codeGenerationService.templateEngine.Synchronization
 import i5.las2peer.services.codeGenerationService.templateEngine.TemplateEngine;
 import i5.las2peer.services.codeGenerationService.templateEngine.TemplateStrategy;
 
+/**
+ * 
+ * Synchronizes the source code of a
+ * {@link i5.las2peer.services.codeGenerationService.models.microservice.Microservice} model with an
+ * updated version of that model
+ */
+
 public class MicroserviceSynchronization extends MicroserviceGenerator {
 
   private static final L2pLogger logger =
       L2pLogger.getInstance(ApplicationGenerator.class.getName());
 
   /**
-   * Synchronizes an updated CAE microservice model and its current source code.
+   * Synchronizes the source code of a
+   * {@link i5.las2peer.services.codeGenerationService.models.microservice.Microservice} model with
+   * an updated version of that model
    * 
    * @param microservice The updated microservice model
    * @param oldMicroservice The current microservice model
@@ -134,9 +143,28 @@ public class MicroserviceSynchronization extends MicroserviceGenerator {
       logger.printStackTrace(e);
     }
 
-    System.out.println("serviceClass= " + serviceClass);
-    String serviceFileName = "src/main/i5/las2peer/services/" + packageName + "/"
-        + microservice.getResourceName() + ".java";
+    // new file names
+    String serviceFileName = getServiceFileName(microservice);
+    String serviceTestFileName = getServiceTestFileName(microservice);
+
+    // old file names
+    String serviceOldFileName = getServiceFileName(oldMicroservice);
+    String serviceOldTestFileName = getServiceTestFileName(oldMicroservice);
+
+    System.out.println(serviceFileName + "=" + serviceOldFileName);
+    System.out.println(serviceTestFileName + "=" + serviceOldTestFileName);
+
+    // if the old service file was renamed, we need to remove it from the local repo
+    if (!serviceFileName.equals(serviceOldFileName)) {
+      renameFileInRepository(getRepositoryName(oldMicroservice), serviceFileName,
+          serviceOldFileName, service);
+    }
+
+    // if the old service test file was renamed, we need to remove it from the local repo
+    if (!serviceTestFileName.equals(serviceOldTestFileName)) {
+      renameFileInRepository(getRepositoryName(oldMicroservice), serviceTestFileName,
+          serviceOldTestFileName, service);
+    }
 
     // now loop through the traced files and synchronize them
 
@@ -155,24 +183,31 @@ public class MicroserviceSynchronization extends MicroserviceGenerator {
         content = new String(base64decodedBytes, "utf-8");
 
         JSONObject fileTraces = (JSONObject) fileObject.get("fileTraces");
-        FileTraceModel fileTraceModel = new FileTraceModel(traceModel, fileName);
         FileTraceModel oldFileTraceModel = FileTraceModelFactory
             .createFileTraceModelFromJSON(content, fileTraces.toJSONString(), traceModel, fileName);
-        TemplateStrategy strategy = new SynchronizationStrategy(oldFileTraceModel, fileTraceModel);
+        TemplateStrategy strategy = new SynchronizationStrategy(oldFileTraceModel);
 
         TemplateEngine templateEngine = new TemplateEngine(strategy, oldFileTraceModel);
-        traceModel.addFileTraceModel(templateEngine.getFileTraceModel());
+
         System.out.println("synchronize " + fileName);
-        if (fileName.equals(serviceFileName)) {
+        if (fileName.equals(serviceOldFileName)) {
+          oldFileTraceModel.setFileName(serviceFileName);
           String repositoryLocation =
               "https://github.com/" + gitHubOrganization + "/" + getRepositoryName(microservice);
 
           generateNewServiceClass(templateEngine, serviceClass, microservice, repositoryLocation,
               genericHttpMethod, genericHttpMethodBody, genericApiResponse, genericHttpResponse,
               databaseConfig, databaseInstantiation, serviceInvocation);
+        } else if (fileName.equals(serviceOldTestFileName)) {
+          oldFileTraceModel.setFileName(serviceTestFileName);
+          generateNewServiceTest(templateEngine, serviceTest, microservice, genericTestCase);
+        } else {
+          generateOther(templateEngine, oldMicroservice, gitHubOrganization, content);
         }
-        commitTracedFile(templateEngine.getFileTraceModel().getFileName(), templateEngine,
-            "code regeneration " + fileName, service, getRepositoryName(microservice));
+
+        traceModel.addFileTraceModel(templateEngine.getFileTraceModel());
+        // commitTracedFile(templateEngine.getFileTraceModel().getFileName(), templateEngine,
+        // "code regeneration " + fileName, service, getRepositoryName(microservice));
 
       } catch (UnsupportedEncodingException e) {
         logger.printStackTrace(e);
@@ -180,12 +215,15 @@ public class MicroserviceSynchronization extends MicroserviceGenerator {
 
     }
 
-    try {
-      // commit global trace model
-      String tracedFiles = traceModel.toJSONObject().toJSONString().replace("\\", "");
-      service.commitFileRaw(getRepositoryName(microservice), "traces/tracedFiles.json",
-          Base64.getEncoder().encodeToString(tracedFiles.getBytes("utf-8")));
 
+
+    try {
+      // commit changes
+      updateTracedFilesInRepository(traceModel, getRepositoryName(microservice), service);
+      // // commit global trace model
+      // String tracedFiles = traceModel.toJSONObject().toJSONString().replace("\\", "");
+      // service.commitFileRaw(getRepositoryName(microservice), "traces/tracedFiles.json",
+      // Base64.getEncoder().encodeToString(tracedFiles.getBytes("utf-8")));
     } catch (UnsupportedEncodingException e) {
       logger.printStackTrace(e);
     }

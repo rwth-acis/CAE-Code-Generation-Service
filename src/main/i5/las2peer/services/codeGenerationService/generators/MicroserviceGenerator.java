@@ -44,6 +44,20 @@ public class MicroserviceGenerator extends Generator {
   private static final L2pLogger logger =
       L2pLogger.getInstance(ApplicationGenerator.class.getName());
 
+  protected static String getPackageName(Microservice microservice) {
+    return microservice.getResourceName().substring(0, 1).toLowerCase()
+        + microservice.getResourceName().substring(1);
+  }
+
+  protected static String getServiceFileName(Microservice microservice) {
+    return "src/main/i5/las2peer/services/" + getPackageName(microservice) + "/"
+        + microservice.getResourceName() + ".java";
+  }
+
+  protected static String getServiceTestFileName(Microservice microservice) {
+    return "src/test/i5/las2peer/services/" + getPackageName(microservice) + "/"
+        + microservice.getResourceName() + ".java";
+  }
 
   /**
    * Returns the repository name for the given microservice model
@@ -88,24 +102,13 @@ public class MicroserviceGenerator extends Generator {
         microservice.getPath().indexOf("/", microservice.getPath().indexOf(":", 6)));
 
     // variables holding content to be modified and added to repository later
-    String projectFile = null;
     BufferedImage logo = null;
-    String readMe = null;
     String license = null;
-    String buildFile = null;
-    String startScriptWindows = null;
-    String startScriptUnix = null;
     String userAgentGeneratorWindows = null;
     String userAgentGeneratorUnix = null;
-    String nodeInfo = null;
-    String antServiceProperties = null;
     String antUserProperties = null;
-    String ivy = null;
     String ivySettings = null;
-    String serviceProperties = null;
-    String webConnectorConfig = null;
     String gitignore = null;
-    String classpath = null;
     String databaseManager = null;
     String serviceClass = null;
     String serviceTest = null;
@@ -136,79 +139,39 @@ public class MicroserviceGenerator extends Generator {
         while (treeWalk.next()) {
           ObjectId objectId = treeWalk.getObjectId(0);
           ObjectLoader loader = reader.open(objectId);
-
+          String path = treeWalk.getPathString().replace("backend/", "");
           switch (treeWalk.getNameString()) {
             // start with the "easy" replacements, and store the other template files for later
             case ".project":
-              projectFile = new String(loader.getBytes(), "UTF-8");
-
-              Template projectTemplate =
-                  Template.createInitialTemplate(microservice.getMicroserviceModelId() + ":project",
-                      projectFile, traceModel, ".project");
-              projectTemplate.setVariable("$Microservice_Name$", microservice.getName());
-
-              projectFile = projectTemplate.getTemplateEngine().getContent();
-
+              String projectFile = new String(loader.getBytes(), "UTF-8");
+              generateOther(Template.createInitialTemplateEngine(traceModel, path), microservice,
+                  gitHubOrganization, projectFile);
               break;
-
             case "logo_services.png":
               logo = ImageIO.read(loader.openStream());
               break;
             case "README.md":
-              readMe = new String(loader.getBytes(), "UTF-8");
-
-              Template readMeTemplate =
-                  Template.createInitialTemplate(microservice.getMicroserviceModelId() + ":readMe",
-                      readMe, traceModel, "README.md");
-              readMeTemplate.setVariable("$Repository_Name$", repositoryName);
-              readMeTemplate.setVariable("$Organization_Name$", gitHubOrganization);
-              readMeTemplate.setVariable("$Microservice_Name$", microservice.getName());
-
-              readMe = readMeTemplate.getTemplateEngine().getContent();
-
+              String readMe = new String(loader.getBytes(), "UTF-8");
+              generateOther(Template.createInitialTemplateEngine(traceModel, path), microservice,
+                  gitHubOrganization, readMe);
               break;
             case "LICENSE.txt":
               license = new String(loader.getBytes(), "UTF-8");
               break;
             case "build.xml":
-              buildFile = new String(loader.getBytes(), "UTF-8");
-
-              Template buildFileTemplate = Template.createInitialTemplate(
-                  microservice.getMicroserviceModelId() + ":buildFile", buildFile, traceModel,
-                  treeWalk.getPathString());
-              buildFileTemplate.setVariable("$Microservice_Name$", microservice.getName());
-
-              buildFile = buildFileTemplate.getContent();
+              String buildFile = new String(loader.getBytes(), "UTF-8");
+              generateOther(Template.createInitialTemplateEngine(traceModel, path), microservice,
+                  gitHubOrganization, buildFile);
               break;
             case "start_network.bat":
-              startScriptWindows = new String(loader.getBytes(), "UTF-8");
-
-              Template startScriptWindowsTemplate = Template.createInitialTemplate(
-                  microservice.getMicroserviceModelId() + ":startScriptWindows", startScriptWindows,
-                  traceModel, treeWalk.getPathString());
-
-              startScriptWindowsTemplate.setVariable("$Resource_Name$",
-                  microservice.getResourceName());
-              startScriptWindowsTemplate.setVariable("$Lower_Resource_Name$", packageName);
-              startScriptWindowsTemplate.setVariable("$Microservice_Version$",
-                  microservice.getVersion() + "");
-
-              startScriptWindows = startScriptWindowsTemplate.getContent();
+              String startScriptWindows = new String(loader.getBytes(), "UTF-8");
+              generateOther(Template.createInitialTemplateEngine(traceModel, path), microservice,
+                  gitHubOrganization, startScriptWindows);
               break;
             case "start_network.sh":
-              startScriptUnix = new String(loader.getBytes(), "UTF-8");
-
-              Template startScriptUnixTemplate = Template.createInitialTemplate(
-                  microservice.getMicroserviceModelId() + ":startScriptUnix", startScriptUnix,
-                  traceModel, treeWalk.getPathString());
-
-              startScriptUnixTemplate.setVariable("$Resource_Name$",
-                  microservice.getResourceName());
-              startScriptUnixTemplate.setVariable("$Lower_Resource_Name$", packageName);
-              startScriptUnixTemplate.setVariable("$Microservice_Version$",
-                  microservice.getVersion() + "");
-
-              startScriptUnix = startScriptUnixTemplate.getContent();
+              String startScriptUnix = new String(loader.getBytes(), "UTF-8");
+              generateOther(Template.createInitialTemplateEngine(traceModel, path), microservice,
+                  gitHubOrganization, startScriptUnix);
               break;
             case "start_UserAgentGenerator.bat":
               userAgentGeneratorWindows = new String(loader.getBytes(), "UTF-8");
@@ -217,105 +180,44 @@ public class MicroserviceGenerator extends Generator {
               userAgentGeneratorUnix = new String(loader.getBytes(), "UTF-8");
               break;
             case "nodeInfo.xml":
-              nodeInfo = new String(loader.getBytes(), "UTF-8");
-
-              Template nodeInfoTemplate = Template.createInitialTemplate(
-                  microservice.getMicroserviceModelId() + ":nodeInfo", nodeInfo, traceModel,
-                  treeWalk.getPathString());
-
-
-              nodeInfoTemplate.setVariable("$Developer$", microservice.getDeveloper());
-              nodeInfoTemplate.setVariable("$Resource_Name$", microservice.getResourceName());
-
-              nodeInfo = nodeInfoTemplate.getContent();
+              String nodeInfo = new String(loader.getBytes(), "UTF-8");
+              generateOther(Template.createInitialTemplateEngine(traceModel, path), microservice,
+                  gitHubOrganization, nodeInfo);
               break;
             case "service.properties":
-              antServiceProperties = new String(loader.getBytes(), "UTF-8");
-
-              Template antServicePropertiesTemplate = Template.createInitialTemplate(
-                  microservice.getMicroserviceModelId() + ":antServiceProperties",
-                  antServiceProperties, traceModel, treeWalk.getPathString());
-
-              antServicePropertiesTemplate.setVariable("$Microservice_Version$",
-                  microservice.getVersion() + "");
-              antServicePropertiesTemplate.setVariable("$Lower_Resource_Name$", packageName);
-              antServicePropertiesTemplate.setVariable("$Resource_Name$",
-                  microservice.getResourceName());
-              antServicePropertiesTemplate.setVariable("$Microservice_Version$",
-                  microservice.getVersion() + "");
-
-              antServiceProperties = antServicePropertiesTemplate.getContent();
+              String antServiceProperties = new String(loader.getBytes(), "UTF-8");
+              generateOther(Template.createInitialTemplateEngine(traceModel, path), microservice,
+                  gitHubOrganization, antServiceProperties);
               break;
             case "user.properties":
               antUserProperties = new String(loader.getBytes(), "UTF-8");
               break;
             case "ivy.xml":
-              ivy = new String(loader.getBytes(), "UTF-8");
-
-              Template ivyTemplate =
-                  Template.createInitialTemplate(microservice.getMicroserviceModelId() + ":ivy",
-                      ivy, traceModel, treeWalk.getPathString());
-
-              // add mysql dependency only if a database exists
-              if (microservice.getDatabase() != null) {
-                ivyTemplate.setVariable("$MySQL_Dependencies$",
-                    "<dependency org=\"mysql\" name=\"mysql-connector-java\" rev=\"5.1.6\" />\n"
-                        + "    <dependency org=\"org.apache.commons\" name=\"commons-pool2\" rev=\"2.2\" />\n"
-                        + "    <dependency org=\"org.apache.commons\" name=\"commons-dbcp2\" rev=\"2.0\" />");
-              } else {
-                ivyTemplate.setVariable("$MySQL_Dependencies", "");
-              }
-              ivy = ivyTemplate.getContent();
+              String ivy = new String(loader.getBytes(), "UTF-8");
+              generateOther(Template.createInitialTemplateEngine(traceModel, path), microservice,
+                  gitHubOrganization, ivy);
               break;
             case "ivysettings.xml":
               ivySettings = new String(loader.getBytes(), "UTF-8");
               break;
+            // TODO: change template to enable empty service properties
             case "i5.las2peer.services.servicePackage.ServiceClass.properties":
-              serviceProperties = new String(loader.getBytes(), "UTF-8");
-              // if database does not exist, clear the file
-              if (microservice.getDatabase() == null) {
-                serviceProperties = "";
-              } else {
-
-                Template servicePropertiesTemplate = Template.createInitialTemplate(
-                    microservice.getMicroserviceModelId() + ":serviceProperties", serviceProperties,
-                    traceModel, treeWalk.getPathString());
-
-                servicePropertiesTemplate.setVariable("$Database_Address$",
-                    microservice.getDatabase().getAddress());
-                servicePropertiesTemplate.setVariable("$Database_Schema$",
-                    microservice.getDatabase().getSchema());
-                servicePropertiesTemplate.setVariable("$Database_User$",
-                    microservice.getDatabase().getLoginName());
-                servicePropertiesTemplate.setVariable("$Database_Password$",
-                    microservice.getDatabase().getLoginPassword());
-
-                serviceProperties = servicePropertiesTemplate.getContent();
-              }
+              String serviceProperties = new String(loader.getBytes(), "UTF-8");
+              generateOther(Template.createInitialTemplateEngine(traceModel, path), microservice,
+                  gitHubOrganization, serviceProperties);
+              break;
             case "i5.las2peer.webConnector.WebConnector.properties":
-              webConnectorConfig = new String(loader.getBytes(), "UTF-8");
-              Template webConnectorConfigTemplate = Template.createInitialTemplate(
-                  microservice.getMicroserviceModelId() + ":webConnectorConfig", serviceProperties,
-                  traceModel, treeWalk.getPathString());
-              webConnectorConfigTemplate.setVariable("$HTTP_Port$", port);
-              webConnectorConfig = webConnectorConfigTemplate.getContent();
+              String webConnectorConfig = new String(loader.getBytes(), "UTF-8");
+              generateOther(Template.createInitialTemplateEngine(traceModel, path), microservice,
+                  gitHubOrganization, webConnectorConfig);
               break;
             case ".gitignore":
               gitignore = new String(loader.getBytes(), "UTF-8");
               break;
             case ".classpath":
-              classpath = new String(loader.getBytes(), "UTF-8");
-              Template classpathTemplate = Template.createInitialTemplate(
-                  microservice.getMicroserviceModelId() + ":classpath", classpath, traceModel,
-                  treeWalk.getPathString());
-              if (microservice.getDatabase() != null) {
-                classpathTemplate.setVariable("$Database_Libraries$",
-                    "<classpathentry kind=\"lib\" path=\"lib/mysql-connector-java-5.1.6.jar\"/>\n"
-                        + "  <classpathentry kind=\"lib\" path=\"lib/commons-dbcp2-2.0.jar\"/>");
-              } else {
-                classpathTemplate.setVariable("$Database_Libraries$", "");
-              }
-              classpath = classpathTemplate.getContent();
+              String classpath = new String(loader.getBytes(), "UTF-8");
+              generateOther(Template.createInitialTemplateEngine(traceModel, path), microservice,
+                  gitHubOrganization, classpath);
               break;
             case "DatabaseManager.java":
               if (microservice.getDatabase() != null) {
@@ -394,37 +296,18 @@ public class MicroserviceGenerator extends Generator {
       if (microservice.getDatabase() != null) {
         databaseScript = generateDatabaseScript(databaseScript, genericTable, microservice);
       }
-      // add files to new repository
+      // add not traced files to new repository
       // configuration and build stuff
-      microserviceRepository =
-          createTextFileInRepository(microserviceRepository, "etc/ivy/", "ivy.xml", ivy);
       microserviceRepository = createTextFileInRepository(microserviceRepository, "etc/ivy/",
           "ivysettings.xml", ivySettings);
 
       microserviceRepository = createTextFileInRepository(microserviceRepository,
           "etc/ant_configuration/", "user.properties", antUserProperties);
-      microserviceRepository = createTextFileInRepository(microserviceRepository,
-          "etc/ant_configuration/", "service.properties", antServiceProperties);
-      microserviceRepository =
-          createTextFileInRepository(microserviceRepository, "etc/", "nodeInfo.xml", nodeInfo);
-
 
       microserviceRepository =
           createTextFileInRepository(microserviceRepository, "", ".gitignore", gitignore);
-      microserviceRepository =
-          createTextFileInRepository(microserviceRepository, "", ".classpath", classpath);
-      // property files
-      microserviceRepository = createTextFileInRepository(microserviceRepository, "etc/",
-          "i5.las2peer.services." + packageName + "." + microservice.getResourceName()
-              + ".properties",
-          serviceProperties);
-      microserviceRepository = createTextFileInRepository(microserviceRepository, "etc/",
-          "i5.las2peer.webConnector.WebConnector.properties", webConnectorConfig);
+
       // scripts
-      microserviceRepository = createTextFileInRepository(microserviceRepository, "bin/",
-          "start_network.bat", startScriptWindows);
-      microserviceRepository = createTextFileInRepository(microserviceRepository, "bin/",
-          "start_network.sh", startScriptUnix);
       microserviceRepository = createTextFileInRepository(microserviceRepository, "bin/",
           "start_UserAgentGenerator.bat", userAgentGeneratorWindows);
       microserviceRepository = createTextFileInRepository(microserviceRepository, "bin/",
@@ -444,10 +327,7 @@ public class MicroserviceGenerator extends Generator {
             microservice.getName().replace(" ", "_") + "_create_tables.sql", databaseScript);
       }
 
-      microserviceRepository = createTextFileInRepository(microserviceRepository,
-          "src/test/i5/las2peer/services/" + packageName + "/",
-          microservice.getResourceName() + "Test.java", serviceTest);
-
+      // add traced files to new repository
       createTracedFilesInRepository(traceModel, microserviceRepository);
 
       // commit files
@@ -472,6 +352,116 @@ public class MicroserviceGenerator extends Generator {
     } finally {
       microserviceRepository.close();
       treeWalk.close();
+    }
+  }
+
+  protected static void generateOther(TemplateEngine templateEngine, Microservice microservice,
+      String gitHubOrganization, String templateContent) {
+
+    String repositoryName = getRepositoryName(microservice);
+    String packageName = getPackageName(microservice);
+    // get the port: skip first 6 characters for search (http: / https:)
+    String port = microservice.getPath().substring(microservice.getPath().indexOf(":", 6) + 1,
+        microservice.getPath().indexOf("/", microservice.getPath().indexOf(":", 6)));
+
+    Template template = null;
+    String fileName =
+        java.nio.file.Paths.get(templateEngine.getFileName()).getFileName().toString();
+
+    switch (fileName) {
+      case ".project":
+        template = templateEngine.createTemplate(microservice.getMicroserviceModelId() + ":project",
+            templateContent);
+        template.setVariable("$Microservice_Name$", microservice.getName());
+        break;
+      case "README.md":
+        template = templateEngine.createTemplate(microservice.getMicroserviceModelId() + ":readMe",
+            templateContent);
+        template.setVariable("$Repository_Name$", repositoryName);
+        template.setVariable("$Organization_Name$", gitHubOrganization);
+        template.setVariable("$Microservice_Name$", microservice.getName());
+        break;
+      case "build.xml":
+        template = templateEngine
+            .createTemplate(microservice.getMicroserviceModelId() + ":buildFile", templateContent);
+        template.setVariable("$Microservice_Name$", microservice.getName());
+        break;
+      case "start_network.bat":
+        template = templateEngine.createTemplate(
+            microservice.getMicroserviceModelId() + ":startScriptWindows", templateContent);
+        template.setVariable("$Resource_Name$", microservice.getResourceName());
+        template.setVariable("$Lower_Resource_Name$", packageName);
+        template.setVariable("$Microservice_Version$", microservice.getVersion() + "");
+        break;
+      case "start_network.sh":
+        template = templateEngine.createTemplate(
+            microservice.getMicroserviceModelId() + ":startScriptUnix", templateContent);
+        template.setVariable("$Resource_Name$", microservice.getResourceName());
+        template.setVariable("$Lower_Resource_Name$", packageName);
+        template.setVariable("$Microservice_Version$", microservice.getVersion() + "");
+        break;
+      case "nodeInfo.xml":
+        template = templateEngine
+            .createTemplate(microservice.getMicroserviceModelId() + ":nodeInfo", templateContent);
+        template.setVariable("$Developer$", microservice.getDeveloper());
+        template.setVariable("$Resource_Name$", microservice.getResourceName());
+        break;
+      case "service.properties":
+        template = templateEngine.createTemplate(
+            microservice.getMicroserviceModelId() + ":antServiceProperties", templateContent);
+        template.setVariable("$Microservice_Version$", microservice.getVersion() + "");
+        template.setVariable("$Lower_Resource_Name$", packageName);
+        template.setVariable("$Resource_Name$", microservice.getResourceName());
+        template.setVariable("$Microservice_Version$", microservice.getVersion() + "");
+        break;
+      case "ivy.xml":
+        template = templateEngine.createTemplate(microservice.getMicroserviceModelId() + ":ivy",
+            templateContent);
+        // add mysql dependency only if a database exists
+        if (microservice.getDatabase() != null) {
+          template.setVariable("$MySQL_Dependencies$",
+              "<dependency org=\"mysql\" name=\"mysql-connector-java\" rev=\"5.1.6\" />\n"
+                  + "    <dependency org=\"org.apache.commons\" name=\"commons-pool2\" rev=\"2.2\" />\n"
+                  + "    <dependency org=\"org.apache.commons\" name=\"commons-dbcp2\" rev=\"2.0\" />");
+        } else {
+          template.setVariable("$MySQL_Dependencies", "");
+        }
+        break;
+      case "i5.las2peer.services.servicePackage.ServiceClass.properties":
+        if (microservice.getDatabase() == null) {
+          template = templateEngine.createTemplate(
+              microservice.getMicroserviceModelId() + ":emptyServiceProperties", "-{}-");
+        } else {
+          template = templateEngine.createTemplate(
+              microservice.getMicroserviceModelId() + ":serviceProperties", templateContent);
+          template.setVariable("$Database_Address$", microservice.getDatabase().getAddress());
+          template.setVariable("$Database_Schema$", microservice.getDatabase().getSchema());
+          template.setVariable("$Database_User$", microservice.getDatabase().getLoginName());
+          template.setVariable("$Database_Password$",
+              microservice.getDatabase().getLoginPassword());
+        }
+        break;
+      case "i5.las2peer.webConnector.WebConnector.properties":
+        template = templateEngine.createTemplate(
+            microservice.getMicroserviceModelId() + ":webConnectorConfig", templateContent);
+        template.setVariable("$HTTP_Port$", port);
+        break;
+      case ".classpath":
+        template = templateEngine
+            .createTemplate(microservice.getMicroserviceModelId() + ":classpath", templateContent);
+        if (microservice.getDatabase() != null) {
+          template.setVariable("$Database_Libraries$",
+              "<classpathentry kind=\"lib\" path=\"lib/mysql-connector-java-5.1.6.jar\"/>\n"
+                  + "  <classpathentry kind=\"lib\" path=\"lib/commons-dbcp2-2.0.jar\"/>");
+        } else {
+          template.setVariable("$Database_Libraries$", "");
+        }
+
+        break;
+    }
+
+    if (template != null) {
+      templateEngine.addTemplate(template);
     }
   }
 
@@ -828,7 +818,7 @@ public class MicroserviceGenerator extends Generator {
    * @return the service test as a string
    * 
    */
-  private static String generateNewServiceTest(TemplateEngine templateEngine, String serviceTest,
+  protected static String generateNewServiceTest(TemplateEngine templateEngine, String serviceTest,
       Microservice microservice, String genericTestCase) {
 
     // create template and add to template engine
