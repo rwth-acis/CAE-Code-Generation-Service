@@ -415,16 +415,19 @@ public class CodeGenerationService extends Service {
     return files;
   }
 
-
-  public void commitFileRaw(String repositoryName, String fileName, String encodeToString) {
-    Serializable[] payload = {repositoryName, fileName, encodeToString};
+  public void commitFilesRaw(String repositoryName, String[][] files) {
+    Serializable[] payload = {repositoryName, "", files};
     try {
       this.invokeServiceMethod("i5.las2peer.services.gitHubProxyService.GitHubProxyService@0.1",
-          "storeAndCommitFleRaw", payload);
+          "storeAndCommitFilesRaw", payload);
     } catch (Exception e) {
       logger.printStackTrace(e);
     }
+  }
 
+
+  public void commitFileRaw(String repositoryName, String fileName, String encodeToString) {
+    this.commitFilesRaw(repositoryName, new String[][] {new String[] {fileName, encodeToString}});
   }
 
   /**

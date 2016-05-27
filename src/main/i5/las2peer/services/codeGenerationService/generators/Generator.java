@@ -15,7 +15,9 @@ import java.io.PrintStream;
 import java.io.UnsupportedEncodingException;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.Base64;
+import java.util.List;
 import java.util.Map;
 
 import javax.imageio.ImageIO;
@@ -569,6 +571,40 @@ public abstract class Generator {
         traceModel.toJSONObject().toJSONString().replace("\\", ""));
 
     return repository;
+  }
+
+  protected static void updateTracedFilesInRepository(TraceModel traceModel, String repositoryName,
+      CodeGenerationService service) throws UnsupportedEncodingException {
+    Map<String, FileTraceModel> fileTraceMap = traceModel.getFilenameToFileTraceModelMap();
+
+    List<String[]> fileList = new ArrayList<String[]>();
+
+    for (String fullPath : fileTraceMap.keySet()) {
+      FileTraceModel fileTraceModel = fileTraceMap.get(fullPath);
+
+      String fileName = fullPath;
+      String relativePath = "";
+      int index = fullPath.lastIndexOf(File.separator);
+      if (index > -1) {
+        fileName = fullPath.substring(index + 1);
+        relativePath = fullPath.substring(0, index) + "/";
+      }
+
+      String content = fileTraceModel.getContent();
+      String fileTraceContent = fileTraceModel.toJSONObject().toJSONString();
+
+      fileList.add(new String[] {"traces/" + fileName + ".traces",
+          Base64.getEncoder().encodeToString(fileTraceContent.getBytes("utf-8"))});
+      fileList.add(new String[] {relativePath + fileName,
+          Base64.getEncoder().encodeToString(content.getBytes("utf-8"))});
+
+    }
+
+    String tracedFiles = traceModel.toJSONObject().toJSONString().replace("\\", "");
+    fileList.add(new String[] {"traces/tracedFiles.json",
+        Base64.getEncoder().encodeToString(tracedFiles.getBytes("utf-8"))});
+
+    service.commitFilesRaw(repositoryName, fileList.toArray(new String[][] {}));
   }
 
 

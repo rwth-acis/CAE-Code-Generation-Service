@@ -917,17 +917,20 @@ public class FrontendComponentGenerator extends Generator {
 
       traceModel.addFileTraceModel(applicationTemplateEngine.getFileTraceModel());
 
+      // commit changes
+      updateTracedFilesInRepository(traceModel, getRepositoryName(frontendComponent), service);
+
 
       // commit changes
 
-      commitTracedFile("widget.xml", widgetTemplateEngine, "code regeneration", service,
-          getRepositoryName(frontendComponent));
-      commitTracedFile("js/applicationScript.js", applicationTemplateEngine, "code regeneration", service,
-          getRepositoryName(frontendComponent));
-
-      String tracedFiles = traceModel.toJSONObject().toJSONString().replace("\\", "");
-      service.commitFileRaw(getRepositoryName(frontendComponent), "traces/tracedFiles.json",
-          Base64.getEncoder().encodeToString(tracedFiles.getBytes("utf-8")));
+      // commitTracedFile("widget.xml", widgetTemplateEngine, "code regeneration", service,
+      // getRepositoryName(frontendComponent));
+      // commitTracedFile("js/applicationScript.js", applicationTemplateEngine, "code regeneration",
+      // service, getRepositoryName(frontendComponent));
+      //
+      // String tracedFiles = traceModel.toJSONObject().toJSONString().replace("\\", "");
+      // service.commitFileRaw(getRepositoryName(frontendComponent), "traces/tracedFiles.json",
+      // Base64.getEncoder().encodeToString(tracedFiles.getBytes("utf-8")));
 
     } catch (UnsupportedEncodingException e) {
       logger.printStackTrace(e);
