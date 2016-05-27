@@ -440,4 +440,15 @@ public class CodeGenerationService extends Service {
     return ModelChecker.performViolationCheck(this.getTracedFiles(repositoryName),
         templateRepository, gitHubOrganization);
   }
+
+
+  public void renameFile(String repositoryName, String newFileName, String oldFileName) {
+    Serializable[] payload = {repositoryName, newFileName, oldFileName};
+    try {
+      this.invokeServiceMethod("i5.las2peer.services.gitHubProxyService.GitHubProxyService@0.1",
+          "renameFile", payload);
+    } catch (Exception e) {
+      logger.printStackTrace(e);
+    }
+  }
 }

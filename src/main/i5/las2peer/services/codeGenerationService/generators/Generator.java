@@ -557,14 +557,11 @@ public abstract class Generator {
         relativePath = fullPath.substring(0, index) + "/";
       }
 
-      System.out.println(fileName);
-      System.out.println(fullPath);
-
       repository = createTextFileInRepository(repository, relativePath, fileName,
           fileTraceModel.getContent());
 
-      repository = createTextFileInRepository(repository, "traces/", fileName + ".traces",
-          fileTraceModel.toJSONObject().toJSONString());
+      repository = createTextFileInRepository(repository, "traces/" + relativePath,
+          fileName + ".traces", fileTraceModel.toJSONObject().toJSONString());
     }
 
     repository = createTextFileInRepository(repository, "traces/", "tracedFiles.json",
@@ -593,7 +590,7 @@ public abstract class Generator {
       String content = fileTraceModel.getContent();
       String fileTraceContent = fileTraceModel.toJSONObject().toJSONString();
 
-      fileList.add(new String[] {"traces/" + fileName + ".traces",
+      fileList.add(new String[] {"traces/" + relativePath + fileName + ".traces",
           Base64.getEncoder().encodeToString(fileTraceContent.getBytes("utf-8"))});
       fileList.add(new String[] {relativePath + fileName,
           Base64.getEncoder().encodeToString(content.getBytes("utf-8"))});
@@ -620,6 +617,11 @@ public abstract class Generator {
     obj.put("traces", templateEngine.toJSONObject());
 
     service.commitFile(repositoryName, obj);
+  }
+
+  protected static void renameFileInRepository(String repositoryName, String newFileName,
+      String oldFileName, CodeGenerationService service) {
+    service.renameFile(repositoryName, newFileName, oldFileName);
   }
 
 }
