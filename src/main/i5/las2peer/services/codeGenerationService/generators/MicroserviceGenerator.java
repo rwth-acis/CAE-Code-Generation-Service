@@ -44,15 +44,36 @@ public class MicroserviceGenerator extends Generator {
   private static final L2pLogger logger =
       L2pLogger.getInstance(ApplicationGenerator.class.getName());
 
+  /**
+   * Get the name of the package for a microservice model
+   * 
+   * @param microservice A microservice nodel
+   * @return The name of the package
+   */
+
   protected static String getPackageName(Microservice microservice) {
     return microservice.getResourceName().substring(0, 1).toLowerCase()
         + microservice.getResourceName().substring(1);
   }
 
+  /**
+   * Get the service file name of a microservice model
+   * 
+   * @param microservice A microservice model
+   * @return The file name of the service
+   */
+
   protected static String getServiceFileName(Microservice microservice) {
     return "src/main/i5/las2peer/services/" + getPackageName(microservice) + "/"
         + microservice.getResourceName() + ".java";
   }
+
+  /**
+   * Get the file name of the test file of a microservice model
+   * 
+   * @param microservice A microservice model
+   * @return The file name of the test file
+   */
 
   protected static String getServiceTestFileName(Microservice microservice) {
     return "src/test/i5/las2peer/services/" + getPackageName(microservice) + "/"
@@ -97,9 +118,6 @@ public class MicroserviceGenerator extends Generator {
     // helper variables
     String packageName = microservice.getResourceName().substring(0, 1).toLowerCase()
         + microservice.getResourceName().substring(1);
-    // get the port: skip first 6 characters for search (http: / https:)
-    String port = microservice.getPath().substring(microservice.getPath().indexOf(":", 6) + 1,
-        microservice.getPath().indexOf("/", microservice.getPath().indexOf(":", 6)));
 
     // variables holding content to be modified and added to repository later
     BufferedImage logo = null;
@@ -144,34 +162,34 @@ public class MicroserviceGenerator extends Generator {
             // start with the "easy" replacements, and store the other template files for later
             case ".project":
               String projectFile = new String(loader.getBytes(), "UTF-8");
-              generateOther(Template.createInitialTemplateEngine(traceModel, path), microservice,
-                  gitHubOrganization, projectFile);
+              generateOtherArtifacts(Template.createInitialTemplateEngine(traceModel, path),
+                  microservice, gitHubOrganization, projectFile);
               break;
             case "logo_services.png":
               logo = ImageIO.read(loader.openStream());
               break;
             case "README.md":
               String readMe = new String(loader.getBytes(), "UTF-8");
-              generateOther(Template.createInitialTemplateEngine(traceModel, path), microservice,
-                  gitHubOrganization, readMe);
+              generateOtherArtifacts(Template.createInitialTemplateEngine(traceModel, path),
+                  microservice, gitHubOrganization, readMe);
               break;
             case "LICENSE.txt":
               license = new String(loader.getBytes(), "UTF-8");
               break;
             case "build.xml":
               String buildFile = new String(loader.getBytes(), "UTF-8");
-              generateOther(Template.createInitialTemplateEngine(traceModel, path), microservice,
-                  gitHubOrganization, buildFile);
+              generateOtherArtifacts(Template.createInitialTemplateEngine(traceModel, path),
+                  microservice, gitHubOrganization, buildFile);
               break;
             case "start_network.bat":
               String startScriptWindows = new String(loader.getBytes(), "UTF-8");
-              generateOther(Template.createInitialTemplateEngine(traceModel, path), microservice,
-                  gitHubOrganization, startScriptWindows);
+              generateOtherArtifacts(Template.createInitialTemplateEngine(traceModel, path),
+                  microservice, gitHubOrganization, startScriptWindows);
               break;
             case "start_network.sh":
               String startScriptUnix = new String(loader.getBytes(), "UTF-8");
-              generateOther(Template.createInitialTemplateEngine(traceModel, path), microservice,
-                  gitHubOrganization, startScriptUnix);
+              generateOtherArtifacts(Template.createInitialTemplateEngine(traceModel, path),
+                  microservice, gitHubOrganization, startScriptUnix);
               break;
             case "start_UserAgentGenerator.bat":
               userAgentGeneratorWindows = new String(loader.getBytes(), "UTF-8");
@@ -181,21 +199,21 @@ public class MicroserviceGenerator extends Generator {
               break;
             case "nodeInfo.xml":
               String nodeInfo = new String(loader.getBytes(), "UTF-8");
-              generateOther(Template.createInitialTemplateEngine(traceModel, path), microservice,
-                  gitHubOrganization, nodeInfo);
+              generateOtherArtifacts(Template.createInitialTemplateEngine(traceModel, path),
+                  microservice, gitHubOrganization, nodeInfo);
               break;
             case "service.properties":
               String antServiceProperties = new String(loader.getBytes(), "UTF-8");
-              generateOther(Template.createInitialTemplateEngine(traceModel, path), microservice,
-                  gitHubOrganization, antServiceProperties);
+              generateOtherArtifacts(Template.createInitialTemplateEngine(traceModel, path),
+                  microservice, gitHubOrganization, antServiceProperties);
               break;
             case "user.properties":
               antUserProperties = new String(loader.getBytes(), "UTF-8");
               break;
             case "ivy.xml":
               String ivy = new String(loader.getBytes(), "UTF-8");
-              generateOther(Template.createInitialTemplateEngine(traceModel, path), microservice,
-                  gitHubOrganization, ivy);
+              generateOtherArtifacts(Template.createInitialTemplateEngine(traceModel, path),
+                  microservice, gitHubOrganization, ivy);
               break;
             case "ivysettings.xml":
               ivySettings = new String(loader.getBytes(), "UTF-8");
@@ -203,21 +221,21 @@ public class MicroserviceGenerator extends Generator {
             // TODO: change template to enable empty service properties
             case "i5.las2peer.services.servicePackage.ServiceClass.properties":
               String serviceProperties = new String(loader.getBytes(), "UTF-8");
-              generateOther(Template.createInitialTemplateEngine(traceModel, path), microservice,
-                  gitHubOrganization, serviceProperties);
+              generateOtherArtifacts(Template.createInitialTemplateEngine(traceModel, path),
+                  microservice, gitHubOrganization, serviceProperties);
               break;
             case "i5.las2peer.webConnector.WebConnector.properties":
               String webConnectorConfig = new String(loader.getBytes(), "UTF-8");
-              generateOther(Template.createInitialTemplateEngine(traceModel, path), microservice,
-                  gitHubOrganization, webConnectorConfig);
+              generateOtherArtifacts(Template.createInitialTemplateEngine(traceModel, path),
+                  microservice, gitHubOrganization, webConnectorConfig);
               break;
             case ".gitignore":
               gitignore = new String(loader.getBytes(), "UTF-8");
               break;
             case ".classpath":
               String classpath = new String(loader.getBytes(), "UTF-8");
-              generateOther(Template.createInitialTemplateEngine(traceModel, path), microservice,
-                  gitHubOrganization, classpath);
+              generateOtherArtifacts(Template.createInitialTemplateEngine(traceModel, path),
+                  microservice, gitHubOrganization, classpath);
               break;
             case "DatabaseManager.java":
               if (microservice.getDatabase() != null) {
@@ -279,9 +297,9 @@ public class MicroserviceGenerator extends Generator {
       TemplateStrategy strategy = new InitialGenerationStrategy(serviceClassTraceModel);
       TemplateEngine serviceTemplateEngine = new TemplateEngine(strategy, serviceClassTraceModel);
 
-      serviceClass = generateNewServiceClass(serviceTemplateEngine, serviceClass, microservice,
-          repositoryLocation, genericHttpMethod, genericHttpMethodBody, genericApiResponse,
-          genericHttpResponse, databaseConfig, databaseInstantiation, serviceInvocation);
+      generateNewServiceClass(serviceTemplateEngine, serviceClass, microservice, repositoryLocation,
+          genericHttpMethod, genericHttpMethodBody, genericApiResponse, genericHttpResponse,
+          databaseConfig, databaseInstantiation, serviceInvocation);
 
       FileTraceModel serviceTestTraceModel =
           new FileTraceModel(traceModel, "src/test/i5/las2peer/services/" + packageName + "/"
@@ -296,7 +314,8 @@ public class MicroserviceGenerator extends Generator {
       if (microservice.getDatabase() != null) {
         databaseScript = generateDatabaseScript(databaseScript, genericTable, microservice);
       }
-      // add not traced files to new repository
+      // add not traced files to new repository, e.g. static files
+
       // configuration and build stuff
       microserviceRepository = createTextFileInRepository(microserviceRepository, "etc/ivy/",
           "ivysettings.xml", ivySettings);
@@ -355,8 +374,8 @@ public class MicroserviceGenerator extends Generator {
     }
   }
 
-  protected static void generateOther(TemplateEngine templateEngine, Microservice microservice,
-      String gitHubOrganization, String templateContent) {
+  protected static void generateOtherArtifacts(TemplateEngine templateEngine,
+      Microservice microservice, String gitHubOrganization, String templateContent) {
 
     String repositoryName = getRepositoryName(microservice);
     String packageName = getPackageName(microservice);
@@ -482,10 +501,8 @@ public class MicroserviceGenerator extends Generator {
    * @param databaseInstantiation a database instantiation (source code) template
    * @param serviceInvocation a service invocation (source code) template
    * 
-   * @return the service class as a string
-   * 
    */
-  public static String generateNewServiceClass(TemplateEngine templateEngine, String serviceClass,
+  public static void generateNewServiceClass(TemplateEngine templateEngine, String serviceClass,
       Microservice microservice, String repositoryLocation, String genericHttpMethod,
       String genericHttpMethodBody, String genericApiResponse, String genericHttpResponse,
       String databaseConfig, String databaseInstantiation, String serviceInvocation) {
@@ -535,12 +552,15 @@ public class MicroserviceGenerator extends Generator {
     // http methods
     HttpMethod[] httpMethods = microservice.getHttpMethods().values().toArray(new HttpMethod[0]);
     for (int httpMethodIndex = 0; httpMethodIndex < httpMethods.length; httpMethodIndex++) {
-      String currentMethodCode = genericHttpMethod; // copy content
       HttpMethod currentMethod = httpMethods[httpMethodIndex];
 
       // create new template for the current method
       Template currentMethodTemplate = templateEngine
-          .createTemplate(currentMethod.getModelId() + ":httpMethod", currentMethodCode);
+          .createTemplate(currentMethod.getModelId() + ":httpMethod", genericHttpMethod);
+
+      // add a trace to the segment
+      templateEngine.addTrace(currentMethod.getModelId(), "Http Method", currentMethod.getName(),
+          currentMethodTemplate);
 
       // add template of current method to service class template
       serviceClassTemplate.appendVariable("$Service_Methods$", currentMethodTemplate);
@@ -676,12 +696,6 @@ public class MicroserviceGenerator extends Generator {
                       + "_JSON = (JSONObject) JSONValue.parse(" + currentPayload.getName()
                       + ");\n");
 
-
-          currentMethodCode =
-              currentMethodCode.replace("$HTTPMethod_Casts$",
-                  "    JSONObject " + currentPayload.getName()
-                      + "_JSON = (JSONObject) JSONValue.parse(" + currentPayload.getName()
-                      + ");\n$HTTPMethod_Casts$");
           currentMethodBodyTemplate.appendVariable("$HTTPMethod_Casts$", castTemplate);
 
         }
@@ -701,7 +715,6 @@ public class MicroserviceGenerator extends Generator {
         }
       }
       // remove last cast placeholder
-      currentMethodCode = currentMethodCode.replace("\n$HTTPMethod_Casts$", "");
       currentMethodBodyTemplate.setVariableIfNotSet("$HTTPMethod_Casts$", "");
 
       // remove last comma from parameter code (of parameters were inserted before)
@@ -709,7 +722,6 @@ public class MicroserviceGenerator extends Generator {
         parameterCode = parameterCode.substring(0, parameterCode.length() - 2);
       }
       // remove last parameter placeholder (JavaDoc)
-      currentMethodCode = currentMethodCode.replace("\n$HTTPMethod_Params$", "");
       currentMethodTemplate.setVariableIfNotSet("$HTTPMethod_Params$", "   *");
 
       // if no consumes annotation is set until here, we set it to text
@@ -717,9 +729,6 @@ public class MicroserviceGenerator extends Generator {
         consumesAnnotation = "MediaType.TEXT_PLAIN";
       }
       // set the consumes annotation
-      currentMethodCode = currentMethodCode.replace("$HTTPMethod_Consumes$",
-          "@Consumes(" + consumesAnnotation + ")");
-
       Template consumeTemplate = templateEngine
           .createTemplate(currentMethod.getModelId() + ":consumes", "@Consumes(-{$type$}-)");
       consumeTemplate.setVariable("$type$", consumesAnnotation);
@@ -727,29 +736,19 @@ public class MicroserviceGenerator extends Generator {
       currentMethodTemplate.appendVariable("$HTTPMethod_Consumes$", consumeTemplate);
 
       // set the parameters
-      currentMethodCode = currentMethodCode.replace("$HTTPMethod_Parameters$", parameterCode);
       currentMethodTemplate.setVariable("$HTTPMethod_Parameters$", parameterCode);
 
       // now to the service invocations
       for (InternalCall call : currentMethod.getInternalCalls()) {
         hasServiceInvocations = true; // marker for adding serializable import
-        String currentInvocation = serviceInvocation;
 
         Template currentInvocationTemplate =
-            templateEngine.createTemplate(call.getModelId(), currentInvocation);
-
-
+            templateEngine.createTemplate(call.getModelId(), serviceInvocation);
 
         currentInvocationTemplate.setVariable("$Return_Variable$", call.getReturnVariableName());
         currentInvocationTemplate.setVariable("$Remove_Service_Name$", call.getServiceClass());
         currentInvocationTemplate.setVariable("$Remote_Service_Method$", call.getMethodName());
 
-        currentInvocation =
-            currentInvocation.replace("$Return_Variable$", call.getReturnVariableName());
-        currentInvocation =
-            currentInvocation.replace("$Remove_Service_Name$", call.getServiceClass());
-        currentInvocation =
-            currentInvocation.replace("$Remote_Service_Method$", call.getMethodName());
         String internalParameter = "$Parameters$";
         for (InternalCallParam parameter : call.getParameters()) {
 
@@ -757,52 +756,35 @@ public class MicroserviceGenerator extends Generator {
               templateEngine.createTemplate(parameter.getModelId() + ":InternalParam",
                   "    Serializable " + parameter.getName() + " = null;\n"));
 
-          currentInvocation = currentInvocation.replace("$Parameter_Init$",
-              "    Serializable " + parameter.getName() + " = null;\n$Parameter_Init$");
           internalParameter =
               internalParameter.replace("$Parameters$", parameter.getName() + ", $Parameters$");
-          currentInvocation =
-              currentInvocation.replace("$Parameters$", parameter.getName() + ", $Parameters$");
         }
         // replace last init placeholder
         currentInvocationTemplate.setVariableIfNotSet("$Parameter_Init$", "");
-        currentInvocation = currentInvocation.replace("\n$Parameter_Init$", "");
         // replace last parameter placeholder
-        currentInvocation = currentInvocation.replace(", $Parameters$", "");
         internalParameter = internalParameter.replace(", $Parameters$", "");
         internalParameter = internalParameter.replace("$Parameters$", "new Serializable[] {}");
         currentInvocationTemplate.setVariable("$Parameters$", internalParameter);
 
         // add invocation code to current method code
-        currentMethodCode = currentMethodCode.replace("$Invocations$", currentInvocation);
         currentMethodBodyTemplate.appendVariable("$Invocations$", currentInvocationTemplate);
       }
       // replace last invocation placeholder
-      currentMethodCode = currentMethodCode.replace("$Invocations$\n", "");
       currentMethodBodyTemplate.setVariableIfNotSet("$Invocations$", "");
-
-      // finally insert currentMethodCode into serviceClass
-      serviceClass = serviceClass.replace("$Service_Methods$", currentMethodCode);
 
       currentMethodTemplate.setVariable("$HTTPMethod_Body$",
           currentMethodBodyTemplate.getContent());
 
-
-
     }
     // add serializable import or remove placeholder
     if (hasServiceInvocations) {
-      serviceClass = serviceClass.replace("$Additional_Import$", "import java.io.Serializable;");
       serviceClassTemplate.setVariable("$Additional_Import$", "import java.io.Serializable;");
     } else {
-      serviceClass = serviceClass.replace("$Additional_Import$\n", "");
       serviceClassTemplate.setVariable("$Additional_Import$", "");
     }
     // remove last placeholder
     serviceClassTemplate.setVariableIfNotSet("$Service_Methods$", "");
-    serviceClass = serviceClass.replace("\n\n\n$Service_Methods$", "");
 
-    return serviceClass;
   }
 
 

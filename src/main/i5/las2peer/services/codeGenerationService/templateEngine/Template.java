@@ -119,7 +119,6 @@ public class Template {
    */
 
   public void appendVariable(String variableName, Template template, boolean once) {
-    System.out.println("appendVariable " + variableName);
     AppendableVariableSegment container = this.getAppendableVariableSegment(variableName);
 
     // we can safely cast to a composition as the given "fallback" segment is a composition and

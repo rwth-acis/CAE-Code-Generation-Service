@@ -40,27 +40,13 @@ public class TemplateEngine {
   }
 
   /**
-   * Gets the trace model of the tepmlate engine
+   * Get the trace model of the tepmlate engine
    * 
    * @return The trace model of the source code / template engine
    */
 
   public FileTraceModel getFileTraceModel() {
     return this.traceModel;
-  }
-
-  /**
-   * Get the segment with the given id within the template engine. Therefore, a recursive lookup in
-   * the trace model of the engine is performed. Returns null, if non segment with the given id is
-   * found
-   * 
-   * @param segmentId The id of the segment that should be returned
-   * @return If the segment is found the requested segment within the template engine, or null if
-   *         not found
-   */
-
-  public Segment getSegmentFromTraceModel(String segmentId) {
-    return this.traceModel.getRecursiveSegment(segmentId);
   }
 
   /**
@@ -88,7 +74,7 @@ public class TemplateEngine {
   }
 
   /**
-   * Get the file name the template engine belongs to
+   * Get the full file name the template engine belongs to
    * 
    * @return The file name the template engine belongs to
    */
@@ -105,7 +91,7 @@ public class TemplateEngine {
    *         as the given segment.
    */
 
-  protected Segment addSegment(Segment segment) {
+  private Segment addSegment(Segment segment) {
     // return this.strategy.addSegment(segment.getId(), segment);
 
     // check if a segment with the given id already exists
@@ -151,7 +137,8 @@ public class TemplateEngine {
   }
 
   /**
-   * Returns the generated source code as a string. It is an alias for the getContent() method
+   * Returns the generated source code as a string. It is an alias for the {@link #getContent()}
+   * method
    * 
    * @return The generated source code
    */
@@ -161,7 +148,7 @@ public class TemplateEngine {
   }
 
   /**
-   * Creates or return a template of the template engine for the given source code. Depending on the
+   * Creates or return a template of the template engine for a given source code. Depending on the
    * used template strategy of the template engine, this can also be an already existing template
    * 
    * @param id The id of the template

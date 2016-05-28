@@ -249,7 +249,7 @@ public class FrontendComponentGenerator extends Generator {
       frontendComponentRepository = createTextFileInRepository(frontendComponentRepository, "js/",
           "applicationScript.js", applicationScriptTemplateEngine.getContent());
       frontendComponentRepository = createTextFileInRepository(frontendComponentRepository,
-          "traces/", "applicationScript.js.traces",
+          "traces/js", "applicationScript.js.traces",
           applicationScriptTemplateEngine.toJSONObject().toJSONString());
 
       // libraries
@@ -869,7 +869,6 @@ public class FrontendComponentGenerator extends Generator {
         content = new String(base64decodedBytes, "utf-8");
 
         JSONObject fileTraces = (JSONObject) fileObject.get("fileTraces");
-        FileTraceModel fileTraceModel = new FileTraceModel(traceModel, fileName);
         FileTraceModel oldFileTraceModel = FileTraceModelFactory
             .createFileTraceModelFromJSON(content, fileTraces.toJSONString(), traceModel, fileName);
         TemplateStrategy strategy = new SynchronizationStrategy(oldFileTraceModel);
