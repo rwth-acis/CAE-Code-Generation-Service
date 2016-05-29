@@ -14,6 +14,7 @@ import i5.las2peer.services.codeGenerationService.exception.GitHubException;
 import i5.las2peer.services.codeGenerationService.exception.ModelParseException;
 import i5.las2peer.services.codeGenerationService.generators.ApplicationGenerator;
 import i5.las2peer.services.codeGenerationService.generators.FrontendComponentGenerator;
+import i5.las2peer.services.codeGenerationService.generators.FrontendComponentSynchronization;
 import i5.las2peer.services.codeGenerationService.generators.Generator;
 import i5.las2peer.services.codeGenerationService.generators.MicroserviceGenerator;
 import i5.las2peer.services.codeGenerationService.generators.MicroserviceSynchronization;
@@ -36,6 +37,7 @@ public class CodeGenerationService extends Service {
   private String gitHubOrganization;
   private String templateRepository;
   private String gitHubUserMail;
+  private boolean useModelSynchronization;
   private final L2pLogger logger = L2pLogger.getInstance(CodeGenerationService.class.getName());
 
   public CodeGenerationService() {
@@ -58,13 +60,6 @@ public class CodeGenerationService extends Service {
   public String createFromModel(Serializable... serializedModel) {
 
     SimpleModel model = (SimpleModel) serializedModel[0];
-
-    // old model only used for microservice and frontend components
-    SimpleModel oldModel = null;
-
-    if (serializedModel.length > 1) {
-      oldModel = (SimpleModel) serializedModel[1];
-    }
 
     L2pLogger.logEvent(Event.SERVICE_MESSAGE,
         "createFromModel: Received model with name " + model.getName());
@@ -102,44 +97,10 @@ public class CodeGenerationService extends Service {
               L2pLogger.logEvent(Event.SERVICE_MESSAGE,
                   "createFromModel: Creating frontend component source code now..");
 
-              // only if there is an old model and a remote repository exists, we can synchronize
-              // the model
-
-              if (oldModel != null && Generator.existsRemoteRepository(
-                  FrontendComponentGenerator.getRepositoryName(frontendComponent),
-                  this.gitHubOrganization, this.gitHubUser, this.gitHubPassword)) {
-                FrontendComponent oldFrontendComponent = new FrontendComponent(oldModel);
-
-                FrontendComponentGenerator.synchronizeSourceCode(frontendComponent,
-                    oldFrontendComponent,
-                    this.getTracedFiles(
-                        FrontendComponentGenerator.getRepositoryName(frontendComponent)),
-                    this.templateRepository, this.gitHubOrganization, this);
-
-                L2pLogger.logEvent(Event.SERVICE_MESSAGE, "createFromModel: Synchronized!");
-
-              } else {
-
-                FrontendComponentGenerator.createSourceCode(frontendComponent,
-                    this.templateRepository, this.gitHubOrganization, this.gitHubUser,
-                    this.gitHubUserMail, this.gitHubPassword);;
-                L2pLogger.logEvent(Event.SERVICE_MESSAGE, "createFromModel: Created!");
-
-                // inform the GitHubProxy service that we may have deleted an existing repository
-
-                try {
-                  Serializable[] payload =
-                      {FrontendComponentGenerator.getRepositoryName(frontendComponent)};
-
-                  this.invokeServiceMethod(
-                      "i5.las2peer.services.gitHubProxyService.GitHubProxyService@0.1",
-                      "deleteLocalRepository", payload);
-
-                } catch (Exception e) {
-                  logger.printStackTrace(e);
-                }
-
-              }
+              FrontendComponentGenerator.createSourceCode(frontendComponent,
+                  this.templateRepository, this.gitHubOrganization, this.gitHubUser,
+                  this.gitHubUserMail, this.gitHubPassword);;
+              L2pLogger.logEvent(Event.SERVICE_MESSAGE, "createFromModel: Created!");
 
               return "done";
             case "application":
@@ -279,13 +240,16 @@ public class CodeGenerationService extends Service {
               // (in case of an invalid model, keep the old repository)
               Microservice microservice = new Microservice(model);
 
-              // only if there is an old model and a remote repository exists, we can synchronize
-              // the model
+              // only if an old model and a remote repository exist, we can synchronize
+              // the model and source code
 
-              if (oldModel != null && Generator.existsRemoteRepository(
-                  MicroserviceGenerator.getRepositoryName(microservice), this.gitHubOrganization,
-                  this.gitHubUser, this.gitHubPassword)) {
+              if (useModelSynchronization && oldModel != null
+                  && MicroserviceSynchronization.existsRemoteRepositoryForModel(microservice,
+                      this.gitHubOrganization, this.gitHubUser, this.gitHubPassword)) {
                 Microservice oldMicroservice = new Microservice(oldModel);
+
+                L2pLogger.logEvent(Event.SERVICE_MESSAGE,
+                    "updateRepositoryOfModel: Calling synchronizeSourceCode now..");
 
                 MicroserviceSynchronization.synchronizeSourceCode(microservice, oldMicroservice,
                     this.getTracedFiles(MicroserviceGenerator.getRepositoryName(microservice)),
@@ -294,8 +258,23 @@ public class CodeGenerationService extends Service {
                 L2pLogger.logEvent(Event.SERVICE_MESSAGE, "updateRepositoryOfModel: Synchronized!");
                 return "done";
               } else {
+
+                if (useModelSynchronization) {
+                  // inform the GitHubProxy service that we may have deleted a remote repository
+                  // it will then delete the local repository
+                  deleteReturnMessage = this
+                      .deleteLocalRepository(MicroserviceGenerator.getRepositoryName(microservice));
+                } else {
+                  deleteReturnMessage = deleteRepositoryOfModel(serializedModel);
+                }
+
+                if (!deleteReturnMessage.equals("done")) {
+                  return deleteReturnMessage; // error happened
+                }
+
                 L2pLogger.logEvent(Event.SERVICE_MESSAGE,
                     "updateRepositoryOfModel: Calling createFromModel now..");
+
                 return createFromModel(serializedModel);
               }
 
@@ -304,16 +283,53 @@ public class CodeGenerationService extends Service {
                   "updateRepositoryOfModel: Checking frontend-component model now..");
               // check first if model can be constructed
               // (in case of an invalid model, keep the old repository)
-              new FrontendComponent(model);
-              L2pLogger.logEvent(Event.SERVICE_MESSAGE,
-                  "updateRepositoryOfModel: Calling delete (old) repository method now..");
-              // deleteReturnMessage = deleteRepositoryOfModel(serializedModel);
-              // if (!deleteReturnMessage.equals("done")) {
-              // return deleteReturnMessage; // error happened
-              // }
-              L2pLogger.logEvent(Event.SERVICE_MESSAGE,
-                  "updateRepositoryOfModel: Calling createFromModel now..");
-              return createFromModel(serializedModel);
+              FrontendComponent frontendComponent = new FrontendComponent(model);
+
+              // only if an old model and a remote repository exist, we can synchronize
+              // the model and source code
+
+              if (useModelSynchronization && oldModel != null
+                  && FrontendComponentSynchronization.existsRemoteRepositoryForModel(
+                      frontendComponent, this.gitHubOrganization, this.gitHubUser,
+                      this.gitHubPassword)) {
+                FrontendComponent oldFrontendComponent = new FrontendComponent(oldModel);
+
+                L2pLogger.logEvent(Event.SERVICE_MESSAGE,
+                    "updateRepositoryOfModel: Calling synchronizeSourceCode now..");
+
+                FrontendComponentSynchronization.synchronizeSourceCode(frontendComponent,
+                    oldFrontendComponent,
+                    this.getTracedFiles(
+                        FrontendComponentGenerator.getRepositoryName(frontendComponent)),
+                    this.templateRepository, this.gitHubOrganization, this);
+
+                L2pLogger.logEvent(Event.SERVICE_MESSAGE, "updateRepositoryOfModel: Synchronized!");
+                return "done";
+              } else {
+
+                L2pLogger.logEvent(Event.SERVICE_MESSAGE,
+                    "updateRepositoryOfModel: Calling delete (old) repository method now..");
+
+                if (useModelSynchronization) {
+                  // inform the GitHubProxy service that we may have deleted a remote repository
+                  // it will then delete the local repository
+                  deleteReturnMessage = this.deleteLocalRepository(
+                      FrontendComponentGenerator.getRepositoryName(frontendComponent));
+                } else {
+                  deleteReturnMessage = deleteRepositoryOfModel(serializedModel);
+                }
+
+                if (!deleteReturnMessage.equals("done")) {
+                  return deleteReturnMessage; // error happened
+                }
+                L2pLogger.logEvent(Event.SERVICE_MESSAGE,
+                    "updateRepositoryOfModel: Calling createFromModel now..");
+                return createFromModel(serializedModel);
+
+              }
+
+
+
             case "application":
               L2pLogger.logEvent(Event.SERVICE_MESSAGE,
                   "updateRepositoryOfModel: Checking application model now..");
@@ -338,11 +354,32 @@ public class CodeGenerationService extends Service {
               "updateRepositoryOfModel: Model Parsing exception: " + e.getMessage());
           logger.printStackTrace(e);
           return "Error: Parsing model failed with " + e.getMessage();
+        } catch (GitHubException e2) {
+          L2pLogger.logEvent(Event.SERVICE_MESSAGE,
+              "updateRepositoryOfModel: GitHub access exception: " + e2.getMessage());
+          logger.printStackTrace(e2);
+          return "Error: Generating code failed because of failing GitHub access: "
+              + e2.getMessage();
         }
       }
     }
     return "Model has no attribute 'type'!";
   }
+
+  private String deleteLocalRepository(String repositoryName) {
+    try {
+      Serializable[] payload = {repositoryName};
+
+      this.invokeServiceMethod("i5.las2peer.services.gitHubProxyService.GitHubProxyService@0.1",
+          "deleteLocalRepository", payload);
+
+    } catch (Exception e) {
+      logger.printStackTrace(e);
+      return e.getMessage();
+    }
+    return "done";
+  }
+
 
   /**
    * 
@@ -415,19 +452,25 @@ public class CodeGenerationService extends Service {
     return files;
   }
 
-  public void commitFilesRaw(String repositoryName, String[][] files) {
-    Serializable[] payload = {repositoryName, "", files};
+  /**
+   * Commit multiple files to the github repository. Like
+   * {@link i5.las2peer.services.codeGenerationService.CodeGenerationService#commitFile(String, JSONObject)}
+   * , but without any trace information and for multiple files
+   * 
+   * @param repositoryName The name of the repository
+   * @param commitMessage A commit message
+   * @param files An array containing the file names and file contents
+   */
+
+  public void commitMultipleFilesRaw(String repositoryName, String commitMessage,
+      String[][] files) {
+    Serializable[] payload = {repositoryName, commitMessage, files};
     try {
       this.invokeServiceMethod("i5.las2peer.services.gitHubProxyService.GitHubProxyService@0.1",
           "storeAndCommitFilesRaw", payload);
     } catch (Exception e) {
       logger.printStackTrace(e);
     }
-  }
-
-
-  public void commitFileRaw(String repositoryName, String fileName, String encodeToString) {
-    this.commitFilesRaw(repositoryName, new String[][] {new String[] {fileName, encodeToString}});
   }
 
   /**
@@ -441,6 +484,13 @@ public class CodeGenerationService extends Service {
         templateRepository, gitHubOrganization);
   }
 
+  /**
+   * Rename a file in the local repository hold by the github proxy service
+   * 
+   * @param repositoryName The name of the repository
+   * @param newFileName The new file name
+   * @param oldFileName The old file name
+   */
 
   public void renameFile(String repositoryName, String newFileName, String oldFileName) {
     Serializable[] payload = {repositoryName, newFileName, oldFileName};
