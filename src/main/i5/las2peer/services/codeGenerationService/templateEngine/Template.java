@@ -106,9 +106,19 @@ public class Template {
    */
 
   public void setVariable(String variableName, String content) {
-    this.templateEngine.setSegmentContent(segment, variableName, content);
+    this.templateEngine.setSegmentContent(this.segment, variableName, content);
   }
 
+  /**
+   * Set the content of a variable within this template
+   * 
+   * @param variableName - The name of the variable to set its content
+   * @param content - The content that will be set
+   */
+
+  public void setVariableForce(String variableName, String content) {
+    this.segment.setSegmentContent(variableName, content, false);
+  }
 
   /**
    * Adds a template to a variable within this template
