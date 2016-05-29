@@ -501,8 +501,8 @@ public abstract class Generator {
   }
 
   /**
-   * Checks whether a repository with the given name in the given git hub organization exists. Uses
-   * the ls remote git command to determine if the repository exists.
+   * Checks whether a remote repository of the given name in the given github organization exists.
+   * Uses the ls remote git command to determine if the repository exists.
    * 
    * @param name The name of the repository
    * @param gitHubOrganization The git hub organization
@@ -524,7 +524,7 @@ public abstract class Generator {
     try {
       lsCmd.call();
     } catch (Exception e) {
-      // ignore the exception, as this the way we determine if a remote repository exists
+      // ignore the exception, as this is the way we determine if a remote repository exists
       exists = false;
     }
     return exists;
@@ -601,7 +601,8 @@ public abstract class Generator {
     fileList.add(new String[] {"traces/tracedFiles.json",
         Base64.getEncoder().encodeToString(tracedFiles.getBytes("utf-8"))});
 
-    service.commitFilesRaw(repositoryName, fileList.toArray(new String[][] {}));
+    service.commitMultipleFilesRaw(repositoryName, "Code regeneration/Model synchronization",
+        fileList.toArray(new String[][] {}));
   }
 
 
