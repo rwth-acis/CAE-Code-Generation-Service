@@ -2,8 +2,6 @@ package i5.las2peer.services.codeGenerationService.models.traceModel;
 
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
-import org.json.simple.parser.JSONParser;
-import org.json.simple.parser.ParseException;
 
 import i5.las2peer.services.codeGenerationService.traces.segments.SegmentFactory;
 
@@ -16,20 +14,13 @@ import i5.las2peer.services.codeGenerationService.traces.segments.SegmentFactory
 
 public class FileTraceModelFactory {
 
-  public static FileTraceModel createFileTraceModelFromJSON(String source, String traceSource,
+  public static FileTraceModel createFileTraceModelFromJSON(String source, JSONObject fileTraces,
       TraceModel traceModel, String fileName) {
 
     FileTraceModel fileTraceModel = new FileTraceModel(traceModel, fileName);
-    JSONParser parser = new JSONParser();
-    JSONObject jobj;
 
-    try {
-      jobj = (JSONObject) parser.parse(traceSource);
-      JSONArray segments = (JSONArray) jobj.get("traceSegments");
-      fileTraceModel.addSegments(SegmentFactory.createSegments(segments, source, 0L));
-    } catch (ParseException e) {
-      e.printStackTrace();
-    }
+    JSONArray segments = (JSONArray) fileTraces.get("traceSegments");
+    fileTraceModel.addSegments(SegmentFactory.createSegments(segments, source, 0L));
 
     return fileTraceModel;
   }
