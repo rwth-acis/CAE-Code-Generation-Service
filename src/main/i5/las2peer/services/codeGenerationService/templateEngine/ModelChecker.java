@@ -48,8 +48,9 @@ public class ModelChecker {
     GuidanceModel guidanceModel = new GuidanceModel();
     try (TreeWalk treeWalk =
         Generator.getTemplateRepositoryContent(templateRepositoryName, gitHubOrganization)) {
-
-      treeWalk.setFilter(PathFilter.create("frontend/"));
+      String pathFilter =
+          templateRepositoryName.indexOf("frontend") > -1 ? "frontend/" : "backend/";
+      treeWalk.setFilter(PathFilter.create(pathFilter));
       ObjectReader reader = treeWalk.getObjectReader();
 
       // walk through the tree and retrieve the guidances
