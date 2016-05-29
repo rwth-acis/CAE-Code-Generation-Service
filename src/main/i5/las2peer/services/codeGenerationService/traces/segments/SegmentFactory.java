@@ -20,8 +20,8 @@ public class SegmentFactory {
 
   /**
    * A helper method that takes care about the fact, that depending on the used json implementation
-   * sometimes numbers are saved as string or as numbers with or without double quotes, respectively
-   * (e.g. {"number":"1"} or {"number" : 1} )
+   * sometimes numbers are saved as strings or as real numbers, i.e. decorated with or without
+   * double quotes (e.g. {"number":"1"} or {"number" : 1} )
    * 
    * @param obj The object containing the property that should be cast to long
    * @param key The key of the property
@@ -176,7 +176,13 @@ public class SegmentFactory {
   }
 
   /**
-   * @see SegmentFactory#createCompositeSegmentByInitialTraces(String, String, String)
+   * Like {@link SegmentFactory#createCompositeSegmentByInitialTraces(String, String, String)}, but
+   * uses an json object for the trace information.
+   * 
+   * @param id The id of the new segment
+   * @param traces The json object of initial traces of the template
+   * @param source The source code
+   * @return A new created composition of segments
    */
 
   @SuppressWarnings("unchecked")

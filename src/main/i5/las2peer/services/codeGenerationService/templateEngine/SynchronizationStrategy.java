@@ -15,10 +15,18 @@ public class SynchronizationStrategy extends TemplateStrategy {
     this.oldFileTraceModel = oldFileTraceModel;
   }
 
+  /**
+   * {@inheritDoc}
+   */
+
   @Override
   public void setSegmentContent(CompositeSegment segment, String content, String id) {
     this.setSegmentContent(segment, content, id, true);
   }
+
+  /**
+   * {@inheritDoc}
+   */
 
   @Override
   public Segment getSegment(String segmentId) {
@@ -40,16 +48,14 @@ public class SynchronizationStrategy extends TemplateStrategy {
    * @param cSegment The composition whose children should be synchronized
    */
 
-  private void synchronizeChildren(CompositeSegment cSegment) {
+  protected void synchronizeChildren(CompositeSegment cSegment) {
     List<String> childrenList = cSegment.getChildrenList();
     for (String childId : childrenList) {
       Segment child = cSegment.getChild(childId);
-      // we need to also synchronize all children segments that are appendable segments for a
-      // variable
+      // we need to also synchronize all children that are appendable segments of a variable
       // so we use a special kind of appendable variable segments that still know the segments of
-      // the old
-      // file trace model but only use them during the content generation if they were actually
-      // used
+      // the old file trace model but only add them to the new file trace model during the content
+      // regeneration if they were actually used
       if (!(child instanceof SynchronizeAppendableVariableSegment)
           && child instanceof AppendableVariableSegment) {
         SynchronizeAppendableVariableSegment pCSegment = new SynchronizeAppendableVariableSegment(
