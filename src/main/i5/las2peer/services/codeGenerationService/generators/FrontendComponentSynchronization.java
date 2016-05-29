@@ -19,10 +19,10 @@ import i5.las2peer.services.codeGenerationService.models.frontendComponent.Front
 import i5.las2peer.services.codeGenerationService.models.traceModel.FileTraceModel;
 import i5.las2peer.services.codeGenerationService.models.traceModel.FileTraceModelFactory;
 import i5.las2peer.services.codeGenerationService.models.traceModel.TraceModel;
+import i5.las2peer.services.codeGenerationService.templateEngine.SynchronizationOrderedStrategy;
 import i5.las2peer.services.codeGenerationService.templateEngine.SynchronizationStrategy;
 import i5.las2peer.services.codeGenerationService.templateEngine.Template;
 import i5.las2peer.services.codeGenerationService.templateEngine.TemplateEngine;
-import i5.las2peer.services.codeGenerationService.templateEngine.TemplateStrategy;
 
 /**
  * 
@@ -40,7 +40,6 @@ public class FrontendComponentSynchronization extends FrontendComponentGenerator
       FrontendComponent oldFrontendComponent, HashMap<String, JSONObject> files,
       String templateRepositoryName, String gitHubOrganization, CodeGenerationService service)
       throws GitHubException {
-
     // first load the needed templates from the template repository
 
     // helper variables
@@ -120,15 +119,16 @@ public class FrontendComponentSynchronization extends FrontendComponentGenerator
 
         JSONObject fileTraces = (JSONObject) fileObject.get("fileTraces");
         FileTraceModel oldFileTraceModel = FileTraceModelFactory
-            .createFileTraceModelFromJSON(content, fileTraces.toJSONString(), traceModel, fileName);
-        TemplateStrategy strategy = new SynchronizationStrategy(oldFileTraceModel);
+            .createFileTraceModelFromJSON(content, fileTraces, traceModel, fileName);
 
         switch (fileName) {
           case "widget.xml":
-            widgetTemplateEngine = new TemplateEngine(strategy, oldFileTraceModel);
+            widgetTemplateEngine = new TemplateEngine(
+                new SynchronizationOrderedStrategy(oldFileTraceModel), oldFileTraceModel);
             break;
           case "js/applicationScript.js":
-            applicationTemplateEngine = new TemplateEngine(strategy, oldFileTraceModel);
+            applicationTemplateEngine = new TemplateEngine(
+                new SynchronizationStrategy(oldFileTraceModel), oldFileTraceModel);
             break;
 
         }
@@ -172,7 +172,12 @@ public class FrontendComponentSynchronization extends FrontendComponentGenerator
     } catch (UnsupportedEncodingException e) {
       logger.printStackTrace(e);
     }
+  }
 
+  public static boolean existsRemoteRepositoryForModel(FrontendComponent frontendComponent,
+      String gitHubOrganization, String gitHubUser, String gitHubPassword) {
+    return existsRemoteRepository(getRepositoryName(frontendComponent), gitHubOrganization,
+        gitHubUser, gitHubPassword);
   }
 
 }
