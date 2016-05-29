@@ -1,11 +1,8 @@
 package i5.las2peer.services.codeGenerationService.generators;
 
 import java.awt.image.BufferedImage;
-import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
-import java.util.Base64;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map;
 
 import javax.imageio.ImageIO;
@@ -18,10 +15,8 @@ import org.eclipse.jgit.lib.PersonIdent;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.treewalk.TreeWalk;
 import org.eclipse.jgit.treewalk.filter.PathFilter;
-import org.json.simple.JSONObject;
 
 import i5.las2peer.logging.L2pLogger;
-import i5.las2peer.services.codeGenerationService.CodeGenerationService;
 import i5.las2peer.services.codeGenerationService.exception.GitHubException;
 import i5.las2peer.services.codeGenerationService.models.frontendComponent.Event;
 import i5.las2peer.services.codeGenerationService.models.frontendComponent.FrontendComponent;
@@ -32,10 +27,8 @@ import i5.las2peer.services.codeGenerationService.models.frontendComponent.IWCRe
 import i5.las2peer.services.codeGenerationService.models.frontendComponent.InputParameter;
 import i5.las2peer.services.codeGenerationService.models.frontendComponent.MicroserviceCall;
 import i5.las2peer.services.codeGenerationService.models.traceModel.FileTraceModel;
-import i5.las2peer.services.codeGenerationService.models.traceModel.FileTraceModelFactory;
 import i5.las2peer.services.codeGenerationService.models.traceModel.TraceModel;
 import i5.las2peer.services.codeGenerationService.templateEngine.InitialGenerationStrategy;
-import i5.las2peer.services.codeGenerationService.templateEngine.SynchronizationStrategy;
 import i5.las2peer.services.codeGenerationService.templateEngine.Template;
 import i5.las2peer.services.codeGenerationService.templateEngine.TemplateEngine;
 import i5.las2peer.services.codeGenerationService.templateEngine.TemplateStrategy;
@@ -249,7 +242,7 @@ public class FrontendComponentGenerator extends Generator {
       frontendComponentRepository = createTextFileInRepository(frontendComponentRepository, "js/",
           "applicationScript.js", applicationScriptTemplateEngine.getContent());
       frontendComponentRepository = createTextFileInRepository(frontendComponentRepository,
-          "traces/js", "applicationScript.js.traces",
+          "traces/js/", "applicationScript.js.traces",
           applicationScriptTemplateEngine.toJSONObject().toJSONString());
 
       // libraries
@@ -420,7 +413,7 @@ public class FrontendComponentGenerator extends Generator {
         elementTemplate.setVariable("$Element_Type$", element.getType().toString());
         elementTemplate.setVariable("$Element_Id$", element.getId());
         elementTemplate.setVariable("$Additional_Values$", " ");
-        elementTemplate.setVariable("$Element_Content$", " ");
+        elementTemplate.setVariableForce("$Element_Content$", "");
         elementTemplate.setVariable("$Closing_Element$", "");
         break;
       case button:
@@ -782,161 +775,4 @@ public class FrontendComponentGenerator extends Generator {
       }
     }
   }
-
-  public static void synchronizeSourceCode(FrontendComponent frontendComponent,
-      FrontendComponent oldFrontendComponent, HashMap<String, JSONObject> files,
-      String templateRepositoryName, String gitHubOrganization, CodeGenerationService service)
-      throws GitHubException {
-
-    // first load the needed templates from the template repository
-
-    // helper variables
-    // variables holding content to be modified and added to repository later
-    String widget = null;
-    String applicationScript = null;
-    String htmlElementTemplate = null;
-    String functionTemplate = null;
-    String microserviceCallTemplate = null;
-    String iwcResponseTemplate = null;
-    String eventTemplate = null;
-    String yjsImports = null;
-    String yjsInit = null;
-
-    TemplateEngine applicationTemplateEngine = null;
-    TemplateEngine widgetTemplateEngine = null;
-
-
-
-    try (TreeWalk treeWalk =
-        getTemplateRepositoryContent(templateRepositoryName, gitHubOrganization)) {
-      // now load the TreeWalk containing the template repository content
-      treeWalk.setFilter(PathFilter.create("frontend/"));
-      ObjectReader reader = treeWalk.getObjectReader();
-      // walk through the tree and retrieve the needed templates
-      while (treeWalk.next()) {
-        ObjectId objectId = treeWalk.getObjectId(0);
-        ObjectLoader loader = reader.open(objectId);
-
-        switch (treeWalk.getNameString()) {
-          case "widget.xml":
-            widget = new String(loader.getBytes(), "UTF-8");
-            break;
-          case "genericHtmlElement.txt":
-            htmlElementTemplate = new String(loader.getBytes(), "UTF-8");
-            break;
-          case "genericEvent.txt":
-            eventTemplate = new String(loader.getBytes(), "UTF-8");
-            break;
-          case "applicationScript.js":
-            applicationScript = new String(loader.getBytes(), "UTF-8");
-            break;
-          case "genericFunction.txt":
-            functionTemplate = new String(loader.getBytes(), "UTF-8");
-            break;
-          case "genericMicroserviceCall.txt":
-            microserviceCallTemplate = new String(loader.getBytes(), "UTF-8");
-            break;
-          case "genericIWCResponse.txt":
-            iwcResponseTemplate = new String(loader.getBytes(), "UTF-8");
-            break;
-          case "yjs-imports.txt":
-            yjsImports = new String(loader.getBytes(), "UTF-8");
-            break;
-          case "yjsInit.txt":
-            yjsInit = new String(loader.getBytes(), "UTF-8");
-            break;
-        }
-      }
-    } catch (Exception e) {
-      logger.printStackTrace(e);
-      throw new GitHubException(e.getMessage());
-    }
-
-    // now loop through the traced files and synchronize them
-
-    Iterator<String> it = files.keySet().iterator();
-
-    TraceModel traceModel = new TraceModel();
-
-    while (it.hasNext()) {
-      String fileName = it.next();
-      JSONObject fileObject = files.get(fileName);
-      String content = (String) fileObject.get("content");
-      byte[] base64decodedBytes = Base64.getDecoder().decode(content);
-
-
-      try {
-        content = new String(base64decodedBytes, "utf-8");
-
-        JSONObject fileTraces = (JSONObject) fileObject.get("fileTraces");
-        FileTraceModel oldFileTraceModel = FileTraceModelFactory
-            .createFileTraceModelFromJSON(content, fileTraces.toJSONString(), traceModel, fileName);
-        TemplateStrategy strategy = new SynchronizationStrategy(oldFileTraceModel);
-
-        switch (fileName) {
-          case "widget.xml":
-            widgetTemplateEngine = new TemplateEngine(strategy, oldFileTraceModel);
-            break;
-          case "js/applicationScript.js":
-            applicationTemplateEngine = new TemplateEngine(strategy, oldFileTraceModel);
-            break;
-
-        }
-
-      } catch (UnsupportedEncodingException e) {
-        logger.printStackTrace(e);
-      }
-
-    }
-
-    try {
-      // regenerate widget code
-      FrontendComponentGenerator.createWidgetCode(widgetTemplateEngine, widget, htmlElementTemplate,
-          yjsImports, gitHubOrganization, getRepositoryName(frontendComponent), frontendComponent);
-
-      traceModel.addFileTraceModel(widgetTemplateEngine.getFileTraceModel());
-
-
-      // regenerate applicationScript code
-      Template applicationTemplate = applicationTemplateEngine.createTemplate(
-          frontendComponent.getWidgetModelId() + ":applicationScript:", applicationScript);
-
-      applicationTemplateEngine.addTemplate(applicationTemplate);
-
-      createApplicationScript(applicationTemplate, functionTemplate, microserviceCallTemplate,
-          iwcResponseTemplate, htmlElementTemplate, frontendComponent);
-
-      // add events to elements
-      addEventsToApplicationScript(applicationTemplate, widgetTemplateEngine, eventTemplate,
-          frontendComponent);
-
-      // add (possible) Yjs collaboration stuff
-      addYjsCollaboration(applicationTemplate, applicationTemplateEngine, yjsInit,
-          frontendComponent);
-
-      traceModel.addFileTraceModel(applicationTemplateEngine.getFileTraceModel());
-
-      // commit changes
-      updateTracedFilesInRepository(traceModel, getRepositoryName(frontendComponent), service);
-
-
-      // commit changes
-
-      // commitTracedFile("widget.xml", widgetTemplateEngine, "code regeneration", service,
-      // getRepositoryName(frontendComponent));
-      // commitTracedFile("js/applicationScript.js", applicationTemplateEngine, "code regeneration",
-      // service, getRepositoryName(frontendComponent));
-      //
-      // String tracedFiles = traceModel.toJSONObject().toJSONString().replace("\\", "");
-      // service.commitFileRaw(getRepositoryName(frontendComponent), "traces/tracedFiles.json",
-      // Base64.getEncoder().encodeToString(tracedFiles.getBytes("utf-8")));
-
-    } catch (UnsupportedEncodingException e) {
-      logger.printStackTrace(e);
-    }
-
-  }
-
-
-
 }
