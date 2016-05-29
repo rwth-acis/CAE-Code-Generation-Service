@@ -137,15 +137,6 @@ public class CompositeSegment extends Segment {
     children.add(id);
   }
 
-
-  public void remove(final Segment segment) {
-    children.remove(segment.getId());
-  }
-
-  public void remove(String segmentId) {
-    this.map.remove(segmentId);
-  }
-
   public boolean hasChild(String id) {
     return this.map.containsKey(id);
   }
@@ -157,7 +148,6 @@ public class CompositeSegment extends Segment {
   public void setSegment(String id, CompositeSegment segment) {
     map.put(this.getId() + ":" + id, segment);
   }
-
 
   public void setSegmentContent(String id, String content, boolean integrityCheck) {
     // if this composite segment holds a segment with the given id, set its content
@@ -179,7 +169,7 @@ public class CompositeSegment extends Segment {
 
 
 
-  public String toString(List<String> childrenList) {
+  protected String toString(List<String> childrenList) {
     String content = "";
     for (String id : childrenList) {
       if (this.map.containsKey(id)) {
@@ -194,7 +184,7 @@ public class CompositeSegment extends Segment {
   }
 
   @SuppressWarnings("unchecked")
-  public JSONObject toJSONObject(List<String> childrenList) {
+  protected JSONObject toJSONObject(List<String> childrenList) {
     JSONObject jObject = new JSONObject();
     jObject.put("type", this.getTypeString());
     jObject.put("id", this.getId());
