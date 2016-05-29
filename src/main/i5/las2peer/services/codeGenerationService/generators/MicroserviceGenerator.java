@@ -32,6 +32,7 @@ import i5.las2peer.services.codeGenerationService.templateEngine.InitialGenerati
 import i5.las2peer.services.codeGenerationService.templateEngine.Template;
 import i5.las2peer.services.codeGenerationService.templateEngine.TemplateEngine;
 import i5.las2peer.services.codeGenerationService.templateEngine.TemplateStrategy;
+import i5.las2peer.services.codeGenerationService.traces.segments.Segment;
 
 /**
  * 
@@ -77,7 +78,7 @@ public class MicroserviceGenerator extends Generator {
 
   protected static String getServiceTestFileName(Microservice microservice) {
     return "src/test/i5/las2peer/services/" + getPackageName(microservice) + "/"
-        + microservice.getResourceName() + ".java";
+        + microservice.getResourceName() + "Test.java";
   }
 
   /**
@@ -218,7 +219,6 @@ public class MicroserviceGenerator extends Generator {
             case "ivysettings.xml":
               ivySettings = new String(loader.getBytes(), "UTF-8");
               break;
-            // TODO: change template to enable empty service properties
             case "i5.las2peer.services.servicePackage.ServiceClass.properties":
               String serviceProperties = new String(loader.getBytes(), "UTF-8");
               generateOtherArtifacts(Template.createInitialTemplateEngine(traceModel, path),
@@ -290,8 +290,7 @@ public class MicroserviceGenerator extends Generator {
       String repositoryLocation = "https://github.com/" + gitHubOrganization + "/" + repositoryName;
 
       FileTraceModel serviceClassTraceModel =
-          new FileTraceModel(traceModel, "src/main/i5/las2peer/services/" + packageName + "/"
-              + microservice.getResourceName() + ".java");
+          new FileTraceModel(traceModel, getServiceFileName(microservice));
       traceModel.addFileTraceModel(serviceClassTraceModel);
 
       TemplateStrategy strategy = new InitialGenerationStrategy(serviceClassTraceModel);
@@ -302,8 +301,7 @@ public class MicroserviceGenerator extends Generator {
           databaseConfig, databaseInstantiation, serviceInvocation);
 
       FileTraceModel serviceTestTraceModel =
-          new FileTraceModel(traceModel, "src/test/i5/las2peer/services/" + packageName + "/"
-              + microservice.getResourceName() + ".java");
+          new FileTraceModel(traceModel, getServiceTestFileName(microservice));
       traceModel.addFileTraceModel(serviceTestTraceModel);
 
       TemplateEngine serviceTestTemplateEngine = new TemplateEngine(
@@ -443,7 +441,7 @@ public class MicroserviceGenerator extends Generator {
                   + "    <dependency org=\"org.apache.commons\" name=\"commons-pool2\" rev=\"2.2\" />\n"
                   + "    <dependency org=\"org.apache.commons\" name=\"commons-dbcp2\" rev=\"2.0\" />");
         } else {
-          template.setVariable("$MySQL_Dependencies", "");
+          template.setVariable("$MySQL_Dependencies$", "");
         }
         break;
       case "i5.las2peer.services.servicePackage.ServiceClass.properties":
@@ -518,6 +516,9 @@ public class MicroserviceGenerator extends Generator {
         templateEngine.createTemplate(microservice.getMicroserviceModelId(), serviceClass);
     templateEngine.addTemplate(serviceClassTemplate);
 
+    templateEngine.addTrace(microservice.getMicroserviceModelId(), "RESTful Resource",
+        microservice.getResourceName(), serviceClassTemplate);
+
     // service name for documentation
     serviceClassTemplate.setVariable("$Microservice_Name$", microservice.getName());
     // relative resource path (resource base path)
@@ -558,9 +559,8 @@ public class MicroserviceGenerator extends Generator {
       Template currentMethodTemplate = templateEngine
           .createTemplate(currentMethod.getModelId() + ":httpMethod", genericHttpMethod);
 
-      // add a trace to the segment
-      templateEngine.addTrace(currentMethod.getModelId(), "Http Method", currentMethod.getName(),
-          currentMethodTemplate);
+      Segment httpMethodBodySegment = currentMethodTemplate.getSegment()
+          .getChildRecursive(currentMethodTemplate.getId() + ":$HTTPMethod_Body$");
 
       // add template of current method to service class template
       serviceClassTemplate.appendVariable("$Service_Methods$", currentMethodTemplate);
@@ -573,6 +573,7 @@ public class MicroserviceGenerator extends Generator {
           .createTemplate(currentMethod.getModelId() + ":httpMethodBody", genericHttpMethodBody);
 
       // replace currentMethodCode placeholder with content of currentMethod
+      currentMethodTemplate.setVariable("$HTTPMethod_Name_Comment$", currentMethod.getName());
       currentMethodTemplate.setVariable("$HTTPMethod_Name$", currentMethod.getName());
       currentMethodTemplate.setVariable("$HTTP_Method_Type$",
           "@" + currentMethod.getMethodType().toString());
@@ -684,6 +685,9 @@ public class MicroserviceGenerator extends Generator {
         }
 
         currentMethodTemplate.appendVariable("$HTTPMethod_Params$", paramTemplate);
+        // add a trace for the payload to its template
+        templateEngine.addTrace(currentPayload.getModelId(), "Payload", currentPayload.getName(),
+            paramTemplate);
 
         // check if payload is a JSON and cast if so
         if (currentPayload.getPayloadType() == PayloadType.JSONObject) {
@@ -696,7 +700,7 @@ public class MicroserviceGenerator extends Generator {
                       + "_JSON = (JSONObject) JSONValue.parse(" + currentPayload.getName()
                       + ");\n");
 
-          currentMethodBodyTemplate.appendVariable("$HTTPMethod_Casts$", castTemplate);
+          currentMethodTemplate.appendVariable("$HTTPMethod_Casts$", castTemplate);
 
         }
         // string param
@@ -715,7 +719,7 @@ public class MicroserviceGenerator extends Generator {
         }
       }
       // remove last cast placeholder
-      currentMethodBodyTemplate.setVariableIfNotSet("$HTTPMethod_Casts$", "");
+      currentMethodTemplate.setVariableIfNotSet("$HTTPMethod_Casts$", "");
 
       // remove last comma from parameter code (of parameters were inserted before)
       if (parameterCode.length() > 0) {
@@ -730,7 +734,7 @@ public class MicroserviceGenerator extends Generator {
       }
       // set the consumes annotation
       Template consumeTemplate = templateEngine
-          .createTemplate(currentMethod.getModelId() + ":consumes", "@Consumes(-{$type$}-)");
+          .createTemplate(currentMethod.getModelId() + ":consumes", "@Consumes($type$)");
       consumeTemplate.setVariable("$type$", consumesAnnotation);
 
       currentMethodTemplate.appendVariable("$HTTPMethod_Consumes$", consumeTemplate);
@@ -749,7 +753,7 @@ public class MicroserviceGenerator extends Generator {
         currentInvocationTemplate.setVariable("$Remove_Service_Name$", call.getServiceClass());
         currentInvocationTemplate.setVariable("$Remote_Service_Method$", call.getMethodName());
 
-        String internalParameter = "$Parameters$";
+        String internalParameter = ", $Parameters$";
         for (InternalCallParam parameter : call.getParameters()) {
 
           currentInvocationTemplate.appendVariable("$Parameter_Init$",
@@ -763,7 +767,6 @@ public class MicroserviceGenerator extends Generator {
         currentInvocationTemplate.setVariableIfNotSet("$Parameter_Init$", "");
         // replace last parameter placeholder
         internalParameter = internalParameter.replace(", $Parameters$", "");
-        internalParameter = internalParameter.replace("$Parameters$", "new Serializable[] {}");
         currentInvocationTemplate.setVariable("$Parameters$", internalParameter);
 
         // add invocation code to current method code
@@ -774,6 +777,10 @@ public class MicroserviceGenerator extends Generator {
 
       currentMethodTemplate.setVariable("$HTTPMethod_Body$",
           currentMethodBodyTemplate.getContent());
+
+      // add a trace to the segment
+      templateEngine.addTrace(currentMethod.getModelId(), "Http Method", currentMethod.getName(),
+          httpMethodBodySegment);
 
     }
     // add serializable import or remove placeholder

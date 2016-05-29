@@ -152,16 +152,16 @@ public class MicroserviceSynchronization extends MicroserviceGenerator {
       byte[] base64decodedBytes = Base64.getDecoder().decode(content);
 
       try {
+        logger.info("Synchronizing " + fileName + " now ...");
         content = new String(base64decodedBytes, "utf-8");
-
         JSONObject fileTraces = (JSONObject) fileObject.get("fileTraces");
         FileTraceModel oldFileTraceModel = FileTraceModelFactory
-            .createFileTraceModelFromJSON(content, fileTraces.toJSONString(), traceModel, fileName);
+            .createFileTraceModelFromJSON(content, fileTraces, traceModel, fileName);
         TemplateStrategy strategy = new SynchronizationStrategy(oldFileTraceModel);
 
         TemplateEngine templateEngine = new TemplateEngine(strategy, oldFileTraceModel);
 
-        logger.info("Synchronize " + fileName + "..");
+
 
         if (fileName.equals(serviceOldFileName)) {
           oldFileTraceModel.setFileName(serviceFileName);
@@ -178,7 +178,7 @@ public class MicroserviceSynchronization extends MicroserviceGenerator {
           generateOtherArtifacts(templateEngine, oldMicroservice, gitHubOrganization, content);
         }
 
-        logger.info(".. synchronized " + fileName);
+        logger.info("... " + fileName + " synchronized.");
 
         // finally add the file trace model to the global trace model
         traceModel.addFileTraceModel(templateEngine.getFileTraceModel());
@@ -195,5 +195,11 @@ public class MicroserviceSynchronization extends MicroserviceGenerator {
       logger.printStackTrace(e);
     }
 
+  }
+
+  public static boolean existsRemoteRepositoryForModel(Microservice microservice,
+      String gitHubOrganization, String gitHubUser, String gitHubPassword) {
+    return existsRemoteRepository(getRepositoryName(microservice), gitHubOrganization, gitHubUser,
+        gitHubPassword);
   }
 }
