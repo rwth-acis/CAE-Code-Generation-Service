@@ -43,14 +43,13 @@ public class ModelChecker {
    * @return A guidance model
    */
 
-  public static GuidanceModel getGuidances(String templateRepositoryName,
+  public static GuidanceModel getGuidances(String folder, String templateRepositoryName,
       String gitHubOrganization) {
     GuidanceModel guidanceModel = new GuidanceModel();
     try (TreeWalk treeWalk =
         Generator.getTemplateRepositoryContent(templateRepositoryName, gitHubOrganization)) {
-      String pathFilter =
-          templateRepositoryName.indexOf("frontend") > -1 ? "frontend/" : "backend/";
-      treeWalk.setFilter(PathFilter.create(pathFilter));
+
+      treeWalk.setFilter(PathFilter.create(folder));
       ObjectReader reader = treeWalk.getObjectReader();
 
       // walk through the tree and retrieve the guidances
@@ -82,10 +81,10 @@ public class ModelChecker {
    */
   @SuppressWarnings("unchecked")
   public static JSONArray performViolationCheck(HashMap<String, JSONObject> files,
-      String templateRepositoryName, String gitHubOrganization) {
+      String templateRepositoryName, String folder, String gitHubOrganization) {
 
     JSONArray guidances = new JSONArray();
-    GuidanceModel guidanceModel = getGuidances(templateRepositoryName, gitHubOrganization);
+    GuidanceModel guidanceModel = getGuidances(folder, templateRepositoryName, gitHubOrganization);
 
     Iterator<String> it = files.keySet().iterator();
     while (it.hasNext()) {

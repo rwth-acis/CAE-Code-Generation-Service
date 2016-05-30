@@ -480,8 +480,9 @@ public class CodeGenerationService extends Service {
    * @return A json array containing guidances of found violations
    */
   public JSONArray checkModel(String repositoryName) {
+    String pathFilter = repositoryName.indexOf("frontend") > -1 ? "frontend/" : "backend/";
     return ModelChecker.performViolationCheck(this.getTracedFiles(repositoryName),
-        templateRepository, gitHubOrganization);
+        templateRepository, pathFilter, gitHubOrganization);
   }
 
   /**
