@@ -18,7 +18,9 @@ import i5.las2peer.services.codeGenerationService.models.microservice.Microservi
 import i5.las2peer.services.codeGenerationService.models.traceModel.FileTraceModel;
 import i5.las2peer.services.codeGenerationService.models.traceModel.FileTraceModelFactory;
 import i5.las2peer.services.codeGenerationService.models.traceModel.TraceModel;
+import i5.las2peer.services.codeGenerationService.templateEngine.InitialGenerationStrategy;
 import i5.las2peer.services.codeGenerationService.templateEngine.SynchronizationStrategy;
+import i5.las2peer.services.codeGenerationService.templateEngine.Template;
 import i5.las2peer.services.codeGenerationService.templateEngine.TemplateEngine;
 import i5.las2peer.services.codeGenerationService.templateEngine.TemplateStrategy;
 
@@ -68,6 +70,7 @@ public class MicroserviceSynchronization extends MicroserviceGenerator {
     String serviceInvocation = null;
     String databaseScript = null;
     String genericTable = null;
+    String databaseManager = null;
 
 
     try (TreeWalk treeWalk =
@@ -113,19 +116,33 @@ public class MicroserviceSynchronization extends MicroserviceGenerator {
           case "genericTable.txt":
             genericTable = new String(loader.getBytes(), "UTF-8");
             break;
+          case "DatabaseManager.java":
+            databaseManager = new String(loader.getBytes(), "UTF-8");
+            break;
+          case "database.sql":
+            databaseScript = new String(loader.getBytes(), "UTF-8");
+            break;
         }
       }
     } catch (Exception e) {
       logger.printStackTrace(e);
     }
 
+
+
     // new file names
     String serviceFileName = getServiceFileName(microservice);
     String serviceTestFileName = getServiceTestFileName(microservice);
+    String databaseScriptFileName = getDatabaseScriptFileName(microservice);
+    String newDatabaseManagerFileName = "src/main/i5/las2peer/services/"
+        + getPackageName(microservice) + "/database/DatabaseManager.java";
 
     // old file names
     String serviceOldFileName = getServiceFileName(oldMicroservice);
     String serviceOldTestFileName = getServiceTestFileName(oldMicroservice);
+    String databaseOldScriptFileName = getDatabaseScriptFileName(oldMicroservice);
+    String oldDatabaseManagerFileName = "src/main/i5/las2peer/services/"
+        + getPackageName(oldMicroservice) + "/database/DatabaseManager.java";
 
     // if the old service file was renamed, we need to rename it in the local repo
     if (!serviceFileName.equals(serviceOldFileName)) {
@@ -145,6 +162,35 @@ public class MicroserviceSynchronization extends MicroserviceGenerator {
 
     TraceModel traceModel = new TraceModel();
 
+
+    // special case for database manager, as it is not always traced
+    if (!files.containsKey(oldDatabaseManagerFileName) && microservice.getDatabase() != null) {
+      generateOtherArtifacts(
+          Template.createInitialTemplateEngine(traceModel, newDatabaseManagerFileName),
+          microservice, gitHubOrganization, databaseManager);
+    } else if (!oldDatabaseManagerFileName.equals(newDatabaseManagerFileName)) {
+      renameFileInRepository(getRepositoryName(oldMicroservice), newDatabaseManagerFileName,
+          oldDatabaseManagerFileName, service);
+    }
+
+    // special case for database script, as it is not always traced
+    if (!files.containsKey(databaseOldScriptFileName) && microservice.getDatabase() != null) {
+      FileTraceModel databaseScriptTraceModel =
+          new FileTraceModel(traceModel, getDatabaseScriptFileName(microservice));
+      traceModel.addFileTraceModel(databaseScriptTraceModel);
+
+      TemplateEngine databaseScriptTemplateEngine = new TemplateEngine(
+          new InitialGenerationStrategy(databaseScriptTraceModel), databaseScriptTraceModel);
+
+      generateDatabaseScript(databaseScriptTemplateEngine, databaseScript, genericTable,
+          microservice);
+
+    } else if (!databaseOldScriptFileName.equals(databaseScriptFileName)) {
+      renameFileInRepository(getRepositoryName(oldMicroservice), databaseScriptFileName,
+          databaseOldScriptFileName, service);
+    }
+
+
     while (it.hasNext()) {
       String fileName = it.next();
       JSONObject fileObject = files.get(fileName);
@@ -161,8 +207,6 @@ public class MicroserviceSynchronization extends MicroserviceGenerator {
 
         TemplateEngine templateEngine = new TemplateEngine(strategy, oldFileTraceModel);
 
-
-
         if (fileName.equals(serviceOldFileName)) {
           oldFileTraceModel.setFileName(serviceFileName);
           String repositoryLocation =
@@ -174,6 +218,20 @@ public class MicroserviceSynchronization extends MicroserviceGenerator {
         } else if (fileName.equals(serviceOldTestFileName)) {
           oldFileTraceModel.setFileName(serviceTestFileName);
           generateNewServiceTest(templateEngine, serviceTest, microservice, genericTestCase);
+        } else if (fileName.equals(databaseOldScriptFileName)) {
+          if (microservice.getDatabase() == null) {
+            templateEngine = null;
+          } else {
+            oldFileTraceModel.setFileName(databaseScriptFileName);
+            generateDatabaseScript(templateEngine, databaseScript, genericTable, microservice);
+          }
+        } else if (fileName.equals(oldDatabaseManagerFileName)) {
+          if (microservice.getDatabase() == null) {
+            templateEngine = null;
+          } else {
+            oldFileTraceModel.setFileName(newDatabaseManagerFileName);
+            generateOtherArtifacts(templateEngine, oldMicroservice, gitHubOrganization, content);
+          }
         } else {
           generateOtherArtifacts(templateEngine, oldMicroservice, gitHubOrganization, content);
         }
@@ -181,7 +239,9 @@ public class MicroserviceSynchronization extends MicroserviceGenerator {
         logger.info("... " + fileName + " synchronized.");
 
         // finally add the file trace model to the global trace model
-        traceModel.addFileTraceModel(templateEngine.getFileTraceModel());
+        if (templateEngine != null) {
+          traceModel.addFileTraceModel(templateEngine.getFileTraceModel());
+        }
       } catch (UnsupportedEncodingException e) {
         logger.printStackTrace(e);
       }

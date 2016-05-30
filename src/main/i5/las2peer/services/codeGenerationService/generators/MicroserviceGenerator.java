@@ -45,6 +45,11 @@ public class MicroserviceGenerator extends Generator {
   private static final L2pLogger logger =
       L2pLogger.getInstance(ApplicationGenerator.class.getName());
 
+
+  protected static String getDatabaseScriptFileName(Microservice microservice) {
+    return "db/" + microservice.getName().replace(" ", "_") + "_create_tables.sql";
+  }
+
   /**
    * Get the name of the package for a microservice model
    * 
@@ -240,7 +245,11 @@ public class MicroserviceGenerator extends Generator {
             case "DatabaseManager.java":
               if (microservice.getDatabase() != null) {
                 databaseManager = new String(loader.getBytes(), "UTF-8");
-                databaseManager = databaseManager.replace("$Lower_Resource_Name$", packageName);
+                generateOtherArtifacts(
+                    Template.createInitialTemplateEngine(traceModel,
+                        "src/main/i5/las2peer/services/" + packageName
+                            + "/database/DatabaseManager.java"),
+                    microservice, gitHubOrganization, databaseManager);
               }
               break;
             case "ServiceClass.java":
@@ -275,6 +284,8 @@ public class MicroserviceGenerator extends Generator {
               break;
             case "database.sql":
               databaseScript = new String(loader.getBytes(), "UTF-8");
+              generateOtherArtifacts(Template.createInitialTemplateEngine(traceModel, path),
+                  microservice, gitHubOrganization, databaseScript);
               break;
             case "genericTable.txt":
               genericTable = new String(loader.getBytes(), "UTF-8");
@@ -309,9 +320,7 @@ public class MicroserviceGenerator extends Generator {
 
       serviceTest = generateNewServiceTest(serviceTestTemplateEngine, serviceTest, microservice,
           genericTestCase);
-      if (microservice.getDatabase() != null) {
-        databaseScript = generateDatabaseScript(databaseScript, genericTable, microservice);
-      }
+
       // add not traced files to new repository, e.g. static files
 
       // configuration and build stuff
@@ -336,12 +345,19 @@ public class MicroserviceGenerator extends Generator {
           createImageFileInRepository(microserviceRepository, "img/", "logo.png", logo);
       // source code
       if (databaseManager != null) {
+        FileTraceModel databaseScriptTraceModel =
+            new FileTraceModel(traceModel, getDatabaseScriptFileName(microservice));
+        traceModel.addFileTraceModel(databaseScriptTraceModel);
+
+        TemplateEngine databaseScriptTemplateEngine = new TemplateEngine(
+            new InitialGenerationStrategy(databaseScriptTraceModel), databaseScriptTraceModel);
+
         microserviceRepository = createTextFileInRepository(microserviceRepository,
             "src/main/i5/las2peer/services/" + packageName + "/database/", "DatabaseManager.java",
             databaseManager);
-        // database script (replace spaces in filename for better usability later on)
-        microserviceRepository = createTextFileInRepository(microserviceRepository, "db/",
-            microservice.getName().replace(" ", "_") + "_create_tables.sql", databaseScript);
+
+        databaseScript = generateDatabaseScript(databaseScriptTemplateEngine, databaseScript,
+            genericTable, microservice);
       }
 
       // add traced files to new repository
@@ -475,6 +491,11 @@ public class MicroserviceGenerator extends Generator {
         }
 
         break;
+      case "DatabaseManager.java":
+        template = templateEngine.createTemplate(
+            microservice.getMicroserviceModelId() + ":databaseManager", templateContent);
+        template.setVariable("$Lower_Resource_Name$", packageName);
+        break;
     }
 
     if (template != null) {
@@ -538,9 +559,16 @@ public class MicroserviceGenerator extends Generator {
       serviceClassTemplate.setVariable("$Database_Import$",
           "import i5.las2peer.services." + packageName + ".database.DatabaseManager;");
       // variable names
-      serviceClassTemplate.setVariable("$Database_Configuration$", databaseConfig);
+      // serviceClassTemplate.appendVariable("$Database_Configuration$", test);
+      serviceClassTemplate.setVariable("$Database_Configuration$",
+          new String("  /*\n" + "   * Database configuration\n" + "   */\n"
+              + "  private String jdbcDriverClassName;\n" + "  private String jdbcLogin;\n"
+              + "  private String jdbcPass;\n" + "  private String jdbcUrl;\n"
+              + "  private String jdbcSchema;\n" + "  private DatabaseManager dbm;\n"));
       // instantiation
-      serviceClassTemplate.setVariable("$Database_Instantiation$", databaseInstantiation);
+      serviceClassTemplate.setVariable("$Database_Instantiation$", new String(
+          "    // instantiate a database manager to handle database connection pooling and credentials\n"
+              + "    dbm = new DatabaseManager(jdbcDriverClassName, jdbcLogin, jdbcPass, jdbcUrl, jdbcSchema);"));
     } else {
       // set to empty string
       serviceClassTemplate.setVariable("$Database_Configuration$", "");
@@ -592,9 +620,14 @@ public class MicroserviceGenerator extends Generator {
             templateEngine.createTemplate(currentResponse.getModelId() + ":apiResponse",
                 genericApiResponse + (!isLastResponse ? ",\n" : ""));
 
+
         // first add the api response template to the current method template
         currentMethodTemplate.appendVariable("$HTTPMethod_Api_Responses$", apiResponseTemplate);
-
+        if (!isLastResponse) {
+          Template tmp =
+              templateEngine.createTemplate(currentResponse.getModelId() + ":indentation", ",\n");
+          currentMethodTemplate.appendVariable("$HTTPMethod_Api_Responses$", tmp);
+        }
         // replace just inserted placeholder
         apiResponseTemplate.setVariable("$HTTPResponse_Code$",
             currentResponse.getReturnStatusCode().toString());
@@ -608,6 +641,10 @@ public class MicroserviceGenerator extends Generator {
 
         // first add the http response to the current method template
         currentMethodBodyTemplate.appendVariable("$HTTPMethod_Responses$", httpResponseTemplate);
+
+        // add a trace for the response to its method template
+        templateEngine.addTrace(currentResponse.getModelId(), "Http Response",
+            currentResponse.getName(), httpMethodBodySegment);
 
         httpResponseTemplate.setVariable("$HTTPResponse_Name$", currentResponse.getName());
 
@@ -755,7 +792,9 @@ public class MicroserviceGenerator extends Generator {
 
         String internalParameter = ", $Parameters$";
         for (InternalCallParam parameter : call.getParameters()) {
-
+          // add a trace for the call to its method template
+          templateEngine.addTrace(parameter.getModelId(), "Service Call Parameter",
+              parameter.getName(), httpMethodBodySegment);
           currentInvocationTemplate.appendVariable("$Parameter_Init$",
               templateEngine.createTemplate(parameter.getModelId() + ":InternalParam",
                   "    Serializable " + parameter.getName() + " = null;\n"));
@@ -771,6 +810,9 @@ public class MicroserviceGenerator extends Generator {
 
         // add invocation code to current method code
         currentMethodBodyTemplate.appendVariable("$Invocations$", currentInvocationTemplate);
+        // add a trace for the call to its method template
+        templateEngine.addTrace(call.getModelId(), "Internal Service Call", call.getMethodName(),
+            httpMethodBodySegment);
       }
       // replace last invocation placeholder
       currentMethodBodyTemplate.setVariableIfNotSet("$Invocations$", "");
@@ -781,6 +823,8 @@ public class MicroserviceGenerator extends Generator {
       // add a trace to the segment
       templateEngine.addTrace(currentMethod.getModelId(), "Http Method", currentMethod.getName(),
           httpMethodBodySegment);
+      templateEngine.addTrace(currentMethod.getModelId(), "Http Method", currentMethod.getName(),
+          currentMethodTemplate);
 
     }
     // add serializable import or remove placeholder
@@ -972,28 +1016,37 @@ public class MicroserviceGenerator extends Generator {
    * @return the updated database script
    * 
    */
-  private static String generateDatabaseScript(String databaseScript, String tableTemplate,
-      Microservice microservice) {
+  protected static String generateDatabaseScript(TemplateEngine templateEngine,
+      String databaseScript, String tableTemplate, Microservice microservice) {
     Database database = microservice.getDatabase();
-    for (Table table : database.getTables()) {
-      String tableCode = tableTemplate;
-      tableCode = tableCode.replace("$Database_Table_Name$", table.getName());
-      for (Column column : table.getColumns()) {
-        tableCode = tableCode.replace("$Column$",
-            "  " + column.getName() + " " + column.getType() + ",\n$Column$");
-        if (column.isPrimaryKey()) {
-          tableCode = tableCode.replace("$PK_Name$", column.getName());
+    Template databaseTemplate =
+        templateEngine.createTemplate(database.getModelId() + ":database", databaseScript);
+    templateEngine.addTemplate(databaseTemplate);
 
+    for (Table table : database.getTables()) {
+      Template currentTableTemplate =
+          templateEngine.createTemplate(table.getModelId() + ":table", tableTemplate);
+
+      databaseTemplate.appendVariable("$Database_Table$", currentTableTemplate);
+
+      currentTableTemplate.setVariable("$Database_Table_Name$", table.getName());
+      for (Column column : table.getColumns()) {
+        Template columnTemplate =
+            templateEngine.createTemplate(column.getModelId() + ":column", "  $name$ $type$,\n");
+        columnTemplate.setVariable("$name$", column.getName());
+        columnTemplate.setVariable("$type$", column.getType());
+        currentTableTemplate.appendVariable("$Column$", columnTemplate);
+        if (column.isPrimaryKey()) {
+          currentTableTemplate.setVariable("$PK_Name$", column.getName());
         }
       }
-      databaseScript = databaseScript.replace("$Database_Table$", tableCode);
-    }
-    databaseScript = databaseScript.replace("$Service_Name$", microservice.getName());
-    databaseScript = databaseScript.replace("$Database_Schema$", database.getSchema());
-    // remove last placeholder
-    databaseScript = databaseScript.replace("\n$Column$", "");
-    databaseScript = databaseScript.replace("\n$Database_Table$", "");
 
+      currentTableTemplate.setVariableIfNotSet("$Column$", "");
+    }
+    databaseTemplate.setVariable("$Service_Name$", microservice.getName());
+    databaseTemplate.setVariable("$Database_Schema$", database.getSchema());
+    // remove last placeholder
+    databaseTemplate.setVariableIfNotSet("$Database_Table$", "");
     return databaseScript;
   }
 
