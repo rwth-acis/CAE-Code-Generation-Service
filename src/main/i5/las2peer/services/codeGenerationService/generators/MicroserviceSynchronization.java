@@ -230,10 +230,10 @@ public class MicroserviceSynchronization extends MicroserviceGenerator {
             templateEngine = null;
           } else {
             oldFileTraceModel.setFileName(newDatabaseManagerFileName);
-            generateOtherArtifacts(templateEngine, oldMicroservice, gitHubOrganization, content);
+            generateOtherArtifacts(templateEngine, microservice, gitHubOrganization, content);
           }
         } else {
-          generateOtherArtifacts(templateEngine, oldMicroservice, gitHubOrganization, content);
+          generateOtherArtifacts(templateEngine, microservice, gitHubOrganization, content);
         }
 
         logger.info("... " + fileName + " synchronized.");
