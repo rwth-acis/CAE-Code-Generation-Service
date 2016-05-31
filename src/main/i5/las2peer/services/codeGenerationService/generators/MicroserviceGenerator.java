@@ -284,8 +284,6 @@ public class MicroserviceGenerator extends Generator {
               break;
             case "database.sql":
               databaseScript = new String(loader.getBytes(), "UTF-8");
-              generateOtherArtifacts(Template.createInitialTemplateEngine(traceModel, path),
-                  microservice, gitHubOrganization, databaseScript);
               break;
             case "genericTable.txt":
               genericTable = new String(loader.getBytes(), "UTF-8");
