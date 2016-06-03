@@ -145,14 +145,18 @@ public class CompositeSegment extends Segment {
     map.put(oldSegment.getId(), segment);
   }
 
-  public void setSegment(String id, CompositeSegment segment) {
-    map.put(this.getId() + ":" + id, segment);
+  public void setVariableSegment(String variableName, CompositeSegment segment) {
+    String id = this.getId() + ":" + variableName;
+    // only update a segment of a variable name that exists
+    if (this.hasChild(id)) {
+      map.put(id, segment);
+    }
   }
 
-  public void setSegmentContent(String id, String content, boolean integrityCheck) {
+  public void setSegmentContent(String variableName, String content, boolean integrityCheck) {
     // if this composite segment holds a segment with the given id, set its content
-    if (map.containsKey(this.getId() + ":" + id)) {
-      Segment segment = map.get(this.getId() + ":" + id);
+    if (map.containsKey(this.getId() + ":" + variableName)) {
+      Segment segment = map.get(this.getId() + ":" + variableName);
       if (segment instanceof ContentSegment) {
         ((ContentSegment) segment).setContent(content, integrityCheck);
       }
@@ -162,7 +166,7 @@ public class CompositeSegment extends Segment {
     for (String cid : this.children) {
       Segment segment = this.map.get(cid);
       if (segment instanceof CompositeSegment) {
-        ((CompositeSegment) segment).setSegmentContent(id, content, integrityCheck);
+        ((CompositeSegment) segment).setSegmentContent(variableName, content, integrityCheck);
       }
     }
   }
@@ -209,7 +213,7 @@ public class CompositeSegment extends Segment {
     return this.toJSONObject(this.getChildrenList());
   }
 
-  public void addAllSegments(List<Segment> parseTraces) {
+  public void addAllSegments(Collection<Segment> parseTraces) {
     for (Segment segment : parseTraces) {
       this.addSegment(segment);
     }

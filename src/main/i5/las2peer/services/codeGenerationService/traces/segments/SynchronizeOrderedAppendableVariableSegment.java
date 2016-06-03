@@ -14,17 +14,15 @@ public class SynchronizeOrderedAppendableVariableSegment
   }
 
   /**
-   * Private method to get the list of segments in the same order as for the old segments
+   * Get the list of segments in the same order as for the old segments
    * 
    * @return A list of segments in the same order of the old segments
    */
 
-  private List<String> getReorderedChildrenList() {
+  public List<String> getReorderedChildrenList() {
     List<String> alreadyAdded = new ArrayList<String>();
     List<String> reordered = new ArrayList<String>();
-    System.out.println(this.getId());
     for (String id : this.compositeSegment.getChildrenList()) {
-      System.out.println(id);
       Segment segment = this.getChild(id);
 
       if (segment != null && !alreadyAdded.contains(id)) {

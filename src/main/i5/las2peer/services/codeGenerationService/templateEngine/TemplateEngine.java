@@ -160,18 +160,19 @@ public class TemplateEngine {
 
     // the strategy determines whether we should reuse a segment for a template or not
     Segment segment = this.strategy.getSegment(id);
+    CompositeSegment cSegment = new CompositeSegment(id);
 
-    CompositeSegment cSegment = null;
     if (segment instanceof CompositeSegment) {
+
       // "reuse" an existing template, i.e. the segment hold by the template is set to an already
       // existing one
       cSegment = (CompositeSegment) segment;
     } else {
       // create a new composition of segments for the template
-      JSONObject traces = TemplateEngine.generateTraces(sourceCode);
-      String code = TemplateEngine.removeUnprotectedSurroundings(sourceCode);
-      cSegment =
-          SegmentFactory.createCompositeSegmentByInitialTraces(id, traces.toJSONString(), code);
+      JSONObject traces = TemplateEngine.generateTraces(id, sourceCode);
+      sourceCode = TemplateEngine.removeUnprotectedSurroundings(sourceCode);
+      JSONArray segments = (JSONArray) traces.get("traceSegments");
+      cSegment.addAllSegments(SegmentFactory.createSegments(segments, sourceCode, 0L));
     }
 
     return new Template(cSegment, this);
@@ -253,7 +254,7 @@ public class TemplateEngine {
    */
 
   @SuppressWarnings("unchecked")
-  private static JSONObject generateTraces(String content) {
+  private static JSONObject generateTraces(String idPrefix, String content) {
     JSONObject outerObject = new JSONObject();
     JSONArray segments = new JSONArray();
     Map<String, Integer> elementCountMap = new HashMap<String, Integer>();
@@ -297,7 +298,7 @@ public class TemplateEngine {
 
         String key = id + "before";
         key += "[" + incrementElementCount(elementCountMap, key) + "]";
-        segments.add(Segment.createJSONSegment(start - s, key, "protected"));
+        segments.add(Segment.createJSONSegment(start - s, idPrefix + ":" + key, "protected"));
       }
 
       if (unprotected) {
@@ -305,10 +306,10 @@ public class TemplateEngine {
         if (unprotectedIntegrityCheck) {
           type += "Integrity";
         }
-        segments
-            .add(Segment.createJSONSegment(unprotectedBlockMatcher.group(1).length(), id, type));
+        segments.add(Segment.createJSONSegment(unprotectedBlockMatcher.group(1).length(),
+            idPrefix + ":" + id, type));
       } else {
-        segments.add(Segment.createJSONSegment(end - start, id, "protected"));
+        segments.add(Segment.createJSONSegment(end - start, idPrefix + ":" + id, "protected"));
       }
 
       s = end;
@@ -317,7 +318,7 @@ public class TemplateEngine {
     // add the last trailing segment
     String id = "End";
 
-    segments.add(Segment.createJSONSegment(content.length() - s, id, "protected"));
+    segments.add(Segment.createJSONSegment(content.length() - s, idPrefix + ":" + id, "protected"));
     outerObject.put("traceSegments", segments);
     return outerObject;
   }

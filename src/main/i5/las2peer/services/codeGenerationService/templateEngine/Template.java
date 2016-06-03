@@ -231,7 +231,7 @@ public class Template {
     }
 
     // set the container
-    this.segment.setSegment(variableName, container);
+    this.segment.setVariableSegment(variableName, container);
 
     return container;
   }
