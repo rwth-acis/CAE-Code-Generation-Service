@@ -157,7 +157,7 @@ public class FrontendComponentSynchronization extends FrontendComponentGenerator
           iwcResponseTemplate, htmlElementTemplate, frontendComponent);
 
       // add events to elements
-      addEventsToApplicationScript(applicationTemplate, widgetTemplateEngine, eventTemplate,
+      addEventsToApplicationScript(applicationTemplate, applicationTemplateEngine, eventTemplate,
           frontendComponent);
 
       // add (possible) Yjs collaboration stuff
