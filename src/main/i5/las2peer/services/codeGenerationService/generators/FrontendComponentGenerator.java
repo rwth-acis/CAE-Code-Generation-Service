@@ -623,7 +623,7 @@ public class FrontendComponentGenerator extends Generator {
 
         Template updatedElementFile = applicationTemplate.createTemplate(
             functionTemplate.getId() + ":update:" + element.getId(),
-            "  $(\"#$Element_Id$\").html(-{\"Updated Element\"}-);\n");
+            "-{ }-$(\"#$Element_Id$\").html(-{\"Updated Element\"}-);-{\n}-");
         updatedElementFile.setVariable("$Element_Id$", element.getId());
         functionTemplate.appendVariable("$Function_Body$", updatedElementFile);
 
@@ -729,9 +729,10 @@ public class FrontendComponentGenerator extends Generator {
 
         Template eventTemplate = templateEngine
             .createTemplate(element.getModelId() + ":" + event.getModelId(), eventTemplateFile);
+        eventTemplate.setVariable("$Html_Element_Id$", element.getId());
+
         applicationScriptTemplate.appendVariable("$Events$", eventTemplate);
 
-        eventTemplate.setVariable("$Html_Element_Id$", element.getId());
         eventTemplate.setVariable("$Event_Type$", event.getEventCause().toString());
 
         Function function = frontendComponent.getFunctions().get(event.getCalledFunctionId());
