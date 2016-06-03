@@ -13,7 +13,6 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
 import i5.las2peer.services.codeGenerationService.traces.segments.CompositeSegment;
-import i5.las2peer.services.codeGenerationService.traces.segments.ContentSegment;
 import i5.las2peer.services.codeGenerationService.traces.segments.Segment;
 
 /**
@@ -61,10 +60,10 @@ public class FileTraceModel {
   }
 
   public void addSegment(Segment segment) {
-    this.segmentList.add(segment);
     if (!this.hasSegment(segment.getId())) {
       this.segmentMap.put(segment.getId(), segment);
     }
+    this.segmentList.add(segment);
   }
 
   public void addSegments(Collection<Segment> segments) {
@@ -103,14 +102,6 @@ public class FileTraceModel {
     List<Segment> segmentList = this.model2Segment.get(modelId);
     segmentList.add(segment);
 
-  }
-
-  public void setSegmentContent(String content, String context) {
-    Segment segment = this.segmentMap.get(context);
-    // we can only set the content of ContentSegments
-    if (segment instanceof ContentSegment) {
-      ((ContentSegment) segment).setContent(content);
-    }
   }
 
   /**
