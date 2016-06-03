@@ -14,6 +14,17 @@ import i5.las2peer.services.codeGenerationService.traces.segments.SegmentFactory
 
 public class FileTraceModelFactory {
 
+  /**
+   * Create a {@link i5.las2peer.services.codeGenerationService.models.traceModel.FileTraceModel}
+   * for a file based on its source code and trace information
+   * 
+   * @param source The source code of the file
+   * @param fileTraces The trace information of the file
+   * @param traceModel A global trace model
+   * @param fileName The file name
+   * @return The created file trace model for the file
+   */
+
   public static FileTraceModel createFileTraceModelFromJSON(String source, JSONObject fileTraces,
       TraceModel traceModel, String fileName) {
 

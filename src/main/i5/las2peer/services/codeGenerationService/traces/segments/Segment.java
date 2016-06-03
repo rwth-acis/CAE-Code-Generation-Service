@@ -33,6 +33,16 @@ public abstract class Segment {
   }
 
   /**
+   * Set the id of the segment
+   * 
+   * @param id The new id of the segment
+   */
+
+  protected void setId(String id) {
+    this.id = id;
+  }
+
+  /**
    * Return the type of the segment as a string
    * 
    * @return The type of the segment as a string
@@ -69,7 +79,7 @@ public abstract class Segment {
   public static JSONObject createJSONSegment(int length, String id, String type) {
     JSONObject obj = new JSONObject();
     obj.put("id", id);
-    obj.put("length", length);
+    obj.put("length", Long.valueOf(length));
     obj.put("type", type);
     if (type.equals("unprotectedIntegrity")) {
       obj.put("integrityCheck", true);
@@ -79,4 +89,5 @@ public abstract class Segment {
     }
     return obj;
   }
+
 }
