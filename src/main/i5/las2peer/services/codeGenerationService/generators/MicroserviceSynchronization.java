@@ -71,7 +71,7 @@ public class MicroserviceSynchronization extends MicroserviceGenerator {
     String databaseScript = null;
     String genericTable = null;
     String databaseManager = null;
-
+    String guidances = null;
 
     try (TreeWalk treeWalk =
         getTemplateRepositoryContent(templateRepositoryName, gitHubOrganization)) {
@@ -103,6 +103,9 @@ public class MicroserviceSynchronization extends MicroserviceGenerator {
             break;
           case "genericTestMethod.txt":
             genericTestCase = new String(loader.getBytes(), "UTF-8");
+            break;
+          case "guidances.json":
+            guidances = new String(loader.getBytes(), "UTF-8");
             break;
           case "databaseConfig.txt":
             databaseConfig = new String(loader.getBytes(), "UTF-8");
@@ -250,7 +253,8 @@ public class MicroserviceSynchronization extends MicroserviceGenerator {
 
     try {
       // commit changes
-      updateTracedFilesInRepository(traceModel, getRepositoryName(microservice), service);
+      updateTracedFilesInRepository(traceModel, guidances, getRepositoryName(microservice),
+          service);
     } catch (UnsupportedEncodingException e) {
       logger.printStackTrace(e);
     }

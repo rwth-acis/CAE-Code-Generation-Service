@@ -476,13 +476,13 @@ public class CodeGenerationService extends Service {
   /**
    * Performs a model violation check against the files located in the given repository
    * 
-   * @param repositoryName The name of the repository
+   * @param guidances A json object containing the guidances
+   * @param files The files to check
    * @return A json array containing guidances of found violations
    */
-  public JSONArray checkModel(String repositoryName) {
-    String pathFilter = repositoryName.indexOf("frontend") > -1 ? "frontend/" : "backend/";
-    return ModelChecker.performViolationCheck(this.getTracedFiles(repositoryName),
-        templateRepository, pathFilter, gitHubOrganization);
+  public JSONArray checkModel(JSONObject guidances, HashMap<String, JSONObject> files) {
+    logger.info("starting model checking..");
+    return ModelChecker.performViolationCheck(files, guidances);
   }
 
   /**

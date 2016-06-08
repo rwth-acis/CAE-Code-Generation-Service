@@ -43,7 +43,6 @@ import i5.las2peer.services.codeGenerationService.CodeGenerationService;
 import i5.las2peer.services.codeGenerationService.exception.GitHubException;
 import i5.las2peer.services.codeGenerationService.models.traceModel.FileTraceModel;
 import i5.las2peer.services.codeGenerationService.models.traceModel.TraceModel;
-import i5.las2peer.services.codeGenerationService.templateEngine.TemplateEngine;
 
 /**
  * 
@@ -570,8 +569,8 @@ public abstract class Generator {
     return repository;
   }
 
-  protected static void updateTracedFilesInRepository(TraceModel traceModel, String repositoryName,
-      CodeGenerationService service) throws UnsupportedEncodingException {
+  protected static void updateTracedFilesInRepository(TraceModel traceModel, String guidances,
+      String repositoryName, CodeGenerationService service) throws UnsupportedEncodingException {
     Map<String, FileTraceModel> fileTraceMap = traceModel.getFilenameToFileTraceModelMap();
 
     List<String[]> fileList = new ArrayList<String[]>();
@@ -601,24 +600,13 @@ public abstract class Generator {
     fileList.add(new String[] {"traces/tracedFiles.json",
         Base64.getEncoder().encodeToString(tracedFiles.getBytes("utf-8"))});
 
+    fileList.add(new String[] {"traces/guidances.json",
+        Base64.getEncoder().encodeToString(guidances.getBytes("utf-8"))});
+
     service.commitMultipleFilesRaw(repositoryName, "Code regeneration/Model synchronization",
         fileList.toArray(new String[][] {}));
   }
 
-
-  @SuppressWarnings("unchecked")
-  protected static void commitTracedFile(String fileName, TemplateEngine templateEngine,
-      String message, CodeGenerationService service, String repositoryName)
-      throws UnsupportedEncodingException {
-    JSONObject obj = new JSONObject();
-    obj.put("filename", fileName);
-    obj.put("content",
-        Base64.getEncoder().encodeToString(templateEngine.getContent().getBytes("utf-8")));
-    obj.put("commitMessage", "code regeneration");
-    obj.put("traces", templateEngine.toJSONObject());
-
-    service.commitFile(repositoryName, obj);
-  }
 
   protected static void renameFileInRepository(String repositoryName, String newFileName,
       String oldFileName, CodeGenerationService service) {

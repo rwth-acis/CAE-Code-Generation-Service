@@ -146,6 +146,7 @@ public class MicroserviceGenerator extends Generator {
     String serviceInvocation = null;
     String databaseScript = null;
     String genericTable = null;
+    String guidances = null;
 
     try {
       PersonIdent caeUser = new PersonIdent(gitHubUser, gitHubUserMail);
@@ -170,6 +171,9 @@ public class MicroserviceGenerator extends Generator {
               String projectFile = new String(loader.getBytes(), "UTF-8");
               generateOtherArtifacts(Template.createInitialTemplateEngine(traceModel, path),
                   microservice, gitHubOrganization, projectFile);
+              break;
+            case "guidances.json":
+              guidances = new String(loader.getBytes(), "UTF-8");
               break;
             case "logo_services.png":
               logo = ImageIO.read(loader.openStream());
@@ -357,6 +361,8 @@ public class MicroserviceGenerator extends Generator {
         databaseScript = generateDatabaseScript(databaseScriptTemplateEngine, databaseScript,
             genericTable, microservice);
       }
+
+      createTextFileInRepository(microserviceRepository, "traces/", "guidances.json", guidances);
 
       // add traced files to new repository
       createTracedFilesInRepository(traceModel, microserviceRepository);
@@ -556,17 +562,28 @@ public class MicroserviceGenerator extends Generator {
       // import
       serviceClassTemplate.setVariable("$Database_Import$",
           "import i5.las2peer.services." + packageName + ".database.DatabaseManager;");
+
+      Template databaseConfigurationTpl = templateEngine
+          .createTemplate(microservice.getMicroserviceModelId() + ":dbConfig", databaseConfig);
+      Template databaseInstantiationTpl = templateEngine.createTemplate(
+          microservice.getMicroserviceModelId() + ":dbConfig", databaseInstantiation);
       // variable names
       // serviceClassTemplate.appendVariable("$Database_Configuration$", test);
-      serviceClassTemplate.setVariable("$Database_Configuration$",
-          new String("  /*\n" + "   * Database configuration\n" + "   */\n"
-              + "  private String jdbcDriverClassName;\n" + "  private String jdbcLogin;\n"
-              + "  private String jdbcPass;\n" + "  private String jdbcUrl;\n"
-              + "  private String jdbcSchema;\n" + "  private DatabaseManager dbm;\n"));
+
+      serviceClassTemplate.appendVariable("$Database_Configuration$", databaseConfigurationTpl);
+
+      // serviceClassTemplate.setVariable("$Database_Configuration$",
+      // new String(" /*\n" + " * Database configuration\n" + " */\n"
+      // + " private String jdbcDriverClassName;\n" + " private String jdbcLogin;\n"
+      // + " private String jdbcPass;\n" + " private String jdbcUrl;\n"
+      // + " private String jdbcSchema;\n" + " private DatabaseManager dbm;\n"));
       // instantiation
-      serviceClassTemplate.setVariable("$Database_Instantiation$", new String(
-          "    // instantiate a database manager to handle database connection pooling and credentials\n"
-              + "    dbm = new DatabaseManager(jdbcDriverClassName, jdbcLogin, jdbcPass, jdbcUrl, jdbcSchema);"));
+      serviceClassTemplate.appendVariable("$Database_Instantiation$", databaseInstantiationTpl);
+      // serviceClassTemplate.setVariable("$Database_Instantiation$", new String(
+      // " // instantiate a database manager to handle database connection pooling and
+      // credentials\n"
+      // + " dbm = new DatabaseManager(jdbcDriverClassName, jdbcLogin, jdbcPass,
+      // jdbcUrl,jdbcSchema);"));
     } else {
       // set to empty string
       serviceClassTemplate.setVariable("$Database_Configuration$", "");
@@ -614,9 +631,8 @@ public class MicroserviceGenerator extends Generator {
         HttpResponse currentResponse = currentMethod.getHttpResponses().get(httpResponseIndex);
         // start with api response code
 
-        Template apiResponseTemplate =
-            templateEngine.createTemplate(currentResponse.getModelId() + ":apiResponse",
-                genericApiResponse + (!isLastResponse ? ",\n" : ""));
+        Template apiResponseTemplate = templateEngine
+            .createTemplate(currentResponse.getModelId() + ":apiResponse", genericApiResponse);
 
 
         // first add the api response template to the current method template

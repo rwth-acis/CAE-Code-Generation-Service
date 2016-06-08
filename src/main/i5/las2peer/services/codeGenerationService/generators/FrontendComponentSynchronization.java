@@ -53,6 +53,7 @@ public class FrontendComponentSynchronization extends FrontendComponentGenerator
     String eventTemplate = null;
     String yjsImports = null;
     String yjsInit = null;
+    String guidances = null;
 
     TemplateEngine applicationTemplateEngine = null;
     TemplateEngine widgetTemplateEngine = null;
@@ -94,6 +95,9 @@ public class FrontendComponentSynchronization extends FrontendComponentGenerator
             break;
           case "yjsInit.txt":
             yjsInit = new String(loader.getBytes(), "UTF-8");
+            break;
+          case "guidances.json":
+            guidances = new String(loader.getBytes(), "UTF-8");
             break;
         }
       }
@@ -167,7 +171,8 @@ public class FrontendComponentSynchronization extends FrontendComponentGenerator
       traceModel.addFileTraceModel(applicationTemplateEngine.getFileTraceModel());
 
       // commit changes
-      updateTracedFilesInRepository(traceModel, getRepositoryName(frontendComponent), service);
+      updateTracedFilesInRepository(traceModel, guidances, getRepositoryName(frontendComponent),
+          service);
 
     } catch (UnsupportedEncodingException e) {
       logger.printStackTrace(e);

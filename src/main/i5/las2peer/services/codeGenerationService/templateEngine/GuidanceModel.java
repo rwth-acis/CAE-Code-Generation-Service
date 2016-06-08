@@ -9,8 +9,6 @@ import java.util.regex.Pattern;
 
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
-import org.json.simple.parser.JSONParser;
-import org.json.simple.parser.ParseException;
 
 import i5.las2peer.services.codeGenerationService.traces.segments.ContentSegment;
 import i5.las2peer.services.codeGenerationService.traces.segments.Segment;
@@ -40,20 +38,14 @@ public class GuidanceModel {
   /**
    * Parses and adds the guidances of the given json file to the model
    * 
-   * @param guidancesString the json file containing the guidances to add
+   * @param guidancesObj the guidances to add
    */
-  public void addGuidances(String guidancesString) {
-    JSONParser parser = new JSONParser();
-    JSONObject jobj;
-    try {
-      jobj = (JSONObject) parser.parse(guidancesString);
-      JSONArray guidances = (JSONArray) jobj.get("guidances");
-      for (int i = 0; i < guidances.size(); i++) {
-        JSONObject guidance = (JSONObject) guidances.get(i);
-        this.addGuidance(new Guidance(guidance));
-      }
-    } catch (ParseException e) {
-      e.printStackTrace();
+  public void addGuidances(JSONObject guidancesObj) {
+
+    JSONArray guidances = (JSONArray) guidancesObj.get("guidances");
+    for (int i = 0; i < guidances.size(); i++) {
+      JSONObject guidance = (JSONObject) guidances.get(i);
+      this.addGuidance(new Guidance(guidance));
     }
 
   }
@@ -118,7 +110,6 @@ public class GuidanceModel {
       }
       guidanceJsonObject.put("segments", guidanceSegments);
       guidanceJsonObject.put("message", guidance.getMessage());
-      guidanceJsonObject.put("helps", guidance.getHelps());
       guidances.add(guidanceJsonObject);
     }
 

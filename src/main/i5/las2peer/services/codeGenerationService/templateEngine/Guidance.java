@@ -1,6 +1,5 @@
 package i5.las2peer.services.codeGenerationService.templateEngine;
 
-import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 
 import i5.las2peer.services.codeGenerationService.traces.segments.SegmentFactory;
@@ -51,15 +50,6 @@ public class Guidance {
     return Math.toIntExact(group);
   }
 
-  /**
-   * Get the description of the help functionality
-   * 
-   * @return The helping functionality of the guidance
-   */
-
-  public JSONArray getHelps() {
-    return (JSONArray) this.jsonObject.get("helps");
-  }
 
   /**
    * Get the message of the guidance, e.g. a error message

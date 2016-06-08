@@ -94,6 +94,7 @@ public class FrontendComponentGenerator extends Generator {
     String yMemory = null;
     String iwc = null;
     String yjsInit = null;
+    String guidances = null;
 
     try {
       PersonIdent caeUser = new PersonIdent(gitHubUser, gitHubUserMail);
@@ -124,6 +125,9 @@ public class FrontendComponentGenerator extends Generator {
               break;
             case "applicationScript.js":
               applicationScript = new String(loader.getBytes(), "UTF-8");
+              break;
+            case "guidances.json":
+              guidances = new String(loader.getBytes(), "UTF-8");
               break;
             case "genericFunction.txt":
               functionTemplate = new String(loader.getBytes(), "UTF-8");
@@ -269,6 +273,8 @@ public class FrontendComponentGenerator extends Generator {
           createTextFileInRepository(frontendComponentRepository, "", "README.md", readMe);
       frontendComponentRepository =
           createImageFileInRepository(frontendComponentRepository, "img/", "logo.png", logo);
+      frontendComponentRepository = createTextFileInRepository(frontendComponentRepository,
+          "traces/", "guidances.json", guidances);
 
       // commit files
       try {
@@ -600,6 +606,8 @@ public class FrontendComponentGenerator extends Generator {
         microserviceCallFile.setVariable("$Method_Path$", microserviceCall.getPath());
 
         functionTemplate.appendVariable("$Function_Body$", microserviceCallFile);
+        applicationTemplate.getTemplateEngine().addTrace(microserviceCall.getModelId(),
+            "MicroserviceCall[" + microserviceCall.getPath() + "]", microserviceCallFile);
       }
 
       // element creations
@@ -610,7 +618,7 @@ public class FrontendComponentGenerator extends Generator {
             createHtmlElementTemplate(element, htmlElementTemplateFile, functionTemplate);
 
         Template createdElementTemplate = applicationTemplate.createTemplate(
-            functionTemplate.getId() + ":create:" + element.getId(),
+            functionTemplate.getId() + ":create:" + element.getModelId(),
             "   $( \".container\" ).append(\"$Html$\");\n");
 
         createdElementTemplate.appendVariable("$Html$", elementTemplate);
@@ -622,7 +630,7 @@ public class FrontendComponentGenerator extends Generator {
         HtmlElement element = frontendComponent.getHtmlElements().get(elementId);
 
         Template updatedElementFile = applicationTemplate.createTemplate(
-            functionTemplate.getId() + ":update:" + element.getId(),
+            functionTemplate.getId() + ":update:" + element.getModelId(),
             "-{ }-$(\"#$Element_Id$\").html(-{\"Updated Element\"}-);-{\n}-");
         updatedElementFile.setVariable("$Element_Id$", element.getId());
         functionTemplate.appendVariable("$Function_Body$", updatedElementFile);
@@ -726,7 +734,7 @@ public class FrontendComponentGenerator extends Generator {
 
     for (HtmlElement element : frontendComponent.getHtmlElements().values()) {
       for (Event event : element.getEvents()) {
-
+        System.out.println(element.getModelId() + ":" + event.getModelId());
         Template eventTemplate = templateEngine
             .createTemplate(element.getModelId() + ":" + event.getModelId(), eventTemplateFile);
         eventTemplate.setVariable("$Html_Element_Id$", element.getId());

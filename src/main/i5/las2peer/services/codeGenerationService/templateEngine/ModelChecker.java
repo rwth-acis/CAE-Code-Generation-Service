@@ -6,17 +6,11 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 
-import org.eclipse.jgit.lib.ObjectId;
-import org.eclipse.jgit.lib.ObjectLoader;
-import org.eclipse.jgit.lib.ObjectReader;
-import org.eclipse.jgit.treewalk.TreeWalk;
-import org.eclipse.jgit.treewalk.filter.PathFilter;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 
 import i5.las2peer.logging.L2pLogger;
 import i5.las2peer.services.codeGenerationService.generators.ApplicationGenerator;
-import i5.las2peer.services.codeGenerationService.generators.Generator;
 import i5.las2peer.services.codeGenerationService.traces.segments.CompositeSegment;
 import i5.las2peer.services.codeGenerationService.traces.segments.Segment;
 import i5.las2peer.services.codeGenerationService.traces.segments.SegmentFactory;
@@ -35,56 +29,20 @@ public class ModelChecker {
   private static final L2pLogger logger =
       L2pLogger.getInstance(ApplicationGenerator.class.getName());
 
-  /**
-   * Retrieves the guidance model from the template repository model
-   * 
-   * @param templateRepositoryName The name of the template repository
-   * @param gitHubOrganization The organization that is used in the CAE
-   * @return A guidance model
-   */
-
-  public static GuidanceModel getGuidances(String folder, String templateRepositoryName,
-      String gitHubOrganization) {
-    GuidanceModel guidanceModel = new GuidanceModel();
-    try (TreeWalk treeWalk =
-        Generator.getTemplateRepositoryContent(templateRepositoryName, gitHubOrganization)) {
-
-      treeWalk.setFilter(PathFilter.create(folder));
-      ObjectReader reader = treeWalk.getObjectReader();
-
-      // walk through the tree and retrieve the guidances
-      while (treeWalk.next()) {
-        ObjectId objectId = treeWalk.getObjectId(0);
-        ObjectLoader loader = reader.open(objectId);
-
-        switch (treeWalk.getNameString()) {
-          case "guidances.json":
-            String guidances = new String(loader.getBytes(), "UTF-8");
-            guidanceModel.addGuidances(guidances);
-            return guidanceModel;
-        }
-      }
-    } catch (Exception e) {
-      logger.printStackTrace(e);
-    }
-
-    return guidanceModel;
-  }
 
   /**
    * The actual method that performs the checking.
    * 
    * @param files The files of the repository of the component that should be tested
-   * @param templateRepositoryName The name of the template repository
-   * @param gitHubOrganization The organization that is used in the CAE
    * @return A json array containing corresponding guidances of the found violations
    */
   @SuppressWarnings("unchecked")
   public static JSONArray performViolationCheck(HashMap<String, JSONObject> files,
-      String templateRepositoryName, String folder, String gitHubOrganization) {
+      JSONObject guidances) {
 
-    JSONArray guidances = new JSONArray();
-    GuidanceModel guidanceModel = getGuidances(folder, templateRepositoryName, gitHubOrganization);
+    JSONArray guidancesArray = new JSONArray();
+    GuidanceModel guidanceModel = new GuidanceModel();
+    guidanceModel.addGuidances(guidances);
 
     Iterator<String> it = files.keySet().iterator();
     while (it.hasNext()) {
@@ -101,15 +59,14 @@ public class ModelChecker {
 
         List<Segment> segments = SegmentFactory.createSegments(traceSegments, content, 0L);
         for (Segment segment : segments) {
-          guidances.addAll(checkSegment(segment, traces, guidanceModel));
+          guidancesArray.addAll(checkSegment(segment, traces, guidanceModel));
         }
 
       } catch (Exception e) {
         logger.printStackTrace(e);
       }
     }
-
-    return guidances;
+    return guidancesArray;
   }
 
   private static List<UnprotectedSegment> getUnprotectedSegments(CompositeSegment cSegment) {
@@ -134,8 +91,8 @@ public class ModelChecker {
    * @param segment The segment to check
    * @param traces The traces of the file the segment is contained. Used for additional information
    *        needed during the check
-   * @param parent The parent of the segment, or null if the segment does not have a parent
-   * @return True if the check passes, otherwise false
+   * @param guidanceModel The guidance model to use
+   * @return A list of all found violations
    */
 
   private static List<JSONObject> checkSegment(Segment segment, JSONObject traces,
@@ -155,8 +112,8 @@ public class ModelChecker {
 
       JSONObject modelMeta = getModelFromSegmentId(segment.getId(), traces);
       if (modelMeta != null) {
-        String name = (String) modelMeta.get("type");
-        guidances.addAll(guidanceModel.createGuidances(name, getUnprotectedSegments(cSegment)));
+        String type = (String) modelMeta.get("type");
+        guidances.addAll(guidanceModel.createGuidances(type, getUnprotectedSegments(cSegment)));
       }
 
     }
