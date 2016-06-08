@@ -168,6 +168,10 @@ public class TemplateEngine {
       // existing one
       cSegment = (CompositeSegment) segment;
     } else {
+      // handle window EOL bug.
+      sourceCode = sourceCode.replaceAll("\\r\\n", "\n");
+      sourceCode = sourceCode.replaceAll("\\r", "\n");
+
       // create a new composition of segments for the template
       JSONObject traces = TemplateEngine.generateTraces(id, sourceCode);
       sourceCode = TemplateEngine.removeUnprotectedSurroundings(sourceCode);

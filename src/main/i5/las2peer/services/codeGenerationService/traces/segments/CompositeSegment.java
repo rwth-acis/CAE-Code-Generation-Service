@@ -153,10 +153,10 @@ public class CompositeSegment extends Segment {
     }
   }
 
-  public void setSegmentContent(String variableName, String content, boolean integrityCheck) {
+  public void setSegmentContent(String id, String content, boolean integrityCheck) {
     // if this composite segment holds a segment with the given id, set its content
-    if (map.containsKey(this.getId() + ":" + variableName)) {
-      Segment segment = map.get(this.getId() + ":" + variableName);
+    if (map.containsKey(this.getId() + ":" + id)) {
+      Segment segment = map.get(this.getId() + ":" + id);
       if (segment instanceof ContentSegment) {
         ((ContentSegment) segment).setContent(content, integrityCheck);
       }
@@ -166,7 +166,7 @@ public class CompositeSegment extends Segment {
     for (String cid : this.children) {
       Segment segment = this.map.get(cid);
       if (segment instanceof CompositeSegment) {
-        ((CompositeSegment) segment).setSegmentContent(variableName, content, integrityCheck);
+        ((CompositeSegment) segment).setSegmentContent(id, content, integrityCheck);
       }
     }
   }
@@ -180,6 +180,8 @@ public class CompositeSegment extends Segment {
         content += this.map.get(id).toString();
       }
     }
+
+
     return content;
   }
 

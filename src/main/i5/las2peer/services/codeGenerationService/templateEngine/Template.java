@@ -110,7 +110,7 @@ public class Template {
   }
 
   /**
-   * Set the content of a variable within this template
+   * Force to set the content of a variable within this template
    * 
    * @param variableName - The name of the variable to set its content
    * @param content - The content that will be set
@@ -156,12 +156,12 @@ public class Template {
     this.appendVariable(variableName, template, true);
   }
 
-  public void setVariableIfNotSet(String id, String content) {
-    String segmentId = this.getId() + ":" + id;
+  public void setVariableIfNotSet(String variableName, String content) {
+    String segmentId = this.getId() + ":" + variableName;
 
     Segment segment = this.segment.getChildRecursive(segmentId);
     if (segment instanceof ContentSegment && segment.getId().equals(segmentId)) {
-      if (segment.toString().equals(id)) {
+      if (segment.toString().equals(variableName)) {
         ((ContentSegment) segment).setContent(content, false);
       }
     }

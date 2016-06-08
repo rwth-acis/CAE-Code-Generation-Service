@@ -18,7 +18,7 @@ public class ProtectedSegment extends ContentSegment {
 
   @Override
   public int getLength() {
-    return this.content.length();
+    return this.getContent().length();
   }
 
   @Override
