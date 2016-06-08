@@ -2,12 +2,9 @@ package i5.las2peer.services.codeGenerationService.traces.segments;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
-import org.json.simple.parser.JSONParser;
 
 /**
  * A factory class providing utilities to create new content segments and compositions of segments.
@@ -145,93 +142,6 @@ public class SegmentFactory {
       segment.setContent(content);
     }
     return segment;
-  }
-
-  /**
-   * Create a new composition of segments for templates. Therefore, it parses a given source code
-   * with the help of the provided initial trace information of a template. Used to create the
-   * composition that is hold by a
-   * {@link i5.las2peer.services.codeGenerationService.templateEngine.Template}.
-   * 
-   * @param id The id of the new segment
-   * @param traces The json string of initial traces of the template
-   * @param source The source code
-   * @return A new created composition of segments
-   */
-
-  public static CompositeSegment createCompositeSegmentByInitialTraces(String id, String traces,
-      String source) {
-    JSONParser parser = new JSONParser();
-    CompositeSegment cS = new CompositeSegment(id);
-
-    try {
-      Object obj = parser.parse(traces);
-      JSONObject jobj = (JSONObject) obj;
-      cS = createCompositeSegmentByInitialTraces(id, jobj, source);
-    } catch (Exception e) {
-      e.printStackTrace();
-    }
-    return cS;
-
-  }
-
-  /**
-   * Like {@link SegmentFactory#createCompositeSegmentByInitialTraces(String, String, String)}, but
-   * uses an json object for the trace information.
-   * 
-   * @param id The id of the new segment
-   * @param traces The json object of initial traces of the template
-   * @param source The source code
-   * @return A new created composition of segments
-   */
-
-  @SuppressWarnings("unchecked")
-  public static CompositeSegment createCompositeSegmentByInitialTraces(String id, JSONObject traces,
-      String source) {
-    CompositeSegment cS = new CompositeSegment(id);
-    try {
-
-      JSONArray jarray = (JSONArray) traces.get("traceSegments");
-      Long start = 0L;
-      Pattern pattern = Pattern.compile("(\\$([a-zA-Z_]*)\\$)");
-
-      // loop through the segments
-      for (int i = 0; i < jarray.size(); i++) {
-        JSONObject entry = (JSONObject) jarray.get(i);
-        Long length = (Long) entry.get("length");
-        String idSuffix = (String) entry.get("id");
-        // extract the content of the current segment
-        String sourcePart =
-            source.substring(Math.toIntExact(start), Math.toIntExact(start + length));
-        Matcher matcher = pattern.matcher(sourcePart);
-
-        // check for variable name
-        if (matcher.find()) {
-
-          // if a variable name was found, we need to check if a segment for that specific variable
-          // has already been created
-          if (!cS.hasChild(id + ":" + matcher.group(1))) {
-            // if not, we need to create a new content segment
-            entry.put("id", id + ":" + matcher.group(1));
-            cS.addSegment(createContentSegment(entry, sourcePart));
-          } else {
-            // reuse the existing one, needed because variable names can occur multiple
-            // times in a segment
-            cS.addSegment(cS.getChild(id + ":" + matcher.group(1)));
-          }
-        } else {
-          // a variable name was not found, so we use the idSuffix
-          entry.put("id", id + ":" + idSuffix);
-          cS.addSegment(createContentSegment(entry, sourcePart));
-        }
-
-        start += length;
-      }
-
-    } catch (Exception e) {
-      e.printStackTrace();
-    }
-    return cS;
   }
 
 }
