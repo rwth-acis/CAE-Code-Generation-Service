@@ -60,6 +60,7 @@ public class MicroserviceSynchronization extends MicroserviceGenerator {
     // variables holding the template sourc code
     String serviceClass = null;
     String serviceTest = null;
+    String serviceProperties = null;
     String genericHttpMethod = null;
     String genericHttpMethodBody = null;
     String genericApiResponse = null;
@@ -101,6 +102,8 @@ public class MicroserviceSynchronization extends MicroserviceGenerator {
           case "ServiceTest.java":
             serviceTest = new String(loader.getBytes(), "UTF-8");
             break;
+          case "i5.las2peer.services.servicePackage.ServiceClass.properties":
+            serviceProperties = new String(loader.getBytes(), "UTF-8");
           case "genericTestMethod.txt":
             genericTestCase = new String(loader.getBytes(), "UTF-8");
             break;
@@ -135,6 +138,8 @@ public class MicroserviceSynchronization extends MicroserviceGenerator {
 
     // new file names
     String serviceFileName = getServiceFileName(microservice);
+    String servicePropertiesFileName = getServicePropertiesFileName(microservice);
+
     String serviceTestFileName = getServiceTestFileName(microservice);
     String databaseScriptFileName = getDatabaseScriptFileName(microservice);
     String newDatabaseManagerFileName = "src/main/i5/las2peer/services/"
@@ -142,6 +147,7 @@ public class MicroserviceSynchronization extends MicroserviceGenerator {
 
     // old file names
     String serviceOldFileName = getServiceFileName(oldMicroservice);
+    String serviceOldPropertiesFileName = getServicePropertiesFileName(oldMicroservice);
     String serviceOldTestFileName = getServiceTestFileName(oldMicroservice);
     String databaseOldScriptFileName = getDatabaseScriptFileName(oldMicroservice);
     String oldDatabaseManagerFileName = "src/main/i5/las2peer/services/"
@@ -157,6 +163,12 @@ public class MicroserviceSynchronization extends MicroserviceGenerator {
     if (!serviceTestFileName.equals(serviceOldTestFileName)) {
       renameFileInRepository(getRepositoryName(oldMicroservice), serviceTestFileName,
           serviceOldTestFileName, service);
+    }
+
+    // if the old service properties file was renamed, we need to rename it in the local repo
+    if (!servicePropertiesFileName.equals(serviceOldPropertiesFileName)) {
+      renameFileInRepository(getRepositoryName(oldMicroservice), servicePropertiesFileName,
+          serviceOldPropertiesFileName, service);
     }
 
     // now loop through the traced files and synchronize them
@@ -235,6 +247,13 @@ public class MicroserviceSynchronization extends MicroserviceGenerator {
             oldFileTraceModel.setFileName(newDatabaseManagerFileName);
             generateOtherArtifacts(templateEngine, microservice, gitHubOrganization, content);
           }
+        } else if (fileName.equals(serviceOldPropertiesFileName)) {
+          if ((oldMicroservice.getDatabase() == null || content.equals(""))
+              && microservice.getDatabase() != null) {
+            content = serviceProperties;
+          }
+          oldFileTraceModel.setFileName(servicePropertiesFileName);
+          generateOtherArtifacts(templateEngine, microservice, gitHubOrganization, content);
         } else {
           generateOtherArtifacts(templateEngine, microservice, gitHubOrganization, content);
         }
@@ -253,8 +272,8 @@ public class MicroserviceSynchronization extends MicroserviceGenerator {
 
     try {
       // commit changes
-      updateTracedFilesInRepository(traceModel, guidances, getRepositoryName(microservice),
-          service);
+      updateTracedFilesInRepository(getUpdatedTracedFilesForRepository(traceModel, guidances),
+          getRepositoryName(microservice), service);
     } catch (UnsupportedEncodingException e) {
       logger.printStackTrace(e);
     }

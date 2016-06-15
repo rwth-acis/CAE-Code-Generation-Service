@@ -75,6 +75,19 @@ public class MicroserviceGenerator extends Generator {
   }
 
   /**
+   * Get the file name of the service properties file
+   * 
+   * @param microservice A microservice model
+   * @return The file name of the service properties file
+   */
+
+  protected static String getServicePropertiesFileName(Microservice microservice) {
+    String packageName = getPackageName(microservice);
+    return "etc/i5.las2peer.services." + packageName + "." + microservice.getResourceName()
+        + ".properties";
+  }
+
+  /**
    * Get the file name of the test file of a microservice model
    * 
    * @param microservice A microservice model
@@ -230,8 +243,10 @@ public class MicroserviceGenerator extends Generator {
               break;
             case "i5.las2peer.services.servicePackage.ServiceClass.properties":
               String serviceProperties = new String(loader.getBytes(), "UTF-8");
-              generateOtherArtifacts(Template.createInitialTemplateEngine(traceModel, path),
-                  microservice, gitHubOrganization, serviceProperties);
+              TemplateEngine serviceTemplateEngine = Template.createInitialTemplateEngine(
+                  traceModel, getServicePropertiesFileName(microservice));
+              generateOtherArtifacts(serviceTemplateEngine, microservice, gitHubOrganization,
+                  serviceProperties);
               break;
             case "i5.las2peer.webConnector.WebConnector.properties":
               String webConnectorConfig = new String(loader.getBytes(), "UTF-8");
@@ -320,8 +335,7 @@ public class MicroserviceGenerator extends Generator {
       TemplateEngine serviceTestTemplateEngine = new TemplateEngine(
           new InitialGenerationStrategy(serviceTestTraceModel), serviceTestTraceModel);
 
-      serviceTest = generateNewServiceTest(serviceTestTemplateEngine, serviceTest, microservice,
-          genericTestCase);
+      generateNewServiceTest(serviceTestTemplateEngine, serviceTest, microservice, genericTestCase);
 
       // add not traced files to new repository, e.g. static files
 
@@ -404,6 +418,34 @@ public class MicroserviceGenerator extends Generator {
     Template template = null;
     String fileName =
         java.nio.file.Paths.get(templateEngine.getFileName()).getFileName().toString();
+    System.out.println(fileName);
+    // special case service class properties file
+    if (templateEngine.getFileName().equals(getServicePropertiesFileName(microservice))) {
+      System.out.println("service class properties");
+      System.out.println(getServicePropertiesFileName(microservice));
+      template = templateEngine.createTemplate(
+          microservice.getMicroserviceModelId() + ":servicePropertiesFile", "$Properties$-{\n}-");
+
+      templateEngine.addTrace(microservice.getMicroserviceModelId() + ":servicePropertiesFile",
+          "Properties", "Service class properties", template);
+
+      if (microservice.getDatabase() == null) {
+        template.setVariableIfNotSet("$Properties$", "");
+        // template = templateEngine.createTemplate(
+        // microservice.getMicroserviceModelId() + ":emptyServiceProperties", "-{}-");
+      } else {
+        Template properitesTemplate = templateEngine.createTemplate(
+            microservice.getMicroserviceModelId() + ":serviceProperties", templateContent);
+        properitesTemplate.setVariable("$Database_Address$",
+            microservice.getDatabase().getAddress());
+        properitesTemplate.setVariable("$Database_Schema$", microservice.getDatabase().getSchema());
+        properitesTemplate.setVariable("$Database_User$",
+            microservice.getDatabase().getLoginName());
+        properitesTemplate.setVariable("$Database_Password$",
+            microservice.getDatabase().getLoginPassword());
+        template.appendVariable("$Properties$", properitesTemplate);
+      }
+    }
 
     switch (fileName) {
       case ".project":
@@ -465,18 +507,7 @@ public class MicroserviceGenerator extends Generator {
         }
         break;
       case "i5.las2peer.services.servicePackage.ServiceClass.properties":
-        if (microservice.getDatabase() == null) {
-          template = templateEngine.createTemplate(
-              microservice.getMicroserviceModelId() + ":emptyServiceProperties", "-{}-");
-        } else {
-          template = templateEngine.createTemplate(
-              microservice.getMicroserviceModelId() + ":serviceProperties", templateContent);
-          template.setVariable("$Database_Address$", microservice.getDatabase().getAddress());
-          template.setVariable("$Database_Schema$", microservice.getDatabase().getSchema());
-          template.setVariable("$Database_User$", microservice.getDatabase().getLoginName());
-          template.setVariable("$Database_Password$",
-              microservice.getDatabase().getLoginPassword());
-        }
+
         break;
       case "i5.las2peer.webConnector.WebConnector.properties":
         template = templateEngine.createTemplate(
@@ -503,6 +534,7 @@ public class MicroserviceGenerator extends Generator {
     }
 
     if (template != null) {
+      System.out.println(templateEngine.getFileName());
       templateEngine.addTemplate(template);
     }
   }
@@ -566,7 +598,7 @@ public class MicroserviceGenerator extends Generator {
       Template databaseConfigurationTpl = templateEngine
           .createTemplate(microservice.getMicroserviceModelId() + ":dbConfig", databaseConfig);
       Template databaseInstantiationTpl = templateEngine.createTemplate(
-          microservice.getMicroserviceModelId() + ":dbConfig", databaseInstantiation);
+          microservice.getMicroserviceModelId() + ":Instantiation", databaseInstantiation);
       // variable names
       // serviceClassTemplate.appendVariable("$Database_Configuration$", test);
 
@@ -862,10 +894,8 @@ public class MicroserviceGenerator extends Generator {
    * @param microservice the microservice model
    * @param genericTestCase a generic test class file
    * 
-   * @return the service test as a string
-   * 
    */
-  protected static String generateNewServiceTest(TemplateEngine templateEngine, String serviceTest,
+  protected static void generateNewServiceTest(TemplateEngine templateEngine, String serviceTest,
       Microservice microservice, String genericTestCase) {
 
     // create template and add to template engine
@@ -978,13 +1008,8 @@ public class MicroserviceGenerator extends Generator {
       if (consumesAnnotation.equals("")) {
         consumesAnnotation = "MediaType.TEXT_PLAIN";
       }
-      // might still be empty, if only path parameter were parsed
-      currentMethodCode = currentMethodCode.replace("$HTTPMethod_Content$", content);
+
       currentMethodTemplate.setVariable("$HTTPMethod_Content$", content);
-      // remove last method variable placeholder
-      currentMethodCode = currentMethodCode.replace("\n$TestMethod_Variables$", "");
-      currentMethodCode =
-          currentMethodCode.replace("$HTTP_Method_Type$", currentMethod.getMethodType().toString());
       currentMethodTemplate.setVariable("$HTTP_Method_Type$",
           currentMethod.getMethodType().toString());
       // produces annotation
@@ -1006,16 +1031,11 @@ public class MicroserviceGenerator extends Generator {
       }
       currentMethodTemplate.setVariable("$HTTPMethod_Produces$", producesAnnotation);
       currentMethodTemplate.setVariable("$HTTPMethod_Consumes$", consumesAnnotation);
-      currentMethodCode = currentMethodCode.replace("$HTTPMethod_Produces$", producesAnnotation);
-      // consumes annotation
-      currentMethodCode = currentMethodCode.replace("$HTTPMethod_Consumes$", consumesAnnotation);
-      // insert into service test class
-      serviceTest = serviceTest.replace("$Test_Methods$", currentMethodCode);
-    }
-    // remove last placeholder
-    serviceTest = serviceTest.replace("\n\n\n$Test_Methods$", "");
+      currentMethodTemplate.setVariableIfNotSet("$TestMethod_Variables$", "");
 
-    return serviceTest;
+    }
+
+    serviceTestTemplate.setVariableIfNotSet("$Test_Methods$", "");
   }
 
 
