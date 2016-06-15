@@ -16,6 +16,7 @@ import org.eclipse.jgit.treewalk.filter.PathFilter;
 import i5.las2peer.logging.L2pLogger;
 import i5.las2peer.services.codeGenerationService.exception.GitHubException;
 import i5.las2peer.services.codeGenerationService.models.application.Application;
+import i5.las2peer.services.codeGenerationService.models.frontendComponent.FrontendComponent;
 
 /**
  * 
@@ -27,7 +28,6 @@ public class ApplicationGenerator extends Generator {
 
   private static final L2pLogger logger =
       L2pLogger.getInstance(ApplicationGenerator.class.getName());
-
 
   /**
    * 
@@ -46,13 +46,39 @@ public class ApplicationGenerator extends Generator {
    */
   public static void createSourceCode(Application application, String templateRepositoryName,
       String gitHubOrganization, String gitHubUser, String gitHubUserMail, String gitHubPassword)
-          throws GitHubException {
+      throws GitHubException {
+    String repositoryName = "application-" + application.getName().replace(" ", "-");
+    createSourceCode(repositoryName, application, templateRepositoryName, gitHubOrganization,
+        gitHubUser, gitHubUserMail, gitHubPassword, false);
+  }
+
+  /**
+   * 
+   * Creates source code from a CAE application model and pushes it to GitHub.
+   * 
+   * @param repositoryName the repository of the application to use
+   * @param application the application model
+   * @param templateRepositoryName the name of the template repository on GitHub
+   * @param gitHubOrganization the organization that is used in the CAE
+   * @param gitHubUser the CAE user
+   * @param gitHubUserMail the mail of the CAE user
+   * @param gitHubPassword the password of the CAE user
+   * @param forDeploy True, if the source code is intended to use for deployment purpose, e.g. no
+   *        gh-pages branch will be used
+   * 
+   * @throws GitHubException thrown if anything goes wrong during this process. Wraps around all
+   *         other exceptions and prints their message.
+   * 
+   */
+  public static void createSourceCode(String repositoryName, Application application,
+      String templateRepositoryName, String gitHubOrganization, String gitHubUser,
+      String gitHubUserMail, String gitHubPassword, boolean forDeploy) throws GitHubException {
     // variables to be closed in the final block
     Repository applicationRepository = null;
     TreeWalk treeWalk = null;
     try {
       PersonIdent caeUser = new PersonIdent(gitHubUser, gitHubUserMail);
-      String repositoryName = "application-" + application.getName().replace(" ", "-");
+
 
       applicationRepository =
           generateNewRepository(repositoryName, gitHubOrganization, gitHubUser, gitHubPassword);
@@ -95,12 +121,14 @@ public class ApplicationGenerator extends Generator {
         throw new GitHubException(e.getMessage());
       }
 
-      // create "gh-pages" branch
-      try {
-        Git.wrap(applicationRepository).branchCreate().setName("gh-pages").call();
-      } catch (Exception e) {
-        logger.printStackTrace(e);
-        throw new GitHubException(e.getMessage());
+      if (!forDeploy) {
+        // create "gh-pages" branch
+        try {
+          Git.wrap(applicationRepository).branchCreate().setName("gh-pages").call();
+        } catch (Exception e) {
+          logger.printStackTrace(e);
+          throw new GitHubException(e.getMessage());
+        }
       }
 
       // fetch microservice repository contents and add them
@@ -177,20 +205,23 @@ public class ApplicationGenerator extends Generator {
           throw new GitHubException(e.getMessage());
         }
       }
-      // push (local) repository content to GitHub repository "master" branch
-      try {
-        pushToRemoteRepository(applicationRepository, gitHubUser, gitHubPassword);
-      } catch (Exception e) {
-        logger.printStackTrace(e);
-        throw new GitHubException(e.getMessage());
-      }
 
-      // switch branch to "gh-pages"
-      try {
-        Git.wrap(applicationRepository).checkout().setName("gh-pages").call();
-      } catch (Exception e) {
-        logger.printStackTrace(e);
-        throw new GitHubException(e.getMessage());
+      if (!forDeploy) {
+        // push (local) repository content to GitHub repository "master" branch
+        try {
+          pushToRemoteRepository(applicationRepository, gitHubUser, gitHubPassword);
+        } catch (Exception e) {
+          logger.printStackTrace(e);
+          throw new GitHubException(e.getMessage());
+        }
+
+        // switch branch to "gh-pages"
+        try {
+          Git.wrap(applicationRepository).checkout().setName("gh-pages").call();
+        } catch (Exception e) {
+          logger.printStackTrace(e);
+          throw new GitHubException(e.getMessage());
+        }
       }
 
       // fetch frontend component repository contents and add them
@@ -208,6 +239,12 @@ public class ApplicationGenerator extends Generator {
                 "http://" + gitHubOrganization + ".github.io/" + frontendComponentRepositoryName;
             String newWidgetHome = "http://" + gitHubOrganization + ".github.io/" + repositoryName
                 + "/" + frontendComponentRepositoryName;
+            if (forDeploy) {
+              // use other url for deployment, replaced later by the dockerfile
+              newWidgetHome =
+                  "$STEEN_URL$:$STEEN_HTTP_PORT$" + "/" + frontendComponentRepositoryName;
+            }
+
             String oldLogoAddress = "https://github.com/" + gitHubOrganization + "/"
                 + frontendComponentRepositoryName + "/blob/gh-pages/img/logo.png";
             String newLogoAddress =
@@ -223,8 +260,23 @@ public class ApplicationGenerator extends Generator {
               case "widget.xml":
                 String widget = new String(loader.getBytes(), "UTF-8");
                 widget = widget.replace(oldWidgetHome, newWidgetHome);
+
                 applicationRepository = createTextFileInRepository(applicationRepository,
                     frontendComponentRepositoryName + "/", "widget.xml", widget);
+                break;
+              case "applicationScript.js":
+                String applicationScript = new String(loader.getBytes(), "UTF-8");
+
+                if (forDeploy) {
+                  FrontendComponent frontendComponent =
+                      application.getFrontendComponents().get(frontendComponentName);
+                  applicationScript = applicationScript.replace(
+                      frontendComponent.getMicroserviceAddress(), "$STEEN_URL$:$STEEN_PORT$");
+                }
+
+                applicationRepository = createTextFileInRepository(applicationRepository,
+                    frontendComponentRepositoryName + "/js/", "applicationScript.js",
+                    applicationScript);
                 break;
               default:
                 // determine type and then "pass it on"
@@ -282,13 +334,23 @@ public class ApplicationGenerator extends Generator {
           throw new GitHubException(e.getMessage());
         }
       }
-      // push (local) repository content to GitHub repository "gh-pages" branch
-      try {
-        pushToRemoteRepository(applicationRepository, gitHubUser, gitHubPassword, "gh-pages",
-            "gh-pages");
-      } catch (Exception e) {
-        logger.printStackTrace(e);
-        throw new GitHubException(e.getMessage());
+      if (!forDeploy) {
+        // push (local) repository content to GitHub repository "gh-pages" branch
+        try {
+          pushToRemoteRepository(applicationRepository, gitHubUser, gitHubPassword, "gh-pages",
+              "gh-pages");
+        } catch (Exception e) {
+          logger.printStackTrace(e);
+          throw new GitHubException(e.getMessage());
+        }
+      } else {
+        // push (local) repository content to GitHub repository "master" branch
+        try {
+          pushToRemoteRepository(applicationRepository, gitHubUser, gitHubPassword);
+        } catch (Exception e) {
+          logger.printStackTrace(e);
+          throw new GitHubException(e.getMessage());
+        }
       }
 
       // close all open resources

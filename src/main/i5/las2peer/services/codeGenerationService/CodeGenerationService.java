@@ -502,4 +502,68 @@ public class CodeGenerationService extends Service {
       logger.printStackTrace(e);
     }
   }
+
+  /**
+   * Starts a deployment job of an application model
+   * 
+   * @param serializedModel The application model to deploy
+   * @return A status text
+   */
+
+  public String deployApplicationModel(Serializable... serializedModel) {
+
+    SimpleModel model = (SimpleModel) serializedModel[0];
+
+    L2pLogger.logEvent(Event.SERVICE_MESSAGE,
+        "deployApplicationModel: Received model with name " + model.getName());
+
+    // find out what type of model we got (microservice, frontend-component or application)
+    for (int i = 0; i < model.getAttributes().size(); i++) {
+      if (model.getAttributes().get(i).getName().equals("type")) {
+        String type = model.getAttributes().get(i).getValue();
+        try {
+          switch (type) {
+            case "application":
+              L2pLogger.logEvent(Event.SERVICE_MESSAGE,
+                  "deployApplicationModel: Creating application model now..");
+              Application application = new Application(serializedModel);
+
+              String repositoryName = "CAE-Deployment-Temp";
+
+              if (Generator.existsRemoteRepository(repositoryName, this.gitHubOrganization,
+                  this.gitHubUser, this.gitHubPassword)) {
+                Generator.deleteRemoteRepository(repositoryName, this.gitHubOrganization,
+                    this.gitHubUser, this.gitHubPassword);
+                L2pLogger.logEvent(Event.SERVICE_MESSAGE,
+                    "deployApplicationModel: Deleted old repository!");
+              }
+
+              L2pLogger.logEvent(Event.SERVICE_MESSAGE,
+                  "deployApplicationModel: Copying repository to deployment repository");
+              ApplicationGenerator.createSourceCode(repositoryName, application,
+                  this.templateRepository, this.gitHubOrganization, this.gitHubUser,
+                  this.gitHubUserMail, this.gitHubPassword, true);
+              L2pLogger.logEvent(Event.SERVICE_MESSAGE, "deployApplicationModel: Copied!");
+              return "done";
+            default:
+              return "Error: Model has to have an attribute 'type' that is either "
+                  + "'microservice', 'frontend-component' or 'application'!";
+          }
+        } catch (ModelParseException e1) {
+          L2pLogger.logEvent(Event.SERVICE_MESSAGE,
+              "createFromModel: Model parsing exception: " + e1.getMessage());
+          logger.printStackTrace(e1);
+          return "Error: Parsing model failed with " + e1.getMessage();
+        } catch (GitHubException e2) {
+          L2pLogger.logEvent(Event.SERVICE_MESSAGE,
+              "createFromModel: GitHub access exception: " + e2.getMessage());
+          logger.printStackTrace(e2);
+          return "Error: Generating code failed because of failing GitHub access: "
+              + e2.getMessage();
+        }
+      }
+    }
+    return "Model has no attribute 'type'!";
+  }
+
 }
