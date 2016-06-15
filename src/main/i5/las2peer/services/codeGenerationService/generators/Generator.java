@@ -207,11 +207,19 @@ public abstract class Generator {
   public static TreeWalk getRepositoryContent(String repositoryName, String gitHubOrganization)
       throws GitHubException {
     Repository repository = getRemoteRepository(repositoryName, gitHubOrganization);
+    System.out.println(repository);
     // get the content of the repository
     RevWalk revWalk = null;
     TreeWalk treeWalk = null;
+    String resolveString = Constants.HEAD;
+
+    if (repositoryName.startsWith("frontendComponent")) {
+      resolveString = "refs/remotes/origin/gh-pages";
+    }
+
     try {
-      ObjectId lastCommitId = repository.resolve(Constants.HEAD);
+      ObjectId lastCommitId = repository.resolve(resolveString);
+      System.out.println(lastCommitId);
       treeWalk = new TreeWalk(repository);
       revWalk = new RevWalk(repository);
       RevTree tree = revWalk.parseCommit(lastCommitId).getTree();
@@ -245,7 +253,7 @@ public abstract class Generator {
       throws GitHubException {
     String repositoryAddress =
         "https://github.com/" + gitHubOrganization + "/" + repositoryName + ".git";
-
+    System.out.println(repositoryAddress);
     Repository repository = null;
     // prepare a new folder for the template repository (to be cloned)
     File localPath = null;
@@ -569,8 +577,14 @@ public abstract class Generator {
     return repository;
   }
 
-  protected static void updateTracedFilesInRepository(TraceModel traceModel, String guidances,
-      String repositoryName, CodeGenerationService service) throws UnsupportedEncodingException {
+  protected static void updateTracedFilesInRepository(List<String[]> fileList,
+      String repositoryName, CodeGenerationService service) {
+    service.commitMultipleFilesRaw(repositoryName, "Code regeneration/Model synchronization",
+        fileList.toArray(new String[][] {}));
+  }
+
+  protected static List<String[]> getUpdatedTracedFilesForRepository(TraceModel traceModel,
+      String guidances) throws UnsupportedEncodingException {
     Map<String, FileTraceModel> fileTraceMap = traceModel.getFilenameToFileTraceModelMap();
 
     List<String[]> fileList = new ArrayList<String[]>();
@@ -603,8 +617,8 @@ public abstract class Generator {
     fileList.add(new String[] {"traces/guidances.json",
         Base64.getEncoder().encodeToString(guidances.getBytes("utf-8"))});
 
-    service.commitMultipleFilesRaw(repositoryName, "Code regeneration/Model synchronization",
-        fileList.toArray(new String[][] {}));
+    return fileList;
+
   }
 
 
