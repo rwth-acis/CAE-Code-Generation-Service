@@ -1,5 +1,6 @@
 package i5.las2peer.services.codeGenerationService.templateEngine;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import i5.las2peer.services.codeGenerationService.models.traceModel.FileTraceModel;
@@ -10,9 +11,33 @@ import i5.las2peer.services.codeGenerationService.traces.segments.SynchronizeApp
 
 public class SynchronizationStrategy extends TemplateStrategy {
   private final FileTraceModel oldFileTraceModel;
+  private final List<FileTraceModel> additionalOldFileTraceModel = new ArrayList<FileTraceModel>();
 
   public SynchronizationStrategy(FileTraceModel oldFileTraceModel) {
     this.oldFileTraceModel = oldFileTraceModel;
+  }
+
+  /**
+   * Add an aditional old file trace model to the synchronization process
+   * 
+   * @param fileTraceModel A file trace model to add
+   */
+
+  public void addAditionalOldFileTraceModel(FileTraceModel fileTraceModel) {
+    this.additionalOldFileTraceModel.add(fileTraceModel);
+  }
+
+  /**
+   * Get the segment of the given id within the given
+   * {@link i5.las2peer.services.codeGenerationService.models.traceModel.FileTraceModel}
+   * 
+   * @param segmentId
+   * @param oldFileTraceModel
+   * @return The requested segment or null if a segment with the given id was not found
+   */
+
+  private Segment getSegment(String segmentId, FileTraceModel oldFileTraceModel) {
+    return oldFileTraceModel.getRecursiveSegment(segmentId);
   }
 
   /**
@@ -30,7 +55,17 @@ public class SynchronizationStrategy extends TemplateStrategy {
 
   @Override
   public Segment getSegment(String segmentId) {
-    Segment result = this.oldFileTraceModel.getRecursiveSegment(segmentId);
+    Segment result = this.getSegment(segmentId, this.oldFileTraceModel);
+    if (result == null) {
+      // if the segment was not found in our file trace model, we try to find it in other registered
+      // file trace models, the first found segment will be used
+      for (FileTraceModel oldFileTraceModel : this.additionalOldFileTraceModel) {
+        result = this.getSegment(segmentId, oldFileTraceModel);
+        if (result != null) {
+          break;
+        }
+      }
+    }
 
     // if the segment exists and is a composition, we need to synchronize its children that are
     // appendable variable segments

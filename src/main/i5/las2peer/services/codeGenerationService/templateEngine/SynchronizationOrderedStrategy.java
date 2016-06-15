@@ -26,7 +26,7 @@ public class SynchronizationOrderedStrategy extends SynchronizationStrategy {
     for (String childId : childrenList) {
       Segment child = cSegment.getChild(childId);
       // we need to also synchronize all children that are appendable segments of a variable
-      // so we use a special kind of appendable variable segments that still know the segments of
+      // so we use a special kind of appendable variable segment that still know the segments of
       // the old file trace model but only add them to the new file trace model during the content
       // regeneration if they were actually used
       if (!(child instanceof SynchronizeAppendableVariableSegment)

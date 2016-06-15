@@ -396,16 +396,15 @@ public class FrontendComponentGenerator extends Generator {
    * Creates a template for an HTML element.
    * 
    * @param element the element
-   * @param htmlElementTemplate a template containing the code for an HTML element
-   * 
-   * @return A template containing the code for an HTML element
+   * @param htmlElementTemplateFile a template containing the code for an HTML element
+   * @param template The template instance in which the html element should be added
    * 
    */
   private static Template createHtmlElementTemplate(HtmlElement element,
-      String htmlElementTemplateFile, Template widgetTemplate) {
+      String htmlElementTemplateFile, Template template) {
 
-    Template elementTemplate = widgetTemplate.createTemplate(
-        widgetTemplate.getId() + ":htmlElement:" + element.getModelId(), htmlElementTemplateFile);
+    Template elementTemplate =
+        template.createTemplate(element.getModelId() + ":htmlElement", htmlElementTemplateFile);
 
     switch (element.getType()) {
       case CUSTOM:
@@ -623,6 +622,9 @@ public class FrontendComponentGenerator extends Generator {
 
         createdElementTemplate.appendVariable("$Html$", elementTemplate);
         functionTemplate.appendVariable("$Function_Body$", createdElementTemplate);
+
+        applicationTemplate.getTemplateEngine().addTrace(element.getModelId(), "HTML Element",
+            element.getId(), elementTemplate);
       }
 
       // element updates
