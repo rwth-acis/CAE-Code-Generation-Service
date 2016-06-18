@@ -4,6 +4,7 @@ import java.io.UnsupportedEncodingException;
 import java.util.Base64;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.ObjectLoader;
@@ -51,12 +52,20 @@ public class FrontendComponentSynchronization extends FrontendComponentGenerator
     String microserviceCallTemplate = null;
     String iwcResponseTemplate = null;
     String eventTemplate = null;
+    String yjs = null;
+    String yArray = null;
+    String yText = null;
+    String yMemory = null;
+    String yWebsockets = null;
     String yjsImports = null;
     String yjsInit = null;
     String guidances = null;
 
     TemplateEngine applicationTemplateEngine = null;
     TemplateEngine widgetTemplateEngine = null;
+
+    SynchronizationStrategy applicationSynchronizationStrategy = null;
+    SynchronizationStrategy widgetSynchronizationStrategy = null;
 
     try (TreeWalk treeWalk =
         getTemplateRepositoryContent(templateRepositoryName, gitHubOrganization)) {
@@ -89,6 +98,21 @@ public class FrontendComponentSynchronization extends FrontendComponentGenerator
             break;
           case "genericIWCResponse.txt":
             iwcResponseTemplate = new String(loader.getBytes(), "UTF-8");
+            break;
+          case "y.js":
+            yjs = new String(loader.getBytes(), "UTF-8");
+            break;
+          case "y-array.js":
+            yArray = new String(loader.getBytes(), "UTF-8");
+            break;
+          case "y-text.js":
+            yText = new String(loader.getBytes(), "UTF-8");
+            break;
+          case "y-websockets-client.js":
+            yWebsockets = new String(loader.getBytes(), "UTF-8");
+            break;
+          case "y-memory.js":
+            yMemory = new String(loader.getBytes(), "UTF-8");
             break;
           case "yjs-imports.txt":
             yjsImports = new String(loader.getBytes(), "UTF-8");
@@ -127,12 +151,14 @@ public class FrontendComponentSynchronization extends FrontendComponentGenerator
 
         switch (fileName) {
           case "widget.xml":
-            widgetTemplateEngine = new TemplateEngine(
-                new SynchronizationOrderedStrategy(oldFileTraceModel), oldFileTraceModel);
+            widgetSynchronizationStrategy = new SynchronizationOrderedStrategy(oldFileTraceModel);
+            widgetTemplateEngine =
+                new TemplateEngine(widgetSynchronizationStrategy, oldFileTraceModel);
             break;
           case "js/applicationScript.js":
-            applicationTemplateEngine = new TemplateEngine(
-                new SynchronizationStrategy(oldFileTraceModel), oldFileTraceModel);
+            applicationSynchronizationStrategy = new SynchronizationStrategy(oldFileTraceModel);
+            applicationTemplateEngine =
+                new TemplateEngine(applicationSynchronizationStrategy, oldFileTraceModel);
             break;
 
         }
@@ -144,6 +170,13 @@ public class FrontendComponentSynchronization extends FrontendComponentGenerator
     }
 
     try {
+
+      applicationSynchronizationStrategy
+          .addAditionalOldFileTraceModel(widgetTemplateEngine.getFileTraceModel());
+      widgetSynchronizationStrategy
+          .addAditionalOldFileTraceModel(applicationTemplateEngine.getFileTraceModel());
+
+
       // regenerate widget code
       FrontendComponentSynchronization.createWidgetCode(widgetTemplateEngine, widget,
           htmlElementTemplate, yjsImports, gitHubOrganization, getRepositoryName(frontendComponent),
@@ -171,8 +204,23 @@ public class FrontendComponentSynchronization extends FrontendComponentGenerator
       traceModel.addFileTraceModel(applicationTemplateEngine.getFileTraceModel());
 
       // commit changes
-      updateTracedFilesInRepository(traceModel, guidances, getRepositoryName(frontendComponent),
-          service);
+      List<String[]> fileList = getUpdatedTracedFilesForRepository(traceModel, guidances);
+
+      if (widgetTemplateEngine.getContent().contains("/js/lib/y.js")) {
+        fileList.add(new String[] {"js/lib/y.js",
+            Base64.getEncoder().encodeToString(yjs.getBytes("utf-8"))});
+        fileList.add(new String[] {"js/lib/y-array.js",
+            Base64.getEncoder().encodeToString(yArray.getBytes("utf-8"))});
+        fileList.add(new String[] {"js/lib/y-text.js",
+            Base64.getEncoder().encodeToString(yText.getBytes("utf-8"))});
+        fileList.add(new String[] {"js/lib/y-websockets-client.js",
+            Base64.getEncoder().encodeToString(yWebsockets.getBytes("utf-8"))});
+        fileList.add(new String[] {"js/lib/y-memory.js",
+            Base64.getEncoder().encodeToString(yMemory.getBytes("utf-8"))});
+      }
+
+      updateTracedFilesInRepository(fileList, getRepositoryName(frontendComponent), service);
+
 
     } catch (UnsupportedEncodingException e) {
       logger.printStackTrace(e);
