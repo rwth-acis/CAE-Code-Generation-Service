@@ -17,14 +17,14 @@ import i5.las2peer.services.codeGenerationService.traces.segments.SegmentFactory
 import i5.las2peer.services.codeGenerationService.traces.segments.UnprotectedSegment;
 
 /**
- * The model checker class is responsible to find not allowed elements in unprotected segments of
- * the traced model elements.
+ * The model violation detection class is responsible to find not allowed elements in unprotected
+ * segments of the traced model elements.
  * 
  * @author Thomas Winkler
  *
  */
 
-public class ModelChecker {
+public class ModelViolationDetection {
 
   private static final L2pLogger logger =
       L2pLogger.getInstance(ApplicationGenerator.class.getName());
@@ -34,15 +34,16 @@ public class ModelChecker {
    * The actual method that performs the checking.
    * 
    * @param files The files of the repository of the component that should be tested
+   * @param violationsRules The rules for the violation detection
    * @return A json array containing corresponding guidances of the found violations
    */
   @SuppressWarnings("unchecked")
   public static JSONArray performViolationCheck(HashMap<String, JSONObject> files,
-      JSONObject guidances) {
+      JSONObject violationsRules) {
 
-    JSONArray guidancesArray = new JSONArray();
+    JSONArray feedback = new JSONArray();
     GuidanceModel guidanceModel = new GuidanceModel();
-    guidanceModel.addGuidances(guidances);
+    guidanceModel.addRules(violationsRules);
 
     Iterator<String> it = files.keySet().iterator();
     while (it.hasNext()) {
@@ -59,14 +60,14 @@ public class ModelChecker {
 
         List<Segment> segments = SegmentFactory.createSegments(traceSegments, content, 0L);
         for (Segment segment : segments) {
-          guidancesArray.addAll(checkSegment(segment, traces, guidanceModel));
+          feedback.addAll(checkSegment(segment, traces, guidanceModel));
         }
 
       } catch (Exception e) {
         logger.printStackTrace(e);
       }
     }
-    return guidancesArray;
+    return feedback;
   }
 
   private static List<UnprotectedSegment> getUnprotectedSegments(CompositeSegment cSegment) {
@@ -98,7 +99,7 @@ public class ModelChecker {
   private static List<JSONObject> checkSegment(Segment segment, JSONObject traces,
       GuidanceModel guidanceModel) {
 
-    List<JSONObject> guidances = new ArrayList<JSONObject>();
+    List<JSONObject> feedback = new ArrayList<JSONObject>();
 
     if (segment instanceof CompositeSegment) {
       CompositeSegment cSegment = (CompositeSegment) segment;
@@ -107,17 +108,17 @@ public class ModelChecker {
       List<String> children = cSegment.getChildrenList();
       for (String child : children) {
         Segment childSegment = cSegment.getChild(child);
-        guidances.addAll(checkSegment(childSegment, traces, guidanceModel));
+        feedback.addAll(checkSegment(childSegment, traces, guidanceModel));
       }
 
       JSONObject modelMeta = getModelFromSegmentId(segment.getId(), traces);
       if (modelMeta != null) {
         String type = (String) modelMeta.get("type");
-        guidances.addAll(guidanceModel.createGuidances(type, getUnprotectedSegments(cSegment)));
+        feedback.addAll(guidanceModel.createFeedback(type, getUnprotectedSegments(cSegment)));
       }
 
     }
-    return guidances;
+    return feedback;
   }
 
   @SuppressWarnings("unchecked")

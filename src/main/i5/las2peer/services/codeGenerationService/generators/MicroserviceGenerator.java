@@ -372,8 +372,8 @@ public class MicroserviceGenerator extends Generator {
             "src/main/i5/las2peer/services/" + packageName + "/database/", "DatabaseManager.java",
             databaseManager);
 
-        databaseScript = generateDatabaseScript(databaseScriptTemplateEngine, databaseScript,
-            genericTable, microservice);
+        generateDatabaseScript(databaseScriptTemplateEngine, databaseScript, genericTable,
+            microservice);
       }
 
       createTextFileInRepository(microserviceRepository, "traces/", "guidances.json", guidances);
@@ -418,11 +418,8 @@ public class MicroserviceGenerator extends Generator {
     Template template = null;
     String fileName =
         java.nio.file.Paths.get(templateEngine.getFileName()).getFileName().toString();
-    System.out.println(fileName);
     // special case service class properties file
     if (templateEngine.getFileName().equals(getServicePropertiesFileName(microservice))) {
-      System.out.println("service class properties");
-      System.out.println(getServicePropertiesFileName(microservice));
       template = templateEngine.createTemplate(
           microservice.getMicroserviceModelId() + ":servicePropertiesFile", "$Properties$-{\n}-");
 
@@ -557,7 +554,7 @@ public class MicroserviceGenerator extends Generator {
    * @param serviceInvocation a service invocation (source code) template
    * 
    */
-  public static void generateNewServiceClass(TemplateEngine templateEngine, String serviceClass,
+  protected static void generateNewServiceClass(TemplateEngine templateEngine, String serviceClass,
       Microservice microservice, String repositoryLocation, String genericHttpMethod,
       String genericHttpMethodBody, String genericApiResponse, String genericHttpResponse,
       String databaseConfig, String databaseInstantiation, String serviceInvocation) {
@@ -1043,15 +1040,14 @@ public class MicroserviceGenerator extends Generator {
    * 
    * Creates the database script according to the passed database.
    * 
+   * @param templateEngine the template engine to use for the code generation
    * @param databaseScript a database script (template)
    * @param tableTemplate a table template
    * @param microservice the microservice model
    * 
-   * @return the updated database script
-   * 
    */
-  protected static String generateDatabaseScript(TemplateEngine templateEngine,
-      String databaseScript, String tableTemplate, Microservice microservice) {
+  protected static void generateDatabaseScript(TemplateEngine templateEngine, String databaseScript,
+      String tableTemplate, Microservice microservice) {
     Database database = microservice.getDatabase();
     Template databaseTemplate =
         templateEngine.createTemplate(database.getModelId() + ":database", databaseScript);
@@ -1081,7 +1077,6 @@ public class MicroserviceGenerator extends Generator {
     databaseTemplate.setVariable("$Database_Schema$", database.getSchema());
     // remove last placeholder
     databaseTemplate.setVariableIfNotSet("$Database_Table$", "");
-    return databaseScript;
   }
 
 }

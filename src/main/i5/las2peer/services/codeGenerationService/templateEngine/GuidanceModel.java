@@ -24,34 +24,35 @@ import i5.las2peer.services.codeGenerationService.traces.segments.UnprotectedSeg
 
 public class GuidanceModel {
 
-  private Map<String, Guidance> guidanceMap = new HashMap<String, Guidance>();
+  private Map<String, ViolationRule> violationRules = new HashMap<String, ViolationRule>();
 
   /**
-   * Adds a single guidance to the model
+   * Adds a single rule to the model
    * 
-   * @param guidance The guidance to add
+   * @param rule The rule to add
    */
-  private void addGuidance(Guidance guidance) {
-    this.guidanceMap.put(guidance.getType(), guidance);
+  private void addRule(ViolationRule rule) {
+    this.violationRules.put(rule.getType(), rule);
   }
 
   /**
-   * Parses and adds the guidances of the given json file to the model
+   * Parses and adds the violation rules of the given json file to the model
    * 
-   * @param guidancesObj the guidances to add
+   * @param violationRulesObj the rules to add
    */
-  public void addGuidances(JSONObject guidancesObj) {
+  public void addRules(JSONObject violationRulesObj) {
 
-    JSONArray guidances = (JSONArray) guidancesObj.get("guidances");
-    for (int i = 0; i < guidances.size(); i++) {
-      JSONObject guidance = (JSONObject) guidances.get(i);
-      this.addGuidance(new Guidance(guidance));
+    JSONArray violationRules = (JSONArray) violationRulesObj.get("guidances");
+    for (int i = 0; i < violationRules.size(); i++) {
+      JSONObject rule = (JSONObject) violationRules.get(i);
+      this.addRule(new ViolationRule(rule));
     }
 
   }
 
   /**
-   * Performs the model check and creates corresponding guidances if breaking code is found
+   * Performs the model violation check and creates corresponding guidances if breaking code is
+   * found
    * 
    * @param type The type of the model element
    * @param segments The segments whose content should be checked
@@ -59,17 +60,17 @@ public class GuidanceModel {
    */
 
   @SuppressWarnings("unchecked")
-  public List<JSONObject> createGuidances(String type, List<UnprotectedSegment> segments) {
-    List<JSONObject> guidances = new ArrayList<JSONObject>();
+  public List<JSONObject> createFeedback(String type, List<UnprotectedSegment> segments) {
+    List<JSONObject> feedback = new ArrayList<JSONObject>();
 
     // if we don't have any guidance support for the given type we dont need to perform the check
     // and
     // return non guidances
-    if (!this.guidanceMap.containsKey(type)) {
-      return guidances;
+    if (!this.violationRules.containsKey(type)) {
+      return feedback;
     }
 
-    Guidance guidance = this.guidanceMap.get(type);
+    ViolationRule rule = this.violationRules.get(type);
 
     // get the content of the segments
     String content = "";
@@ -77,15 +78,15 @@ public class GuidanceModel {
       content += uSegment.toString();
     }
 
-    Pattern forbiddenPattern = Pattern.compile(guidance.getRegex(), Pattern.DOTALL);
+    Pattern forbiddenPattern = Pattern.compile(rule.getRegex(), Pattern.DOTALL);
     Matcher matcher = forbiddenPattern.matcher(content);
 
     // loop through all findings
     while (matcher.find()) {
 
-      JSONObject guidanceJsonObject = new JSONObject();
+      JSONObject feedbackJsonObject = new JSONObject();
       JSONArray guidanceSegments = new JSONArray();
-      int group = guidance.getGroup();
+      int group = rule.getGroup();
       int start = matcher.start(group);
       int end = matcher.end(group);
 
@@ -108,12 +109,12 @@ public class GuidanceModel {
         }
         s += length;
       }
-      guidanceJsonObject.put("segments", guidanceSegments);
-      guidanceJsonObject.put("message", guidance.getMessage());
-      guidances.add(guidanceJsonObject);
+      feedbackJsonObject.put("segments", guidanceSegments);
+      feedbackJsonObject.put("message", rule.getMessage());
+      feedback.add(feedbackJsonObject);
     }
 
-    return guidances;
+    return feedback;
   }
 
 }

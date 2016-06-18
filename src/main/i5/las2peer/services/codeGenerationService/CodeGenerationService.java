@@ -21,7 +21,7 @@ import i5.las2peer.services.codeGenerationService.generators.MicroserviceSynchro
 import i5.las2peer.services.codeGenerationService.models.application.Application;
 import i5.las2peer.services.codeGenerationService.models.frontendComponent.FrontendComponent;
 import i5.las2peer.services.codeGenerationService.models.microservice.Microservice;
-import i5.las2peer.services.codeGenerationService.templateEngine.ModelChecker;
+import i5.las2peer.services.codeGenerationService.templateEngine.ModelViolationDetection;
 
 /**
  * 
@@ -482,7 +482,7 @@ public class CodeGenerationService extends Service {
    */
   public JSONArray checkModel(JSONObject guidances, HashMap<String, JSONObject> files) {
     logger.info("starting model checking..");
-    return ModelChecker.performViolationCheck(files, guidances);
+    return ModelViolationDetection.performViolationCheck(files, guidances);
   }
 
   /**

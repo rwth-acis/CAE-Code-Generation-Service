@@ -9,7 +9,7 @@ import i5.las2peer.services.codeGenerationService.traces.segments.SegmentFactory
  * 
  * @author Thomas Winkler
  */
-public class Guidance {
+public class ViolationRule {
   private JSONObject jsonObject;
 
   /**
@@ -17,7 +17,7 @@ public class Guidance {
    * 
    * @param guidance The original guidance json object
    */
-  public Guidance(JSONObject guidance) {
+  public ViolationRule(JSONObject guidance) {
     this.jsonObject = guidance;
   }
 
