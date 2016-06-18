@@ -153,6 +153,10 @@ public class ApplicationGenerator extends Generator {
                     microserviceRepositoryName + "/", "README.md", frontendReadme);
                 break;
               default:
+                // skip traces
+                if (treeWalk.getPathString().contains("traces/")) {
+                  continue;
+                }
                 // determine type and then "pass it on"
                 // TODO: I'm sure there is a more elegant way to do this
                 String fileName = treeWalk.getNameString();
@@ -279,6 +283,10 @@ public class ApplicationGenerator extends Generator {
                     applicationScript);
                 break;
               default:
+                // skip traces
+                if (treeWalk.getPathString().contains("traces/")) {
+                  continue;
+                }
                 // determine type and then "pass it on"
                 // TODO: I'm sure there is a more elegant way to do this
                 String fileName = treeWalk.getNameString();
