@@ -3,6 +3,7 @@ package i5.las2peer.services.codeGenerationService.generators;
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import javax.imageio.ImageIO;
@@ -255,18 +256,18 @@ public class FrontendComponentGenerator extends Generator {
       frontendComponentRepository =
           createTextFileInRepository(frontendComponentRepository, "js/lib/", "iwc.js", iwc);
       // y-is (if needed)
-      if (widgetTemplateEngine.getContent().contains("/js/lib/y.js")) {
-        frontendComponentRepository =
-            createTextFileInRepository(frontendComponentRepository, "js/lib/", "y.js", yjs);
-        frontendComponentRepository = createTextFileInRepository(frontendComponentRepository,
-            "js/lib/", "y-array.js", yArray);
-        frontendComponentRepository =
-            createTextFileInRepository(frontendComponentRepository, "js/lib/", "y-text.js", yText);
-        frontendComponentRepository = createTextFileInRepository(frontendComponentRepository,
-            "js/lib/", "y-websockets-client.js", yWebsockets);
-        frontendComponentRepository = createTextFileInRepository(frontendComponentRepository,
-            "js/lib/", "y-memory.js", yMemory);
-      }
+      // if (widgetTemplateEngine.getContent().contains("/js/lib/y.js")) {
+      frontendComponentRepository =
+          createTextFileInRepository(frontendComponentRepository, "js/lib/", "y.js", yjs);
+      frontendComponentRepository =
+          createTextFileInRepository(frontendComponentRepository, "js/lib/", "y-array.js", yArray);
+      frontendComponentRepository =
+          createTextFileInRepository(frontendComponentRepository, "js/lib/", "y-text.js", yText);
+      frontendComponentRepository = createTextFileInRepository(frontendComponentRepository,
+          "js/lib/", "y-websockets-client.js", yWebsockets);
+      frontendComponentRepository = createTextFileInRepository(frontendComponentRepository,
+          "js/lib/", "y-memory.js", yMemory);
+      // }
       frontendComponentRepository =
           createTextFileInRepository(frontendComponentRepository, "css/", "style.css", style);
       frontendComponentRepository =
@@ -523,6 +524,14 @@ public class FrontendComponentGenerator extends Generator {
       }
 
 
+      List<HtmlElement> updatedElements = new ArrayList<HtmlElement>();
+
+      // element updates
+      for (String elementId : function.getHtmlElementUpdates()) {
+        HtmlElement element = frontendComponent.getHtmlElements().get(elementId);
+        updatedElements.add(element);
+      }
+
 
       // start creating the actual function
       functionTemplate.setVariable("$Function_Name$", function.getName());
@@ -604,9 +613,31 @@ public class FrontendComponentGenerator extends Generator {
 
         microserviceCallFile.setVariable("$Method_Path$", microserviceCall.getPath());
 
+        for (HtmlElement element : updatedElements) {
+          System.out.println("add update " + element.getId());
+          Template updatedElement = applicationTemplate.createTemplate(
+              functionTemplate.getId() + ":" + microserviceCall.getModelId() + ":update:"
+                  + element.getModelId(),
+              "\n-{    //Also update the html element?\n    //}-$(\"#$Element_Id$\").html(-{\"Updated Element\"}-);");
+          updatedElement.setVariable("$Element_Id$", element.getId());
+
+          Template updatedElementError = applicationTemplate.createTemplate(
+              functionTemplate.getId() + ":" + microserviceCall.getModelId() + ":updateError:"
+                  + element.getModelId(),
+              "\n-{    //Also update the html element?\n    //}-$(\"#$Element_Id$\").html(-{\"Updated Element\"}-);");
+          updatedElementError.setVariable("$Element_Id$", element.getId());
+
+          microserviceCallFile.appendVariable("$HTML_Elements_Updates$", updatedElement);
+          microserviceCallFile.appendVariable("$HTML_Elements_Updates_Errors$",
+              updatedElementError);
+        }
+
+        microserviceCallFile.setVariableIfNotSet("$HTML_Elements_Updates$", "");
+        microserviceCallFile.setVariableIfNotSet("$HTML_Elements_Updates_Errors$", "");
+
         functionTemplate.appendVariable("$Function_Body$", microserviceCallFile);
         applicationTemplate.getTemplateEngine().addTrace(microserviceCall.getModelId(),
-            "MicroserviceCall[" + microserviceCall.getPath() + "]", microserviceCallFile);
+            "MicroserviceCall", microserviceCallFile);
       }
 
       // element creations
@@ -631,12 +662,11 @@ public class FrontendComponentGenerator extends Generator {
       for (String elementId : function.getHtmlElementUpdates()) {
         HtmlElement element = frontendComponent.getHtmlElements().get(elementId);
 
-        Template updatedElementFile = applicationTemplate.createTemplate(
+        Template updatedElement = applicationTemplate.createTemplate(
             functionTemplate.getId() + ":update:" + element.getModelId(),
-            "-{ }-$(\"#$Element_Id$\").html(-{\"Updated Element\"}-);-{\n}-");
-        updatedElementFile.setVariable("$Element_Id$", element.getId());
-        functionTemplate.appendVariable("$Function_Body$", updatedElementFile);
-
+            "\n-{  }-$(\"#$Element_Id$\").html(-{\"Updated Element\"}-);");
+        updatedElement.setVariable("$Element_Id$", element.getId());
+        functionTemplate.appendVariable("$Function_Body$", updatedElement);
       }
 
       // iwc calls
@@ -736,12 +766,14 @@ public class FrontendComponentGenerator extends Generator {
 
     for (HtmlElement element : frontendComponent.getHtmlElements().values()) {
       for (Event event : element.getEvents()) {
-        System.out.println(element.getModelId() + ":" + event.getModelId());
         Template eventTemplate = templateEngine
             .createTemplate(element.getModelId() + ":" + event.getModelId(), eventTemplateFile);
         eventTemplate.setVariable("$Html_Element_Id$", element.getId());
 
         applicationScriptTemplate.appendVariable("$Events$", eventTemplate);
+
+        eventTemplate.getTemplateEngine().addTrace(event.getModelId(), "Event",
+            eventTemplate.getSegment());
 
         eventTemplate.setVariable("$Event_Type$", event.getEventCause().toString());
 
