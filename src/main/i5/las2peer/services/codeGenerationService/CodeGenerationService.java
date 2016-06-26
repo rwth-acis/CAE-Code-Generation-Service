@@ -37,6 +37,13 @@ public class CodeGenerationService extends Service {
   private String gitHubOrganization;
   private String templateRepository;
   private String gitHubUserMail;
+
+  // jenkins properties
+  private String buildJobName;
+  private String dockerJobName;
+  private String jenkinsUrl;
+  private String jenkinsJobToken;
+
   private boolean useModelSynchronization;
   private final L2pLogger logger = L2pLogger.getInstance(CodeGenerationService.class.getName());
 
@@ -481,7 +488,7 @@ public class CodeGenerationService extends Service {
    * @return A json array containing guidances of found violations
    */
   public JSONArray checkModel(JSONObject guidances, HashMap<String, JSONObject> files) {
-    logger.info("starting model checking..");
+    L2pLogger.logEvent(Event.SERVICE_MESSAGE, "starting model violation detection..");
     return ModelViolationDetection.performViolationCheck(files, guidances);
   }
 
@@ -504,13 +511,49 @@ public class CodeGenerationService extends Service {
   }
 
   /**
-   * Starts a deployment job of an application model
+   * Start a build job for the deployment of an application.
+   * 
+   * @param jobAlias The job name/alias of the job to start, either "Build" or "Docker"
+   * @return The path of the queue item of the started job
+   */
+
+  public String startJenkinsJob(String jobAlias) {
+    String jobName = null;
+    switch (jobAlias) {
+      case "Build":
+        jobName = buildJobName;
+        break;
+      case "Docker":
+        jobName = dockerJobName;
+        break;
+      default:
+        return "Error: Unknown job alias given!";
+    }
+
+    return ApplicationGenerator.deployApplication(jenkinsUrl, jenkinsJobToken, jobName);
+  }
+
+  /**
+   * Get the deployment status of the last build from Jenkins
+   * 
+   * @param queueItem The queue item path returned by the remote api of Jenkins after a build has
+   *        been started. Needed to get the status of the build, i.e. in queue or already started
+   * @return The console text of the last build from Jenkins
+   */
+
+  public String deployStatus(String queueItem) {
+    return ApplicationGenerator.deployStatus(queueItem, jenkinsUrl);
+  }
+
+  /**
+   * Prepare a deployment of an application model, i.e. the model is copied to a temp repository
+   * which is used later during the deployment
    * 
    * @param serializedModel The application model to deploy
    * @return A status text
    */
 
-  public String deployApplicationModel(Serializable... serializedModel) {
+  public String prepareDeploymentApplicationModel(Serializable... serializedModel) {
 
     SimpleModel model = (SimpleModel) serializedModel[0];
 
@@ -545,6 +588,7 @@ public class CodeGenerationService extends Service {
                   this.gitHubUserMail, this.gitHubPassword, true);
               L2pLogger.logEvent(Event.SERVICE_MESSAGE, "deployApplicationModel: Copied!");
               return "done";
+
             default:
               return "Error: Model has to have an attribute 'type' that is either "
                   + "'microservice', 'frontend-component' or 'application'!";

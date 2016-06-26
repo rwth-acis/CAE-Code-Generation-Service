@@ -1,6 +1,11 @@
 package i5.las2peer.services.codeGenerationService.generators;
 
 import java.awt.image.BufferedImage;
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.URI;
+import java.net.URL;
 
 import javax.imageio.ImageIO;
 
@@ -12,8 +17,11 @@ import org.eclipse.jgit.lib.PersonIdent;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.treewalk.TreeWalk;
 import org.eclipse.jgit.treewalk.filter.PathFilter;
+import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
 
 import i5.las2peer.logging.L2pLogger;
+import i5.las2peer.logging.NodeObserver.Event;
 import i5.las2peer.services.codeGenerationService.exception.GitHubException;
 import i5.las2peer.services.codeGenerationService.models.application.Application;
 import i5.las2peer.services.codeGenerationService.models.frontendComponent.FrontendComponent;
@@ -245,8 +253,7 @@ public class ApplicationGenerator extends Generator {
                 + "/" + frontendComponentRepositoryName;
             if (forDeploy) {
               // use other url for deployment, replaced later by the dockerfile
-              newWidgetHome =
-                  "$STEEN_URL$:$STEEN_HTTP_PORT$" + "/" + frontendComponentRepositoryName;
+              newWidgetHome = "$WIDGET_URL$:$HTTP_PORT$" + "/" + frontendComponentRepositoryName;
             }
 
             String oldLogoAddress = "https://github.com/" + gitHubOrganization + "/"
@@ -366,6 +373,138 @@ public class ApplicationGenerator extends Generator {
       applicationRepository.close();
       treeWalk.close();
     }
+  }
+
+  /**
+   * Get the build path of the Jenkins remote api for a queue item. If the queue item is still
+   * pending, null is returned.
+   * 
+   * @param queueItem The path of the queue item
+   * @param jenkinsUrl The base path of Jenkins
+   * @return The build path for the queue item, or Null if the is still pending/waiting
+   * @throws Exception Possible exceptions from the http request
+   */
+
+  private static String getBuildPath(String queueItem, String jenkinsUrl) throws Exception {
+    URL url = new URL(jenkinsUrl + queueItem + "api/json");
+    HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+    connection.setRequestMethod("GET");
+    connection.setDoOutput(true);
+    connection.setUseCaches(false);
+
+    if (connection.getResponseCode() != 200) {
+      // queue item may be deleted, so its no longer queued
+      return null;
+    } else {
+      String message = "";
+      BufferedReader reader =
+          new BufferedReader(new InputStreamReader(connection.getInputStream()));
+      for (String line; (line = reader.readLine()) != null;) {
+        message += line + "\n";
+      }
+      reader.close();
+      JSONParser parser = new JSONParser();
+      JSONObject result = (JSONObject) parser.parse(message);
+
+
+      if (result.containsKey("executable")) {
+        JSONObject executeable = (JSONObject) result.get("executable");
+        URI uri = new URI((String) executeable.get("url"));
+        return uri.getPath();
+      } else {
+        return null;
+      }
+    }
+
+  }
+
+  /**
+   * Get the job console text of a build of a queue item. When the item is still pending, the string
+   * "Pending" is returned.
+   * 
+   * @param queueItem The path of the queue item
+   * @param jenkinsUrl The base path of Jenkins
+   * @return The console text of a build of a queue item or "Pending" if the item is still
+   *         pending/waiting for its execution
+   */
+
+  public static String deployStatus(String queueItem, String jenkinsUrl) {
+    try {
+      String buildPath = getBuildPath(queueItem, jenkinsUrl);
+      if (buildPath == null) {
+        return "Pending";
+      } else {
+
+        URL url = new URL(jenkinsUrl + buildPath + "consoleText");
+        HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+        connection.setRequestMethod("GET");
+        connection.setDoOutput(true);
+        connection.setUseCaches(false);
+
+        String message = "";
+        BufferedReader reader =
+            new BufferedReader(new InputStreamReader(connection.getInputStream()));
+        for (String line; (line = reader.readLine()) != null;) {
+          message += line + "\n";
+        }
+        reader.close();
+        // forward (in case of) error
+        if (connection.getResponseCode() != 200) {
+          throw new Exception("Jenkins error: " + message);
+        } else {
+          return message;
+        }
+
+      }
+
+    } catch (Exception e) {
+      logger.printStackTrace(e);
+      return "Error:" + e.getMessage();
+    }
+  }
+
+  /**
+   * Start a job for the deployment of an application
+   * 
+   * @param jenkinsUrl The base path of Jenkins
+   * @param jobToken The token to start the job
+   * @param jobName The name of the job to start
+   * @return The path of the queue item of the started job
+   */
+
+  public static String deployApplication(String jenkinsUrl, String jobToken, String jobName) {
+
+    try {
+
+      L2pLogger.logEvent(Event.SERVICE_MESSAGE, "Starting Jenkin job: " + jobName);
+
+      URL url = new URL(jenkinsUrl + "/job/" + jobName + "/build?token=" + jobToken);
+      HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+      connection.setRequestMethod("GET");
+      connection.setDoOutput(true);
+      connection.setUseCaches(false);
+
+      // forward (in case of) error
+      if (connection.getResponseCode() != 201) {
+        String message = "";
+        BufferedReader reader =
+            new BufferedReader(new InputStreamReader(connection.getErrorStream()));
+        for (String line; (line = reader.readLine()) != null;) {
+          message += line;
+        }
+        reader.close();
+        throw new Exception(message);
+      } else {
+        L2pLogger.logEvent(Event.SERVICE_MESSAGE, "Job started!");
+        URI uri = new URI(connection.getHeaderField("Location"));
+        String path = uri.getPath();
+        return path;
+      }
+    } catch (Exception e) {
+      logger.printStackTrace(e);
+      return "Error";
+    }
+
   }
 
 }
