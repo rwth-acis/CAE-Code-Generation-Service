@@ -207,7 +207,6 @@ public abstract class Generator {
   public static TreeWalk getRepositoryContent(String repositoryName, String gitHubOrganization)
       throws GitHubException {
     Repository repository = getRemoteRepository(repositoryName, gitHubOrganization);
-    System.out.println(repository);
     // get the content of the repository
     RevWalk revWalk = null;
     TreeWalk treeWalk = null;
@@ -219,7 +218,6 @@ public abstract class Generator {
 
     try {
       ObjectId lastCommitId = repository.resolve(resolveString);
-      System.out.println(lastCommitId);
       treeWalk = new TreeWalk(repository);
       revWalk = new RevWalk(repository);
       RevTree tree = revWalk.parseCommit(lastCommitId).getTree();
@@ -253,7 +251,6 @@ public abstract class Generator {
       throws GitHubException {
     String repositoryAddress =
         "https://github.com/" + gitHubOrganization + "/" + repositoryName + ".git";
-    System.out.println(repositoryAddress);
     Repository repository = null;
     // prepare a new folder for the template repository (to be cloned)
     File localPath = null;

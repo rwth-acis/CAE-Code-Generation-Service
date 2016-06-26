@@ -13,6 +13,7 @@ import org.eclipse.jgit.treewalk.filter.PathFilter;
 import org.json.simple.JSONObject;
 
 import i5.las2peer.logging.L2pLogger;
+import i5.las2peer.logging.NodeObserver.Event;
 import i5.las2peer.services.codeGenerationService.CodeGenerationService;
 import i5.las2peer.services.codeGenerationService.models.microservice.Microservice;
 import i5.las2peer.services.codeGenerationService.models.traceModel.FileTraceModel;
@@ -213,7 +214,7 @@ public class MicroserviceSynchronization extends MicroserviceGenerator {
       byte[] base64decodedBytes = Base64.getDecoder().decode(content);
 
       try {
-        logger.info("Synchronizing " + fileName + " now ...");
+        L2pLogger.logEvent(Event.SERVICE_MESSAGE, "Synchronizing " + fileName + " now ...");
         content = new String(base64decodedBytes, "utf-8");
         JSONObject fileTraces = (JSONObject) fileObject.get("fileTraces");
         FileTraceModel oldFileTraceModel = FileTraceModelFactory
@@ -258,7 +259,7 @@ public class MicroserviceSynchronization extends MicroserviceGenerator {
           generateOtherArtifacts(templateEngine, microservice, gitHubOrganization, content);
         }
 
-        logger.info("... " + fileName + " synchronized.");
+        L2pLogger.logEvent(Event.SERVICE_MESSAGE, "... " + fileName + " synchronized.");
 
         // finally add the file trace model to the global trace model
         if (templateEngine != null) {

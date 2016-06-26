@@ -614,17 +614,17 @@ public class FrontendComponentGenerator extends Generator {
         microserviceCallFile.setVariable("$Method_Path$", microserviceCall.getPath());
 
         for (HtmlElement element : updatedElements) {
-          System.out.println("add update " + element.getId());
-          Template updatedElement = applicationTemplate.createTemplate(
-              functionTemplate.getId() + ":" + microserviceCall.getModelId() + ":update:"
-                  + element.getModelId(),
-              "\n-{    //Also update the html element?\n    //}-$(\"#$Element_Id$\").html(-{\"Updated Element\"}-);");
+          String updateElementTemplate =
+              "\n-{    //Also update the html element?\n    //}-$(\"#$Element_Id$\").html(-{\"Updated Element\"}-);";
+          // success callback
+          Template updatedElement = applicationTemplate.createTemplate(functionTemplate.getId()
+              + ":" + microserviceCall.getModelId() + ":update:" + element.getModelId(),
+              updateElementTemplate);
           updatedElement.setVariable("$Element_Id$", element.getId());
-
-          Template updatedElementError = applicationTemplate.createTemplate(
-              functionTemplate.getId() + ":" + microserviceCall.getModelId() + ":updateError:"
-                  + element.getModelId(),
-              "\n-{    //Also update the html element?\n    //}-$(\"#$Element_Id$\").html(-{\"Updated Element\"}-);");
+          // error callback
+          Template updatedElementError = applicationTemplate.createTemplate(functionTemplate.getId()
+              + ":" + microserviceCall.getModelId() + ":updateError:" + element.getModelId(),
+              updateElementTemplate);
           updatedElementError.setVariable("$Element_Id$", element.getId());
 
           microserviceCallFile.appendVariable("$HTML_Elements_Updates$", updatedElement);
