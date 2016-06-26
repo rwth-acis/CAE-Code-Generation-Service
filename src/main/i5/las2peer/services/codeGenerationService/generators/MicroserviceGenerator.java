@@ -531,7 +531,6 @@ public class MicroserviceGenerator extends Generator {
     }
 
     if (template != null) {
-      System.out.println(templateEngine.getFileName());
       templateEngine.addTemplate(template);
     }
   }
@@ -589,8 +588,8 @@ public class MicroserviceGenerator extends Generator {
     // create database references only if microservice has database
     if (microservice.getDatabase() != null) {
       // import
-      serviceClassTemplate.setVariable("$Database_Import$",
-          "import i5.las2peer.services." + packageName + ".database.DatabaseManager;");
+      serviceClassTemplate.setVariable("$Database_Import$", "import i5.las2peer.services."
+          + packageName + ".database.DatabaseManager;\nimport java.sql.*;");
 
       Template databaseConfigurationTpl = templateEngine
           .createTemplate(microservice.getMicroserviceModelId() + ":dbConfig", databaseConfig);
@@ -1052,7 +1051,6 @@ public class MicroserviceGenerator extends Generator {
     Template databaseTemplate =
         templateEngine.createTemplate(database.getModelId() + ":database", databaseScript);
     templateEngine.addTemplate(databaseTemplate);
-
     for (Table table : database.getTables()) {
       Template currentTableTemplate =
           templateEngine.createTemplate(table.getModelId() + ":table", tableTemplate);
@@ -1061,8 +1059,8 @@ public class MicroserviceGenerator extends Generator {
 
       currentTableTemplate.setVariable("$Database_Table_Name$", table.getName());
       for (Column column : table.getColumns()) {
-        Template columnTemplate =
-            templateEngine.createTemplate(column.getModelId() + ":column", "  $name$ $type$,\n");
+        Template columnTemplate = templateEngine.createTemplate(column.getModelId() + ":column",
+            "  $name$ $type$-{ }-,\n");
         columnTemplate.setVariable("$name$", column.getName());
         columnTemplate.setVariable("$type$", column.getType());
         currentTableTemplate.appendVariable("$Column$", columnTemplate);
