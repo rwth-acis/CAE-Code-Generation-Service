@@ -511,6 +511,23 @@ public class CodeGenerationService extends Service {
   }
 
   /**
+   * Delete a file in the local repository hold by the github proxy service
+   * 
+   * @param repositoryName The name of the repository
+   * @param fileName The name of the file that must be deleted
+   */
+
+  public void deleteFileInLocalRepository(String repositoryName, String fileName) {
+    Serializable[] payload = {repositoryName, fileName};
+    try {
+      this.invokeServiceMethod("i5.las2peer.services.gitHubProxyService.GitHubProxyService@0.1",
+          "deleteFile", payload);
+    } catch (Exception e) {
+      logger.printStackTrace(e);
+    }
+  }
+
+  /**
    * Start a build job for the deployment of an application.
    * 
    * @param jobAlias The job name/alias of the job to start, either "Build" or "Docker"
