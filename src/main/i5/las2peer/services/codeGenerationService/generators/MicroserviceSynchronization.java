@@ -184,6 +184,11 @@ public class MicroserviceSynchronization extends MicroserviceGenerator {
       generateOtherArtifacts(
           Template.createInitialTemplateEngine(traceModel, newDatabaseManagerFileName),
           microservice, gitHubOrganization, databaseManager);
+    } else if (files.containsKey(oldDatabaseManagerFileName)
+        && microservice.getDatabase() == null) {
+      System.out.println("delete " + oldDatabaseManagerFileName);
+      service.deleteFileInLocalRepository(getRepositoryName(oldMicroservice),
+          oldDatabaseManagerFileName);
     } else if (!oldDatabaseManagerFileName.equals(newDatabaseManagerFileName)) {
       renameFileInRepository(getRepositoryName(oldMicroservice), newDatabaseManagerFileName,
           oldDatabaseManagerFileName, service);
@@ -201,7 +206,12 @@ public class MicroserviceSynchronization extends MicroserviceGenerator {
       generateDatabaseScript(databaseScriptTemplateEngine, databaseScript, genericTable,
           microservice);
 
+    } else if (files.containsKey(databaseOldScriptFileName) && microservice.getDatabase() == null) {
+      System.out.println("delete " + databaseOldScriptFileName);
+      service.deleteFileInLocalRepository(getRepositoryName(oldMicroservice),
+          databaseOldScriptFileName);
     } else if (!databaseOldScriptFileName.equals(databaseScriptFileName)) {
+
       renameFileInRepository(getRepositoryName(oldMicroservice), databaseScriptFileName,
           databaseOldScriptFileName, service);
     }

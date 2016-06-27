@@ -1051,6 +1051,9 @@ public class MicroserviceGenerator extends Generator {
     Template databaseTemplate =
         templateEngine.createTemplate(database.getModelId() + ":database", databaseScript);
     templateEngine.addTemplate(databaseTemplate);
+
+    templateEngine.addTrace(database.getModelId(), "DatabaseScript", databaseTemplate);
+
     for (Table table : database.getTables()) {
       Template currentTableTemplate =
           templateEngine.createTemplate(table.getModelId() + ":table", tableTemplate);
