@@ -40,7 +40,6 @@ public class ModelViolationDetection {
   @SuppressWarnings("unchecked")
   public static JSONArray performViolationCheck(HashMap<String, JSONObject> files,
       JSONObject violationsRules) {
-
     JSONArray feedback = new JSONArray();
     GuidanceModel guidanceModel = new GuidanceModel();
     guidanceModel.addRules(violationsRules);
@@ -110,6 +109,8 @@ public class ModelViolationDetection {
         Segment childSegment = cSegment.getChild(child);
         feedback.addAll(checkSegment(childSegment, traces, guidanceModel));
       }
+
+
 
       JSONObject modelMeta = getModelFromSegmentId(segment.getId(), traces);
       if (modelMeta != null) {

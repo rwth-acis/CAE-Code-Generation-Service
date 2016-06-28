@@ -24,7 +24,8 @@ import i5.las2peer.services.codeGenerationService.traces.segments.UnprotectedSeg
 
 public class GuidanceModel {
 
-  private Map<String, ViolationRule> violationRules = new HashMap<String, ViolationRule>();
+  private Map<String, List<ViolationRule>> violationRules =
+      new HashMap<String, List<ViolationRule>>();
 
   /**
    * Adds a single rule to the model
@@ -32,7 +33,12 @@ public class GuidanceModel {
    * @param rule The rule to add
    */
   private void addRule(ViolationRule rule) {
-    this.violationRules.put(rule.getType(), rule);
+    if (!this.violationRules.containsKey(rule.getType())) {
+      ArrayList<ViolationRule> newList = new ArrayList<ViolationRule>();
+      this.violationRules.put(rule.getType(), newList);
+    }
+    List<ViolationRule> list = this.violationRules.get(rule.getType());
+    list.add(rule);
   }
 
   /**
@@ -69,49 +75,50 @@ public class GuidanceModel {
     if (!this.violationRules.containsKey(type)) {
       return feedback;
     }
-
-    ViolationRule rule = this.violationRules.get(type);
-
+    List<ViolationRule> rules = this.violationRules.get(type);
     // get the content of the segments
     String content = "";
     for (Segment uSegment : segments) {
       content += uSegment.toString();
     }
 
-    Pattern forbiddenPattern = Pattern.compile(rule.getRegex(), Pattern.DOTALL);
-    Matcher matcher = forbiddenPattern.matcher(content);
+    for (ViolationRule rule : rules) {
 
-    // loop through all findings
-    while (matcher.find()) {
+      Pattern forbiddenPattern = Pattern.compile(rule.getRegex(), Pattern.DOTALL);
+      Matcher matcher = forbiddenPattern.matcher(content);
 
-      JSONObject feedbackJsonObject = new JSONObject();
-      JSONArray guidanceSegments = new JSONArray();
-      int group = rule.getGroup();
-      int start = matcher.start(group);
-      int end = matcher.end(group);
+      // loop through all findings
+      while (matcher.find()) {
 
-      int s = 0;
+        JSONObject feedbackJsonObject = new JSONObject();
+        JSONArray guidanceSegments = new JSONArray();
+        int group = rule.getGroup();
+        int start = matcher.start(group);
+        int end = matcher.end(group);
 
-      // loop through all segments the match was found in
-      for (ContentSegment uSegment : segments) {
-        int length = uSegment.getLength();
-        if (s <= start && s + length >= start) {
-          // relative start and end for the segment
-          int guidanceStart = Math.max(start - s, 0);
-          int guidanceEnd = Math.min(length, end - s);
+        int s = 0;
 
-          JSONObject guidanceSegment = new JSONObject();
-          guidanceSegment.put("start", guidanceStart);
-          guidanceSegment.put("end", guidanceEnd);
-          guidanceSegment.put("segmentId", uSegment.getId());
+        // loop through all segments the match was found in
+        for (ContentSegment uSegment : segments) {
+          int length = uSegment.getLength();
+          if (s <= start && s + length >= start) {
+            // relative start and end for the segment
+            int guidanceStart = Math.max(start - s, 0);
+            int guidanceEnd = Math.min(length, end - s);
 
-          guidanceSegments.add(guidanceSegment);
+            JSONObject guidanceSegment = new JSONObject();
+            guidanceSegment.put("start", guidanceStart);
+            guidanceSegment.put("end", guidanceEnd);
+            guidanceSegment.put("segmentId", uSegment.getId());
+
+            guidanceSegments.add(guidanceSegment);
+          }
+          s += length;
         }
-        s += length;
+        feedbackJsonObject.put("segments", guidanceSegments);
+        feedbackJsonObject.put("message", rule.getMessage());
+        feedback.add(feedbackJsonObject);
       }
-      feedbackJsonObject.put("segments", guidanceSegments);
-      feedbackJsonObject.put("message", rule.getMessage());
-      feedback.add(feedbackJsonObject);
     }
 
     return feedback;
