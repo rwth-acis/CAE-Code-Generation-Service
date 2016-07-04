@@ -431,16 +431,16 @@ public class MicroserviceGenerator extends Generator {
         // template = templateEngine.createTemplate(
         // microservice.getMicroserviceModelId() + ":emptyServiceProperties", "-{}-");
       } else {
-        Template properitesTemplate = templateEngine.createTemplate(
+        Template propertiesTemplate = templateEngine.createTemplate(
             microservice.getMicroserviceModelId() + ":serviceProperties", templateContent);
-        properitesTemplate.setVariable("$Database_Address$",
+        propertiesTemplate.setVariable("$Database_Address$",
             microservice.getDatabase().getAddress());
-        properitesTemplate.setVariable("$Database_Schema$", microservice.getDatabase().getSchema());
-        properitesTemplate.setVariable("$Database_User$",
+        propertiesTemplate.setVariable("$Database_Schema$", microservice.getDatabase().getSchema());
+        propertiesTemplate.setVariable("$Database_User$",
             microservice.getDatabase().getLoginName());
-        properitesTemplate.setVariable("$Database_Password$",
+        propertiesTemplate.setVariable("$Database_Password$",
             microservice.getDatabase().getLoginPassword());
-        template.appendVariable("$Properties$", properitesTemplate);
+        template.appendVariable("$Properties$", propertiesTemplate);
       }
     }
 
@@ -773,12 +773,10 @@ public class MicroserviceGenerator extends Generator {
           consumesAnnotation = "MediaType.APPLICATION_JSON";
           parameterCode += "@ContentParam String " + currentPayload.getName() + ", ";
 
-          Template castTemplate =
-              templateEngine.createTemplate(currentPayload.getModelId() + ":cast",
-                  "    JSONObject " + currentPayload.getName()
-                      + "_JSON = (JSONObject) JSONValue.parse(" + currentPayload.getName()
-                      + ");\n");
-
+          Template castTemplate = templateEngine.createTemplate(
+              currentPayload.getModelId() + ":cast",
+              "    JSONObject $Payload_Name$_JSON = (JSONObject) JSONValue.parse($Payload_Name$);\n");
+          castTemplate.setVariable("$Payload_Name$", currentPayload.getName());
           currentMethodTemplate.appendVariable("$HTTPMethod_Casts$", castTemplate);
 
         }
@@ -1048,8 +1046,8 @@ public class MicroserviceGenerator extends Generator {
   protected static void generateDatabaseScript(TemplateEngine templateEngine, String databaseScript,
       String tableTemplate, Microservice microservice) {
     Database database = microservice.getDatabase();
-    Template databaseTemplate =
-        templateEngine.createTemplate(database.getModelId() + ":database", databaseScript);
+    Template databaseTemplate = templateEngine
+        .createTemplate(microservice.getMicroserviceModelId() + ":database", databaseScript);
     templateEngine.addTemplate(databaseTemplate);
 
     templateEngine.addTrace(database.getModelId(), "DatabaseScript", databaseTemplate);
