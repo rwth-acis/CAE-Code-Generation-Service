@@ -6,7 +6,7 @@ import i5.las2peer.services.codeGenerationService.traces.segments.Segment;
 
 public class InitialGenerationStrategy extends TemplateStrategy {
 
-  public final FileTraceModel traceModel;
+  private final FileTraceModel traceModel;
 
   public InitialGenerationStrategy(FileTraceModel tracemodel) {
     this.traceModel = tracemodel;

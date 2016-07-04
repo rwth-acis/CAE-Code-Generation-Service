@@ -26,7 +26,7 @@ public class Template {
   private final TemplateEngine templateEngine;
 
   /**
-   * Creates a new Template by a given compositions of segment and a template engine
+   * Creates a new Template by a given composition of segments and a template engine
    * 
    * @param segment - The private composite segment of the template
    * @param templateEngine - The template engine of the template
@@ -128,7 +128,7 @@ public class Template {
    * @param once - If true, you can only append one template to the variable
    */
 
-  public void appendVariable(String variableName, Template template, boolean once) {
+  private void appendVariable(String variableName, Template template, boolean once) {
     AppendableVariableSegment container = this.getAppendableVariableSegment(variableName);
 
     // we can safely cast to a composition as the given "fallback" segment is a composition and
@@ -179,10 +179,19 @@ public class Template {
     return this.templateEngine.createTemplate(id, sourceCode);
   }
 
+
+  /**
+   * Adds a new line to a composition of segments
+   * 
+   * @param idSuffix An id suffix
+   * @param variable The name of the variable
+   */
+
   public void insertBreakLine(String idSuffix, String variable) {
     this.appendVariable(variable,
         this.templateEngine.createTemplate(this.getId() + ":breakLine:" + idSuffix, "\n"));
   }
+
 
   /**
    * @see #getContent()
