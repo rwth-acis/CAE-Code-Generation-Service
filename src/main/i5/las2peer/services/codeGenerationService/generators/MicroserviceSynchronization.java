@@ -12,9 +12,9 @@ import org.eclipse.jgit.treewalk.TreeWalk;
 import org.eclipse.jgit.treewalk.filter.PathFilter;
 import org.json.simple.JSONObject;
 
+import i5.las2peer.api.Service;
 import i5.las2peer.logging.L2pLogger;
 import i5.las2peer.logging.NodeObserver.Event;
-import i5.las2peer.services.codeGenerationService.CodeGenerationService;
 import i5.las2peer.services.codeGenerationService.models.microservice.Microservice;
 import i5.las2peer.services.codeGenerationService.models.traceModel.FileTraceModel;
 import i5.las2peer.services.codeGenerationService.models.traceModel.FileTraceModelFactory;
@@ -47,14 +47,13 @@ public class MicroserviceSynchronization extends MicroserviceGenerator {
    * @param files The traced files with the current source code
    * @param templateRepositoryName the name of the template repository on GitHub
    * @param gitHubOrganization the organization that is used in the CAE
-   * @param service An instance of
-   *        {@link i5.las2peer.services.codeGenerationService.generators.Generator} needed to invoke
-   *        the GitHubProxy service
+   * @param service An instance of {@link i5.las2peer.api.Service} needed to invoke the GitHubProxy
+   *        service
    */
 
   public static void synchronizeSourceCode(Microservice microservice, Microservice oldMicroservice,
       HashMap<String, JSONObject> files, String templateRepositoryName, String gitHubOrganization,
-      CodeGenerationService service) {
+      Service service) {
 
     // first load the needed templates from the template repository
 
@@ -186,9 +185,8 @@ public class MicroserviceSynchronization extends MicroserviceGenerator {
           microservice, gitHubOrganization, databaseManager);
     } else if (files.containsKey(oldDatabaseManagerFileName)
         && microservice.getDatabase() == null) {
-      System.out.println("delete " + oldDatabaseManagerFileName);
-      service.deleteFileInLocalRepository(getRepositoryName(oldMicroservice),
-          oldDatabaseManagerFileName);
+      deleteFileInLocalRepository(getRepositoryName(oldMicroservice), oldDatabaseManagerFileName,
+          service);
     } else if (!oldDatabaseManagerFileName.equals(newDatabaseManagerFileName)) {
       renameFileInRepository(getRepositoryName(oldMicroservice), newDatabaseManagerFileName,
           oldDatabaseManagerFileName, service);
@@ -207,9 +205,8 @@ public class MicroserviceSynchronization extends MicroserviceGenerator {
           microservice);
 
     } else if (files.containsKey(databaseOldScriptFileName) && microservice.getDatabase() == null) {
-      System.out.println("delete " + databaseOldScriptFileName);
-      service.deleteFileInLocalRepository(getRepositoryName(oldMicroservice),
-          databaseOldScriptFileName);
+      deleteFileInLocalRepository(getRepositoryName(oldMicroservice), databaseOldScriptFileName,
+          service);
     } else if (!databaseOldScriptFileName.equals(databaseScriptFileName)) {
 
       renameFileInRepository(getRepositoryName(oldMicroservice), databaseScriptFileName,
@@ -259,10 +256,7 @@ public class MicroserviceSynchronization extends MicroserviceGenerator {
             generateOtherArtifacts(templateEngine, microservice, gitHubOrganization, content);
           }
         } else if (fileName.equals(serviceOldPropertiesFileName)) {
-          if ((oldMicroservice.getDatabase() == null || content.equals(""))
-              && microservice.getDatabase() != null) {
-            content = serviceProperties;
-          }
+          content = serviceProperties;
           oldFileTraceModel.setFileName(servicePropertiesFileName);
           generateOtherArtifacts(templateEngine, microservice, gitHubOrganization, content);
         } else {
