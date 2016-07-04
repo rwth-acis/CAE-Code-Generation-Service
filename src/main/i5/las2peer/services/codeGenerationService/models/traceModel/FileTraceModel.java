@@ -9,9 +9,6 @@ import java.util.Map;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-
 import i5.las2peer.services.codeGenerationService.traces.segments.CompositeSegment;
 import i5.las2peer.services.codeGenerationService.traces.segments.Segment;
 
@@ -163,15 +160,6 @@ public class FileTraceModel {
     outerObject.put("traceSegments", segments);
 
     return outerObject;
-  }
-
-  public String toJSONString() {
-    Gson gson = new GsonBuilder().setPrettyPrinting().create();
-    return gson.toJson(this.toJSONObject());
-  }
-
-  public boolean containsSegment(String segmentId) {
-    return this.segmentMap.containsKey(segmentId);
   }
 
   public Segment getSegment(String segmentId) {
