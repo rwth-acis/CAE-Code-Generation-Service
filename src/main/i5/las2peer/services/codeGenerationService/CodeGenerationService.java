@@ -271,12 +271,17 @@ public class CodeGenerationService extends Service {
                   // it will then delete the local repository
                   deleteReturnMessage = this
                       .deleteLocalRepository(MicroserviceGenerator.getRepositoryName(microservice));
-                } else {
-                  deleteReturnMessage = deleteRepositoryOfModel(serializedModel);
+                  if (!deleteReturnMessage.equals("done")) {
+                    return deleteReturnMessage; // error happened
+                  }
                 }
-
-                if (!deleteReturnMessage.equals("done")) {
-                  return deleteReturnMessage; // error happened
+                if (Generator.existsRemoteRepository(
+                    MicroserviceGenerator.getRepositoryName(microservice), gitHubOrganization,
+                    gitHubUser, gitHubPassword)) {
+                  deleteReturnMessage = deleteRepositoryOfModel(serializedModel);
+                  if (!deleteReturnMessage.equals("done")) {
+                    return deleteReturnMessage; // error happened
+                  }
                 }
 
                 L2pLogger.logEvent(Event.SERVICE_MESSAGE,
@@ -322,13 +327,19 @@ public class CodeGenerationService extends Service {
                   // it will then delete the local repository
                   deleteReturnMessage = this.deleteLocalRepository(
                       FrontendComponentGenerator.getRepositoryName(frontendComponent));
-                } else {
+                  if (!deleteReturnMessage.equals("done")) {
+                    return deleteReturnMessage; // error happened
+                  }
+                }
+                if (Generator.existsRemoteRepository(
+                    FrontendComponentGenerator.getRepositoryName(frontendComponent),
+                    gitHubOrganization, gitHubUser, gitHubPassword)) {
                   deleteReturnMessage = deleteRepositoryOfModel(serializedModel);
+                  if (!deleteReturnMessage.equals("done")) {
+                    return deleteReturnMessage; // error happened
+                  }
                 }
 
-                if (!deleteReturnMessage.equals("done")) {
-                  return deleteReturnMessage; // error happened
-                }
                 L2pLogger.logEvent(Event.SERVICE_MESSAGE,
                     "updateRepositoryOfModel: Calling createFromModel now..");
                 return createFromModel(serializedModel);
@@ -372,6 +383,13 @@ public class CodeGenerationService extends Service {
     }
     return "Model has no attribute 'type'!";
   }
+
+  /**
+   * Deletes a local repository by invoking the GitHub proxy service
+   * 
+   * @param repositoryName The name of the repository to be deleted
+   * @return a status string
+   */
 
   private String deleteLocalRepository(String repositoryName) {
     try {
@@ -433,17 +451,12 @@ public class CodeGenerationService extends Service {
     throw new ModelParseException("Model has no attribute 'type'!");
   }
 
-
-
-  public void commitFile(String repositoryName, JSONObject obj) {
-    Serializable[] payload = {repositoryName, obj.toJSONString()};
-    try {
-      this.invokeServiceMethod("i5.las2peer.services.gitHubProxyService.GitHubProxyService@0.1",
-          "storeAndCommitFle", payload);
-    } catch (Exception e) {
-      logger.printStackTrace(e);
-    }
-  }
+  /**
+   * Fetch all traced files of a repository from the GitHub proxy service
+   * 
+   * @param repositoryName The name of the repository
+   * @return a map containing all traced files
+   */
 
   @SuppressWarnings("unchecked")
   private HashMap<String, JSONObject> getTracedFiles(String repositoryName) {
@@ -460,27 +473,6 @@ public class CodeGenerationService extends Service {
   }
 
   /**
-   * Commit multiple files to the github repository. Like
-   * {@link i5.las2peer.services.codeGenerationService.CodeGenerationService#commitFile(String, JSONObject)}
-   * , but without any trace information and for multiple files
-   * 
-   * @param repositoryName The name of the repository
-   * @param commitMessage A commit message
-   * @param files An array containing the file names and file contents
-   */
-
-  public void commitMultipleFilesRaw(String repositoryName, String commitMessage,
-      String[][] files) {
-    Serializable[] payload = {repositoryName, commitMessage, files};
-    try {
-      this.invokeServiceMethod("i5.las2peer.services.gitHubProxyService.GitHubProxyService@0.1",
-          "storeAndCommitFilesRaw", payload);
-    } catch (Exception e) {
-      logger.printStackTrace(e);
-    }
-  }
-
-  /**
    * Performs a model violation check against the files located in the given repository
    * 
    * @param guidances A json object containing the guidances
@@ -490,41 +482,6 @@ public class CodeGenerationService extends Service {
   public JSONArray checkModel(JSONObject guidances, HashMap<String, JSONObject> files) {
     L2pLogger.logEvent(Event.SERVICE_MESSAGE, "starting model violation detection..");
     return ModelViolationDetection.performViolationCheck(files, guidances);
-  }
-
-  /**
-   * Rename a file in the local repository hold by the github proxy service
-   * 
-   * @param repositoryName The name of the repository
-   * @param newFileName The new file name
-   * @param oldFileName The old file name
-   */
-
-  public void renameFile(String repositoryName, String newFileName, String oldFileName) {
-    Serializable[] payload = {repositoryName, newFileName, oldFileName};
-    try {
-      this.invokeServiceMethod("i5.las2peer.services.gitHubProxyService.GitHubProxyService@0.1",
-          "renameFile", payload);
-    } catch (Exception e) {
-      logger.printStackTrace(e);
-    }
-  }
-
-  /**
-   * Delete a file in the local repository hold by the github proxy service
-   * 
-   * @param repositoryName The name of the repository
-   * @param fileName The name of the file that must be deleted
-   */
-
-  public void deleteFileInLocalRepository(String repositoryName, String fileName) {
-    Serializable[] payload = {repositoryName, fileName};
-    try {
-      this.invokeServiceMethod("i5.las2peer.services.gitHubProxyService.GitHubProxyService@0.1",
-          "deleteFile", payload);
-    } catch (Exception e) {
-      logger.printStackTrace(e);
-    }
   }
 
   /**

@@ -12,6 +12,7 @@ import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.PrintStream;
+import java.io.Serializable;
 import java.io.UnsupportedEncodingException;
 import java.net.HttpURLConnection;
 import java.net.URL;
@@ -38,8 +39,8 @@ import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider;
 import org.eclipse.jgit.treewalk.TreeWalk;
 import org.json.simple.JSONObject;
 
+import i5.las2peer.api.Service;
 import i5.las2peer.logging.L2pLogger;
-import i5.las2peer.services.codeGenerationService.CodeGenerationService;
 import i5.las2peer.services.codeGenerationService.exception.GitHubException;
 import i5.las2peer.services.codeGenerationService.models.traceModel.FileTraceModel;
 import i5.las2peer.services.codeGenerationService.models.traceModel.TraceModel;
@@ -574,11 +575,53 @@ public abstract class Generator {
     return repository;
   }
 
-  protected static void updateTracedFilesInRepository(List<String[]> fileList,
-      String repositoryName, CodeGenerationService service) {
-    service.commitMultipleFilesRaw(repositoryName, "Code regeneration/Model synchronization",
-        fileList.toArray(new String[][] {}));
+  /**
+   * Commit multiple files to the github repository. Like
+   * {@link i5.las2peer.services.codeGenerationService.CodeGenerationService#commitFile(String, JSONObject)}
+   * , but without any trace information and for multiple files
+   * 
+   * @param repositoryName The name of the repository
+   * @param commitMessage A commit message
+   * @param files An array containing the file names and file contents
+   * @param service An instance of {@link i5.las2peer.api.Service} needed to invoke the GitHubProxy
+   *        service
+   */
+
+
+  private static void commitMultipleFilesRaw(String repositoryName, String commitMessage,
+      String[][] files, Service service) {
+    Serializable[] payload = {repositoryName, commitMessage, files};
+    try {
+      service.invokeServiceMethod("i5.las2peer.services.gitHubProxyService.GitHubProxyService@0.1",
+          "storeAndCommitFilesRaw", payload);
+    } catch (Exception e) {
+      logger.printStackTrace(e);
+    }
   }
+
+  /**
+   * Updates a given list of traced files in a local repository of the GitHub proxy service
+   * 
+   * @param fileList
+   * @param repositoryName
+   * @param service An instance of {@link i5.las2peer.api.Service} needed to invoke the GitHubProxy
+   *        service
+   */
+
+  protected static void updateTracedFilesInRepository(List<String[]> fileList,
+      String repositoryName, Service service) {
+    commitMultipleFilesRaw(repositoryName, "Code regeneration/Model synchronization",
+        fileList.toArray(new String[][] {}), service);
+  }
+
+  /**
+   * Creates a list of the traced files contained in a trace model
+   * 
+   * @param traceModel A trace model that contains the traced files
+   * @param guidances The feedback rules used to perform the model violation detection.
+   * @return A list of the traced files contained in the trace model
+   * @throws UnsupportedEncodingException
+   */
 
   protected static List<String[]> getUpdatedTracedFilesForRepository(TraceModel traceModel,
       String guidances) throws UnsupportedEncodingException {
@@ -618,10 +661,45 @@ public abstract class Generator {
 
   }
 
+  /**
+   * Rename a file in the local repository hold by the GitHub proxy service
+   * 
+   * @param repositoryName The name of the repository
+   * @param newFileName The new file name
+   * @param oldFileName The old file name
+   * @param service An instance of {@link i5.las2peer.api.Service} needed to invoke the GitHubProxy
+   *        service
+   */
 
   protected static void renameFileInRepository(String repositoryName, String newFileName,
-      String oldFileName, CodeGenerationService service) {
-    service.renameFile(repositoryName, newFileName, oldFileName);
+      String oldFileName, Service service) {
+    Serializable[] payload = {repositoryName, newFileName, oldFileName};
+    try {
+      service.invokeServiceMethod("i5.las2peer.services.gitHubProxyService.GitHubProxyService@0.1",
+          "renameFile", payload);
+    } catch (Exception e) {
+      logger.printStackTrace(e);
+    }
+  }
+
+  /**
+   * Delete a file in the local repository hold by the GitHub proxy service
+   * 
+   * @param repositoryName The name of the repository
+   * @param fileName The name of the file that must be deleted
+   * @param service An instance of {@link i5.las2peer.api.Service} needed to invoke the GitHubProxy
+   *        service
+   */
+
+  protected static void deleteFileInLocalRepository(String repositoryName, String fileName,
+      Service service) {
+    Serializable[] payload = {repositoryName, fileName};
+    try {
+      service.invokeServiceMethod("i5.las2peer.services.gitHubProxyService.GitHubProxyService@0.1",
+          "deleteFile", payload);
+    } catch (Exception e) {
+      logger.printStackTrace(e);
+    }
   }
 
 }
