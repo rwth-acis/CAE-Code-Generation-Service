@@ -492,7 +492,7 @@ public class FrontendComponentGenerator extends Generator {
 
     // add trace to application script
     applicationTemplate.getTemplateEngine().addTrace(frontendComponent.getWidgetModelId(),
-        "ApplicationScript", applicationTemplate.getSegment());
+        "ApplicationScript", "ApplicationScript", applicationTemplate.getSegment());
 
     // first the endpoint
     applicationTemplate.setVariable("$Microservice_Endpoint_Url$",
@@ -503,8 +503,8 @@ public class FrontendComponentGenerator extends Generator {
       Template functionTemplate = applicationTemplate.createTemplate(
           applicationTemplate.getId() + function.getModelId(), functionTemplateFile);
 
-      applicationTemplate.getTemplateEngine().addTrace(function.getModelId(),
-          "Function[" + function.getName() + "]", functionTemplate);
+      applicationTemplate.getTemplateEngine().addTrace(function.getModelId(), "Function",
+          function.getName(), functionTemplate);
       // add function to application script
       applicationTemplate.appendVariable("$Functions$", functionTemplate);
 
@@ -674,8 +674,8 @@ public class FrontendComponentGenerator extends Generator {
 
         Template iwc = applicationTemplate.createTemplate(
             functionTemplate.getId() + ":iwc:" + call.getModelId(),
-            "  var $Content$ = \"initialized\";-{\n"
-                + "  }-client.sendIntent(\"$Intent_Action$\",$Content$);\n");
+            "\n  var $Content$ = \"initialized\";-{\n"
+                + "  }-client.sendIntent(\"$Intent_Action$\",$Content$,-{true}-);\n");
 
         iwc.setVariable("$Content$", call.getContent());
 
@@ -683,6 +683,8 @@ public class FrontendComponentGenerator extends Generator {
         iwc.setVariable("$Content$", call.getContent());
 
         functionTemplate.appendVariable("$Function_Body$", iwc);
+        applicationTemplate.getTemplateEngine().addTrace(call.getModelId(), "IWC Call",
+            call.getIntentAction(), iwc);
 
       }
 
@@ -728,7 +730,7 @@ public class FrontendComponentGenerator extends Generator {
         }
 
         variableInit = variableInit.replace("$Variable_Init$",
-            element.getId() + ":\'Text\'" + ",\n$Variable_Init$");
+            "    " + element.getId() + ":\'Text\'" + ",\n$Variable_Init$");
         shareElement = shareElement.replace("$Share_Element$", "  y.share." + element.getId()
             + ".bind(document.getElementById('" + element.getId() + "'))" + "\n$Share_Element$");
 
