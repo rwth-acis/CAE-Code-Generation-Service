@@ -162,10 +162,6 @@ public class FileTraceModel {
     return outerObject;
   }
 
-  public Segment getSegment(String segmentId) {
-    return this.segmentMap.get(segmentId);
-  }
-
   /**
    * Set the name of the file
    * 
