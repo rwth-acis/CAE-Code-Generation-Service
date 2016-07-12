@@ -103,7 +103,6 @@ public class CodeGenerationService extends Service {
               FrontendComponent frontendComponent = new FrontendComponent(model);
               L2pLogger.logEvent(Event.SERVICE_MESSAGE,
                   "createFromModel: Creating frontend component source code now..");
-
               FrontendComponentGenerator.createSourceCode(frontendComponent,
                   this.templateRepository, this.gitHubOrganization, this.gitHubUser,
                   this.gitHubUserMail, this.gitHubPassword);;
@@ -473,15 +472,15 @@ public class CodeGenerationService extends Service {
   }
 
   /**
-   * Performs a model violation check against the files located in the given repository
+   * Performs a model violation check against the given files
    * 
-   * @param guidances A json object containing the guidances
+   * @param violationRules A json object containing the violation rules
    * @param files The files to check
-   * @return A json array containing guidances of found violations
+   * @return A json array containing feedback about found violations
    */
-  public JSONArray checkModel(JSONObject guidances, HashMap<String, JSONObject> files) {
+  public JSONArray checkModel(JSONObject violationRules, HashMap<String, JSONObject> files) {
     L2pLogger.logEvent(Event.SERVICE_MESSAGE, "starting model violation detection..");
-    return ModelViolationDetection.performViolationCheck(files, guidances);
+    return ModelViolationDetection.performViolationCheck(files, violationRules);
   }
 
   /**

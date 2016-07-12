@@ -602,8 +602,8 @@ public abstract class Generator {
   /**
    * Updates a given list of traced files in a local repository of the GitHub proxy service
    * 
-   * @param fileList
-   * @param repositoryName
+   * @param fileList A list containing the files that should be updated
+   * @param repositoryName The name of the repository
    * @param service An instance of {@link i5.las2peer.api.Service} needed to invoke the GitHubProxy
    *        service
    */
@@ -620,7 +620,8 @@ public abstract class Generator {
    * @param traceModel A trace model that contains the traced files
    * @param guidances The feedback rules used to perform the model violation detection.
    * @return A list of the traced files contained in the trace model
-   * @throws UnsupportedEncodingException
+   * @throws UnsupportedEncodingException Thrown for errors during the encoding of the content of
+   *         files
    */
 
   protected static List<String[]> getUpdatedTracedFilesForRepository(TraceModel traceModel,

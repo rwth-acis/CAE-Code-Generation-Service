@@ -40,7 +40,7 @@ public class CompositeSegment extends Segment {
   }
 
   /**
-   * Creates a composition of segments with the id and the children of the given id, respectively
+   * Creates a composition of segments with the id and the children of the given segment
    * 
    * @param segment The segment whose id and children should be used
    */
@@ -49,6 +49,33 @@ public class CompositeSegment extends Segment {
     super(segment.getId());
     children = segment.getChildrenList();
     map = segment.getMap();
+  }
+
+  /**
+   * Adds a segment to the composition
+   * 
+   * @param segment The segment that should be added
+   */
+
+  public void addSegment(final Segment segment) {
+    String id = segment.getId();
+    if (!map.containsKey(id)) {
+      map.put(id, segment);
+    }
+    children.add(id);
+  }
+
+  /**
+   * Adds a collection to segments to this composition
+   * 
+   * @param segments A collection of segments to add
+   */
+
+  public void addAllSegments(Collection<Segment> segments) {
+    for (Segment segment : segments) {
+      this.addSegment(segment);
+    }
+
   }
 
   /**
@@ -129,19 +156,25 @@ public class CompositeSegment extends Segment {
     return CompositeSegment.TYPE;
   }
 
-  public void addSegment(final Segment segment) {
-    String id = segment.getId();
-    if (!map.containsKey(id)) {
-      map.put(id, segment);
-    }
-    children.add(id);
-  }
+  /**
+   * Check if the composition contains a segment of a specific id
+   * 
+   * @param id The id of the segment
+   * @return True, if the composition already contains a segment with the given id
+   */
 
   public boolean hasChild(String id) {
     return this.map.containsKey(id);
   }
 
-  public void replaceSegment(Segment oldSegment, CompositeSegment segment) {
+  /**
+   * Replaces a segment with an other segment
+   * 
+   * @param oldSegment The old segment to be replaced
+   * @param segment The new segment that replaces the old segment
+   */
+
+  public void replaceSegment(Segment oldSegment, Segment segment) {
     map.put(oldSegment.getId(), segment);
   }
 
@@ -171,7 +204,12 @@ public class CompositeSegment extends Segment {
     }
   }
 
-
+  /**
+   * Get the string content for a (sub) list of the composition's children
+   * 
+   * @param childrenList A (sub) list of the composition's children
+   * @return The composed content of the (sub) list of children
+   */
 
   protected String toString(List<String> childrenList) {
     String content = "";
@@ -184,6 +222,12 @@ public class CompositeSegment extends Segment {
 
     return content;
   }
+
+  /**
+   * Get the string content of the composition
+   * 
+   * @return The string content of the composition, i.e. the composed content of its children
+   */
 
   public String toString() {
     return this.toString(this.getChildrenList());
@@ -214,21 +258,4 @@ public class CompositeSegment extends Segment {
   public JSONObject toJSONObject() {
     return this.toJSONObject(this.getChildrenList());
   }
-
-  public void addAllSegments(Collection<Segment> parseTraces) {
-    for (Segment segment : parseTraces) {
-      this.addSegment(segment);
-    }
-
-  }
-
-  public Collection<Segment> getChildSegments() {
-    List<Segment> segmentList = new ArrayList<Segment>();
-    for (String id : this.children) {
-      Segment segment = this.getChild(id);
-      segmentList.add(segment);
-    }
-    return segmentList;
-  }
-
 }
