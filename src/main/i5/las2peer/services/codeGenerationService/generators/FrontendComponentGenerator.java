@@ -194,7 +194,7 @@ public class FrontendComponentGenerator extends Generator {
       TraceModel traceModel = new TraceModel();
 
       FileTraceModel widgetTraceModel = new FileTraceModel(traceModel, "widget.xml");
-      TemplateStrategy strategy = new InitialGenerationStrategy(widgetTraceModel);
+      TemplateStrategy strategy = new InitialGenerationStrategy();
       TemplateEngine widgetTemplateEngine = new TemplateEngine(strategy, widgetTraceModel);
 
       // add html elements to widget source code
@@ -209,8 +209,7 @@ public class FrontendComponentGenerator extends Generator {
 
       FileTraceModel applicationScriptTraceModel =
           new FileTraceModel(traceModel, "js/applicationScript.js");
-      TemplateStrategy applicationScriptStrategy =
-          new InitialGenerationStrategy(applicationScriptTraceModel);
+      TemplateStrategy applicationScriptStrategy = new InitialGenerationStrategy();
       TemplateEngine applicationScriptTemplateEngine =
           new TemplateEngine(applicationScriptStrategy, applicationScriptTraceModel);
 

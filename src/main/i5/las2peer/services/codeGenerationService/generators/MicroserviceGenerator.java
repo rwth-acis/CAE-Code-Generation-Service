@@ -321,7 +321,7 @@ public class MicroserviceGenerator extends Generator {
           new FileTraceModel(traceModel, getServiceFileName(microservice));
       traceModel.addFileTraceModel(serviceClassTraceModel);
 
-      TemplateStrategy strategy = new InitialGenerationStrategy(serviceClassTraceModel);
+      TemplateStrategy strategy = new InitialGenerationStrategy();
       TemplateEngine serviceTemplateEngine = new TemplateEngine(strategy, serviceClassTraceModel);
 
       generateNewServiceClass(serviceTemplateEngine, serviceClass, microservice, repositoryLocation,
@@ -332,8 +332,8 @@ public class MicroserviceGenerator extends Generator {
           new FileTraceModel(traceModel, getServiceTestFileName(microservice));
       traceModel.addFileTraceModel(serviceTestTraceModel);
 
-      TemplateEngine serviceTestTemplateEngine = new TemplateEngine(
-          new InitialGenerationStrategy(serviceTestTraceModel), serviceTestTraceModel);
+      TemplateEngine serviceTestTemplateEngine =
+          new TemplateEngine(new InitialGenerationStrategy(), serviceTestTraceModel);
 
       generateNewServiceTest(serviceTestTemplateEngine, serviceTest, microservice, genericTestCase);
 
@@ -365,8 +365,8 @@ public class MicroserviceGenerator extends Generator {
             new FileTraceModel(traceModel, getDatabaseScriptFileName(microservice));
         traceModel.addFileTraceModel(databaseScriptTraceModel);
 
-        TemplateEngine databaseScriptTemplateEngine = new TemplateEngine(
-            new InitialGenerationStrategy(databaseScriptTraceModel), databaseScriptTraceModel);
+        TemplateEngine databaseScriptTemplateEngine =
+            new TemplateEngine(new InitialGenerationStrategy(), databaseScriptTraceModel);
 
         microserviceRepository = createTextFileInRepository(microserviceRepository,
             "src/main/i5/las2peer/services/" + packageName + "/database/", "DatabaseManager.java",

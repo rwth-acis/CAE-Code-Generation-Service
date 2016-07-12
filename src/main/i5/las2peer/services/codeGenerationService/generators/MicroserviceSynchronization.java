@@ -198,8 +198,8 @@ public class MicroserviceSynchronization extends MicroserviceGenerator {
           new FileTraceModel(traceModel, getDatabaseScriptFileName(microservice));
       traceModel.addFileTraceModel(databaseScriptTraceModel);
 
-      TemplateEngine databaseScriptTemplateEngine = new TemplateEngine(
-          new InitialGenerationStrategy(databaseScriptTraceModel), databaseScriptTraceModel);
+      TemplateEngine databaseScriptTemplateEngine =
+          new TemplateEngine(new InitialGenerationStrategy(), databaseScriptTraceModel);
 
       generateDatabaseScript(databaseScriptTemplateEngine, databaseScript, genericTable,
           microservice);
