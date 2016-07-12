@@ -130,12 +130,7 @@ public class Template {
 
   private void appendVariable(String variableName, Template template, boolean once) {
     AppendableVariableSegment container = this.getAppendableVariableSegment(variableName);
-
-    // we can safely cast to a composition as the given "fallback" segment is a composition and
-    // getSegmentByStrategy ensures that a segment of
-    // the same class as the fallback is returned
-    CompositeSegment segment =
-        (CompositeSegment) templateEngine.getTemplateSegmentByStrategy(template);
+    CompositeSegment segment = template.getSegment();
 
     // only add once if ask to do so
     if (once && container.hasChild(segment.getId())) {
@@ -213,8 +208,7 @@ public class Template {
 
   public static TemplateEngine createInitialTemplateEngine(TraceModel traceModel, String fileName) {
     FileTraceModel fileTraceModel = new FileTraceModel(traceModel, fileName);
-    TemplateEngine engine =
-        new TemplateEngine(new InitialGenerationStrategy(fileTraceModel), fileTraceModel);
+    TemplateEngine engine = new TemplateEngine(new InitialGenerationStrategy(), fileTraceModel);
 
     traceModel.addFileTraceModel(fileTraceModel);
 
@@ -223,7 +217,7 @@ public class Template {
 
 
   /**
-   * Get a appendable segment for variables. That is a container for a variable name that can held
+   * Get a appendable segment for a variable. That is a container for a variable name that can hold
    * the appended templates. If it does not exist yet, it will be created.
    * 
    * @param variableName The variable name

@@ -50,30 +50,6 @@ public class TemplateEngine {
   }
 
   /**
-   * Get the segment for the given template instance using the current template strategy. If the
-   * template strategy decided to reuse an existing segment, it will return that segment. Otherwise
-   * it returns the segment of the given template to signal.
-   * 
-   * @param template The template whose segment is requested
-   * @return The needed segment of the template
-   */
-
-  public Segment getTemplateSegmentByStrategy(Template template) {
-    Segment result = this.strategy.getSegment(template.getSegment().getId());
-    if (result != null) {
-      // ensure that the class of an existing segment object is an instance of the class of the
-      // template segment
-      if (result.getClass().isInstance(template.getSegment())) {
-        return result;
-      } else {
-        return template.getSegment();
-      }
-    } else {
-      return template.getSegment();
-    }
-  }
-
-  /**
    * Get the full file name the template engine belongs to
    * 
    * @return The file name the template engine belongs to
@@ -164,7 +140,7 @@ public class TemplateEngine {
 
     if (segment instanceof CompositeSegment) {
 
-      // "reuse" an existing template, i.e. the segment hold by the template is set to an already
+      // "reuse" an existing template, i.e. the segment held by the template is set to an already
       // existing one
       cSegment = (CompositeSegment) segment;
     } else {
