@@ -1,0 +1,120 @@
+{
+  "traceSegments": [
+    {
+      "traceSegments": [
+        {
+          "length": 10,
+          "id": "testFileId:$Content$before[0]",
+          "type": "protected"
+        },
+        {
+          "traceSegments": [
+            {
+              "traceSegments": [
+                {
+                  "length": 9,
+                  "id": "content1:$Id$before[0]",
+                  "type": "protected"
+                },
+                {
+                  "length": 2,
+                  "id": "content1:$Id$",
+                  "type": "protected"
+                },
+                {
+                  "length": 2,
+                  "id": "content1:$ElementContent$before[0]",
+                  "type": "protected"
+                },
+                {
+                  "length": 14,
+                  "id": "content1:$ElementContent$",
+                  "type": "protected"
+                },
+                {
+                  "length": 6,
+                  "id": "content1:End",
+                  "type": "protected"
+                }
+              ],
+              "id": "content1",
+              "type": "composite"
+            },
+            {
+              "traceSegments": [
+                {
+                  "length": 9,
+                  "id": "content2:$Id$before[0]",
+                  "type": "protected"
+                },
+                {
+                  "length": 2,
+                  "id": "content2:$Id$",
+                  "type": "protected"
+                },
+                {
+                  "length": 2,
+                  "id": "content2:$ElementContent$before[0]",
+                  "type": "protected"
+                },
+                {
+                  "length": 14,
+                  "id": "content2:$ElementContent$",
+                  "type": "protected"
+                },
+                {
+                  "length": 6,
+                  "id": "content2:End",
+                  "type": "protected"
+                }
+              ],
+              "id": "content2",
+              "type": "composite"
+            },
+            {
+              "traceSegments": [
+                {
+                  "length": 9,
+                  "id": "content3:$Id$before[0]",
+                  "type": "protected"
+                },
+                {
+                  "length": 4,
+                  "id": "content3:$Id$",
+                  "type": "protected"
+                },
+                {
+                  "length": 2,
+                  "id": "content3:$ElementContent$before[0]",
+                  "type": "protected"
+                },
+                {
+                  "length": 16,
+                  "id": "content3:$ElementContent$",
+                  "type": "protected"
+                },
+                {
+                  "length": 6,
+                  "id": "content3:End",
+                  "type": "protected"
+                }
+              ],
+              "id": "content3",
+              "type": "composite"
+            }
+          ],
+          "id": "testFileId:$Content$",
+          "type": "appendableVariable"
+        },
+        {
+          "length": 0,
+          "id": "testFileId:End",
+          "type": "protected"
+        }
+      ],
+      "id": "testFileId",
+      "type": "composite"
+    }
+  ],
+  "traces": {}
+}
