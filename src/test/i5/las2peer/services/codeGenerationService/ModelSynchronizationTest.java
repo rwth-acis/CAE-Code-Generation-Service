@@ -385,12 +385,10 @@ public class ModelSynchronizationTest extends Generator {
           (String) node.invoke(testService, serviceNameVersion, "createFromModel", parameters);
       assertEquals("done", returnMessage);
 
-      String traces =
-          getContent("/var/CAE-Service/testModels/JUnitTestWidget4Resources/widget.xml.traces");
+      String traces = getContent("./testFiles/ModelSynchronization/TestCase3/widget.xml.traces");
       JSONParser parser = new JSONParser();
       JSONObject tracesJson = (JSONObject) parser.parse(traces);
-      String widget =
-          getContent("/var/CAE-Service/testModels/JUnitTestWidget4Resources/widget.xml");
+      String widget = getContent("./testFiles/ModelSynchronization/TestCase3/widget.xml");
 
       FileTraceModel oldFileTraceModel =
           createFileTraceModel(widget, "widget.xml", tracesJson, new TraceModel());
