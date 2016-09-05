@@ -159,7 +159,7 @@ public abstract class Generator {
    */
   public static TreeWalk getTemplateRepositoryContent(String templateRepositoryName,
       String gitHubOrganization) throws GitHubException {
-    Repository templateRepository = getRemoteRepository(templateRepositoryName, gitHubOrganization);
+    Repository templateRepository = getRemoteRepository("","",templateRepositoryName, gitHubOrganization);
     // get the content of the repository
     RevWalk revWalk = null;
     TreeWalk treeWalk = null;
@@ -196,9 +196,9 @@ public abstract class Generator {
    * @throws GitHubException if anything goes wrong during retrieving the repository's content
    * 
    */
-  public static TreeWalk getRepositoryContent(String repositoryName, String gitHubOrganization)
+  public static TreeWalk getRepositoryContent(String user, String pass, String repositoryName, String gitHubOrganization)
       throws GitHubException {
-    Repository repository = getRemoteRepository(repositoryName, gitHubOrganization);
+    Repository repository = getRemoteRepository(user, pass, repositoryName, gitHubOrganization);
     // get the content of the repository
     RevWalk revWalk = null;
     TreeWalk treeWalk = null;
@@ -227,18 +227,22 @@ public abstract class Generator {
    * 
    * @param repositoryName the name of the repository
    * @param gitHubOrganization the organization that is used in the CAE
+ * @param gitHubOrganization2 
+ * @param repositoryName2 
    * 
    * @return a {@link org.eclipse.jgit.lib.Repository}
    * 
    * @throws GitHubException if anything goes wrong during retrieving the repository's content
    * 
    */
-  private static Repository getRemoteRepository(String repositoryName, String gitHubOrganization)
+  private static Repository getRemoteRepository(String user, String pass, String repositoryName, String gitHubOrganization)
       throws GitHubException {
     String repositoryAddress =
         "https://github.com/" + gitHubOrganization + "/" + repositoryName + ".git";
 
     Repository repository = null;
+    // Prepare credentials provider for auth
+    CredentialsProvider cp = new UsernamePasswordCredentialsProvider(user, pass);
     // prepare a new folder for the template repository (to be cloned)
     File localPath = null;
     try {
@@ -251,9 +255,10 @@ public abstract class Generator {
 
     // then clone
     try {
-      repository = Git.cloneRepository().setURI(repositoryAddress).setDirectory(localPath).call()
+      repository = Git.cloneRepository().setURI(repositoryAddress).setDirectory(localPath).setCredentialsProvider(cp).call()
           .getRepository();
     } catch (Exception e) {
+      logger.severe("Failed at getting remote: " + repositoryAddress);
       logger.printStackTrace(e);
       throw new GitHubException(e.getMessage());
     }

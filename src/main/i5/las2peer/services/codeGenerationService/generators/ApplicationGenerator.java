@@ -10,6 +10,7 @@ import org.eclipse.jgit.lib.ObjectLoader;
 import org.eclipse.jgit.lib.ObjectReader;
 import org.eclipse.jgit.lib.PersonIdent;
 import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider;
 import org.eclipse.jgit.treewalk.TreeWalk;
 import org.eclipse.jgit.treewalk.filter.PathFilter;
 
@@ -106,7 +107,10 @@ public class ApplicationGenerator extends Generator {
       // fetch microservice repository contents and add them
       for (String microserviceName : application.getMicroservices().keySet()) {
         String microserviceRepositoryName = "microservice-" + microserviceName.replace(" ", "-");
-        treeWalk = getRepositoryContent(microserviceRepositoryName, gitHubOrganization);
+        
+        //TODO: Test fails here
+        treeWalk = getRepositoryContent(gitHubUser,gitHubPassword,microserviceRepositoryName, gitHubOrganization);
+        
         reader = treeWalk.getObjectReader();
         try {
           while (treeWalk.next()) {
@@ -197,7 +201,7 @@ public class ApplicationGenerator extends Generator {
       for (String frontendComponentName : application.getFrontendComponents().keySet()) {
         String frontendComponentRepositoryName =
             "frontendComponent-" + frontendComponentName.replace(" ", "-");
-        treeWalk = getRepositoryContent(frontendComponentRepositoryName, gitHubOrganization);
+        treeWalk = getRepositoryContent(gitHubUser,gitHubPassword, frontendComponentRepositoryName, gitHubOrganization);
         reader = treeWalk.getObjectReader();
         try {
           while (treeWalk.next()) {
