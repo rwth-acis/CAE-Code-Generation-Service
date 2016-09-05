@@ -8,7 +8,7 @@
 	<classpathentry kind="lib" path="lib/org.eclipse.jgit-4.0.1.201506240215-r.jar" sourcepath="/org.eclipse.jgit/src"/>
 	<classpathentry kind="lib" path="lib/slf4j-nop-1.7.12.jar"/>
 	<classpathentry kind="lib" path="lib/cae-simple-model-representation-0.3.jar"/>
-	<classpathentry kind="lib" path="lib/las2peer-0.5-SNAPSHOT.jar"/>
+	<classpathentry kind="lib" path="lib/las2peer-0.5.7.jar"/>
 	<classpathentry kind="lib" path="lib/junit-4.12.jar"/>
 	<classpathentry kind="output" path="output"/>
 </classpath>
