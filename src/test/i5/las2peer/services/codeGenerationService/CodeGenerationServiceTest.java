@@ -210,7 +210,7 @@ public class CodeGenerationServiceTest {
     Serializable[] content = {(Serializable) model1};
     Serializable[] parameters = {content};
     try {
-      String returnMessage = (String) node.invokeLocally(testService.getId(), serviceNameVersion,
+      String returnMessage = (String) node.invokeLocally(testService, serviceNameVersion,
           "createFromModel", parameters);
       assertEquals("done", returnMessage);
     } catch (Exception e) {
@@ -229,7 +229,7 @@ public class CodeGenerationServiceTest {
   public void testCreateApplication() {
     Serializable[] parameters = {(Serializable) model4};
     try {
-      String returnMessage = (String) node.invokeLocally(testService.getId(), serviceNameVersion,
+      String returnMessage = (String) node.invokeLocally(testService, serviceNameVersion,
           "createFromModel", parameters);
       assertEquals("done", returnMessage);
     } catch (Exception e) {
@@ -248,7 +248,7 @@ public class CodeGenerationServiceTest {
   public void testGetCommViewModel() {
     Serializable[] parameters = {(Serializable) model4};
     try {
-      SimpleModel simpleModel = (SimpleModel) node.invokeLocally(testService.getId(),
+      SimpleModel simpleModel = (SimpleModel) node.invokeLocally(testService,
           serviceNameVersion, "getCommunicationViewOfApplicationModel", parameters);
       assertEquals("CAE Example Application", simpleModel.getName());
       // TODO more attributes of model checking
@@ -269,7 +269,7 @@ public class CodeGenerationServiceTest {
     Serializable[] content = {(Serializable) model3};
     Serializable[] parameters = {content};
     try {
-      String returnMessage = (String) node.invokeLocally(testService.getId(), serviceNameVersion,
+      String returnMessage = (String) node.invokeLocally(testService, serviceNameVersion,
           "createFromModel", parameters);
       assertEquals("done", returnMessage);
     } catch (Exception e) {
@@ -289,10 +289,10 @@ public class CodeGenerationServiceTest {
     Serializable[] content = {(Serializable) model2};
     Serializable[] parameters = {content};
     try {
-      String returnMessage = (String) node.invokeLocally(testService.getId(), serviceNameVersion,
+      String returnMessage = (String) node.invokeLocally(testService, serviceNameVersion,
           "createFromModel", parameters);
       assertEquals("done", returnMessage);
-      returnMessage = (String) node.invokeLocally(testService.getId(), serviceNameVersion,
+      returnMessage = (String) node.invokeLocally(testService, serviceNameVersion,
           "deleteRepositoryOfModel", parameters);
       assertEquals("done", returnMessage);
     } catch (Exception e) {
@@ -312,10 +312,10 @@ public class CodeGenerationServiceTest {
     Serializable[] content = {(Serializable) model2};
     Serializable[] parameters = {content};
     try {
-      String returnMessage = (String) node.invokeLocally(testService.getId(), serviceNameVersion,
+      String returnMessage = (String) node.invokeLocally(testService, serviceNameVersion,
           "createFromModel", parameters);
       assertEquals("done", returnMessage);
-      returnMessage = (String) node.invokeLocally(testService.getId(), serviceNameVersion,
+      returnMessage = (String) node.invokeLocally(testService, serviceNameVersion,
           "updateRepositoryOfModel", parameters);
       assertEquals("done", returnMessage);
     } catch (Exception e) {
