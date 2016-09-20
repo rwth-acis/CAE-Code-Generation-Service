@@ -23,6 +23,7 @@ import i5.las2peer.p2p.ServiceNameVersion;
 import i5.las2peer.security.ServiceAgent;
 import i5.las2peer.services.codeGenerationService.exception.GitHubException;
 import i5.las2peer.services.codeGenerationService.generators.Generator;
+import i5.las2peer.services.gitHubProxyService.GitHubProxyService;
 
 
 /**
@@ -37,12 +38,18 @@ public class CodeGenerationServiceTest {
   private static final String codeGenerationService =
       CodeGenerationService.class.getCanonicalName();
 
+  private static final String gitHubProxyService = GitHubProxyService.class.getCanonicalName();
+
   private static SimpleModel model1;
   private static SimpleModel model2;
   private static SimpleModel model3;
   private static SimpleModel[] model4;
   private static ServiceAgent testService;
   private static ServiceNameVersion serviceNameVersion;
+
+  private static ServiceAgent gitHubProxyTestService;
+  private static ServiceNameVersion gitHubProxyServiceNameVersion;
+
   private static String gitHubOrganization = null;
   private static String gitHubUser = null;
   private static String gitHubPassword = null;
@@ -121,12 +128,18 @@ public class CodeGenerationServiceTest {
     // start node
     node = LocalNode.newNode();
     node.launch();
-    
-    serviceNameVersion = 
-    		new ServiceNameVersion(codeGenerationService,"0.1");
+
+    serviceNameVersion = new ServiceNameVersion(codeGenerationService, "0.1");
     testService = ServiceAgent.createServiceAgent(serviceNameVersion, "a pass");
     testService.unlockPrivateKey("a pass");
 
+    gitHubProxyServiceNameVersion = new ServiceNameVersion(gitHubProxyService, "0.1");
+    gitHubProxyTestService =
+        ServiceAgent.createServiceAgent(gitHubProxyServiceNameVersion, "a pass");
+    gitHubProxyTestService.unlockPrivateKey("a pass");
+
+
+    node.registerReceiver(gitHubProxyTestService);
     node.registerReceiver(testService);
 
     // waiting here not needed because no connector is running!
@@ -141,7 +154,7 @@ public class CodeGenerationServiceTest {
    * 
    * @throws Exception
    * 
-  **/
+   **/
   @AfterClass
   public static void shutDownServer() throws Exception {
     String model1GitHubName = "microservice-" + model1.getName().replace(" ", "-");

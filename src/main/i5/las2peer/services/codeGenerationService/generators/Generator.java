@@ -12,13 +12,19 @@ import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.PrintStream;
+import java.io.Serializable;
+import java.io.UnsupportedEncodingException;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.Base64;
+import java.util.List;
+import java.util.Map;
 
 import javax.imageio.ImageIO;
 
 import org.eclipse.jgit.api.Git;
+import org.eclipse.jgit.api.LsRemoteCommand;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Repository;
@@ -33,8 +39,11 @@ import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider;
 import org.eclipse.jgit.treewalk.TreeWalk;
 import org.json.simple.JSONObject;
 
+import i5.las2peer.api.Service;
 import i5.las2peer.logging.L2pLogger;
 import i5.las2peer.services.codeGenerationService.exception.GitHubException;
+import i5.las2peer.services.codeGenerationService.models.traceModel.FileTraceModel;
+import i5.las2peer.services.codeGenerationService.models.traceModel.TraceModel;
 
 /**
  * 
@@ -202,8 +211,14 @@ public abstract class Generator {
     // get the content of the repository
     RevWalk revWalk = null;
     TreeWalk treeWalk = null;
+    String resolveString = Constants.HEAD;
+
+    if (repositoryName.startsWith("frontendComponent")) {
+      resolveString = "refs/remotes/origin/gh-pages";
+    }
+
     try {
-      ObjectId lastCommitId = repository.resolve(Constants.HEAD);
+      ObjectId lastCommitId = repository.resolve(resolveString);
       treeWalk = new TreeWalk(repository);
       revWalk = new RevWalk(repository);
       RevTree tree = revWalk.parseCommit(lastCommitId).getTree();
@@ -237,7 +252,6 @@ public abstract class Generator {
       throws GitHubException {
     String repositoryAddress =
         "https://github.com/" + gitHubOrganization + "/" + repositoryName + ".git";
-
     Repository repository = null;
     // prepare a new folder for the template repository (to be cloned)
     File localPath = null;
@@ -432,7 +446,7 @@ public abstract class Generator {
    */
   public static Repository pushToRemoteRepository(Repository repository, String gitHubUser,
       String gitHubPassword, String localBranchName, String remoteBranchName)
-          throws GitHubException {
+      throws GitHubException {
     CredentialsProvider credentialsProvider =
         new UsernamePasswordCredentialsProvider(gitHubUser, gitHubPassword);
     try {
@@ -488,6 +502,204 @@ public abstract class Generator {
     } catch (Exception e) {
       logger.printStackTrace(e);
       throw new GitHubException(e.getMessage());
+    }
+  }
+
+  /**
+   * Checks whether a remote repository of the given name in the given github organization exists.
+   * Uses the ls remote git command to determine if the repository exists.
+   * 
+   * @param name The name of the repository
+   * @param gitHubOrganization The git hub organization
+   * @param gitHubUser The git hub user
+   * @param gitHubPassword The git hub password
+   * @return True, if the repository exists, otherwise false
+   */
+
+  public static boolean existsRemoteRepository(String name, String gitHubOrganization,
+      String gitHubUser, String gitHubPassword) {
+    CredentialsProvider credentialsProvider =
+        new UsernamePasswordCredentialsProvider(gitHubUser, gitHubPassword);
+    LsRemoteCommand lsCmd = new LsRemoteCommand(null);
+    String url = "https://github.com/" + gitHubOrganization + "/" + name + ".git";
+    lsCmd.setRemote(url);
+    lsCmd.setHeads(true);
+    lsCmd.setCredentialsProvider(credentialsProvider);
+    boolean exists = true;
+    try {
+      lsCmd.call();
+    } catch (Exception e) {
+      // ignore the exception, as this is the way we determine if a remote repository exists
+      exists = false;
+    }
+    return exists;
+  }
+
+  /**
+   * Creates the traced files contained in the given global trace model in the given repository
+   * 
+   * @param traceModel The global trace model containing the traced files that should be created in
+   *        the repository
+   * @param repository The repository in which the files should be created
+   * 
+   * @return The {@link org.eclipse.jgit.lib.Repository}, now containing the traced files of the
+   *         trace model
+   * @throws GitHubException if anything goes wrong during the creation of the traced files
+   */
+
+  protected static Repository createTracedFilesInRepository(TraceModel traceModel,
+      Repository repository) throws GitHubException {
+    Map<String, FileTraceModel> fileTraceMap = traceModel.getFilenameToFileTraceModelMap();
+
+    for (String fullPath : fileTraceMap.keySet()) {
+      FileTraceModel fileTraceModel = fileTraceMap.get(fullPath);
+
+      String fileName = fullPath;
+      String relativePath = "";
+      int index = fullPath.lastIndexOf(File.separator);
+      if (index > -1) {
+        fileName = fullPath.substring(index + 1);
+        relativePath = fullPath.substring(0, index) + "/";
+      }
+
+      repository = createTextFileInRepository(repository, relativePath, fileName,
+          fileTraceModel.getContent());
+
+      repository = createTextFileInRepository(repository, "traces/" + relativePath,
+          fileName + ".traces", fileTraceModel.toJSONObject().toJSONString());
+    }
+
+    repository = createTextFileInRepository(repository, "traces/", "tracedFiles.json",
+        traceModel.toJSONObject().toJSONString().replace("\\", ""));
+
+    return repository;
+  }
+
+  /**
+   * Commit multiple files to the github repository. Like
+   * {@link i5.las2peer.services.codeGenerationService.CodeGenerationService#commitFile(String, JSONObject)}
+   * , but without any trace information and for multiple files
+   * 
+   * @param repositoryName The name of the repository
+   * @param commitMessage A commit message
+   * @param files An array containing the file names and file contents
+   * @param service An instance of {@link i5.las2peer.api.Service} needed to invoke the GitHubProxy
+   *        service
+   */
+
+
+  private static void commitMultipleFilesRaw(String repositoryName, String commitMessage,
+      String[][] files, Service service) {
+    Serializable[] payload = {repositoryName, commitMessage, files};
+    try {
+      service.invokeServiceMethod("i5.las2peer.services.gitHubProxyService.GitHubProxyService@0.1",
+          "storeAndCommitFilesRaw", payload);
+    } catch (Exception e) {
+      logger.printStackTrace(e);
+    }
+  }
+
+  /**
+   * Updates a given list of traced files in a local repository of the GitHub proxy service
+   * 
+   * @param fileList A list containing the files that should be updated
+   * @param repositoryName The name of the repository
+   * @param service An instance of {@link i5.las2peer.api.Service} needed to invoke the GitHubProxy
+   *        service
+   */
+
+  protected static void updateTracedFilesInRepository(List<String[]> fileList,
+      String repositoryName, Service service) {
+    commitMultipleFilesRaw(repositoryName, "Code regeneration/Model synchronization",
+        fileList.toArray(new String[][] {}), service);
+  }
+
+  /**
+   * Creates a list of the traced files contained in a trace model
+   * 
+   * @param traceModel A trace model that contains the traced files
+   * @param guidances The feedback rules used to perform the model violation detection.
+   * @return A list of the traced files contained in the trace model
+   * @throws UnsupportedEncodingException Thrown for errors during the encoding of the content of
+   *         files
+   */
+
+  protected static List<String[]> getUpdatedTracedFilesForRepository(TraceModel traceModel,
+      String guidances) throws UnsupportedEncodingException {
+    Map<String, FileTraceModel> fileTraceMap = traceModel.getFilenameToFileTraceModelMap();
+
+    List<String[]> fileList = new ArrayList<String[]>();
+
+    for (String fullPath : fileTraceMap.keySet()) {
+      FileTraceModel fileTraceModel = fileTraceMap.get(fullPath);
+
+      String fileName = fullPath;
+      String relativePath = "";
+      int index = fullPath.lastIndexOf(File.separator);
+      if (index > -1) {
+        fileName = fullPath.substring(index + 1);
+        relativePath = fullPath.substring(0, index) + "/";
+      }
+
+      String content = fileTraceModel.getContent();
+      String fileTraceContent = fileTraceModel.toJSONObject().toJSONString();
+
+      fileList.add(new String[] {"traces/" + relativePath + fileName + ".traces",
+          Base64.getEncoder().encodeToString(fileTraceContent.getBytes("utf-8"))});
+      fileList.add(new String[] {relativePath + fileName,
+          Base64.getEncoder().encodeToString(content.getBytes("utf-8"))});
+
+    }
+
+    String tracedFiles = traceModel.toJSONObject().toJSONString().replace("\\", "");
+    fileList.add(new String[] {"traces/tracedFiles.json",
+        Base64.getEncoder().encodeToString(tracedFiles.getBytes("utf-8"))});
+
+    fileList.add(new String[] {"traces/guidances.json",
+        Base64.getEncoder().encodeToString(guidances.getBytes("utf-8"))});
+
+    return fileList;
+
+  }
+
+  /**
+   * Rename a file in the local repository hold by the GitHub proxy service
+   * 
+   * @param repositoryName The name of the repository
+   * @param newFileName The new file name
+   * @param oldFileName The old file name
+   * @param service An instance of {@link i5.las2peer.api.Service} needed to invoke the GitHubProxy
+   *        service
+   */
+
+  protected static void renameFileInRepository(String repositoryName, String newFileName,
+      String oldFileName, Service service) {
+    Serializable[] payload = {repositoryName, newFileName, oldFileName};
+    try {
+      service.invokeServiceMethod("i5.las2peer.services.gitHubProxyService.GitHubProxyService@0.1",
+          "renameFile", payload);
+    } catch (Exception e) {
+      logger.printStackTrace(e);
+    }
+  }
+
+  /**
+   * Delete a file in the local repository hold by the GitHub proxy service
+   * 
+   * @param repositoryName The name of the repository
+   * @param fileName The name of the file that must be deleted
+   * @param service An instance of {@link i5.las2peer.api.Service} needed to invoke the GitHubProxy
+   *        service
+   */
+
+  protected static void deleteFileInLocalRepository(String repositoryName, String fileName,
+      Service service) {
+    Serializable[] payload = {repositoryName, fileName};
+    try {
+      service.invokeServiceMethod("i5.las2peer.services.gitHubProxyService.GitHubProxyService@0.1",
+          "deleteFile", payload);
+    } catch (Exception e) {
+      logger.printStackTrace(e);
     }
   }
 
