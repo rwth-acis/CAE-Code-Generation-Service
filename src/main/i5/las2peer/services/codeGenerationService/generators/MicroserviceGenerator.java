@@ -1,6 +1,8 @@
 package i5.las2peer.services.codeGenerationService.generators;
 
 import java.awt.image.BufferedImage;
+import java.net.MalformedURLException;
+import java.net.URL;
 
 import javax.imageio.ImageIO;
 
@@ -15,6 +17,7 @@ import org.eclipse.jgit.treewalk.filter.PathFilter;
 
 import i5.las2peer.logging.L2pLogger;
 import i5.las2peer.services.codeGenerationService.exception.GitHubException;
+import i5.las2peer.services.codeGenerationService.exception.ModelParseException;
 import i5.las2peer.services.codeGenerationService.models.microservice.Column;
 import i5.las2peer.services.codeGenerationService.models.microservice.Database;
 import i5.las2peer.services.codeGenerationService.models.microservice.HttpMethod;
@@ -162,22 +165,25 @@ public class MicroserviceGenerator extends Generator {
     String guidances = null;
 
     try {
+    	
       PersonIdent caeUser = new PersonIdent(gitHubUser, gitHubUserMail);
       String repositoryName = getRepositoryName(microservice);
-      microserviceRepository =
-          generateNewRepository(repositoryName, gitHubOrganization, gitHubUser, gitHubPassword);
       TraceModel traceModel = new TraceModel();
+      
+      // 
       try {
 
         // now load the TreeWalk containing the template repository content
         treeWalk = getTemplateRepositoryContent(templateRepositoryName, gitHubOrganization);
         treeWalk.setFilter(PathFilter.create("backend/"));
         ObjectReader reader = treeWalk.getObjectReader();
+        
         // walk through the tree and retrieve the needed templates
         while (treeWalk.next()) {
           ObjectId objectId = treeWalk.getObjectId(0);
           ObjectLoader loader = reader.open(objectId);
           String path = treeWalk.getPathString().replace("backend/", "");
+          
           switch (treeWalk.getNameString()) {
             // start with the "easy" replacements, and store the other template files for later
             case ".project":
@@ -314,6 +320,8 @@ public class MicroserviceGenerator extends Generator {
         throw new GitHubException(e.getMessage());
       }
 
+      microserviceRepository = generateNewRepository(repositoryName, gitHubOrganization, gitHubUser, gitHubPassword);
+      
       // generate service class and test
       String repositoryLocation = "https://github.com/" + gitHubOrganization + "/" + repositoryName;
 
@@ -400,20 +408,30 @@ public class MicroserviceGenerator extends Generator {
       }
 
       // close all open resources
+    } catch (GitHubException e) {
+    	throw e;
     } finally {
-      microserviceRepository.close();
+      if(microserviceRepository != null) {
+    	  microserviceRepository.close();
+      }
       treeWalk.close();
     }
   }
 
   protected static void generateOtherArtifacts(TemplateEngine templateEngine,
-      Microservice microservice, String gitHubOrganization, String templateContent) {
+      Microservice microservice, String gitHubOrganization, String templateContent) throws ModelParseException{
 
     String repositoryName = getRepositoryName(microservice);
     String packageName = getPackageName(microservice);
+    String port = "8080";
+    
+    
     // get the port: skip first 6 characters for search (http: / https:)
-    String port = microservice.getPath().substring(microservice.getPath().indexOf(":", 6) + 1,
-        microservice.getPath().indexOf("/", microservice.getPath().indexOf(":", 6)));
+    try {
+    port = String.valueOf(new URL(microservice.getPath()).getPort());
+    } catch (Exception e) {
+    	throw new ModelParseException(e.getMessage());
+    }
 
     Template template = null;
     String fileName =

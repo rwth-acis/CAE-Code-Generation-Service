@@ -36,9 +36,9 @@ public class CodeGenerationServiceTest {
   private static LocalNode node;
 
   private static final String codeGenerationService =
-      CodeGenerationService.class.getCanonicalName();
+      CodeGenerationService.class.getName();
 
-  private static final String gitHubProxyService = GitHubProxyService.class.getCanonicalName();
+  private static final String gitHubProxyService = GitHubProxyService.class.getName();
 
   private static SimpleModel model1;
   private static SimpleModel model2;
@@ -134,8 +134,7 @@ public class CodeGenerationServiceTest {
     testService.unlockPrivateKey("a pass");
 
     gitHubProxyServiceNameVersion = new ServiceNameVersion(gitHubProxyService, "0.1");
-    gitHubProxyTestService =
-        ServiceAgent.createServiceAgent(gitHubProxyServiceNameVersion, "a pass");
+    gitHubProxyTestService = ServiceAgent.createServiceAgent(gitHubProxyServiceNameVersion, "a pass");
     gitHubProxyTestService.unlockPrivateKey("a pass");
 
 

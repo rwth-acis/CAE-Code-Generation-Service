@@ -96,7 +96,7 @@ public class CodeGenerationService extends Service {
                   this.gitHubOrganization, this.gitHubUser, this.gitHubUserMail,
                   this.gitHubPassword);
               L2pLogger.logEvent(Event.SERVICE_MESSAGE, "createFromModel: Created!");
-              return "done";
+              return "done";  
             case "frontend-component":
               L2pLogger.logEvent(Event.SERVICE_MESSAGE,
                   "createFromModel: Creating frontend component model now..");
