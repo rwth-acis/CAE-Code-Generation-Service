@@ -171,10 +171,17 @@ public class GitLabAdapter {
 		return success;
 	}
 	
-	public static boolean createRepo(String name, String description) {
-		boolean success = createResource(baseURL + "projects");
-		
-		return false;
+	public static boolean createRepo(String gitHubOrganization,String name, String description) {
+		//Get namespace id for group
+		JSONObject result = getJSONObject(baseURL + "groups/" + gitHubOrganization);
+		int id = (int) result.get("id");
+		//Create json object representing new repo
+		JSONObject obj = new JSONObject();
+		obj.put("name", name);
+		obj.put("description", description);
+		obj.put("namespace_id", id);
+		boolean success = createResource(baseURL + "projects", obj);
+		return success;
 	}
 	
 }
