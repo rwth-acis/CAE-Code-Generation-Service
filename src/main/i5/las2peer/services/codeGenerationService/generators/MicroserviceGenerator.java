@@ -130,7 +130,7 @@ public class MicroserviceGenerator extends Generator {
    * 
    */
   public static void createSourceCode(Microservice microservice, String templateRepositoryName,
-      String gitHubOrganization, String gitHubUser, String gitHubUserMail, String gitHubPassword)
+      String gitHubOrganization, String gitHubUser, String gitHubUserMail, String gitHubPassword, String usedGitHost)
       throws GitHubException {
 
     // variables to be closed in the final block
@@ -174,7 +174,7 @@ public class MicroserviceGenerator extends Generator {
       try {
 
         // now load the TreeWalk containing the template repository content
-        treeWalk = getTemplateRepositoryContent(templateRepositoryName, gitHubOrganization);
+        treeWalk = getTemplateRepositoryContent(templateRepositoryName, gitHubOrganization, usedGitHost);
         treeWalk.setFilter(PathFilter.create("backend/"));
         ObjectReader reader = treeWalk.getObjectReader();
         
@@ -320,7 +320,7 @@ public class MicroserviceGenerator extends Generator {
         throw new GitHubException(e.getMessage());
       }
 
-      microserviceRepository = generateNewRepository(repositoryName, gitHubOrganization, gitHubUser, gitHubPassword);
+      microserviceRepository = generateNewRepository(repositoryName, gitHubOrganization, gitHubUser, gitHubPassword, usedGitHost);
       
       // generate service class and test
       String repositoryLocation = "https://github.com/" + gitHubOrganization + "/" + repositoryName;
@@ -401,7 +401,7 @@ public class MicroserviceGenerator extends Generator {
 
       // push (local) repository content to GitHub repository
       try {
-        pushToRemoteRepository(microserviceRepository, gitHubUser, gitHubPassword);
+        pushToRemoteRepository(microserviceRepository, gitHubUser, gitHubPassword, usedGitHost);
       } catch (Exception e) {
         logger.printStackTrace(e);
         throw new GitHubException(e.getMessage());

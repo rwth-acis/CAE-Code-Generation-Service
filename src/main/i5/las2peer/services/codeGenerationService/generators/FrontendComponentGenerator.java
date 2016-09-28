@@ -68,7 +68,7 @@ public class FrontendComponentGenerator extends Generator {
    */
   public static void createSourceCode(FrontendComponent frontendComponent,
       String templateRepositoryName, String gitHubOrganization, String gitHubUser,
-      String gitHubUserMail, String gitHubPassword) throws GitHubException {
+      String gitHubUserMail, String gitHubPassword, String usedGitHost) throws GitHubException {
 
     // variables to be closed in the final block
     Repository frontendComponentRepository = null;
@@ -101,12 +101,12 @@ public class FrontendComponentGenerator extends Generator {
       PersonIdent caeUser = new PersonIdent(gitHubUser, gitHubUserMail);
       String repositoryName = getRepositoryName(frontendComponent);
       frontendComponentRepository =
-          generateNewRepository(repositoryName, gitHubOrganization, gitHubUser, gitHubPassword);
+          generateNewRepository(repositoryName, gitHubOrganization, gitHubUser, gitHubPassword, usedGitHost);
 
 
       try {
         // now load the TreeWalk containing the template repository content
-        treeWalk = getTemplateRepositoryContent(templateRepositoryName, gitHubOrganization);
+        treeWalk = getTemplateRepositoryContent(templateRepositoryName, gitHubOrganization, usedGitHost);
         treeWalk.setFilter(PathFilter.create("frontend/"));
         ObjectReader reader = treeWalk.getObjectReader();
         // walk through the tree and retrieve the needed templates
@@ -289,7 +289,7 @@ public class FrontendComponentGenerator extends Generator {
       // push (local) repository content to GitHub repository "gh-pages" branch
       try {
         pushToRemoteRepository(frontendComponentRepository, gitHubUser, gitHubPassword, "master",
-            "gh-pages");
+            "gh-pages", usedGitHost);
       } catch (Exception e) {
         logger.printStackTrace(e);
         throw new GitHubException(e.getMessage());

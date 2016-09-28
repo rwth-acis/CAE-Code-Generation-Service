@@ -40,7 +40,7 @@ public class FrontendComponentSynchronization extends FrontendComponentGenerator
 
   public static void synchronizeSourceCode(FrontendComponent frontendComponent,
       FrontendComponent oldFrontendComponent, HashMap<String, JSONObject> files,
-      String templateRepositoryName, String gitHubOrganization, CodeGenerationService service)
+      String templateRepositoryName, String gitHubOrganization, String usedGitHost,CodeGenerationService service)
       throws GitHubException {
     // first load the needed templates from the template repository
 
@@ -69,7 +69,7 @@ public class FrontendComponentSynchronization extends FrontendComponentGenerator
     SynchronizationStrategy widgetSynchronizationStrategy = null;
 
     try (TreeWalk treeWalk =
-        getTemplateRepositoryContent(templateRepositoryName, gitHubOrganization)) {
+        getTemplateRepositoryContent(templateRepositoryName, gitHubOrganization, usedGitHost)) {
       // now load the TreeWalk containing the template repository content
       treeWalk.setFilter(PathFilter.create("frontend/"));
       ObjectReader reader = treeWalk.getObjectReader();
@@ -230,9 +230,9 @@ public class FrontendComponentSynchronization extends FrontendComponentGenerator
   }
 
   public static boolean existsRemoteRepositoryForModel(FrontendComponent frontendComponent,
-      String gitHubOrganization, String gitHubUser, String gitHubPassword) {
+      String gitHubOrganization, String gitHubUser, String gitHubPassword, String usedGitHost) {
     return existsRemoteRepository(getRepositoryName(frontendComponent), gitHubOrganization,
-        gitHubUser, gitHubPassword);
+        gitHubUser, gitHubPassword, usedGitHost);
   }
 
 }

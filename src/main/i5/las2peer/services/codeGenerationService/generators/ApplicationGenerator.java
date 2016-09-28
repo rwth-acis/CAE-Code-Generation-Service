@@ -53,11 +53,11 @@ public class ApplicationGenerator extends Generator {
    * 
    */
   public static void createSourceCode(Application application, String templateRepositoryName,
-      String gitHubOrganization, String gitHubUser, String gitHubUserMail, String gitHubPassword)
+      String gitHubOrganization, String gitHubUser, String gitHubUserMail, String gitHubPassword, String usedGitHost)
       throws GitHubException {
     String repositoryName = "application-" + application.getName().replace(" ", "-");
     createSourceCode(repositoryName, application, templateRepositoryName, gitHubOrganization,
-        gitHubUser, gitHubUserMail, gitHubPassword, false);
+        gitHubUser, gitHubUserMail, gitHubPassword, usedGitHost, false);
   }
 
   /**
@@ -80,7 +80,7 @@ public class ApplicationGenerator extends Generator {
    */
   public static void createSourceCode(String repositoryName, Application application,
       String templateRepositoryName, String gitHubOrganization, String gitHubUser,
-      String gitHubUserMail, String gitHubPassword, boolean forDeploy) throws GitHubException {
+      String gitHubUserMail, String gitHubPassword, String usedGitHost,boolean forDeploy) throws GitHubException {
     // variables to be closed in the final block
     Repository applicationRepository = null;
     TreeWalk treeWalk = null;
@@ -89,13 +89,13 @@ public class ApplicationGenerator extends Generator {
 
 
       applicationRepository =
-          generateNewRepository(repositoryName, gitHubOrganization, gitHubUser, gitHubPassword);
+          generateNewRepository(repositoryName, gitHubOrganization, gitHubUser, gitHubPassword, usedGitHost);
 
       // now we start by adding a readMe from the template repository (and thereby initializing the
       // master branch, which is needed to create a "gh-pages" branch afterwards
       String readMe = null;
       BufferedImage logo = null;
-      treeWalk = getTemplateRepositoryContent(templateRepositoryName, gitHubOrganization);
+      treeWalk = getTemplateRepositoryContent(templateRepositoryName, gitHubOrganization, usedGitHost);
       treeWalk.setFilter(PathFilter.create("application/"));
       ObjectReader reader = treeWalk.getObjectReader();
       // walk through the tree and retrieve the needed templates
@@ -142,7 +142,7 @@ public class ApplicationGenerator extends Generator {
       // fetch microservice repository contents and add them
       for (String microserviceName : application.getMicroservices().keySet()) {
         String microserviceRepositoryName = "microservice-" + microserviceName.replace(" ", "-");
-        treeWalk = getRepositoryContent(microserviceRepositoryName, gitHubOrganization);
+        treeWalk = getRepositoryContent(microserviceRepositoryName, gitHubOrganization, usedGitHost);
         reader = treeWalk.getObjectReader();
         try {
           while (treeWalk.next()) {
@@ -221,7 +221,7 @@ public class ApplicationGenerator extends Generator {
       if (!forDeploy) {
         // push (local) repository content to GitHub repository "master" branch
         try {
-          pushToRemoteRepository(applicationRepository, gitHubUser, gitHubPassword);
+          pushToRemoteRepository(applicationRepository, gitHubUser, gitHubPassword, usedGitHost);
         } catch (Exception e) {
           logger.printStackTrace(e);
           throw new GitHubException(e.getMessage());
@@ -240,7 +240,7 @@ public class ApplicationGenerator extends Generator {
       for (String frontendComponentName : application.getFrontendComponents().keySet()) {
         String frontendComponentRepositoryName =
             "frontendComponent-" + frontendComponentName.replace(" ", "-");
-        treeWalk = getRepositoryContent(frontendComponentRepositoryName, gitHubOrganization);
+        treeWalk = getRepositoryContent(frontendComponentRepositoryName, gitHubOrganization, usedGitHost);
         reader = treeWalk.getObjectReader();
         try {
           while (treeWalk.next()) {
@@ -353,7 +353,7 @@ public class ApplicationGenerator extends Generator {
         // push (local) repository content to GitHub repository "gh-pages" branch
         try {
           pushToRemoteRepository(applicationRepository, gitHubUser, gitHubPassword, "gh-pages",
-              "gh-pages");
+              "gh-pages", usedGitHost);
         } catch (Exception e) {
           logger.printStackTrace(e);
           throw new GitHubException(e.getMessage());
@@ -361,7 +361,7 @@ public class ApplicationGenerator extends Generator {
       } else {
         // push (local) repository content to GitHub repository "master" branch
         try {
-          pushToRemoteRepository(applicationRepository, gitHubUser, gitHubPassword);
+          pushToRemoteRepository(applicationRepository, gitHubUser, gitHubPassword, usedGitHost);
         } catch (Exception e) {
           logger.printStackTrace(e);
           throw new GitHubException(e.getMessage());

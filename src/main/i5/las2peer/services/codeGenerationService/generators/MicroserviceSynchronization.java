@@ -15,6 +15,7 @@ import org.json.simple.JSONObject;
 import i5.las2peer.api.Service;
 import i5.las2peer.logging.L2pLogger;
 import i5.las2peer.logging.NodeObserver.Event;
+import i5.las2peer.services.codeGenerationService.exception.ModelParseException;
 import i5.las2peer.services.codeGenerationService.models.microservice.Microservice;
 import i5.las2peer.services.codeGenerationService.models.traceModel.FileTraceModel;
 import i5.las2peer.services.codeGenerationService.models.traceModel.FileTraceModelFactory;
@@ -49,15 +50,16 @@ public class MicroserviceSynchronization extends MicroserviceGenerator {
    * @param gitHubOrganization the organization that is used in the CAE
    * @param service An instance of {@link i5.las2peer.api.Service} needed to invoke the GitHubProxy
    *        service
+ * @throws ModelParseException 
    */
 
   public static void synchronizeSourceCode(Microservice microservice, Microservice oldMicroservice,
       HashMap<String, JSONObject> files, String templateRepositoryName, String gitHubOrganization,
-      Service service) {
+      String usedGitHost, Service service) throws ModelParseException {
 
     // first load the needed templates from the template repository
 
-    // variables holding the template sourc code
+    // variables holding the template source code
     String serviceClass = null;
     String serviceTest = null;
     String serviceProperties = null;
@@ -75,7 +77,7 @@ public class MicroserviceSynchronization extends MicroserviceGenerator {
     String guidances = null;
 
     try (TreeWalk treeWalk =
-        getTemplateRepositoryContent(templateRepositoryName, gitHubOrganization)) {
+        getTemplateRepositoryContent(templateRepositoryName, gitHubOrganization, usedGitHost)) {
       // now load the TreeWalk containing the template repository content
       treeWalk.setFilter(PathFilter.create("backend/"));
       ObjectReader reader = treeWalk.getObjectReader();
@@ -286,8 +288,8 @@ public class MicroserviceSynchronization extends MicroserviceGenerator {
   }
 
   public static boolean existsRemoteRepositoryForModel(Microservice microservice,
-      String gitHubOrganization, String gitHubUser, String gitHubPassword) {
+      String gitHubOrganization, String gitHubUser, String gitHubPassword, String usedGitHost) {
     return existsRemoteRepository(getRepositoryName(microservice), gitHubOrganization, gitHubUser,
-        gitHubPassword);
+        gitHubPassword, usedGitHost);
   }
 }
