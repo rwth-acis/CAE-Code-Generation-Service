@@ -39,6 +39,9 @@ import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider;
 import org.eclipse.jgit.treewalk.TreeWalk;
 import org.json.simple.JSONObject;
 
+import com.sun.corba.se.pept.transport.Connection;
+
+import adapters.GitLabAdapter;
 import i5.las2peer.api.Service;
 import i5.las2peer.logging.L2pLogger;
 import i5.las2peer.services.codeGenerationService.exception.GitHubException;
@@ -104,7 +107,7 @@ public abstract class Generator {
 	case "GitLab":
 		//TODO: Enter GitLab URL
 		remoteConfig = new RemoteConfig(config, "GitLab");
-		remoteConfig.addURI(new URIish("https://github.com/" + gitHubOrganization + "/" + name));
+		remoteConfig.addURI(new URIish("http://ginkgo.informatik.rwth-aachen.de:4080/" + gitHubOrganization + "/" + name));
 		break;
 	default:
 		remoteConfig = new RemoteConfig(config, "GitHub");
@@ -526,7 +529,12 @@ public abstract class Generator {
       String gitHubUser, String gitHubPassword, String usedGitHost) throws GitHubException {
     
 	  if(usedGitHost == "GitLab"){
-		  //TODO: GitLab deleteRemoteRepository API
+		  //See new adapter class
+		  boolean res = GitLabAdapter.deleteRepo(name, gitHubOrganization);
+		  
+		  if (!res) {
+			throw new GitHubException("Failed to delete repository");
+		  }
 	  }
 	  else if(usedGitHost == "GitHub" || usedGitHost == "") {
 		  try {
