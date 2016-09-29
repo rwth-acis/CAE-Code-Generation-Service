@@ -50,6 +50,7 @@ public class CodeGenerationServiceTest {
   private static ServiceAgent gitHubProxyTestService;
   private static ServiceNameVersion gitHubProxyServiceNameVersion;
 
+  private static String usedGitHost = null;
   private static String gitHubOrganization = null;
   private static String gitHubUser = null;
   private static String gitHubPassword = null;
@@ -119,6 +120,7 @@ public class CodeGenerationServiceTest {
       gitHubOrganization = properties.getProperty("gitHubOrganization");
       templateRepository = properties.getProperty("templateRepository");
       gitHubPassword = properties.getProperty("gitHubPassword");
+      usedGitHost = properties.getProperty("usedGitHost");
 
     } catch (IOException ex) {
       fail("Error reading test models and configuration file!");
@@ -163,7 +165,7 @@ public class CodeGenerationServiceTest {
 
     try {
       Generator.deleteRemoteRepository(model1GitHubName, gitHubOrganization, gitHubUser,
-          gitHubPassword);
+          gitHubPassword, usedGitHost);
     } catch (GitHubException e) {
       e.printStackTrace();
       // that's ok, maybe some error / failure in previous tests caused this
@@ -171,7 +173,7 @@ public class CodeGenerationServiceTest {
     }
     try {
       Generator.deleteRemoteRepository(model2GitHubName, gitHubOrganization, gitHubUser,
-          gitHubPassword);
+          gitHubPassword, usedGitHost);
     } catch (GitHubException e) {
       e.printStackTrace();
       // that's ok, maybe some error / failure in previous tests caused this
@@ -179,7 +181,7 @@ public class CodeGenerationServiceTest {
     }
     try {
       Generator.deleteRemoteRepository(model3GitHubName, gitHubOrganization, gitHubUser,
-          gitHubPassword);
+          gitHubPassword, usedGitHost);
     } catch (GitHubException e) {
       e.printStackTrace();
       // that's ok, maybe some error / failure in previous tests caused this
@@ -187,7 +189,7 @@ public class CodeGenerationServiceTest {
     }
     try {
       Generator.deleteRemoteRepository(model4GitHubName, gitHubOrganization, gitHubUser,
-          gitHubPassword);
+          gitHubPassword, usedGitHost);
     } catch (GitHubException e) {
       e.printStackTrace();
       // that's ok, maybe some error / failure in previous tests caused this
