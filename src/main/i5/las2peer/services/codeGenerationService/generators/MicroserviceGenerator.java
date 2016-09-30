@@ -3,6 +3,7 @@ package i5.las2peer.services.codeGenerationService.generators;
 import java.awt.image.BufferedImage;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.Objects;
 
 import javax.imageio.ImageIO;
 
@@ -323,7 +324,14 @@ public class MicroserviceGenerator extends Generator {
       microserviceRepository = generateNewRepository(repositoryName, gitHubOrganization, gitHubUser, gitHubPassword, usedGitHost);
       
       // generate service class and test
-      String repositoryLocation = "https://github.com/" + gitHubOrganization + "/" + repositoryName;
+      String repositoryLocation = "";
+      if (Objects.equals(usedGitHost, "GitLab")) {
+    	  //TODO: Check url
+    	  repositoryLocation = "http://ginkgo.informatik.rwth-aachen.de:4080/" + gitHubOrganization + "/" + repositoryName;
+      }
+      if (Objects.equals(usedGitHost, "GitHub")) {
+    	  repositoryLocation = "https://github.com/" + gitHubOrganization + "/" + repositoryName;
+      }
 
       FileTraceModel serviceClassTraceModel =
           new FileTraceModel(traceModel, getServiceFileName(microservice));

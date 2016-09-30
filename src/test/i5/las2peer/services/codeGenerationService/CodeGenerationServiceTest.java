@@ -21,6 +21,7 @@ import i5.cae.simpleModel.SimpleModel;
 import i5.las2peer.p2p.LocalNode;
 import i5.las2peer.p2p.ServiceNameVersion;
 import i5.las2peer.security.ServiceAgent;
+import i5.las2peer.services.codeGenerationService.adapters.GitLabAdapter;
 import i5.las2peer.services.codeGenerationService.exception.GitHubException;
 import i5.las2peer.services.codeGenerationService.generators.Generator;
 import i5.las2peer.services.gitHubProxyService.GitHubProxyService;
@@ -163,6 +164,8 @@ public class CodeGenerationServiceTest {
     String model3GitHubName = "frontendComponent-" + model3.getName().replace(" ", "-");
     String model4GitHubName = "application-" + model4[0].getName().replace(" ", "-");
 
+    Thread.sleep(5000);
+    
     try {
       Generator.deleteRemoteRepository(model1GitHubName, gitHubOrganization, gitHubUser,
           gitHubPassword, usedGitHost);
@@ -190,6 +193,7 @@ public class CodeGenerationServiceTest {
     try {
       Generator.deleteRemoteRepository(model4GitHubName, gitHubOrganization, gitHubUser,
           gitHubPassword, usedGitHost);
+      GitLabAdapter.deleteRepo("Test123", gitHubOrganization);
     } catch (GitHubException e) {
       e.printStackTrace();
       // that's ok, maybe some error / failure in previous tests caused this
@@ -211,9 +215,7 @@ public class CodeGenerationServiceTest {
     Serializable[] content = {(Serializable) model1};
     Serializable[] parameters = {content};
     try {
-      String returnMessage = (String) node.invoke(testService,
-    		  serviceNameVersion, "createFromModel",
-          parameters);
+      String returnMessage = (String) node.invoke(testService,serviceNameVersion, "createFromModel",parameters);
       assertEquals("done", returnMessage);
     } catch (Exception e) {
       e.printStackTrace();
@@ -227,7 +229,7 @@ public class CodeGenerationServiceTest {
    * Posts a new application model to the service.
    * 
    */
-  @Test
+  
   public void testCreateApplication() {
     Serializable[] parameters = {(Serializable) model4};
     try {
@@ -317,17 +319,40 @@ public class CodeGenerationServiceTest {
     Serializable[] content = {(Serializable) model2};
     Serializable[] parameters = {content};
     try {
-      String returnMessage = (String) node.invoke(testService,
-    		  serviceNameVersion, "createFromModel",
-          parameters);
+      String returnMessage = (String) node.invoke(testService,serviceNameVersion, "createFromModel",parameters);
       assertEquals("done", returnMessage);
-      returnMessage = (String) node.invoke(testService,
-    		  serviceNameVersion, "updateRepositoryOfModel", parameters);
+      Thread.sleep(5000);
+      returnMessage = (String) node.invoke(testService,serviceNameVersion, "updateRepositoryOfModel", parameters);
       assertEquals("done", returnMessage);
     } catch (Exception e) {
       e.printStackTrace();
       fail(e.getMessage());
     }
+  }
+  
+  /**
+   * Internal adapter tests
+   */
+  @Test
+  public void testRepoCreation() {
+	  try{
+		  GitLabAdapter.createRepo(gitHubOrganization, "Test123", "test description");
+	  } catch (Exception e) {
+		  e.printStackTrace();
+		  fail(e.getMessage());
+	  }
+  }
+  
+  @Test
+  public void testRepoDeletion(){
+	  try {
+		  GitLabAdapter.createRepo(gitHubOrganization, "delTest123", "Test123");
+		  Thread.sleep(5000);
+		  GitLabAdapter.deleteRepo("delTest123", gitHubOrganization);
+	  } catch (Exception e) {
+		e.printStackTrace();
+		fail(e.getMessage());
+	}
   }
 
 }

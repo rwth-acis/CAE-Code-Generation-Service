@@ -66,7 +66,7 @@ public class ModelSynchronizationTest extends Generator {
   private static ServiceAgent gitHubProxyTestService;
   private static ServiceNameVersion gitHubProxyServiceNameVersion;
 
-
+  private static String usedGitHost = null;
   private static String gitHubOrganization = null;
   private static String gitHubUser = null;
   private static String gitHubPassword = null;
@@ -125,7 +125,7 @@ public class ModelSynchronizationTest extends Generator {
     String repositoryName = prefix + "-" + model.getName().replace(" ", "-");
     try {
       Generator.deleteRemoteRepository(repositoryName, gitHubOrganization, gitHubUser,
-          gitHubPassword);
+          gitHubPassword, usedGitHost);
     } catch (Exception e) {
       e.printStackTrace();
     }
@@ -184,6 +184,7 @@ public class ModelSynchronizationTest extends Generator {
       gitHubOrganization = properties.getProperty("gitHubOrganization");
       templateRepository = properties.getProperty("templateRepository");
       gitHubPassword = properties.getProperty("gitHubPassword");
+      usedGitHost = properties.getProperty("usedGitHost");
 
     } catch (IOException ex) {
       fail("Error reading test models and configuration file!");

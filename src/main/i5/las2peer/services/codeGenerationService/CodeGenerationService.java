@@ -1,5 +1,11 @@
 package i5.las2peer.services.codeGenerationService;
 
+import java.io.BufferedOutputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.ObjectOutput;
+import java.io.ObjectOutputStream;
+import java.io.OutputStream;
 import java.io.Serializable;
 import java.util.HashMap;
 
@@ -72,14 +78,17 @@ public class CodeGenerationService extends Service {
     L2pLogger.logEvent(Event.SERVICE_MESSAGE,
         "createFromModel: Received model with name " + model.getName());
     // TESTING: write as file
-    // try {
-    // OutputStream file = new FileOutputStream("testModels/" + model.getName() + ".model");
-    // OutputStream buffer = new BufferedOutputStream(file);
-    // ObjectOutput output = new ObjectOutputStream(buffer);
-    // output.writeObject(model);
-    // output.close();
-    // } catch (IOException ex) {
-    // }
+    /*
+    try {
+    	OutputStream file = new FileOutputStream("testModels/" + model.getName() + ".model");
+    	OutputStream buffer = new BufferedOutputStream(file);
+    	ObjectOutput output = new ObjectOutputStream(buffer);
+    	output.writeObject(model);
+    	output.close();
+      } catch (IOException ex) {
+    	  
+      }
+      */
 
     // find out what type of model we got (microservice, frontend-component or application)
     for (int i = 0; i < model.getAttributes().size(); i++) {
@@ -98,6 +107,7 @@ public class CodeGenerationService extends Service {
                   this.gitHubPassword, this.usedGitHost);
               L2pLogger.logEvent(Event.SERVICE_MESSAGE, "createFromModel: Created!");
               return "done";  
+              
             case "frontend-component":
               L2pLogger.logEvent(Event.SERVICE_MESSAGE,
                   "createFromModel: Creating frontend component model now..");
@@ -108,8 +118,8 @@ public class CodeGenerationService extends Service {
                   this.templateRepository, this.gitHubOrganization, this.gitHubUser,
                   this.gitHubUserMail, this.gitHubPassword, this.usedGitHost);
               L2pLogger.logEvent(Event.SERVICE_MESSAGE, "createFromModel: Created!");
-
               return "done";
+              
             case "application":
               L2pLogger.logEvent(Event.SERVICE_MESSAGE,
                   "createFromModel: Creating application model now..");
@@ -275,10 +285,13 @@ public class CodeGenerationService extends Service {
                     return deleteReturnMessage; // error happened
                   }
                 }
+                
                 if (Generator.existsRemoteRepository(
                     MicroserviceGenerator.getRepositoryName(microservice), gitHubOrganization,
                     gitHubUser, gitHubPassword, usedGitHost)) {
+                	
                   deleteReturnMessage = deleteRepositoryOfModel(serializedModel);
+                  
                   if (!deleteReturnMessage.equals("done")) {
                     return deleteReturnMessage; // error happened
                   }
@@ -576,8 +589,7 @@ public class CodeGenerationService extends Service {
           L2pLogger.logEvent(Event.SERVICE_MESSAGE,
               "createFromModel: GitHub access exception: " + e2.getMessage());
           logger.printStackTrace(e2);
-          return "Error: Generating code failed because of failing GitHub access: "
-              + e2.getMessage();
+          return "Error: Generating code failed because of failing GitHub access: " + e2.getMessage();
         }
       }
     }
