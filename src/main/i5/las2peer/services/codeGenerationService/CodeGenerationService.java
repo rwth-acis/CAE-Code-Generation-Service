@@ -52,8 +52,8 @@ public class CodeGenerationService extends Service {
   private String usedGitHost;
   
   //GitLab specific
-  private String gitLabUrl;
-  private String gitLabToken;
+  private String baseURL;
+  private String token;
   
   //The git service adapter object
   private GitHostAdapter gitAdapter;
@@ -73,11 +73,9 @@ public class CodeGenerationService extends Service {
     
     // Create git adapter matching the usedGitHost
     if(Objects.equals(usedGitHost, "GitHub")) {
-    	//TODO: Actually implement and use the GitHub adapter
-    	this.gitAdapter = new GitHubAdapter(this.gitUser, this.gitPassword, this.gitOrganization, this.templateRepository, this.gitUserMail); 
+    	this.gitAdapter = new GitHubAdapter(gitUser,gitPassword,gitOrganization,templateRepository,gitUserMail); 
     } else if (Objects.equals(usedGitHost, "GitLab")) {
-    	this.gitAdapter = new GitLabAdapter(this.gitUser, this.gitPassword, this.gitOrganization, this.templateRepository, this.gitUserMail, 
-    			this.gitLabUrl, this.gitLabToken);
+    	this.gitAdapter = new GitLabAdapter(baseURL,token,gitUser,gitPassword,gitOrganization,templateRepository,gitUserMail);
     } else {
     	// Abort
     	throw new GitHostException("No valid git provider selected");
@@ -128,7 +126,7 @@ public class CodeGenerationService extends Service {
               L2pLogger.logEvent(Event.SERVICE_MESSAGE,
                   "createFromModel: Creating microservice source code now..");
               MicroserviceGenerator.createSourceCode(microservice, this.templateRepository,
-                  null);
+                  (BaseGitHostAdapter) gitAdapter);
               L2pLogger.logEvent(Event.SERVICE_MESSAGE, "createFromModel: Created!");
               return "done";  
               

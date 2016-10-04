@@ -164,7 +164,7 @@ public class GitLabAdapter extends BaseGitHostAdapter{
 	public void deleteRepo(String name) throws GitHostException {
 		long id = -1;
 		try {
-		JSONArray arr = getJSONArray(baseURL + "groups/" + this.gitOrganization + "/projects/");
+		JSONArray arr = getJSONArray(baseURL + "api/v3/" + "groups/" + this.gitOrganization + "/projects/");
 		// We need to get the id of the repo, search for it
 		for(Object obj : arr){
 			if (((JSONObject) obj).get("name").toString().equalsIgnoreCase(name)) {
@@ -180,19 +180,19 @@ public class GitLabAdapter extends BaseGitHostAdapter{
 			throw new GitHostException("Failed to delete repo");
 		}
 		// example: http://ginkgo.informatik.rwth-aachen.de:4080/api/v3/projects/2
-		deleteResource(baseURL + "projects/" + id);
+		deleteResource(baseURL + "api/v3/" + "projects/" + id);
 	}
 	
 	public void createRepo(String name, String description) throws GitHostException {
 		//Get namespace id for group
-		JSONObject result = getJSONObject(baseURL + "groups/" + this.getGitOrganization());
+		JSONObject result = getJSONObject(baseURL + "api/v3/" + "groups/" + this.getGitOrganization());
 		long id = (long) result.get("id");
 		//Create json object representing new repo
 		JSONObject obj = new JSONObject();
 		obj.put("name", name);
 		obj.put("description", description);
 		obj.put("namespace_id", id);
-		createResource(baseURL + "projects", obj);
+		createResource(baseURL + "api/v3/" + "projects", obj);
 	}
 	
 }

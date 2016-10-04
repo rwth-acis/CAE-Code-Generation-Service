@@ -55,6 +55,9 @@ public class ApplicationGenerator extends Generator {
    */
   public static void createSourceCode(Application application, BaseGitHostAdapter gitAdapter)
       throws GitHostException {
+	  if (gitAdapter == null) {
+		throw new GitHostException("Adapter is null!");
+	  }
     String repositoryName = "application-" + application.getName().replace(" ", "-");
     createSourceCode(repositoryName, application, gitAdapter, false);
   }
@@ -79,6 +82,9 @@ public class ApplicationGenerator extends Generator {
    */
   public static void createSourceCode(String repositoryName, Application application, 
 		  BaseGitHostAdapter gitAdapter, boolean forDeploy) throws GitHostException {
+	  if (gitAdapter == null) {
+			throw new GitHostException("Adapter is null!");
+	  }
     // variables to be closed in the final block
     Repository applicationRepository = null;
     TreeWalk treeWalk = null;

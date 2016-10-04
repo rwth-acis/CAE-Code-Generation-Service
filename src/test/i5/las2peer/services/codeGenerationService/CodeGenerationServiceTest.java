@@ -364,7 +364,7 @@ public class CodeGenerationServiceTest {
   @Test
   public void testRepoDeletion(){
 	  try {
-		  gitAdapter.createRepo("delTest123", "Test123");
+		  gitAdapter.createRepo("delTest123", "Test description");
 		  Thread.sleep(5000);
 		  gitAdapter.deleteRepo("delTest123");
 	  } catch (Exception e) {

@@ -99,7 +99,7 @@ public abstract class Generator {
       RemoteConfig remoteConfig = null;
       
       remoteConfig = new RemoteConfig(config, "Remote");
-      remoteConfig.addURI(new URIish(gitAdapter.getBaseURL() + gitAdapter.getGitOrganization() + "/" + name));
+      remoteConfig.addURI(new URIish(gitAdapter.getBaseURL() + gitAdapter.getGitOrganization() + "/" + name + ".git"));
 		
       
       remoteConfig.update(config);
