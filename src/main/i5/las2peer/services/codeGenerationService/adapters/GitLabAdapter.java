@@ -15,12 +15,17 @@ import org.json.simple.parser.ParseException;
 
 import i5.las2peer.services.codeGenerationService.exception.GitHostException;
 
-public class GitLabAdapter implements GitHostAdapter {
+public class GitLabAdapter extends BaseGitHostAdapter{
 	// TODO: Token from property file
-	private final static String token = "";
-	private final static String baseURL = "";
+	private String token = "";
+		
+	public GitLabAdapter(String baseURL, String token) {
+		super(baseURL);
+		this.token = token;
 
-	private static String getString(String url) {
+	}
+	
+	private String getString(String url) {
 		HttpURLConnection c = null;
 		
 		try {
@@ -36,13 +41,13 @@ public class GitLabAdapter implements GitHostAdapter {
 			case 200:
 			case 201:
 				BufferedReader br = new BufferedReader(new InputStreamReader(c.getInputStream()));
-                StringBuilder sb = new StringBuilder();
-                String line;
-                while ((line = br.readLine()) != null) {
-                    sb.append(line+"\n");
-                }
-                br.close();
-                return sb.toString();
+	            StringBuilder sb = new StringBuilder();
+	            String line;
+	            while ((line = br.readLine()) != null) {
+	                sb.append(line+"\n");
+	            }
+	            br.close();
+	            return sb.toString();
 			}
 			
 		} catch (MalformedURLException e) {
@@ -56,8 +61,8 @@ public class GitLabAdapter implements GitHostAdapter {
 		}
 		return "";
 	}
-	
-	private static void deleteResource(String url) throws GitHostException {
+
+	private void deleteResource(String url) throws GitHostException {
 		HttpURLConnection c = null;
 		
 		try {
@@ -84,8 +89,8 @@ public class GitLabAdapter implements GitHostAdapter {
 			}
 		}
 	}
-	
-	private static boolean createResource(String url, JSONObject data) throws GitHostException {
+
+	private boolean createResource(String url, JSONObject data) throws GitHostException {
 		HttpURLConnection c = null;
 		boolean success = false;
 		
@@ -106,7 +111,7 @@ public class GitLabAdapter implements GitHostAdapter {
 			writer.close();
 			
 			int status = c.getResponseCode();
-
+	
 			if (status == 201) {
 				success = true;
 			}else {
@@ -132,8 +137,8 @@ public class GitLabAdapter implements GitHostAdapter {
 		}
 		return success;
 	}
-	
-	private static JSONObject getJSONObject(String url) {
+
+	private JSONObject getJSONObject(String url) {
 		String data = getString(url);
 		JSONParser parser = new JSONParser();
 		JSONObject obj;
@@ -145,8 +150,8 @@ public class GitLabAdapter implements GitHostAdapter {
 		}
 		return obj;
 	}
-	
-	private static JSONArray getJSONArray(String url) throws ParseException {
+
+	private JSONArray getJSONArray(String url) throws ParseException {
 		String data = getString(url);
 		JSONParser parser = new JSONParser();
 		JSONArray arr;

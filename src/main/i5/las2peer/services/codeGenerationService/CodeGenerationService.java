@@ -8,6 +8,7 @@ import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.io.Serializable;
 import java.util.HashMap;
+import java.util.Objects;
 
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
@@ -16,6 +17,9 @@ import i5.cae.simpleModel.SimpleModel;
 import i5.las2peer.api.Service;
 import i5.las2peer.logging.L2pLogger;
 import i5.las2peer.logging.NodeObserver.Event;
+import i5.las2peer.services.codeGenerationService.adapters.GitHostAdapter;
+import i5.las2peer.services.codeGenerationService.adapters.GitHubAdapter;
+import i5.las2peer.services.codeGenerationService.adapters.GitLabAdapter;
 import i5.las2peer.services.codeGenerationService.exception.GitHostException;
 import i5.las2peer.services.codeGenerationService.exception.ModelParseException;
 import i5.las2peer.services.codeGenerationService.generators.ApplicationGenerator;
@@ -38,12 +42,20 @@ import i5.las2peer.services.codeGenerationService.templateEngine.ModelViolationD
  */
 public class CodeGenerationService extends Service {
 
-  private String gitHubUser;
-  private String gitHubPassword;
-  private String gitHubOrganization;
+  // Git service properties
+  private String gitUser;
+  private String gitPassword;
+  private String gitOrganization;
   private String templateRepository;
-  private String gitHubUserMail;
+  private String gitUserMail;
   private String usedGitHost;
+  
+  //GitLab specific
+  private String gitLabUrl;
+  private String gitLabToken;
+  
+  //The git service adapter object
+  private GitHostAdapter gitAdapter;
 
   // jenkins properties
   private String buildJobName;
@@ -54,9 +66,20 @@ public class CodeGenerationService extends Service {
   private boolean useModelSynchronization;
   private final L2pLogger logger = L2pLogger.getInstance(CodeGenerationService.class.getName());
 
-  public CodeGenerationService() {
+  public CodeGenerationService() throws GitHostException {
     // read and set properties-file values
     setFieldValues();
+    
+    // Create git adapter matching the usedGitHost
+    if(Objects.equals(usedGitHost, "GitHub")) {
+    	//TODO: Actually implement and use the GitHub adapter
+    	this.gitAdapter = new GitHubAdapter(); 
+    } else if (Objects.equals(usedGitHost, "GitLab")) {
+    	this.gitAdapter = new GitLabAdapter(gitLabUrl, gitLabToken);
+    } else {
+    	// Abort
+    	throw new GitHostException("No valid git provider selected");
+    }
   }
 
 
@@ -103,8 +126,8 @@ public class CodeGenerationService extends Service {
               L2pLogger.logEvent(Event.SERVICE_MESSAGE,
                   "createFromModel: Creating microservice source code now..");
               MicroserviceGenerator.createSourceCode(microservice, this.templateRepository,
-                  this.gitHubOrganization, this.gitHubUser, this.gitHubUserMail,
-                  this.gitHubPassword, this.usedGitHost);
+                  this.gitOrganization, this.gitUser, this.gitUserMail,
+                  this.gitPassword, this.usedGitHost);
               L2pLogger.logEvent(Event.SERVICE_MESSAGE, "createFromModel: Created!");
               return "done";  
               
@@ -115,8 +138,8 @@ public class CodeGenerationService extends Service {
               L2pLogger.logEvent(Event.SERVICE_MESSAGE,
                   "createFromModel: Creating frontend component source code now..");
               FrontendComponentGenerator.createSourceCode(frontendComponent,
-                  this.templateRepository, this.gitHubOrganization, this.gitHubUser,
-                  this.gitHubUserMail, this.gitHubPassword, this.usedGitHost);
+                  this.templateRepository, this.gitOrganization, this.gitUser,
+                  this.gitUserMail, this.gitPassword, this.usedGitHost);
               L2pLogger.logEvent(Event.SERVICE_MESSAGE, "createFromModel: Created!");
               return "done";
               
@@ -127,8 +150,8 @@ public class CodeGenerationService extends Service {
               L2pLogger.logEvent(Event.SERVICE_MESSAGE,
                   "createFromModel: Creating application source code now..");
               ApplicationGenerator.createSourceCode(application, this.templateRepository,
-                  this.gitHubOrganization, this.gitHubUser, this.gitHubUserMail,
-                  this.gitHubPassword, this.usedGitHost);
+                  this.gitOrganization, this.gitUser, this.gitUserMail,
+                  this.gitPassword, this.usedGitHost);
               L2pLogger.logEvent(Event.SERVICE_MESSAGE, "createFromModel: Created!");
               return "done";
             default:
@@ -179,24 +202,24 @@ public class CodeGenerationService extends Service {
               L2pLogger.logEvent(Event.SERVICE_MESSAGE,
                   "deleteRepositoryOfModel: Deleting microservice repository now..");
               modelName = "microservice-" + modelName.replace(" ", "-");
-              Generator.deleteRemoteRepository(modelName, this.gitHubOrganization, this.gitHubUser,
-                  this.gitHubPassword, this.usedGitHost);
+              Generator.deleteRemoteRepository(modelName, this.gitOrganization, this.gitUser,
+                  this.gitPassword, this.usedGitHost);
               L2pLogger.logEvent(Event.SERVICE_MESSAGE, "deleteRepositoryOfModel: Deleted!");
               return "done";
             case "frontend-component":
               L2pLogger.logEvent(Event.SERVICE_MESSAGE,
                   "deleteRepositoryOfModel: Deleting frontend-component repository now..");
               modelName = "frontendComponent-" + modelName.replace(" ", "-");
-              Generator.deleteRemoteRepository(modelName, this.gitHubOrganization, this.gitHubUser,
-                  this.gitHubPassword, this.usedGitHost);
+              Generator.deleteRemoteRepository(modelName, this.gitOrganization, this.gitUser,
+                  this.gitPassword, this.usedGitHost);
               L2pLogger.logEvent(Event.SERVICE_MESSAGE, "deleteRepositoryOfModel: Deleted!");
               return "done";
             case "application":
               L2pLogger.logEvent(Event.SERVICE_MESSAGE,
                   "deleteRepositoryOfModel: Deleting application repository now..");
               modelName = "application-" + modelName.replace(" ", "-");
-              Generator.deleteRemoteRepository(modelName, this.gitHubOrganization, this.gitHubUser,
-                  this.gitHubPassword, this.usedGitHost);
+              Generator.deleteRemoteRepository(modelName, this.gitOrganization, this.gitUser,
+                  this.gitPassword, this.usedGitHost);
               L2pLogger.logEvent(Event.SERVICE_MESSAGE, "deleteRepositoryOfModel: Deleted!");
               return "done";
             default:
@@ -262,7 +285,7 @@ public class CodeGenerationService extends Service {
 
               if (useModelSynchronization && oldModel != null
                   && MicroserviceSynchronization.existsRemoteRepositoryForModel(microservice,
-                      this.gitHubOrganization, this.gitHubUser, this.gitHubPassword, this.usedGitHost)) {
+                      this.gitOrganization, this.gitUser, this.gitPassword, this.usedGitHost)) {
                 Microservice oldMicroservice = new Microservice(oldModel);
 
                 L2pLogger.logEvent(Event.SERVICE_MESSAGE,
@@ -270,7 +293,7 @@ public class CodeGenerationService extends Service {
 
                 MicroserviceSynchronization.synchronizeSourceCode(microservice, oldMicroservice,
                     this.getTracedFiles(MicroserviceGenerator.getRepositoryName(microservice)),
-                    this.templateRepository, this.gitHubOrganization, this.usedGitHost ,this);
+                    this.templateRepository, this.gitOrganization, this.usedGitHost ,this);
 
                 L2pLogger.logEvent(Event.SERVICE_MESSAGE, "updateRepositoryOfModel: Synchronized!");
                 return "done";
@@ -287,8 +310,8 @@ public class CodeGenerationService extends Service {
                 }
                 
                 if (Generator.existsRemoteRepository(
-                    MicroserviceGenerator.getRepositoryName(microservice), gitHubOrganization,
-                    gitHubUser, gitHubPassword, usedGitHost)) {
+                    MicroserviceGenerator.getRepositoryName(microservice), gitOrganization,
+                    gitUser, gitPassword, usedGitHost)) {
                 	
                   deleteReturnMessage = deleteRepositoryOfModel(serializedModel);
                   
@@ -315,8 +338,8 @@ public class CodeGenerationService extends Service {
 
               if (useModelSynchronization && oldModel != null
                   && FrontendComponentSynchronization.existsRemoteRepositoryForModel(
-                      frontendComponent, this.gitHubOrganization, this.gitHubUser,
-                      this.gitHubPassword, this.usedGitHost)) {
+                      frontendComponent, this.gitOrganization, this.gitUser,
+                      this.gitPassword, this.usedGitHost)) {
                 FrontendComponent oldFrontendComponent = new FrontendComponent(oldModel);
 
                 L2pLogger.logEvent(Event.SERVICE_MESSAGE,
@@ -326,7 +349,7 @@ public class CodeGenerationService extends Service {
                     oldFrontendComponent,
                     this.getTracedFiles(
                         FrontendComponentGenerator.getRepositoryName(frontendComponent)),
-                    this.templateRepository, this.gitHubOrganization, this.usedGitHost, this);
+                    this.templateRepository, this.gitOrganization, this.usedGitHost, this);
 
                 L2pLogger.logEvent(Event.SERVICE_MESSAGE, "updateRepositoryOfModel: Synchronized!");
                 return "done";
@@ -346,7 +369,7 @@ public class CodeGenerationService extends Service {
                 }
                 if (Generator.existsRemoteRepository(
                     FrontendComponentGenerator.getRepositoryName(frontendComponent),
-                    gitHubOrganization, gitHubUser, gitHubPassword, usedGitHost)) {
+                    gitOrganization, gitUser, gitPassword, usedGitHost)) {
                   deleteReturnMessage = deleteRepositoryOfModel(serializedModel);
                   if (!deleteReturnMessage.equals("done")) {
                     return deleteReturnMessage; // error happened
@@ -560,10 +583,10 @@ public class CodeGenerationService extends Service {
 
               String repositoryName = "CAE-Deployment-Temp";
 
-              if (Generator.existsRemoteRepository(repositoryName, this.gitHubOrganization,
-                  this.gitHubUser, this.gitHubPassword, this.usedGitHost)) {
-                Generator.deleteRemoteRepository(repositoryName, this.gitHubOrganization,
-                    this.gitHubUser, this.gitHubPassword, this.usedGitHost);
+              if (Generator.existsRemoteRepository(repositoryName, this.gitOrganization,
+                  this.gitUser, this.gitPassword, this.usedGitHost)) {
+                Generator.deleteRemoteRepository(repositoryName, this.gitOrganization,
+                    this.gitUser, this.gitPassword, this.usedGitHost);
                 L2pLogger.logEvent(Event.SERVICE_MESSAGE,
                     "deployApplicationModel: Deleted old repository!");
               }
@@ -571,8 +594,8 @@ public class CodeGenerationService extends Service {
               L2pLogger.logEvent(Event.SERVICE_MESSAGE,
                   "deployApplicationModel: Copying repository to deployment repository");
               ApplicationGenerator.createSourceCode(repositoryName, application,
-                  this.templateRepository, this.gitHubOrganization, this.gitHubUser,
-                  this.gitHubUserMail, this.gitHubPassword, this.usedGitHost,true);
+                  this.templateRepository, this.gitOrganization, this.gitUser,
+                  this.gitUserMail, this.gitPassword, this.usedGitHost,true);
               L2pLogger.logEvent(Event.SERVICE_MESSAGE, "deployApplicationModel: Copied!");
               return "done";
 
