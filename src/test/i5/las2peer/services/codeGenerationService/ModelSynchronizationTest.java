@@ -17,6 +17,7 @@ import java.util.Base64;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Properties;
 
 import org.apache.commons.io.IOUtils;
@@ -30,6 +31,10 @@ import i5.cae.simpleModel.SimpleModel;
 import i5.las2peer.p2p.LocalNode;
 import i5.las2peer.p2p.ServiceNameVersion;
 import i5.las2peer.security.ServiceAgent;
+import i5.las2peer.services.codeGenerationService.adapters.BaseGitHostAdapter;
+import i5.las2peer.services.codeGenerationService.adapters.GitHostAdapter;
+import i5.las2peer.services.codeGenerationService.adapters.GitHubAdapter;
+import i5.las2peer.services.codeGenerationService.adapters.GitLabAdapter;
 import i5.las2peer.services.codeGenerationService.generators.Generator;
 import i5.las2peer.services.codeGenerationService.models.traceModel.FileTraceModel;
 import i5.las2peer.services.codeGenerationService.models.traceModel.FileTraceModelFactory;
@@ -67,13 +72,17 @@ public class ModelSynchronizationTest extends Generator {
   private static ServiceNameVersion gitHubProxyServiceNameVersion;
 
   private static String usedGitHost = null;
-  private static String gitHubOrganization = null;
-  private static String gitHubUser = null;
-  private static String gitHubPassword = null;
+  private static String gitOrganization = null;
+  private static String gitUser = null;
+  private static String gitPassword = null;
   @SuppressWarnings("unused")
-  private static String gitHubUserMail = null;
+  private static String gitUserMail = null;
   @SuppressWarnings("unused")
   private static String templateRepository = null;
+  
+  private static GitHostAdapter gitAdapter;
+  private static String baseURL = null;
+  private static String token = null;
 
 
   private static String commitFiles(String prefix, SimpleModel model, TraceModel traceModel)
@@ -124,8 +133,7 @@ public class ModelSynchronizationTest extends Generator {
   private static void deleteRepositoryOfModel(String prefix, SimpleModel model) {
     String repositoryName = prefix + "-" + model.getName().replace(" ", "-");
     try {
-      Generator.deleteRemoteRepository(repositoryName, gitHubOrganization, gitHubUser,
-          gitHubPassword, usedGitHost);
+      Generator.deleteRemoteRepository(repositoryName, (BaseGitHostAdapter) gitAdapter);
     } catch (Exception e) {
       e.printStackTrace();
     }
@@ -179,12 +187,24 @@ public class ModelSynchronizationTest extends Generator {
 
       FileReader reader = new FileReader(propertiesFile);
       properties.load(reader);
-      gitHubUser = properties.getProperty("gitHubUser");
-      gitHubUserMail = properties.getProperty("gitHubUserMail");
-      gitHubOrganization = properties.getProperty("gitHubOrganization");
+      gitUser = properties.getProperty("gitUser");
+      gitUserMail = properties.getProperty("gitUserMail");
+      gitOrganization = properties.getProperty("gitOrganization");
       templateRepository = properties.getProperty("templateRepository");
-      gitHubPassword = properties.getProperty("gitHubPassword");
+      gitPassword = properties.getProperty("gitPassword");
       usedGitHost = properties.getProperty("usedGitHost");
+      
+      baseURL = properties.getProperty("baseURL");
+      token = properties.getProperty("token");
+      
+      
+      if (Objects.equals(usedGitHost, "GitHub")) {
+      	gitAdapter = new GitHubAdapter(gitUser, gitPassword, gitOrganization, templateRepository, gitUserMail);
+      } else if (Objects.equals(usedGitHost, "GitLab")) {
+    	gitAdapter = new GitLabAdapter(baseURL, token, gitUser, gitPassword, gitOrganization, templateRepository, gitUserMail);
+      } else {
+    	  fail("Property usedGitHost not valid!");
+      }
 
     } catch (IOException ex) {
       fail("Error reading test models and configuration file!");

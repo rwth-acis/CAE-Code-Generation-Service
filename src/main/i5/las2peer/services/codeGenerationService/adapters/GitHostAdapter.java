@@ -1,5 +1,8 @@
 package i5.las2peer.services.codeGenerationService.adapters;
 
-public interface GitHostAdapter {
+import i5.las2peer.services.codeGenerationService.exception.GitHostException;
 
+public interface GitHostAdapter {
+	public void createRepo(String name, String description) throws GitHostException;
+	public void deleteRepo(String name) throws GitHostException;
 }

@@ -22,7 +22,8 @@ import org.json.simple.parser.JSONParser;
 
 import i5.las2peer.logging.L2pLogger;
 import i5.las2peer.logging.NodeObserver.Event;
-import i5.las2peer.services.codeGenerationService.exception.GitHubException;
+import i5.las2peer.services.codeGenerationService.adapters.BaseGitHostAdapter;
+import i5.las2peer.services.codeGenerationService.exception.GitHostException;
 import i5.las2peer.services.codeGenerationService.models.application.Application;
 import i5.las2peer.services.codeGenerationService.models.frontendComponent.FrontendComponent;
 
@@ -48,16 +49,17 @@ public class ApplicationGenerator extends Generator {
    * @param gitHubUserMail the mail of the CAE user
    * @param gitHubPassword the password of the CAE user
    * 
-   * @throws GitHubException thrown if anything goes wrong during this process. Wraps around all
+   * @throws GitHostException thrown if anything goes wrong during this process. Wraps around all
    *         other exceptions and prints their message.
    * 
    */
-  public static void createSourceCode(Application application, String templateRepositoryName,
-      String gitHubOrganization, String gitHubUser, String gitHubUserMail, String gitHubPassword, String usedGitHost)
-      throws GitHubException {
+  public static void createSourceCode(Application application, BaseGitHostAdapter gitAdapter)
+      throws GitHostException {
+	  if (gitAdapter == null) {
+		throw new GitHostException("Adapter is null!");
+	  }
     String repositoryName = "application-" + application.getName().replace(" ", "-");
-    createSourceCode(repositoryName, application, templateRepositoryName, gitHubOrganization,
-        gitHubUser, gitHubUserMail, gitHubPassword, usedGitHost, false);
+    createSourceCode(repositoryName, application, gitAdapter, false);
   }
 
   /**
@@ -74,28 +76,30 @@ public class ApplicationGenerator extends Generator {
    * @param forDeploy True, if the source code is intended to use for deployment purpose, e.g. no
    *        gh-pages branch will be used
    * 
-   * @throws GitHubException thrown if anything goes wrong during this process. Wraps around all
+   * @throws GitHostException thrown if anything goes wrong during this process. Wraps around all
    *         other exceptions and prints their message.
    * 
    */
-  public static void createSourceCode(String repositoryName, Application application,
-      String templateRepositoryName, String gitHubOrganization, String gitHubUser,
-      String gitHubUserMail, String gitHubPassword, String usedGitHost,boolean forDeploy) throws GitHubException {
+  public static void createSourceCode(String repositoryName, Application application, 
+		  BaseGitHostAdapter gitAdapter, boolean forDeploy) throws GitHostException {
+	  if (gitAdapter == null) {
+			throw new GitHostException("Adapter is null!");
+	  }
     // variables to be closed in the final block
     Repository applicationRepository = null;
     TreeWalk treeWalk = null;
     try {
-      PersonIdent caeUser = new PersonIdent(gitHubUser, gitHubUserMail);
+      PersonIdent caeUser = new PersonIdent(gitAdapter.getGitUser(), gitAdapter.getGitUserMail());
 
 
       applicationRepository =
-          generateNewRepository(repositoryName, gitHubOrganization, gitHubUser, gitHubPassword, usedGitHost);
+          generateNewRepository(repositoryName, gitAdapter);
 
       // now we start by adding a readMe from the template repository (and thereby initializing the
       // master branch, which is needed to create a "gh-pages" branch afterwards
       String readMe = null;
       BufferedImage logo = null;
-      treeWalk = getTemplateRepositoryContent(templateRepositoryName, gitHubOrganization, usedGitHost);
+      treeWalk = getTemplateRepositoryContent(gitAdapter);
       treeWalk.setFilter(PathFilter.create("application/"));
       ObjectReader reader = treeWalk.getObjectReader();
       // walk through the tree and retrieve the needed templates
@@ -108,7 +112,7 @@ public class ApplicationGenerator extends Generator {
               readMe = new String(loader.getBytes(), "UTF-8");
               readMe = readMe.replace("$Repository_Name$", repositoryName);
               readMe = readMe.replace("$Application_Name$", application.getName());
-              readMe = readMe.replace("$Organization_Name$", gitHubOrganization);
+              readMe = readMe.replace("$Organization_Name$", gitAdapter.getGitOrganization());
               break;
             case "logo_application.png":
               logo = ImageIO.read(loader.openStream());
@@ -126,7 +130,7 @@ public class ApplicationGenerator extends Generator {
             .setCommitter(caeUser).call();
       } catch (Exception e) {
         logger.printStackTrace(e);
-        throw new GitHubException(e.getMessage());
+        throw new GitHostException(e.getMessage());
       }
 
       if (!forDeploy) {
@@ -135,23 +139,26 @@ public class ApplicationGenerator extends Generator {
           Git.wrap(applicationRepository).branchCreate().setName("gh-pages").call();
         } catch (Exception e) {
           logger.printStackTrace(e);
-          throw new GitHubException(e.getMessage());
+          throw new GitHostException(e.getMessage());
         }
       }
 
       // fetch microservice repository contents and add them
       for (String microserviceName : application.getMicroservices().keySet()) {
         String microserviceRepositoryName = "microservice-" + microserviceName.replace(" ", "-");
-        treeWalk = getRepositoryContent(microserviceRepositoryName, gitHubOrganization, usedGitHost);
+        treeWalk = getRepositoryContent(microserviceRepositoryName, gitAdapter);
         reader = treeWalk.getObjectReader();
         try {
           while (treeWalk.next()) {
             ObjectId objectId = treeWalk.getObjectId(0);
             ObjectLoader loader = reader.open(objectId);
             // copy the content of the repository and switch out the "old" paths
-            String oldLogoAddress = "https://github.com/" + gitHubOrganization + "/"
+            
+            // TODO: Content paths have to be independet from the git provider or all cases have to be met
+            
+            String oldLogoAddress = "https://github.com/" + gitAdapter.getGitOrganization() + "/"
                 + microserviceRepositoryName + "/blob/master/img/logo.png";
-            String newLogoAddress = "https://github.com/" + gitHubOrganization + "/"
+            String newLogoAddress = "https://github.com/" + gitAdapter.getGitOrganization() + "/"
                 + repositoryName + "/blob/master/" + microserviceRepositoryName + "/img/logo.png";
             switch (treeWalk.getNameString()) {
               case "README.md":
@@ -205,7 +212,7 @@ public class ApplicationGenerator extends Generator {
           }
         } catch (Exception e) {
           logger.printStackTrace(e);
-          throw new GitHubException(e.getMessage());
+          throw new GitHostException(e.getMessage());
         }
         treeWalk.close();
         // commit files
@@ -214,17 +221,17 @@ public class ApplicationGenerator extends Generator {
               .setMessage("Added microservice " + microserviceName).setCommitter(caeUser).call();
         } catch (Exception e) {
           logger.printStackTrace(e);
-          throw new GitHubException(e.getMessage());
+          throw new GitHostException(e.getMessage());
         }
       }
 
       if (!forDeploy) {
         // push (local) repository content to GitHub repository "master" branch
         try {
-          pushToRemoteRepository(applicationRepository, gitHubUser, gitHubPassword, usedGitHost);
+          pushToRemoteRepository(applicationRepository, gitAdapter);
         } catch (Exception e) {
           logger.printStackTrace(e);
-          throw new GitHubException(e.getMessage());
+          throw new GitHostException(e.getMessage());
         }
 
         // switch branch to "gh-pages"
@@ -232,15 +239,16 @@ public class ApplicationGenerator extends Generator {
           Git.wrap(applicationRepository).checkout().setName("gh-pages").call();
         } catch (Exception e) {
           logger.printStackTrace(e);
-          throw new GitHubException(e.getMessage());
+          throw new GitHostException(e.getMessage());
         }
       }
 
       // fetch frontend component repository contents and add them
+      // TODO: Change paths here too, paths have to be generated depending on git host and deployment (no gh pages if using gitlab !!!)
       for (String frontendComponentName : application.getFrontendComponents().keySet()) {
         String frontendComponentRepositoryName =
             "frontendComponent-" + frontendComponentName.replace(" ", "-");
-        treeWalk = getRepositoryContent(frontendComponentRepositoryName, gitHubOrganization, usedGitHost);
+        treeWalk = getRepositoryContent(frontendComponentRepositoryName, gitAdapter);
         reader = treeWalk.getObjectReader();
         try {
           while (treeWalk.next()) {
@@ -248,18 +256,18 @@ public class ApplicationGenerator extends Generator {
             ObjectLoader loader = reader.open(objectId);
             // copy the content of the repository and switch out the "old" paths
             String oldWidgetHome =
-                "http://" + gitHubOrganization + ".github.io/" + frontendComponentRepositoryName;
-            String newWidgetHome = "http://" + gitHubOrganization + ".github.io/" + repositoryName
+                "http://" + gitAdapter.getGitOrganization() + ".github.io/" + frontendComponentRepositoryName;
+            String newWidgetHome = "http://" + gitAdapter.getGitOrganization() + ".github.io/" + repositoryName
                 + "/" + frontendComponentRepositoryName;
             if (forDeploy) {
               // use other url for deployment, replaced later by the dockerfile
               newWidgetHome = "$WIDGET_URL$:$HTTP_PORT$" + "/" + frontendComponentRepositoryName;
             }
 
-            String oldLogoAddress = "https://github.com/" + gitHubOrganization + "/"
+            String oldLogoAddress = "https://github.com/" + gitAdapter.getGitOrganization() + "/"
                 + frontendComponentRepositoryName + "/blob/gh-pages/img/logo.png";
             String newLogoAddress =
-                "https://github.com/" + gitHubOrganization + "/" + repositoryName
+                "https://github.com/" + gitAdapter.getGitOrganization() + "/" + repositoryName
                     + "/blob/gh-pages/" + frontendComponentRepositoryName + "/img/logo.png";
             switch (treeWalk.getNameString()) {
               case "README.md":
@@ -336,7 +344,7 @@ public class ApplicationGenerator extends Generator {
           }
         } catch (Exception e) {
           logger.printStackTrace(e);
-          throw new GitHubException(e.getMessage());
+          throw new GitHostException(e.getMessage());
         }
         treeWalk.close();
         // commit files
@@ -346,25 +354,26 @@ public class ApplicationGenerator extends Generator {
               .call();
         } catch (Exception e) {
           logger.printStackTrace(e);
-          throw new GitHubException(e.getMessage());
+          throw new GitHostException(e.getMessage());
         }
       }
       if (!forDeploy) {
         // push (local) repository content to GitHub repository "gh-pages" branch
+    	  // TODO Deployment is hardcoded to gh pages !!! Needs to be changed
         try {
-          pushToRemoteRepository(applicationRepository, gitHubUser, gitHubPassword, "gh-pages",
-              "gh-pages", usedGitHost);
+          pushToRemoteRepository(applicationRepository, "gh-pages",
+              "gh-pages", gitAdapter);
         } catch (Exception e) {
           logger.printStackTrace(e);
-          throw new GitHubException(e.getMessage());
+          throw new GitHostException(e.getMessage());
         }
       } else {
         // push (local) repository content to GitHub repository "master" branch
         try {
-          pushToRemoteRepository(applicationRepository, gitHubUser, gitHubPassword, usedGitHost);
+          pushToRemoteRepository(applicationRepository, gitAdapter);
         } catch (Exception e) {
           logger.printStackTrace(e);
-          throw new GitHubException(e.getMessage());
+          throw new GitHostException(e.getMessage());
         }
       }
 

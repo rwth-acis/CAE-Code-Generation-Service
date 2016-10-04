@@ -13,14 +13,21 @@ import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 
-import i5.las2peer.services.codeGenerationService.exception.GitHubException;
+import i5.las2peer.services.codeGenerationService.exception.GitHostException;
 
-public class GitLabAdapter implements GitHostAdapter {
-	// TODO: Add token
-	private final static String token = "";
-	private final static String baseURL = "";
+public class GitLabAdapter extends BaseGitHostAdapter{
+	//TODO: Exception handling
 
-	private static String getString(String url) {
+	private String token;
+		
+	public GitLabAdapter(String baseURL, String token, String gitUser, String gitPassword, String gitOrganization, 
+			String templateRepository, String gitUserMail) {
+		super(gitUser, gitPassword, gitOrganization, templateRepository, gitUserMail, baseURL);
+		this.token = token;
+
+	}
+	
+	private String getString(String url) {
 		HttpURLConnection c = null;
 		
 		try {
@@ -36,13 +43,13 @@ public class GitLabAdapter implements GitHostAdapter {
 			case 200:
 			case 201:
 				BufferedReader br = new BufferedReader(new InputStreamReader(c.getInputStream()));
-                StringBuilder sb = new StringBuilder();
-                String line;
-                while ((line = br.readLine()) != null) {
-                    sb.append(line+"\n");
-                }
-                br.close();
-                return sb.toString();
+	            StringBuilder sb = new StringBuilder();
+	            String line;
+	            while ((line = br.readLine()) != null) {
+	                sb.append(line+"\n");
+	            }
+	            br.close();
+	            return sb.toString();
 			}
 			
 		} catch (MalformedURLException e) {
@@ -56,8 +63,8 @@ public class GitLabAdapter implements GitHostAdapter {
 		}
 		return "";
 	}
-	
-	private static void deleteResource(String url) throws GitHubException {
+
+	private void deleteResource(String url) throws GitHostException {
 		HttpURLConnection c = null;
 		
 		try {
@@ -71,21 +78,21 @@ public class GitLabAdapter implements GitHostAdapter {
 			
 			if(status != 200) {
 				c.disconnect();
-				throw new GitHubException("failed to delete resource with " + status + " at:" + u.getPath());
+				throw new GitHostException("failed to delete resource with " + status + " at:" + u.getPath());
 			}
 			
 		} catch (MalformedURLException e) {
-			throw new GitHubException("Failed to delete resource");
+			throw new GitHostException("Failed to delete resource");
 		} catch (IOException e) {
-			throw new GitHubException("Failed to delete resource");
+			throw new GitHostException("Failed to delete resource");
 		} finally {
 			if (c != null) {
 				c.disconnect();
 			}
 		}
 	}
-	
-	private static boolean createResource(String url, JSONObject data) throws GitHubException {
+
+	private boolean createResource(String url, JSONObject data) throws GitHostException {
 		HttpURLConnection c = null;
 		boolean success = false;
 		
@@ -106,7 +113,7 @@ public class GitLabAdapter implements GitHostAdapter {
 			writer.close();
 			
 			int status = c.getResponseCode();
-
+	
 			if (status == 201) {
 				success = true;
 			}else {
@@ -118,13 +125,13 @@ public class GitLabAdapter implements GitHostAdapter {
 			      message += line;
 			    }
 			    reader.close();
-			    throw new GitHubException(message);	  
+			    throw new GitHostException(message);	  
 			}
 			
 		} catch (MalformedURLException e) {
-			throw new GitHubException("GitLab repo creation went wrong");
+			throw new GitHostException("GitLab repo creation went wrong");
 		} catch (IOException e) {
-			throw new GitHubException("GitLab repo creation went wrong");
+			throw new GitHostException("GitLab repo creation went wrong");
 		} finally {
 			if (c != null) {
 				c.disconnect();
@@ -132,8 +139,8 @@ public class GitLabAdapter implements GitHostAdapter {
 		}
 		return success;
 	}
-	
-	private static JSONObject getJSONObject(String url) {
+
+	private JSONObject getJSONObject(String url) {
 		String data = getString(url);
 		JSONParser parser = new JSONParser();
 		JSONObject obj;
@@ -145,8 +152,8 @@ public class GitLabAdapter implements GitHostAdapter {
 		}
 		return obj;
 	}
-	
-	private static JSONArray getJSONArray(String url) throws ParseException {
+
+	private JSONArray getJSONArray(String url) throws ParseException {
 		String data = getString(url);
 		JSONParser parser = new JSONParser();
 		JSONArray arr;
@@ -154,10 +161,10 @@ public class GitLabAdapter implements GitHostAdapter {
 		return arr;
 	}
 	
-	public static void deleteRepo(String name, String gitHubOrganization) throws GitHubException {
+	public void deleteRepo(String name) throws GitHostException {
 		long id = -1;
 		try {
-		JSONArray arr = getJSONArray(baseURL + "groups/" + gitHubOrganization + "/projects/");
+		JSONArray arr = getJSONArray(baseURL + "api/v3/" + "groups/" + this.gitOrganization + "/projects/");
 		// We need to get the id of the repo, search for it
 		for(Object obj : arr){
 			if (((JSONObject) obj).get("name").toString().equalsIgnoreCase(name)) {
@@ -166,26 +173,26 @@ public class GitLabAdapter implements GitHostAdapter {
 		}
 		
 		if (id == -1) {
-			throw new GitHubException("Could not find id for project " + name + " with: " + arr.toJSONString());
+			throw new GitHostException("Could not find id for project " + name + " with: " + arr.toJSONString());
 		}
 		
 		}catch (ParseException e) {
-			throw new GitHubException("Failed to delete repo");
+			throw new GitHostException("Failed to delete repo");
 		}
 		// example: http://ginkgo.informatik.rwth-aachen.de:4080/api/v3/projects/2
-		deleteResource(baseURL + "projects/" + id);
+		deleteResource(baseURL + "api/v3/" + "projects/" + id);
 	}
 	
-	public static void createRepo(String gitHubOrganization,String name, String description) throws GitHubException {
+	public void createRepo(String name, String description) throws GitHostException {
 		//Get namespace id for group
-		JSONObject result = getJSONObject(baseURL + "groups/" + gitHubOrganization);
+		JSONObject result = getJSONObject(baseURL + "api/v3/" + "groups/" + this.getGitOrganization());
 		long id = (long) result.get("id");
 		//Create json object representing new repo
 		JSONObject obj = new JSONObject();
 		obj.put("name", name);
 		obj.put("description", description);
 		obj.put("namespace_id", id);
-		createResource(baseURL + "projects", obj);
+		createResource(baseURL + "api/v3/" + "projects", obj);
 	}
 	
 }
