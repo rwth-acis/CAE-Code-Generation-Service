@@ -15,6 +15,7 @@ import org.json.simple.JSONObject;
 import i5.las2peer.api.Service;
 import i5.las2peer.logging.L2pLogger;
 import i5.las2peer.logging.NodeObserver.Event;
+import i5.las2peer.services.codeGenerationService.adapters.BaseGitHostAdapter;
 import i5.las2peer.services.codeGenerationService.exception.ModelParseException;
 import i5.las2peer.services.codeGenerationService.models.microservice.Microservice;
 import i5.las2peer.services.codeGenerationService.models.traceModel.FileTraceModel;
@@ -287,9 +288,7 @@ public class MicroserviceSynchronization extends MicroserviceGenerator {
 
   }
 
-  public static boolean existsRemoteRepositoryForModel(Microservice microservice,
-      String gitHubOrganization, String gitHubUser, String gitHubPassword, String usedGitHost) {
-    return existsRemoteRepository(getRepositoryName(microservice), gitHubOrganization, gitHubUser,
-        gitHubPassword, usedGitHost);
+  public static boolean existsRemoteRepositoryForModel(Microservice microservice, BaseGitHostAdapter gitAdapter) {
+    return existsRemoteRepository(getRepositoryName(microservice), gitAdapter);
   }
 }

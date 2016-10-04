@@ -18,6 +18,7 @@ import org.eclipse.jgit.treewalk.TreeWalk;
 import org.eclipse.jgit.treewalk.filter.PathFilter;
 
 import i5.las2peer.logging.L2pLogger;
+import i5.las2peer.services.codeGenerationService.adapters.BaseGitHostAdapter;
 import i5.las2peer.services.codeGenerationService.exception.GitHostException;
 import i5.las2peer.services.codeGenerationService.models.frontendComponent.Event;
 import i5.las2peer.services.codeGenerationService.models.frontendComponent.FrontendComponent;
@@ -66,9 +67,7 @@ public class FrontendComponentGenerator extends Generator {
    *         other exceptions and prints their message.
    * 
    */
-  public static void createSourceCode(FrontendComponent frontendComponent,
-      String templateRepositoryName, String gitHubOrganization, String gitHubUser,
-      String gitHubUserMail, String gitHubPassword, String usedGitHost) throws GitHostException {
+  public static void createSourceCode(FrontendComponent frontendComponent, BaseGitHostAdapter gitAdapter) throws GitHostException {
 
     // variables to be closed in the final block
     Repository frontendComponentRepository = null;
@@ -98,15 +97,15 @@ public class FrontendComponentGenerator extends Generator {
     String guidances = null;
 
     try {
-      PersonIdent caeUser = new PersonIdent(gitHubUser, gitHubUserMail);
+      PersonIdent caeUser = new PersonIdent(gitAdapter.getGitUser(), gitAdapter.getGitUserMail());
       String repositoryName = getRepositoryName(frontendComponent);
       frontendComponentRepository =
-          generateNewRepository(repositoryName, null);
+          generateNewRepository(repositoryName, gitAdapter);
 
 
       try {
         // now load the TreeWalk containing the template repository content
-        treeWalk = getTemplateRepositoryContent(null);
+        treeWalk = getTemplateRepositoryContent(gitAdapter);
         treeWalk.setFilter(PathFilter.create("frontend/"));
         ObjectReader reader = treeWalk.getObjectReader();
         // walk through the tree and retrieve the needed templates
@@ -179,7 +178,7 @@ public class FrontendComponentGenerator extends Generator {
               readMe = new String(loader.getBytes(), "UTF-8");
               readMe = readMe.replace("$Repository_Name$", repositoryName);
               readMe = readMe.replace("$Widget_Name$", frontendComponent.getName());
-              readMe = readMe.replace("$Organization_Name$", gitHubOrganization);
+              readMe = readMe.replace("$Organization_Name$", gitAdapter.getGitOrganization());
               break;
             case "logo_frontend.png":
               logo = ImageIO.read(loader.openStream());
@@ -199,7 +198,7 @@ public class FrontendComponentGenerator extends Generator {
 
       // add html elements to widget source code
       createWidgetCode(widgetTemplateEngine, widget, htmlElementTemplate, yjsImports,
-          gitHubOrganization, repositoryName, frontendComponent);
+          gitAdapter.getGitOrganization(), repositoryName, frontendComponent);
 
       // add widget file trace model to gloabl trace model
 
@@ -288,8 +287,7 @@ public class FrontendComponentGenerator extends Generator {
 
       // push (local) repository content to GitHub repository "gh-pages" branch
       try {
-        pushToRemoteRepository(frontendComponentRepository, gitHubUser, gitHubPassword, "master",
-            "gh-pages", usedGitHost);
+        pushToRemoteRepository(frontendComponentRepository, "master", "gh-pages", gitAdapter);
       } catch (Exception e) {
         logger.printStackTrace(e);
         throw new GitHostException(e.getMessage());

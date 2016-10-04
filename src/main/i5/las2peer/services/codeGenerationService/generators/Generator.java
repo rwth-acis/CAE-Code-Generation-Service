@@ -467,14 +467,14 @@ public abstract class Generator {
    * @return True, if the repository exists, otherwise false
    */
 
-  public static boolean existsRemoteRepository(String name, String gitHubOrganization,
-      String gitHubUser, String gitHubPassword, String usedGitHost) {
+  public static boolean existsRemoteRepository(String name, BaseGitHostAdapter gitAdapter) {
     CredentialsProvider credentialsProvider =
-        new UsernamePasswordCredentialsProvider(gitHubUser, gitHubPassword);
+        new UsernamePasswordCredentialsProvider(gitAdapter.getGitUser(), gitAdapter.getGitPassword());
     LsRemoteCommand lsCmd = new LsRemoteCommand(null);
     
     String url;
     
+    /*
     switch (usedGitHost) {
 	case "GitHub":
 		url = "https://github.com/" + gitHubOrganization + "/" + name + ".git";
@@ -485,7 +485,9 @@ public abstract class Generator {
 	default:
 		url = "https://github.com/" + gitHubOrganization + "/" + name + ".git";
 		break;
-	}
+	}*/
+    
+    url = gitAdapter.getBaseURL() + gitAdapter.getGitOrganization() + "/" + "name" + ".git";
     
     lsCmd.setRemote(url);
     lsCmd.setHeads(true);

@@ -11,6 +11,7 @@ import java.io.InputStream;
 import java.io.ObjectInput;
 import java.io.ObjectInputStream;
 import java.io.Serializable;
+import java.util.Objects;
 import java.util.Properties;
 
 import org.junit.AfterClass;
@@ -21,6 +22,9 @@ import i5.cae.simpleModel.SimpleModel;
 import i5.las2peer.p2p.LocalNode;
 import i5.las2peer.p2p.ServiceNameVersion;
 import i5.las2peer.security.ServiceAgent;
+import i5.las2peer.services.codeGenerationService.adapters.BaseGitHostAdapter;
+import i5.las2peer.services.codeGenerationService.adapters.GitHostAdapter;
+import i5.las2peer.services.codeGenerationService.adapters.GitHubAdapter;
 import i5.las2peer.services.codeGenerationService.adapters.GitLabAdapter;
 import i5.las2peer.services.codeGenerationService.exception.GitHostException;
 import i5.las2peer.services.codeGenerationService.generators.Generator;
@@ -52,14 +56,18 @@ public class CodeGenerationServiceTest {
   private static ServiceNameVersion gitHubProxyServiceNameVersion;
 
   private static String usedGitHost = null;
-  private static String gitHubOrganization = null;
-  private static String gitHubUser = null;
-  private static String gitHubPassword = null;
+  private static String gitOrganization = null;
+  private static String gitUser = null;
+  private static String gitPassword = null;
   @SuppressWarnings("unused")
-  private static String gitHubUserMail = null;
+  private static String gitUserMail = null;
   @SuppressWarnings("unused")
   private static String templateRepository = null;
 
+  private static GitHostAdapter gitAdapter;
+  private static String baseURL = null;
+  private static String token = null;
+  
 
   /**
    * 
@@ -116,12 +124,26 @@ public class CodeGenerationServiceTest {
 
       FileReader reader = new FileReader(propertiesFile);
       properties.load(reader);
-      gitHubUser = properties.getProperty("gitHubUser");
-      gitHubUserMail = properties.getProperty("gitHubUserMail");
-      gitHubOrganization = properties.getProperty("gitHubOrganization");
+      gitUser = properties.getProperty("gitUser");
+      gitUserMail = properties.getProperty("gitUserMail");
+      gitOrganization = properties.getProperty("gitOrganization");
       templateRepository = properties.getProperty("templateRepository");
-      gitHubPassword = properties.getProperty("gitHubPassword");
+      gitPassword = properties.getProperty("gitHubPassword");
       usedGitHost = properties.getProperty("usedGitHost");
+      
+      baseURL = properties.getProperty("baseURL");
+      token = properties.getProperty("token");
+      
+      
+      if (Objects.equals(usedGitHost, "GitHub")) {
+      	gitAdapter = new GitHubAdapter(gitUser, gitPassword, gitOrganization, templateRepository, gitUserMail);
+      } else if (Objects.equals(usedGitHost, "GitLab")) {
+    	gitAdapter = new GitLabAdapter(baseURL, token, gitUser, gitPassword, gitOrganization, templateRepository, gitUserMail);
+      } else {
+    	  fail("Property usedGitHost not valid!");
+      }
+      
+      
 
     } catch (IOException ex) {
       fail("Error reading test models and configuration file!");
@@ -167,33 +189,29 @@ public class CodeGenerationServiceTest {
     Thread.sleep(5000);
     
     try {
-      Generator.deleteRemoteRepository(model1GitHubName, gitHubOrganization, gitHubUser,
-          gitHubPassword, usedGitHost);
+      Generator.deleteRemoteRepository(model1GitHubName, (BaseGitHostAdapter) gitAdapter);
     } catch (GitHostException e) {
       e.printStackTrace();
       // that's ok, maybe some error / failure in previous tests caused this
       // catch it, to make sure that every other repository gets deleted
     }
     try {
-      Generator.deleteRemoteRepository(model2GitHubName, gitHubOrganization, gitHubUser,
-          gitHubPassword, usedGitHost);
+      Generator.deleteRemoteRepository(model2GitHubName, (BaseGitHostAdapter) gitAdapter);
     } catch (GitHostException e) {
       e.printStackTrace();
       // that's ok, maybe some error / failure in previous tests caused this
       // catch it, to make sure that every other repository gets deleted
     }
     try {
-      Generator.deleteRemoteRepository(model3GitHubName, gitHubOrganization, gitHubUser,
-          gitHubPassword, usedGitHost);
+      Generator.deleteRemoteRepository(model3GitHubName, (BaseGitHostAdapter) gitAdapter);
     } catch (GitHostException e) {
       e.printStackTrace();
       // that's ok, maybe some error / failure in previous tests caused this
       // catch it, to make sure that every other repository gets deleted
     }
     try {
-      Generator.deleteRemoteRepository(model4GitHubName, gitHubOrganization, gitHubUser,
-          gitHubPassword, usedGitHost);
-      GitLabAdapter.deleteRepo("Test123", gitHubOrganization);
+      Generator.deleteRemoteRepository(model4GitHubName, (BaseGitHostAdapter) gitAdapter);
+      gitAdapter.deleteRepo("Test123");
     } catch (GitHostException e) {
       e.printStackTrace();
       // that's ok, maybe some error / failure in previous tests caused this
@@ -336,7 +354,7 @@ public class CodeGenerationServiceTest {
   @Test
   public void testRepoCreation() {
 	  try{
-		  GitLabAdapter.createRepo(gitHubOrganization, "Test123", "test description");
+		  gitAdapter.createRepo("Test123", "test description");
 	  } catch (Exception e) {
 		  e.printStackTrace();
 		  fail(e.getMessage());
@@ -346,9 +364,9 @@ public class CodeGenerationServiceTest {
   @Test
   public void testRepoDeletion(){
 	  try {
-		  GitLabAdapter.createRepo(gitHubOrganization, "delTest123", "Test123");
+		  gitAdapter.createRepo("delTest123", "Test123");
 		  Thread.sleep(5000);
-		  GitLabAdapter.deleteRepo("delTest123", gitHubOrganization);
+		  gitAdapter.deleteRepo("delTest123");
 	  } catch (Exception e) {
 		e.printStackTrace();
 		fail(e.getMessage());
