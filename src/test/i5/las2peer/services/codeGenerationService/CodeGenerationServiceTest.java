@@ -22,7 +22,7 @@ import i5.las2peer.p2p.LocalNode;
 import i5.las2peer.p2p.ServiceNameVersion;
 import i5.las2peer.security.ServiceAgent;
 import i5.las2peer.services.codeGenerationService.adapters.GitLabAdapter;
-import i5.las2peer.services.codeGenerationService.exception.GitHubException;
+import i5.las2peer.services.codeGenerationService.exception.GitHostException;
 import i5.las2peer.services.codeGenerationService.generators.Generator;
 import i5.las2peer.services.gitHubProxyService.GitHubProxyService;
 
@@ -169,7 +169,7 @@ public class CodeGenerationServiceTest {
     try {
       Generator.deleteRemoteRepository(model1GitHubName, gitHubOrganization, gitHubUser,
           gitHubPassword, usedGitHost);
-    } catch (GitHubException e) {
+    } catch (GitHostException e) {
       e.printStackTrace();
       // that's ok, maybe some error / failure in previous tests caused this
       // catch it, to make sure that every other repository gets deleted
@@ -177,7 +177,7 @@ public class CodeGenerationServiceTest {
     try {
       Generator.deleteRemoteRepository(model2GitHubName, gitHubOrganization, gitHubUser,
           gitHubPassword, usedGitHost);
-    } catch (GitHubException e) {
+    } catch (GitHostException e) {
       e.printStackTrace();
       // that's ok, maybe some error / failure in previous tests caused this
       // catch it, to make sure that every other repository gets deleted
@@ -185,7 +185,7 @@ public class CodeGenerationServiceTest {
     try {
       Generator.deleteRemoteRepository(model3GitHubName, gitHubOrganization, gitHubUser,
           gitHubPassword, usedGitHost);
-    } catch (GitHubException e) {
+    } catch (GitHostException e) {
       e.printStackTrace();
       // that's ok, maybe some error / failure in previous tests caused this
       // catch it, to make sure that every other repository gets deleted
@@ -194,7 +194,7 @@ public class CodeGenerationServiceTest {
       Generator.deleteRemoteRepository(model4GitHubName, gitHubOrganization, gitHubUser,
           gitHubPassword, usedGitHost);
       GitLabAdapter.deleteRepo("Test123", gitHubOrganization);
-    } catch (GitHubException e) {
+    } catch (GitHostException e) {
       e.printStackTrace();
       // that's ok, maybe some error / failure in previous tests caused this
       // catch it, to make sure that every other repository gets deleted

@@ -16,7 +16,7 @@ import i5.cae.simpleModel.SimpleModel;
 import i5.las2peer.api.Service;
 import i5.las2peer.logging.L2pLogger;
 import i5.las2peer.logging.NodeObserver.Event;
-import i5.las2peer.services.codeGenerationService.exception.GitHubException;
+import i5.las2peer.services.codeGenerationService.exception.GitHostException;
 import i5.las2peer.services.codeGenerationService.exception.ModelParseException;
 import i5.las2peer.services.codeGenerationService.generators.ApplicationGenerator;
 import i5.las2peer.services.codeGenerationService.generators.FrontendComponentGenerator;
@@ -140,7 +140,7 @@ public class CodeGenerationService extends Service {
               "createFromModel: Model parsing exception: " + e1.getMessage());
           logger.printStackTrace(e1);
           return "Error: Parsing model failed with " + e1.getMessage();
-        } catch (GitHubException e2) {
+        } catch (GitHostException e2) {
           L2pLogger.logEvent(Event.SERVICE_MESSAGE,
               "createFromModel: GitHub access exception: " + e2.getMessage());
           logger.printStackTrace(e2);
@@ -203,7 +203,7 @@ public class CodeGenerationService extends Service {
               return "Error: Model has to have an attribute 'type' that is either "
                   + "'microservice', 'frontend-component' or 'application'!";
           }
-        } catch (GitHubException e) {
+        } catch (GitHostException e) {
           L2pLogger.logEvent(Event.SERVICE_MESSAGE,
               "deleteRepositoryOfModel: GitHub access exception: " + e.getMessage());
           logger.printStackTrace(e);
@@ -385,7 +385,7 @@ public class CodeGenerationService extends Service {
               "updateRepositoryOfModel: Model Parsing exception: " + e.getMessage());
           logger.printStackTrace(e);
           return "Error: Parsing model failed with " + e.getMessage();
-        } catch (GitHubException e2) {
+        } catch (GitHostException e2) {
           L2pLogger.logEvent(Event.SERVICE_MESSAGE,
               "updateRepositoryOfModel: GitHub access exception: " + e2.getMessage());
           logger.printStackTrace(e2);
@@ -585,7 +585,7 @@ public class CodeGenerationService extends Service {
               "createFromModel: Model parsing exception: " + e1.getMessage());
           logger.printStackTrace(e1);
           return "Error: Parsing model failed with " + e1.getMessage();
-        } catch (GitHubException e2) {
+        } catch (GitHostException e2) {
           L2pLogger.logEvent(Event.SERVICE_MESSAGE,
               "createFromModel: GitHub access exception: " + e2.getMessage());
           logger.printStackTrace(e2);

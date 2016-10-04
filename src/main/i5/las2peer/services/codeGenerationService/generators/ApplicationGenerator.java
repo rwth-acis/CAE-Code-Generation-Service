@@ -22,7 +22,7 @@ import org.json.simple.parser.JSONParser;
 
 import i5.las2peer.logging.L2pLogger;
 import i5.las2peer.logging.NodeObserver.Event;
-import i5.las2peer.services.codeGenerationService.exception.GitHubException;
+import i5.las2peer.services.codeGenerationService.exception.GitHostException;
 import i5.las2peer.services.codeGenerationService.models.application.Application;
 import i5.las2peer.services.codeGenerationService.models.frontendComponent.FrontendComponent;
 
@@ -48,13 +48,13 @@ public class ApplicationGenerator extends Generator {
    * @param gitHubUserMail the mail of the CAE user
    * @param gitHubPassword the password of the CAE user
    * 
-   * @throws GitHubException thrown if anything goes wrong during this process. Wraps around all
+   * @throws GitHostException thrown if anything goes wrong during this process. Wraps around all
    *         other exceptions and prints their message.
    * 
    */
   public static void createSourceCode(Application application, String templateRepositoryName,
       String gitHubOrganization, String gitHubUser, String gitHubUserMail, String gitHubPassword, String usedGitHost)
-      throws GitHubException {
+      throws GitHostException {
     String repositoryName = "application-" + application.getName().replace(" ", "-");
     createSourceCode(repositoryName, application, templateRepositoryName, gitHubOrganization,
         gitHubUser, gitHubUserMail, gitHubPassword, usedGitHost, false);
@@ -74,13 +74,13 @@ public class ApplicationGenerator extends Generator {
    * @param forDeploy True, if the source code is intended to use for deployment purpose, e.g. no
    *        gh-pages branch will be used
    * 
-   * @throws GitHubException thrown if anything goes wrong during this process. Wraps around all
+   * @throws GitHostException thrown if anything goes wrong during this process. Wraps around all
    *         other exceptions and prints their message.
    * 
    */
   public static void createSourceCode(String repositoryName, Application application,
       String templateRepositoryName, String gitHubOrganization, String gitHubUser,
-      String gitHubUserMail, String gitHubPassword, String usedGitHost,boolean forDeploy) throws GitHubException {
+      String gitHubUserMail, String gitHubPassword, String usedGitHost,boolean forDeploy) throws GitHostException {
     // variables to be closed in the final block
     Repository applicationRepository = null;
     TreeWalk treeWalk = null;
@@ -126,7 +126,7 @@ public class ApplicationGenerator extends Generator {
             .setCommitter(caeUser).call();
       } catch (Exception e) {
         logger.printStackTrace(e);
-        throw new GitHubException(e.getMessage());
+        throw new GitHostException(e.getMessage());
       }
 
       if (!forDeploy) {
@@ -135,7 +135,7 @@ public class ApplicationGenerator extends Generator {
           Git.wrap(applicationRepository).branchCreate().setName("gh-pages").call();
         } catch (Exception e) {
           logger.printStackTrace(e);
-          throw new GitHubException(e.getMessage());
+          throw new GitHostException(e.getMessage());
         }
       }
 
@@ -205,7 +205,7 @@ public class ApplicationGenerator extends Generator {
           }
         } catch (Exception e) {
           logger.printStackTrace(e);
-          throw new GitHubException(e.getMessage());
+          throw new GitHostException(e.getMessage());
         }
         treeWalk.close();
         // commit files
@@ -214,7 +214,7 @@ public class ApplicationGenerator extends Generator {
               .setMessage("Added microservice " + microserviceName).setCommitter(caeUser).call();
         } catch (Exception e) {
           logger.printStackTrace(e);
-          throw new GitHubException(e.getMessage());
+          throw new GitHostException(e.getMessage());
         }
       }
 
@@ -224,7 +224,7 @@ public class ApplicationGenerator extends Generator {
           pushToRemoteRepository(applicationRepository, gitHubUser, gitHubPassword, usedGitHost);
         } catch (Exception e) {
           logger.printStackTrace(e);
-          throw new GitHubException(e.getMessage());
+          throw new GitHostException(e.getMessage());
         }
 
         // switch branch to "gh-pages"
@@ -232,7 +232,7 @@ public class ApplicationGenerator extends Generator {
           Git.wrap(applicationRepository).checkout().setName("gh-pages").call();
         } catch (Exception e) {
           logger.printStackTrace(e);
-          throw new GitHubException(e.getMessage());
+          throw new GitHostException(e.getMessage());
         }
       }
 
@@ -336,7 +336,7 @@ public class ApplicationGenerator extends Generator {
           }
         } catch (Exception e) {
           logger.printStackTrace(e);
-          throw new GitHubException(e.getMessage());
+          throw new GitHostException(e.getMessage());
         }
         treeWalk.close();
         // commit files
@@ -346,7 +346,7 @@ public class ApplicationGenerator extends Generator {
               .call();
         } catch (Exception e) {
           logger.printStackTrace(e);
-          throw new GitHubException(e.getMessage());
+          throw new GitHostException(e.getMessage());
         }
       }
       if (!forDeploy) {
@@ -356,7 +356,7 @@ public class ApplicationGenerator extends Generator {
               "gh-pages", usedGitHost);
         } catch (Exception e) {
           logger.printStackTrace(e);
-          throw new GitHubException(e.getMessage());
+          throw new GitHostException(e.getMessage());
         }
       } else {
         // push (local) repository content to GitHub repository "master" branch
@@ -364,7 +364,7 @@ public class ApplicationGenerator extends Generator {
           pushToRemoteRepository(applicationRepository, gitHubUser, gitHubPassword, usedGitHost);
         } catch (Exception e) {
           logger.printStackTrace(e);
-          throw new GitHubException(e.getMessage());
+          throw new GitHostException(e.getMessage());
         }
       }
 

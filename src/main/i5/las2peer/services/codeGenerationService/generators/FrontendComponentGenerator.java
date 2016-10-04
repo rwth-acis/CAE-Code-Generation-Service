@@ -18,7 +18,7 @@ import org.eclipse.jgit.treewalk.TreeWalk;
 import org.eclipse.jgit.treewalk.filter.PathFilter;
 
 import i5.las2peer.logging.L2pLogger;
-import i5.las2peer.services.codeGenerationService.exception.GitHubException;
+import i5.las2peer.services.codeGenerationService.exception.GitHostException;
 import i5.las2peer.services.codeGenerationService.models.frontendComponent.Event;
 import i5.las2peer.services.codeGenerationService.models.frontendComponent.FrontendComponent;
 import i5.las2peer.services.codeGenerationService.models.frontendComponent.Function;
@@ -62,13 +62,13 @@ public class FrontendComponentGenerator extends Generator {
    * @param gitHubUserMail the mail of the CAE user
    * @param gitHubPassword the password of the CAE user
    * 
-   * @throws GitHubException thrown if anything goes wrong during this process. Wraps around all
+   * @throws GitHostException thrown if anything goes wrong during this process. Wraps around all
    *         other exceptions and prints their message.
    * 
    */
   public static void createSourceCode(FrontendComponent frontendComponent,
       String templateRepositoryName, String gitHubOrganization, String gitHubUser,
-      String gitHubUserMail, String gitHubPassword, String usedGitHost) throws GitHubException {
+      String gitHubUserMail, String gitHubPassword, String usedGitHost) throws GitHostException {
 
     // variables to be closed in the final block
     Repository frontendComponentRepository = null;
@@ -188,7 +188,7 @@ public class FrontendComponentGenerator extends Generator {
         }
       } catch (Exception e) {
         logger.printStackTrace(e);
-        throw new GitHubException(e.getMessage());
+        throw new GitHostException(e.getMessage());
       }
       // the global traceModel
       TraceModel traceModel = new TraceModel();
@@ -283,7 +283,7 @@ public class FrontendComponentGenerator extends Generator {
             .setCommitter(caeUser).call();
       } catch (Exception e) {
         logger.printStackTrace(e);
-        throw new GitHubException(e.getMessage());
+        throw new GitHostException(e.getMessage());
       }
 
       // push (local) repository content to GitHub repository "gh-pages" branch
@@ -292,7 +292,7 @@ public class FrontendComponentGenerator extends Generator {
             "gh-pages", usedGitHost);
       } catch (Exception e) {
         logger.printStackTrace(e);
-        throw new GitHubException(e.getMessage());
+        throw new GitHostException(e.getMessage());
       }
 
       // close all open resources

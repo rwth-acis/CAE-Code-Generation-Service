@@ -13,10 +13,10 @@ import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 
-import i5.las2peer.services.codeGenerationService.exception.GitHubException;
+import i5.las2peer.services.codeGenerationService.exception.GitHostException;
 
 public class GitLabAdapter implements GitHostAdapter {
-	// TODO: Add token
+	// TODO: Token from property file
 	private final static String token = "";
 	private final static String baseURL = "";
 
@@ -57,7 +57,7 @@ public class GitLabAdapter implements GitHostAdapter {
 		return "";
 	}
 	
-	private static void deleteResource(String url) throws GitHubException {
+	private static void deleteResource(String url) throws GitHostException {
 		HttpURLConnection c = null;
 		
 		try {
@@ -71,13 +71,13 @@ public class GitLabAdapter implements GitHostAdapter {
 			
 			if(status != 200) {
 				c.disconnect();
-				throw new GitHubException("failed to delete resource with " + status + " at:" + u.getPath());
+				throw new GitHostException("failed to delete resource with " + status + " at:" + u.getPath());
 			}
 			
 		} catch (MalformedURLException e) {
-			throw new GitHubException("Failed to delete resource");
+			throw new GitHostException("Failed to delete resource");
 		} catch (IOException e) {
-			throw new GitHubException("Failed to delete resource");
+			throw new GitHostException("Failed to delete resource");
 		} finally {
 			if (c != null) {
 				c.disconnect();
@@ -85,7 +85,7 @@ public class GitLabAdapter implements GitHostAdapter {
 		}
 	}
 	
-	private static boolean createResource(String url, JSONObject data) throws GitHubException {
+	private static boolean createResource(String url, JSONObject data) throws GitHostException {
 		HttpURLConnection c = null;
 		boolean success = false;
 		
@@ -118,13 +118,13 @@ public class GitLabAdapter implements GitHostAdapter {
 			      message += line;
 			    }
 			    reader.close();
-			    throw new GitHubException(message);	  
+			    throw new GitHostException(message);	  
 			}
 			
 		} catch (MalformedURLException e) {
-			throw new GitHubException("GitLab repo creation went wrong");
+			throw new GitHostException("GitLab repo creation went wrong");
 		} catch (IOException e) {
-			throw new GitHubException("GitLab repo creation went wrong");
+			throw new GitHostException("GitLab repo creation went wrong");
 		} finally {
 			if (c != null) {
 				c.disconnect();
@@ -154,7 +154,7 @@ public class GitLabAdapter implements GitHostAdapter {
 		return arr;
 	}
 	
-	public static void deleteRepo(String name, String gitHubOrganization) throws GitHubException {
+	public void deleteRepo(String name, String gitHubOrganization) throws GitHostException {
 		long id = -1;
 		try {
 		JSONArray arr = getJSONArray(baseURL + "groups/" + gitHubOrganization + "/projects/");
@@ -166,17 +166,17 @@ public class GitLabAdapter implements GitHostAdapter {
 		}
 		
 		if (id == -1) {
-			throw new GitHubException("Could not find id for project " + name + " with: " + arr.toJSONString());
+			throw new GitHostException("Could not find id for project " + name + " with: " + arr.toJSONString());
 		}
 		
 		}catch (ParseException e) {
-			throw new GitHubException("Failed to delete repo");
+			throw new GitHostException("Failed to delete repo");
 		}
 		// example: http://ginkgo.informatik.rwth-aachen.de:4080/api/v3/projects/2
 		deleteResource(baseURL + "projects/" + id);
 	}
 	
-	public static void createRepo(String gitHubOrganization,String name, String description) throws GitHubException {
+	public void createRepo(String gitHubOrganization,String name, String description) throws GitHostException {
 		//Get namespace id for group
 		JSONObject result = getJSONObject(baseURL + "groups/" + gitHubOrganization);
 		long id = (long) result.get("id");

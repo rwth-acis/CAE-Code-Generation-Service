@@ -16,7 +16,7 @@ import org.json.simple.JSONObject;
 import i5.las2peer.logging.L2pLogger;
 import i5.las2peer.logging.NodeObserver.Event;
 import i5.las2peer.services.codeGenerationService.CodeGenerationService;
-import i5.las2peer.services.codeGenerationService.exception.GitHubException;
+import i5.las2peer.services.codeGenerationService.exception.GitHostException;
 import i5.las2peer.services.codeGenerationService.models.frontendComponent.FrontendComponent;
 import i5.las2peer.services.codeGenerationService.models.traceModel.FileTraceModel;
 import i5.las2peer.services.codeGenerationService.models.traceModel.FileTraceModelFactory;
@@ -41,7 +41,7 @@ public class FrontendComponentSynchronization extends FrontendComponentGenerator
   public static void synchronizeSourceCode(FrontendComponent frontendComponent,
       FrontendComponent oldFrontendComponent, HashMap<String, JSONObject> files,
       String templateRepositoryName, String gitHubOrganization, String usedGitHost,CodeGenerationService service)
-      throws GitHubException {
+      throws GitHostException {
     // first load the needed templates from the template repository
 
     // helper variables
@@ -128,7 +128,7 @@ public class FrontendComponentSynchronization extends FrontendComponentGenerator
       }
     } catch (Exception e) {
       logger.printStackTrace(e);
-      throw new GitHubException(e.getMessage());
+      throw new GitHostException(e.getMessage());
     }
 
     // now loop through the traced files and synchronize them

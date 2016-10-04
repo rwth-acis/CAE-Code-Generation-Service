@@ -46,7 +46,7 @@ import com.sun.corba.se.pept.transport.Connection;
 import i5.las2peer.api.Service;
 import i5.las2peer.logging.L2pLogger;
 import i5.las2peer.services.codeGenerationService.adapters.GitLabAdapter;
-import i5.las2peer.services.codeGenerationService.exception.GitHubException;
+import i5.las2peer.services.codeGenerationService.exception.GitHostException;
 import i5.las2peer.services.codeGenerationService.models.traceModel.FileTraceModel;
 import i5.las2peer.services.codeGenerationService.models.traceModel.TraceModel;
 
@@ -75,12 +75,12 @@ public abstract class Generator {
    * 
    * @return a {@link org.eclipse.jgit.lib.Repository}
    * 
-   * @throws GitHubException if anything goes wrong during this creation process
+   * @throws GitHostException if anything goes wrong during this creation process
    * 
    */
   @SuppressWarnings("unchecked")
   public static Repository generateNewRepository(String name, String gitHubOrganization,
-      String gitHubUser, String gitHubPassword, String usedGitHost) throws GitHubException {
+      String gitHubUser, String gitHubPassword, String usedGitHost) throws GitHostException {
 
     Git git = null;
     File localPath = null;
@@ -91,7 +91,7 @@ public abstract class Generator {
       localPath.delete();
     } catch (IOException e) {
       logger.printStackTrace(e);
-      throw new GitHubException(e.getMessage());
+      throw new GitHostException(e.getMessage());
     }
 
     // add a remote configuration (origin) to the newly created repository
@@ -116,7 +116,7 @@ public abstract class Generator {
       config.save();
     } catch (Exception e) {
       logger.printStackTrace(e);
-      throw new GitHubException(e.getMessage());
+      throw new GitHostException(e.getMessage());
     }
 
     // now create empty GitHub repository with an HTTP request, using the GitHub API directly
@@ -168,16 +168,16 @@ public abstract class Generator {
 		      message += line;
 		    }
 		    reader.close();
-		    throw new GitHubException(message);
+		    throw new GitHostException(message);
 		  }
       }
       
     } catch (MalformedURLException e) {
     	logger.printStackTrace(e);
-      	throw new GitHubException(e.getMessage());
+      	throw new GitHostException(e.getMessage());
     } catch (IOException e) {
     	logger.printStackTrace(e);
-    	throw new GitHubException(e.getMessage());
+    	throw new GitHostException(e.getMessage());
     }
     return git.getRepository();
   }
@@ -194,15 +194,15 @@ public abstract class Generator {
    * 
    * @return a {@link org.eclipse.jgit.treewalk.TreeWalk}
    * 
-   * @throws GitHubException if anything goes wrong during retrieving the repository's content
+   * @throws GitHostException if anything goes wrong during retrieving the repository's content
    * 
    */
   public static TreeWalk getTemplateRepositoryContent(String templateRepositoryName,
-      String gitHubOrganization, String usedGitHost) throws GitHubException {
+      String gitHubOrganization, String usedGitHost) throws GitHostException {
     Repository templateRepository = getRemoteRepository(templateRepositoryName, gitHubOrganization, usedGitHost);
     
     if (templateRepository == null) {
-    	throw new GitHubException("Template repository is null!");
+    	throw new GitHostException("Template repository is null!");
     }
     
     // get the content of the repository
@@ -213,7 +213,7 @@ public abstract class Generator {
       ObjectId lastCommitId = templateRepository.resolve(Constants.HEAD);
       
       if (lastCommitId == null) {
-		throw new GitHubException("lastCommit is null, template repo is probably empty");
+		throw new GitHostException("lastCommit is null, template repo is probably empty");
       }
       
       treeWalk = new TreeWalk(templateRepository);
@@ -223,7 +223,7 @@ public abstract class Generator {
       treeWalk.setRecursive(true);
     } catch (Exception e) {
       logger.printStackTrace(e);
-      throw new GitHubException(e.getMessage());
+      throw new GitHostException(e.getMessage());
     } finally {
       templateRepository.close();
       revWalk.close();
@@ -244,11 +244,11 @@ public abstract class Generator {
    * 
    * @return a {@link org.eclipse.jgit.treewalk.TreeWalk}
    * 
-   * @throws GitHubException if anything goes wrong during retrieving the repository's content
+   * @throws GitHostException if anything goes wrong during retrieving the repository's content
    * 
    */
   public static TreeWalk getRepositoryContent(String repositoryName, String gitHubOrganization, String usedGitHost)
-      throws GitHubException {
+      throws GitHostException {
     Repository repository = getRemoteRepository(repositoryName, gitHubOrganization, usedGitHost);
     // get the content of the repository
     RevWalk revWalk = null;
@@ -268,7 +268,7 @@ public abstract class Generator {
       treeWalk.setRecursive(true);
     } catch (Exception e) {
       logger.printStackTrace(e);
-      throw new GitHubException(e.getMessage());
+      throw new GitHostException(e.getMessage());
     } finally {
       repository.close();
       revWalk.close();
@@ -287,11 +287,11 @@ public abstract class Generator {
    * 
    * @return a {@link org.eclipse.jgit.lib.Repository}
    * 
-   * @throws GitHubException if anything goes wrong during retrieving the repository's content
+   * @throws GitHostException if anything goes wrong during retrieving the repository's content
    * 
    */
   private static Repository getRemoteRepository(String repositoryName, String gitHubOrganization, String usedGitHost)
-      throws GitHubException {
+      throws GitHostException {
 	  String repositoryAddress;
 	switch (usedGitHost) {
 	case "GitHub":
@@ -312,7 +312,7 @@ public abstract class Generator {
       localPath = File.createTempFile(repositoryName, "");
     } catch (IOException e) {
       logger.printStackTrace(e);
-      throw new GitHubException(e.getMessage());
+      throw new GitHostException(e.getMessage());
     }
     localPath.delete();
 
@@ -328,7 +328,7 @@ public abstract class Generator {
       
     } catch (Exception e) {
       logger.printStackTrace(e);
-      throw new GitHubException(e.getMessage());
+      throw new GitHostException(e.getMessage());
     }
 
     return repository;
@@ -348,11 +348,11 @@ public abstract class Generator {
    * 
    * @return the {@link org.eclipse.jgit.lib.Repository}, now containing one more file
    * 
-   * @throws GitHubException if anything goes wrong during the creation of the file
+   * @throws GitHostException if anything goes wrong during the creation of the file
    * 
    */
   public static Repository createTextFileInRepository(Repository repository, String relativePath,
-      String fileName, String content) throws GitHubException {
+      String fileName, String content) throws GitHostException {
 
     File dirs = new File(repository.getDirectory().getParent() + "/" + relativePath);
     dirs.mkdirs();
@@ -366,7 +366,7 @@ public abstract class Generator {
       printStream.close();
     } catch (IOException e) {
       logger.printStackTrace(e);
-      throw new GitHubException(e.getMessage());
+      throw new GitHostException(e.getMessage());
     }
 
     // stage file
@@ -374,7 +374,7 @@ public abstract class Generator {
       Git.wrap(repository).add().addFilepattern(".").call();
     } catch (Exception e) {
       logger.printStackTrace(e);
-      throw new GitHubException(e.getMessage());
+      throw new GitHostException(e.getMessage());
     }
     return repository;
 
@@ -393,11 +393,11 @@ public abstract class Generator {
    * 
    * @return the {@link org.eclipse.jgit.lib.Repository}, now containing one more file
    * 
-   * @throws GitHubException if anything goes wrong during the creation of the file
+   * @throws GitHostException if anything goes wrong during the creation of the file
    * 
    */
   public static Repository createBinaryFileInRepository(Repository repository, String relativePath,
-      String fileName, Object content) throws GitHubException {
+      String fileName, Object content) throws GitHostException {
 
     File dirs = new File(repository.getDirectory().getParent() + "/" + relativePath);
     dirs.mkdirs();
@@ -411,7 +411,7 @@ public abstract class Generator {
       output.close();
     } catch (IOException e) {
       logger.printStackTrace(e);
-      throw new GitHubException(e.getMessage());
+      throw new GitHostException(e.getMessage());
     }
 
     // stage file
@@ -419,7 +419,7 @@ public abstract class Generator {
       Git.wrap(repository).add().addFilepattern(".").call();
     } catch (Exception e) {
       logger.printStackTrace(e);
-      throw new GitHubException(e.getMessage());
+      throw new GitHostException(e.getMessage());
     }
     return repository;
 
@@ -438,11 +438,11 @@ public abstract class Generator {
    * 
    * @return the {@link org.eclipse.jgit.lib.Repository}, now containing one more file
    * 
-   * @throws GitHubException if anything goes wrong during the creation of the file
+   * @throws GitHostException if anything goes wrong during the creation of the file
    * 
    */
   public static Repository createImageFileInRepository(Repository repository, String relativePath,
-      String fileName, BufferedImage content) throws GitHubException {
+      String fileName, BufferedImage content) throws GitHostException {
 
     File dirs = new File(repository.getDirectory().getParent() + "/" + relativePath);
     dirs.mkdirs();
@@ -452,7 +452,7 @@ public abstract class Generator {
       ImageIO.write(content, fileName.substring(fileName.lastIndexOf(".") + 1), file);
     } catch (IOException e) {
       logger.printStackTrace(e);
-      throw new GitHubException(e.getMessage());
+      throw new GitHostException(e.getMessage());
     }
 
     // stage file
@@ -460,7 +460,7 @@ public abstract class Generator {
       Git.wrap(repository).add().addFilepattern(".").call();
     } catch (Exception e) {
       logger.printStackTrace(e);
-      throw new GitHubException(e.getMessage());
+      throw new GitHostException(e.getMessage());
     }
     return repository;
 
@@ -478,11 +478,11 @@ public abstract class Generator {
    * 
    * @return the {@link org.eclipse.jgit.lib.Repository} that was pushed
    * 
-   * @throws GitHubException if anything goes wrong during the push command
+   * @throws GitHostException if anything goes wrong during the push command
    * 
    */
   public static Repository pushToRemoteRepository(Repository repository, String gitHubUser,
-      String gitHubPassword, String usedGitHost) throws GitHubException {
+      String gitHubPassword, String usedGitHost) throws GitHostException {
     return pushToRemoteRepository(repository, gitHubUser, gitHubPassword, "master", "master", usedGitHost);
   }
 
@@ -500,12 +500,12 @@ public abstract class Generator {
    * 
    * @return the {@link org.eclipse.jgit.lib.Repository} that was pushed
    * 
-   * @throws GitHubException if anything goes wrong during the push command
+   * @throws GitHostException if anything goes wrong during the push command
    * 
    */
   public static Repository pushToRemoteRepository(Repository repository, String gitHubUser,
       String gitHubPassword, String localBranchName, String remoteBranchName, String usedGitHost)
-      throws GitHubException {
+      throws GitHostException {
     CredentialsProvider credentialsProvider =
         new UsernamePasswordCredentialsProvider(gitHubUser, gitHubPassword);
     try {
@@ -516,7 +516,7 @@ public abstract class Generator {
           .setRefSpecs(spec).call();
     } catch (Exception e) {
       logger.printStackTrace(e);
-      throw new GitHubException(e.getMessage());
+      throw new GitHostException(e.getMessage());
     }
     return repository;
   }
@@ -531,11 +531,11 @@ public abstract class Generator {
    * @param gitHubUser the name of the GitHub user
    * @param gitHubPassword the password of the GitHub user
    * 
-   * @throws GitHubException if deletion was not successful
+   * @throws GitHostException if deletion was not successful
    * 
    */
   public static void deleteRemoteRepository(String name, String gitHubOrganization,
-      String gitHubUser, String gitHubPassword, String usedGitHost) throws GitHubException {
+      String gitHubUser, String gitHubPassword, String usedGitHost) throws GitHostException {
     
 	  if(Objects.equals(usedGitHost,"GitLab")){
 		  //See new adapter class
@@ -561,15 +561,15 @@ public abstract class Generator {
 		          message += line;
 		        }
 		        reader.close();
-		        throw new GitHubException(message);
+		        throw new GitHostException(message);
 		      }
 	
 	    } catch (Exception e) {
 	      logger.printStackTrace(e);
-	      throw new GitHubException(e.getMessage());
+	      throw new GitHostException(e.getMessage());
 	    }
 	  } else {
-		  throw new GitHubException("No valid gitHost selected");
+		  throw new GitHostException("No valid gitHost selected");
 	  }
   }
 
@@ -626,11 +626,11 @@ public abstract class Generator {
    * 
    * @return The {@link org.eclipse.jgit.lib.Repository}, now containing the traced files of the
    *         trace model
-   * @throws GitHubException if anything goes wrong during the creation of the traced files
+   * @throws GitHostException if anything goes wrong during the creation of the traced files
    */
 
   protected static Repository createTracedFilesInRepository(TraceModel traceModel,
-      Repository repository) throws GitHubException {
+      Repository repository) throws GitHostException {
     Map<String, FileTraceModel> fileTraceMap = traceModel.getFilenameToFileTraceModelMap();
 
     for (String fullPath : fileTraceMap.keySet()) {

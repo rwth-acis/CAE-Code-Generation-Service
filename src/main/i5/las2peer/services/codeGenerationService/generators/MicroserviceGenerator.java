@@ -17,7 +17,7 @@ import org.eclipse.jgit.treewalk.TreeWalk;
 import org.eclipse.jgit.treewalk.filter.PathFilter;
 
 import i5.las2peer.logging.L2pLogger;
-import i5.las2peer.services.codeGenerationService.exception.GitHubException;
+import i5.las2peer.services.codeGenerationService.exception.GitHostException;
 import i5.las2peer.services.codeGenerationService.exception.ModelParseException;
 import i5.las2peer.services.codeGenerationService.models.microservice.Column;
 import i5.las2peer.services.codeGenerationService.models.microservice.Database;
@@ -126,13 +126,13 @@ public class MicroserviceGenerator extends Generator {
    * @param gitHubUserMail the mail of the CAE user
    * @param gitHubPassword the password of the CAE user
    * 
-   * @throws GitHubException thrown if anything goes wrong during this process. Wraps around all
+   * @throws GitHostException thrown if anything goes wrong during this process. Wraps around all
    *         other exceptions and prints their message.
    * 
    */
   public static void createSourceCode(Microservice microservice, String templateRepositoryName,
       String gitHubOrganization, String gitHubUser, String gitHubUserMail, String gitHubPassword, String usedGitHost)
-      throws GitHubException {
+      throws GitHostException {
 
     // variables to be closed in the final block
     Repository microserviceRepository = null;
@@ -318,7 +318,7 @@ public class MicroserviceGenerator extends Generator {
         }
       } catch (Exception e) {
         logger.printStackTrace(e);
-        throw new GitHubException(e.getMessage());
+        throw new GitHostException(e.getMessage());
       }
 
       microserviceRepository = generateNewRepository(repositoryName, gitHubOrganization, gitHubUser, gitHubPassword, usedGitHost);
@@ -404,7 +404,7 @@ public class MicroserviceGenerator extends Generator {
             .setCommitter(caeUser).call();
       } catch (Exception e) {
         logger.printStackTrace(e);
-        throw new GitHubException(e.getMessage());
+        throw new GitHostException(e.getMessage());
       }
 
       // push (local) repository content to GitHub repository
@@ -412,11 +412,11 @@ public class MicroserviceGenerator extends Generator {
         pushToRemoteRepository(microserviceRepository, gitHubUser, gitHubPassword, usedGitHost);
       } catch (Exception e) {
         logger.printStackTrace(e);
-        throw new GitHubException(e.getMessage());
+        throw new GitHostException(e.getMessage());
       }
 
       // close all open resources
-    } catch (GitHubException e) {
+    } catch (GitHostException e) {
     	throw e;
     } finally {
       if(microserviceRepository != null) {
