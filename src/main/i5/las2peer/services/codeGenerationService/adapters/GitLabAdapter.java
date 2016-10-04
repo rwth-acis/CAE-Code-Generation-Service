@@ -16,11 +16,13 @@ import org.json.simple.parser.ParseException;
 import i5.las2peer.services.codeGenerationService.exception.GitHostException;
 
 public class GitLabAdapter extends BaseGitHostAdapter{
-	// TODO: Token from property file
-	private String token = "";
+	//TODO: Exception handling
+
+	private String token;
 		
-	public GitLabAdapter(String baseURL, String token) {
-		super(baseURL);
+	public GitLabAdapter(String baseURL, String token, String gitUser, String gitPassword, String gitOrganization, 
+			String templateRepository, String gitUserMail) {
+		super(gitUser, gitPassword, gitOrganization, templateRepository, gitUserMail, baseURL);
 		this.token = token;
 
 	}
@@ -159,10 +161,10 @@ public class GitLabAdapter extends BaseGitHostAdapter{
 		return arr;
 	}
 	
-	public void deleteRepo(String name, String gitHubOrganization) throws GitHostException {
+	public void deleteRepo(String name) throws GitHostException {
 		long id = -1;
 		try {
-		JSONArray arr = getJSONArray(baseURL + "groups/" + gitHubOrganization + "/projects/");
+		JSONArray arr = getJSONArray(baseURL + "groups/" + this.gitOrganization + "/projects/");
 		// We need to get the id of the repo, search for it
 		for(Object obj : arr){
 			if (((JSONObject) obj).get("name").toString().equalsIgnoreCase(name)) {
@@ -181,9 +183,9 @@ public class GitLabAdapter extends BaseGitHostAdapter{
 		deleteResource(baseURL + "projects/" + id);
 	}
 	
-	public void createRepo(String gitHubOrganization,String name, String description) throws GitHostException {
+	public void createRepo(String name, String description) throws GitHostException {
 		//Get namespace id for group
-		JSONObject result = getJSONObject(baseURL + "groups/" + gitHubOrganization);
+		JSONObject result = getJSONObject(baseURL + "groups/" + this.getGitOrganization());
 		long id = (long) result.get("id");
 		//Create json object representing new repo
 		JSONObject obj = new JSONObject();

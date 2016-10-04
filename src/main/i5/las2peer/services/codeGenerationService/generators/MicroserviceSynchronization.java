@@ -77,7 +77,7 @@ public class MicroserviceSynchronization extends MicroserviceGenerator {
     String guidances = null;
 
     try (TreeWalk treeWalk =
-        getTemplateRepositoryContent(templateRepositoryName, gitHubOrganization, usedGitHost)) {
+        getTemplateRepositoryContent(null)) {
       // now load the TreeWalk containing the template repository content
       treeWalk.setFilter(PathFilter.create("backend/"));
       ObjectReader reader = treeWalk.getObjectReader();

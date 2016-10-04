@@ -126,8 +126,7 @@ public class CodeGenerationService extends Service {
               L2pLogger.logEvent(Event.SERVICE_MESSAGE,
                   "createFromModel: Creating microservice source code now..");
               MicroserviceGenerator.createSourceCode(microservice, this.templateRepository,
-                  this.gitOrganization, this.gitUser, this.gitUserMail,
-                  this.gitPassword, this.usedGitHost);
+                  null);
               L2pLogger.logEvent(Event.SERVICE_MESSAGE, "createFromModel: Created!");
               return "done";  
               

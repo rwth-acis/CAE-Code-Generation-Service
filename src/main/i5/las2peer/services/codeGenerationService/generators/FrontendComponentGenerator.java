@@ -101,12 +101,12 @@ public class FrontendComponentGenerator extends Generator {
       PersonIdent caeUser = new PersonIdent(gitHubUser, gitHubUserMail);
       String repositoryName = getRepositoryName(frontendComponent);
       frontendComponentRepository =
-          generateNewRepository(repositoryName, gitHubOrganization, gitHubUser, gitHubPassword, usedGitHost);
+          generateNewRepository(repositoryName, null);
 
 
       try {
         // now load the TreeWalk containing the template repository content
-        treeWalk = getTemplateRepositoryContent(templateRepositoryName, gitHubOrganization, usedGitHost);
+        treeWalk = getTemplateRepositoryContent(null);
         treeWalk.setFilter(PathFilter.create("frontend/"));
         ObjectReader reader = treeWalk.getObjectReader();
         // walk through the tree and retrieve the needed templates

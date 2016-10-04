@@ -15,8 +15,10 @@ import org.eclipse.jgit.lib.PersonIdent;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.treewalk.TreeWalk;
 import org.eclipse.jgit.treewalk.filter.PathFilter;
+import org.eclipse.jgit.util.GitDateParser;
 
 import i5.las2peer.logging.L2pLogger;
+import i5.las2peer.services.codeGenerationService.adapters.BaseGitHostAdapter;
 import i5.las2peer.services.codeGenerationService.exception.GitHostException;
 import i5.las2peer.services.codeGenerationService.exception.ModelParseException;
 import i5.las2peer.services.codeGenerationService.models.microservice.Column;
@@ -120,18 +122,14 @@ public class MicroserviceGenerator extends Generator {
    * Creates source code from a CAE microservice model and pushes it to GitHub.
    * 
    * @param microservice the microservice model
-   * @param templateRepositoryName the name of the template repository on GitHub
-   * @param gitHubOrganization the organization that is used in the CAE
-   * @param gitHubUser the CAE user
-   * @param gitHubUserMail the mail of the CAE user
-   * @param gitHubPassword the password of the CAE user
-   * 
+ * @param templateRepositoryName the name of the template repository on GitHub
+ * @param gitAdapter TODO
    * @throws GitHostException thrown if anything goes wrong during this process. Wraps around all
    *         other exceptions and prints their message.
    * 
    */
   public static void createSourceCode(Microservice microservice, String templateRepositoryName,
-      String gitHubOrganization, String gitHubUser, String gitHubUserMail, String gitHubPassword, String usedGitHost)
+      BaseGitHostAdapter gitAdapter)
       throws GitHostException {
 
     // variables to be closed in the final block
@@ -167,7 +165,7 @@ public class MicroserviceGenerator extends Generator {
 
     try {
     	
-      PersonIdent caeUser = new PersonIdent(gitHubUser, gitHubUserMail);
+      PersonIdent caeUser = new PersonIdent(gitAdapter.getGitUser(), gitAdapter.getGitPassword());
       String repositoryName = getRepositoryName(microservice);
       TraceModel traceModel = new TraceModel();
       
@@ -175,7 +173,7 @@ public class MicroserviceGenerator extends Generator {
       try {
 
         // now load the TreeWalk containing the template repository content
-        treeWalk = getTemplateRepositoryContent(templateRepositoryName, gitHubOrganization, usedGitHost);
+        treeWalk = getTemplateRepositoryContent(gitAdapter);
         treeWalk.setFilter(PathFilter.create("backend/"));
         ObjectReader reader = treeWalk.getObjectReader();
         
@@ -190,7 +188,7 @@ public class MicroserviceGenerator extends Generator {
             case ".project":
               String projectFile = new String(loader.getBytes(), "UTF-8");
               generateOtherArtifacts(Template.createInitialTemplateEngine(traceModel, path),
-                  microservice, gitHubOrganization, projectFile);
+                  microservice, gitAdapter.getGitOrganization(), projectFile);
               break;
             case "guidances.json":
               guidances = new String(loader.getBytes(), "UTF-8");
@@ -201,7 +199,7 @@ public class MicroserviceGenerator extends Generator {
             case "README.md":
               String readMe = new String(loader.getBytes(), "UTF-8");
               generateOtherArtifacts(Template.createInitialTemplateEngine(traceModel, path),
-                  microservice, gitHubOrganization, readMe);
+                  microservice, gitAdapter.getGitOrganization(), readMe);
               break;
             case "LICENSE.txt":
               license = new String(loader.getBytes(), "UTF-8");
@@ -209,17 +207,17 @@ public class MicroserviceGenerator extends Generator {
             case "build.xml":
               String buildFile = new String(loader.getBytes(), "UTF-8");
               generateOtherArtifacts(Template.createInitialTemplateEngine(traceModel, path),
-                  microservice, gitHubOrganization, buildFile);
+                  microservice, gitAdapter.getGitOrganization(), buildFile);
               break;
             case "start_network.bat":
               String startScriptWindows = new String(loader.getBytes(), "UTF-8");
               generateOtherArtifacts(Template.createInitialTemplateEngine(traceModel, path),
-                  microservice, gitHubOrganization, startScriptWindows);
+                  microservice, gitAdapter.getGitOrganization(), startScriptWindows);
               break;
             case "start_network.sh":
               String startScriptUnix = new String(loader.getBytes(), "UTF-8");
               generateOtherArtifacts(Template.createInitialTemplateEngine(traceModel, path),
-                  microservice, gitHubOrganization, startScriptUnix);
+                  microservice, gitAdapter.getGitOrganization(), startScriptUnix);
               break;
             case "start_UserAgentGenerator.bat":
               userAgentGeneratorWindows = new String(loader.getBytes(), "UTF-8");
@@ -230,12 +228,12 @@ public class MicroserviceGenerator extends Generator {
             case "nodeInfo.xml":
               String nodeInfo = new String(loader.getBytes(), "UTF-8");
               generateOtherArtifacts(Template.createInitialTemplateEngine(traceModel, path),
-                  microservice, gitHubOrganization, nodeInfo);
+                  microservice, gitAdapter.getGitOrganization(), nodeInfo);
               break;
             case "service.properties":
               String antServiceProperties = new String(loader.getBytes(), "UTF-8");
               generateOtherArtifacts(Template.createInitialTemplateEngine(traceModel, path),
-                  microservice, gitHubOrganization, antServiceProperties);
+                  microservice, gitAdapter.getGitOrganization(), antServiceProperties);
               break;
             case "user.properties":
               antUserProperties = new String(loader.getBytes(), "UTF-8");
@@ -243,7 +241,7 @@ public class MicroserviceGenerator extends Generator {
             case "ivy.xml":
               String ivy = new String(loader.getBytes(), "UTF-8");
               generateOtherArtifacts(Template.createInitialTemplateEngine(traceModel, path),
-                  microservice, gitHubOrganization, ivy);
+                  microservice, gitAdapter.getGitOrganization(), ivy);
               break;
             case "ivysettings.xml":
               ivySettings = new String(loader.getBytes(), "UTF-8");
@@ -252,13 +250,13 @@ public class MicroserviceGenerator extends Generator {
               String serviceProperties = new String(loader.getBytes(), "UTF-8");
               TemplateEngine serviceTemplateEngine = Template.createInitialTemplateEngine(
                   traceModel, getServicePropertiesFileName(microservice));
-              generateOtherArtifacts(serviceTemplateEngine, microservice, gitHubOrganization,
+              generateOtherArtifacts(serviceTemplateEngine, microservice, gitAdapter.getGitOrganization(),
                   serviceProperties);
               break;
             case "i5.las2peer.webConnector.WebConnector.properties":
               String webConnectorConfig = new String(loader.getBytes(), "UTF-8");
               generateOtherArtifacts(Template.createInitialTemplateEngine(traceModel, path),
-                  microservice, gitHubOrganization, webConnectorConfig);
+                  microservice, gitAdapter.getGitOrganization(), webConnectorConfig);
               break;
             case ".gitignore":
               gitignore = new String(loader.getBytes(), "UTF-8");
@@ -266,7 +264,7 @@ public class MicroserviceGenerator extends Generator {
             case ".classpath":
               String classpath = new String(loader.getBytes(), "UTF-8");
               generateOtherArtifacts(Template.createInitialTemplateEngine(traceModel, path),
-                  microservice, gitHubOrganization, classpath);
+                  microservice, gitAdapter.getGitOrganization(), classpath);
               break;
             case "DatabaseManager.java":
               if (microservice.getDatabase() != null) {
@@ -275,7 +273,7 @@ public class MicroserviceGenerator extends Generator {
                     Template.createInitialTemplateEngine(traceModel,
                         "src/main/i5/las2peer/services/" + packageName
                             + "/database/DatabaseManager.java"),
-                    microservice, gitHubOrganization, databaseManager);
+                    microservice, gitAdapter.getGitOrganization(), databaseManager);
               }
               break;
             case "ServiceClass.java":
@@ -321,17 +319,21 @@ public class MicroserviceGenerator extends Generator {
         throw new GitHostException(e.getMessage());
       }
 
-      microserviceRepository = generateNewRepository(repositoryName, gitHubOrganization, gitHubUser, gitHubPassword, usedGitHost);
+      microserviceRepository = generateNewRepository(repositoryName, gitAdapter);
       
       // generate service class and test
+      /*
       String repositoryLocation = "";
       if (Objects.equals(usedGitHost, "GitLab")) {
     	  //TODO: Check url
-    	  repositoryLocation = "http://ginkgo.informatik.rwth-aachen.de:4080/" + gitHubOrganization + "/" + repositoryName;
+    	  repositoryLocation = "http://ginkgo.informatik.rwth-aachen.de:4080/" + gitAdapter.getGitOrganization() + "/" + repositoryName;
       }
       if (Objects.equals(usedGitHost, "GitHub")) {
-    	  repositoryLocation = "https://github.com/" + gitHubOrganization + "/" + repositoryName;
+    	  repositoryLocation = "https://github.com/" + gitAdapter.getGitOrganization() + "/" + repositoryName;
       }
+      */
+      
+      String repositoryLocation = gitAdapter.getBaseURL() + gitAdapter.getGitOrganization() + "/" + repositoryName;
 
       FileTraceModel serviceClassTraceModel =
           new FileTraceModel(traceModel, getServiceFileName(microservice));
@@ -409,7 +411,7 @@ public class MicroserviceGenerator extends Generator {
 
       // push (local) repository content to GitHub repository
       try {
-        pushToRemoteRepository(microserviceRepository, gitHubUser, gitHubPassword, usedGitHost);
+        pushToRemoteRepository(microserviceRepository, gitAdapter);
       } catch (Exception e) {
         logger.printStackTrace(e);
         throw new GitHostException(e.getMessage());

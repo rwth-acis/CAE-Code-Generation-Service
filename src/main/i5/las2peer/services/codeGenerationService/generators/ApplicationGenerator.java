@@ -89,13 +89,13 @@ public class ApplicationGenerator extends Generator {
 
 
       applicationRepository =
-          generateNewRepository(repositoryName, gitHubOrganization, gitHubUser, gitHubPassword, usedGitHost);
+          generateNewRepository(repositoryName, null);
 
       // now we start by adding a readMe from the template repository (and thereby initializing the
       // master branch, which is needed to create a "gh-pages" branch afterwards
       String readMe = null;
       BufferedImage logo = null;
-      treeWalk = getTemplateRepositoryContent(templateRepositoryName, gitHubOrganization, usedGitHost);
+      treeWalk = getTemplateRepositoryContent(null);
       treeWalk.setFilter(PathFilter.create("application/"));
       ObjectReader reader = treeWalk.getObjectReader();
       // walk through the tree and retrieve the needed templates
@@ -221,7 +221,7 @@ public class ApplicationGenerator extends Generator {
       if (!forDeploy) {
         // push (local) repository content to GitHub repository "master" branch
         try {
-          pushToRemoteRepository(applicationRepository, gitHubUser, gitHubPassword, usedGitHost);
+          pushToRemoteRepository(applicationRepository, null);
         } catch (Exception e) {
           logger.printStackTrace(e);
           throw new GitHostException(e.getMessage());
@@ -361,7 +361,7 @@ public class ApplicationGenerator extends Generator {
       } else {
         // push (local) repository content to GitHub repository "master" branch
         try {
-          pushToRemoteRepository(applicationRepository, gitHubUser, gitHubPassword, usedGitHost);
+          pushToRemoteRepository(applicationRepository, null);
         } catch (Exception e) {
           logger.printStackTrace(e);
           throw new GitHostException(e.getMessage());

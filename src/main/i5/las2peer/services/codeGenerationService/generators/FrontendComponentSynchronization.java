@@ -69,7 +69,7 @@ public class FrontendComponentSynchronization extends FrontendComponentGenerator
     SynchronizationStrategy widgetSynchronizationStrategy = null;
 
     try (TreeWalk treeWalk =
-        getTemplateRepositoryContent(templateRepositoryName, gitHubOrganization, usedGitHost)) {
+        getTemplateRepositoryContent(null)) {
       // now load the TreeWalk containing the template repository content
       treeWalk.setFilter(PathFilter.create("frontend/"));
       ObjectReader reader = treeWalk.getObjectReader();
