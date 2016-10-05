@@ -24,6 +24,5 @@
 	<classpathentry kind="lib" path="lib/slf4j-nop-1.7.12.jar"/>
 	<classpathentry kind="lib" path="lib/xpp3-1.1.4c.jar"/>
 	<classpathentry kind="lib" path="lib/las2peer-0.6.0.jar"/>
-	<classpathentry kind="lib" path="lib/commons-net-3.3.jar"/>
 	<classpathentry kind="output" path="output"/>
 </classpath>
