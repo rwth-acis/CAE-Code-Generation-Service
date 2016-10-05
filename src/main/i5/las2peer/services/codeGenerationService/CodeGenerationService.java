@@ -69,14 +69,14 @@ public class CodeGenerationService extends Service {
   
   // ftp properties
   private boolean pushToFs;
-  private String frontentDirectory;
+  private String frontendDirectory;
 
   public CodeGenerationService() throws GitHostException {
     // read and set properties-file values
     setFieldValues();
     
     ApplicationGenerator.pushToFs = pushToFs;
-    ApplicationGenerator.frontentDirectory = frontentDirectory;
+    ApplicationGenerator.frontendDirectory = frontendDirectory;
     
     // Create git adapter matching the usedGitHost
     if(Objects.equals(usedGitHost, "GitHub")) {

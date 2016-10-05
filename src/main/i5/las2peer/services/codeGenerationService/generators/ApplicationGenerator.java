@@ -39,7 +39,7 @@ import i5.las2peer.services.codeGenerationService.models.frontendComponent.Front
 public class ApplicationGenerator extends Generator {
 	
 	public static boolean pushToFs = false;
-	public static String frontentDirectory;
+	public static String frontendDirectory;
 	
 
   private static final L2pLogger logger =
@@ -367,7 +367,7 @@ public class ApplicationGenerator extends Generator {
         }
         
         if (pushToFs) {
-            File destDir = new File(frontentDirectory);
+            File destDir = new File(frontendDirectory);
 
             try {
                 FileUtils.copyDirectory(applicationRepository.getDirectory(), destDir);
