@@ -66,10 +66,23 @@ public class CodeGenerationService extends Service {
 
   private boolean useModelSynchronization;
   private final L2pLogger logger = L2pLogger.getInstance(CodeGenerationService.class.getName());
+  
+  // ftp properties
+  private boolean pushToFtp;
+  private String ftpHost;
+  private String ftpUser ;
+  private String ftpPass ;
+  private String ftpRemoteDir ;
 
   public CodeGenerationService() throws GitHostException {
     // read and set properties-file values
     setFieldValues();
+    
+    ApplicationGenerator.pushToFtp = pushToFtp;
+    ApplicationGenerator.ftpHost = ftpHost;
+    ApplicationGenerator.ftpUser = ftpUser;
+    ApplicationGenerator.ftpPass = ftpPass;
+    ApplicationGenerator.ftpRemoteDir = ftpRemoteDir;
     
     // Create git adapter matching the usedGitHost
     if(Objects.equals(usedGitHost, "GitHub")) {

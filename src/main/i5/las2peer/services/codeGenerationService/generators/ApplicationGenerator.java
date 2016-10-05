@@ -2,6 +2,10 @@ package i5.las2peer.services.codeGenerationService.generators;
 
 import java.awt.image.BufferedImage;
 import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URI;
@@ -9,6 +13,8 @@ import java.net.URL;
 
 import javax.imageio.ImageIO;
 
+import org.apache.commons.net.ftp.FTP;
+import org.apache.commons.net.ftp.FTPClient;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.ObjectLoader;
@@ -34,20 +40,23 @@ import i5.las2peer.services.codeGenerationService.models.frontendComponent.Front
  * 
  */
 public class ApplicationGenerator extends Generator {
+	
+	public static boolean pushToFtp = false;
+	public static String ftpHost;
+	public static String ftpUser ;
+	public static String ftpPass ;
+	public static String ftpRemoteDir ;
+	
 
   private static final L2pLogger logger =
       L2pLogger.getInstance(ApplicationGenerator.class.getName());
+
 
   /**
    * 
    * Creates source code from a CAE application model and pushes it to GitHub.
    * 
    * @param application the application model
-   * @param templateRepositoryName the name of the template repository on GitHub
-   * @param gitHubOrganization the organization that is used in the CAE
-   * @param gitHubUser the CAE user
-   * @param gitHubUserMail the mail of the CAE user
-   * @param gitHubPassword the password of the CAE user
    * 
    * @throws GitHostException thrown if anything goes wrong during this process. Wraps around all
    *         other exceptions and prints their message.
@@ -68,11 +77,6 @@ public class ApplicationGenerator extends Generator {
    * 
    * @param repositoryName the repository of the application to use
    * @param application the application model
-   * @param templateRepositoryName the name of the template repository on GitHub
-   * @param gitHubOrganization the organization that is used in the CAE
-   * @param gitHubUser the CAE user
-   * @param gitHubUserMail the mail of the CAE user
-   * @param gitHubPassword the password of the CAE user
    * @param forDeploy True, if the source code is intended to use for deployment purpose, e.g. no
    *        gh-pages branch will be used
    * 
@@ -133,7 +137,7 @@ public class ApplicationGenerator extends Generator {
         throw new GitHostException(e.getMessage());
       }
 
-      if (!forDeploy) {
+      if (!forDeploy) { // TODO GHP
         // create "gh-pages" branch
         try {
           Git.wrap(applicationRepository).branchCreate().setName("gh-pages").call();
@@ -225,7 +229,7 @@ public class ApplicationGenerator extends Generator {
         }
       }
 
-      if (!forDeploy) {
+      if (!forDeploy) { // TODO GHP
         // push (local) repository content to GitHub repository "master" branch
         try {
           pushToRemoteRepository(applicationRepository, gitAdapter);
@@ -357,7 +361,7 @@ public class ApplicationGenerator extends Generator {
           throw new GitHostException(e.getMessage());
         }
       }
-      if (!forDeploy) {
+      if (!forDeploy) { // TODO GHP
         // push (local) repository content to GitHub repository "gh-pages" branch
     	  // TODO Deployment is hardcoded to gh pages !!! Needs to be changed
         try {
@@ -367,6 +371,36 @@ public class ApplicationGenerator extends Generator {
           logger.printStackTrace(e);
           throw new GitHostException(e.getMessage());
         }
+        
+        if (pushToFtp) {
+      	  // TODO additionally push via ftp
+            FTPClient client = new FTPClient();
+            FileInputStream fis = null;
+
+            try {
+                client.connect(ftpHost);
+                client.login(ftpUser, ftpPass);
+                
+                uploadDirectory(client, ftpRemoteDir, applicationRepository.getDirectory().getAbsolutePath(), "");            
+               
+                client.logout();
+            } catch (IOException e) {
+                e.printStackTrace();
+            } finally {
+                try {
+                    if (fis != null) {
+                        fis.close();
+                    }
+                    client.disconnect();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+    	  
+
+        
+    	  
       } else {
         // push (local) repository content to GitHub repository "master" branch
         try {
@@ -515,5 +549,59 @@ public class ApplicationGenerator extends Generator {
     }
 
   }
+  
+  
+  // FTP
+  // from: http://stackoverflow.com/questions/32286632/how-can-i-upload-directory-to-ftp
+  	public static void uploadDirectory(FTPClient ftpClient,
+	        String remoteDirPath, String localParentDir, String remoteParentDir)
+	        throws IOException {
+
+	    File localDir = new File(localParentDir);
+	    File[] subFiles = localDir.listFiles();
+	    if (subFiles != null && subFiles.length > 0) {
+	        for (File item : subFiles) {
+	            String remoteFilePath = remoteDirPath + "/" + remoteParentDir
+	                    + "/" + item.getName();
+	            if (remoteParentDir.equals("")) {
+	                remoteFilePath = remoteDirPath + "/" + item.getName();
+	            }
+
+
+	            if (item.isFile()) {
+	                // upload the file
+	                String localFilePath = item.getAbsolutePath();
+	                uploadSingleFile(ftpClient,
+	                        localFilePath, remoteFilePath);
+	            } else {
+	                // create directory on the server
+	                ftpClient.makeDirectory(remoteFilePath);
+
+	                // upload the sub directory
+	                String parent = remoteParentDir + "/" + item.getName();
+	                if (remoteParentDir.equals("")) {
+	                    parent = item.getName();
+	                }
+
+	                localParentDir = item.getAbsolutePath();
+	                uploadDirectory(ftpClient, remoteDirPath, localParentDir,
+	                        parent);
+	            }
+	        }
+	    }
+	}
+  	
+	public static boolean uploadSingleFile(FTPClient ftpClient,
+	        String localFilePath, String remoteFilePath) throws IOException {
+	    File localFile = new File(localFilePath);
+
+	    InputStream inputStream = new FileInputStream(localFile);
+	    try {
+	        ftpClient.setFileType(FTP.BINARY_FILE_TYPE);
+	        return ftpClient.storeFile(remoteFilePath, inputStream);
+	    } finally {
+	        inputStream.close();
+	    }
+	}
 
 }
