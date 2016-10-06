@@ -15,6 +15,11 @@ import org.json.simple.parser.ParseException;
 
 import i5.las2peer.services.codeGenerationService.exception.GitHostException;
 
+/**
+ * 
+ * @author jonask
+ *	Manages operations on GitLab that are not directly possible via git. Thus the GitLab api is used.
+ */
 public class GitLabAdapter extends BaseGitHostAdapter{
 	//TODO: Exception handling
 
@@ -27,6 +32,11 @@ public class GitLabAdapter extends BaseGitHostAdapter{
 
 	}
 	
+	/**
+	 * Helper method: Gets a web resource as a string.
+	 * @param url The url to GET from
+	 * @return The response.
+	 */
 	private String getString(String url) {
 		HttpURLConnection c = null;
 		
@@ -64,6 +74,11 @@ public class GitLabAdapter extends BaseGitHostAdapter{
 		return "";
 	}
 
+	/**
+	 * Makes a DELETE request on a resource.
+	 * @param url The resource to be deleted.
+	 * @throws GitHostException
+	 */
 	private void deleteResource(String url) throws GitHostException {
 		HttpURLConnection c = null;
 		
@@ -92,9 +107,14 @@ public class GitLabAdapter extends BaseGitHostAdapter{
 		}
 	}
 
-	private boolean createResource(String url, JSONObject data) throws GitHostException {
+	/**
+	 * Creates a resource by POSTing a JSON object.
+	 * @param url The url to post to.
+	 * @param data The JSON object that represents the data to be used.
+	 * @throws GitHostException
+	 */
+	private void createResource(String url, JSONObject data) throws GitHostException {
 		HttpURLConnection c = null;
-		boolean success = false;
 		
 		try {
 			String body = data.toJSONString();
@@ -114,9 +134,7 @@ public class GitLabAdapter extends BaseGitHostAdapter{
 			
 			int status = c.getResponseCode();
 	
-			if (status == 201) {
-				success = true;
-			}else {
+			if (status != 201){
 				// forward (in case of) error	  
 			    String message = "Error creating repository at: ";
 			    BufferedReader reader =
@@ -137,9 +155,13 @@ public class GitLabAdapter extends BaseGitHostAdapter{
 				c.disconnect();
 			}
 		}
-		return success;
 	}
 
+	/**
+	 * Get a {@link JSONObject} from an URL by parsing the response.
+	 * @param url The url to GET from.
+	 * @return The {@link JSONObject} created from the response.
+	 */
 	private JSONObject getJSONObject(String url) {
 		String data = getString(url);
 		JSONParser parser = new JSONParser();
@@ -153,6 +175,12 @@ public class GitLabAdapter extends BaseGitHostAdapter{
 		return obj;
 	}
 
+	/**
+	 * Get a {@link JSONArray} from an URL by parsing the response.
+	 * @param url The url to GET from
+	 * @return The {@link JSONArray} created from the response.
+	 * @throws ParseException
+	 */
 	private JSONArray getJSONArray(String url) throws ParseException {
 		String data = getString(url);
 		JSONParser parser = new JSONParser();
@@ -161,6 +189,12 @@ public class GitLabAdapter extends BaseGitHostAdapter{
 		return arr;
 	}
 	
+	/**
+	 * Delete a remote repository on GitLab using the GitLab API. For this we have to get the id of the project by searching
+	 * the projects of the group.
+	 * @param name The repo to be deleted.
+	 * @throws GitHostException
+	 */
 	public void deleteRepo(String name) throws GitHostException {
 		long id = -1;
 		try {
@@ -183,6 +217,11 @@ public class GitLabAdapter extends BaseGitHostAdapter{
 		deleteResource(baseURL + "api/v3/" + "projects/" + id);
 	}
 	
+	/**
+	 * Create a repository on GitLab using the GitLab API.
+	 * @param name The name of the repository.
+	 * @param description The description.
+	 */
 	public void createRepo(String name, String description) throws GitHostException {
 		//Get namespace id for group
 		JSONObject result = getJSONObject(baseURL + "api/v3/" + "groups/" + this.getGitOrganization());

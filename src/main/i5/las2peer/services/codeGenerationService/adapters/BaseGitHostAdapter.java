@@ -1,5 +1,11 @@
 package i5.las2peer.services.codeGenerationService.adapters;
 
+/**
+ * 
+ * @author jonask
+ *
+ * This abstract superclass provides fields used by all platform-specific subclasses.
+ */
 public abstract class BaseGitHostAdapter implements GitHostAdapter {
 	
 	//TODO: Exception handling

@@ -210,8 +210,8 @@ public class CodeGenerationServiceTest {
       // catch it, to make sure that every other repository gets deleted
     }
     try {
-      Generator.deleteRemoteRepository(model4GitHubName, (BaseGitHostAdapter) gitAdapter);
       gitAdapter.deleteRepo("Test123");
+      Generator.deleteRemoteRepository(model4GitHubName, (BaseGitHostAdapter) gitAdapter);
     } catch (GitHostException e) {
       e.printStackTrace();
       // that's ok, maybe some error / failure in previous tests caused this
