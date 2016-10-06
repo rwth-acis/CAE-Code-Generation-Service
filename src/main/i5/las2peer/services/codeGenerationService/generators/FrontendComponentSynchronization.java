@@ -40,8 +40,7 @@ public class FrontendComponentSynchronization extends FrontendComponentGenerator
       L2pLogger.getInstance(ApplicationGenerator.class.getName());
 
   public static void synchronizeSourceCode(FrontendComponent frontendComponent,
-      FrontendComponent oldFrontendComponent, HashMap<String, JSONObject> files,
-      String templateRepositoryName, String gitHubOrganization, String usedGitHost,CodeGenerationService service)
+      FrontendComponent oldFrontendComponent, HashMap<String, JSONObject> files,BaseGitHostAdapter gitAdapter,CodeGenerationService service)
       throws GitHostException {
     // first load the needed templates from the template repository
 
@@ -70,7 +69,7 @@ public class FrontendComponentSynchronization extends FrontendComponentGenerator
     SynchronizationStrategy widgetSynchronizationStrategy = null;
 
     try (TreeWalk treeWalk =
-        getTemplateRepositoryContent(null)) {
+        getTemplateRepositoryContent(gitAdapter)) {
       // now load the TreeWalk containing the template repository content
       treeWalk.setFilter(PathFilter.create("frontend/"));
       ObjectReader reader = treeWalk.getObjectReader();
@@ -181,7 +180,7 @@ public class FrontendComponentSynchronization extends FrontendComponentGenerator
 
       // regenerate widget code
       createWidgetCode(widgetTemplateEngine, widget, htmlElementTemplate, yjsImports,
-          gitHubOrganization, getRepositoryName(frontendComponent), frontendComponent);
+          gitAdapter.getGitOrganization(), getRepositoryName(frontendComponent), frontendComponent);
 
       traceModel.addFileTraceModel(widgetTemplateEngine.getFileTraceModel());
 

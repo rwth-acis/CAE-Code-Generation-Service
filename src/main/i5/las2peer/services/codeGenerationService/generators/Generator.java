@@ -130,6 +130,9 @@ public abstract class Generator {
    * 
    */
   public static TreeWalk getTemplateRepositoryContent(BaseGitHostAdapter gitAdapter) throws GitHostException {
+	if(gitAdapter == null) {
+		throw new GitHostException("Adapter is null");
+	}
     Repository templateRepository = getRemoteRepository(gitAdapter.getTemplateRepository(), gitAdapter);
     
     if (templateRepository == null) {
@@ -473,21 +476,8 @@ public abstract class Generator {
     LsRemoteCommand lsCmd = new LsRemoteCommand(null);
     
     String url;
-    
-    /*
-    switch (usedGitHost) {
-	case "GitHub":
-		url = "https://github.com/" + gitHubOrganization + "/" + name + ".git";
-		break;
-	case "GitLab":
-		url = "http://ginkgo.informatik.rwth-aachen.de:4080/" + gitHubOrganization + "/" + name + ".git";
-		break;
-	default:
-		url = "https://github.com/" + gitHubOrganization + "/" + name + ".git";
-		break;
-	}*/
-    
-    url = gitAdapter.getBaseURL() + gitAdapter.getGitOrganization() + "/" + "name" + ".git";
+     
+    url = gitAdapter.getBaseURL() + gitAdapter.getGitOrganization() + "/" + name + ".git";
     
     lsCmd.setRemote(url);
     lsCmd.setHeads(true);

@@ -55,8 +55,7 @@ public class MicroserviceSynchronization extends MicroserviceGenerator {
    */
 
   public static void synchronizeSourceCode(Microservice microservice, Microservice oldMicroservice,
-      HashMap<String, JSONObject> files, String templateRepositoryName, String gitHubOrganization,
-      String usedGitHost, Service service) throws ModelParseException {
+      HashMap<String, JSONObject> files, BaseGitHostAdapter gitAdapter, Service service) throws ModelParseException {
 
     // first load the needed templates from the template repository
 
@@ -78,7 +77,7 @@ public class MicroserviceSynchronization extends MicroserviceGenerator {
     String guidances = null;
 
     try (TreeWalk treeWalk =
-        getTemplateRepositoryContent(null)) {
+        getTemplateRepositoryContent(gitAdapter)) {
       // now load the TreeWalk containing the template repository content
       treeWalk.setFilter(PathFilter.create("backend/"));
       ObjectReader reader = treeWalk.getObjectReader();
@@ -185,7 +184,7 @@ public class MicroserviceSynchronization extends MicroserviceGenerator {
     if (!files.containsKey(oldDatabaseManagerFileName) && microservice.getDatabase() != null) {
       generateOtherArtifacts(
           Template.createInitialTemplateEngine(traceModel, newDatabaseManagerFileName),
-          microservice, gitHubOrganization, databaseManager);
+          microservice, gitAdapter.getGitOrganization(), databaseManager);
     } else if (files.containsKey(oldDatabaseManagerFileName)
         && microservice.getDatabase() == null) {
       deleteFileInLocalRepository(getRepositoryName(oldMicroservice), oldDatabaseManagerFileName,
@@ -235,8 +234,9 @@ public class MicroserviceSynchronization extends MicroserviceGenerator {
 
         if (fileName.equals(serviceOldFileName)) {
           oldFileTraceModel.setFileName(serviceFileName);
+          //TODO gitLab?
           String repositoryLocation =
-              "https://github.com/" + gitHubOrganization + "/" + getRepositoryName(microservice);
+              "https://github.com/" + gitAdapter.getGitOrganization() + "/" + getRepositoryName(microservice);
 
           generateNewServiceClass(templateEngine, serviceClass, microservice, repositoryLocation,
               genericHttpMethod, genericHttpMethodBody, genericApiResponse, genericHttpResponse,
@@ -256,14 +256,14 @@ public class MicroserviceSynchronization extends MicroserviceGenerator {
             templateEngine = null;
           } else {
             oldFileTraceModel.setFileName(newDatabaseManagerFileName);
-            generateOtherArtifacts(templateEngine, microservice, gitHubOrganization, content);
+            generateOtherArtifacts(templateEngine, microservice, gitAdapter.getGitOrganization(), content);
           }
         } else if (fileName.equals(serviceOldPropertiesFileName)) {
           content = serviceProperties;
           oldFileTraceModel.setFileName(servicePropertiesFileName);
-          generateOtherArtifacts(templateEngine, microservice, gitHubOrganization, content);
+          generateOtherArtifacts(templateEngine, microservice, gitAdapter.getGitOrganization(), content);
         } else {
-          generateOtherArtifacts(templateEngine, microservice, gitHubOrganization, content);
+          generateOtherArtifacts(templateEngine, microservice, gitAdapter.getGitOrganization(), content);
         }
 
         L2pLogger.logEvent(Event.SERVICE_MESSAGE, "... " + fileName + " synchronized.");

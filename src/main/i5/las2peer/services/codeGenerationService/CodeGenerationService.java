@@ -252,22 +252,22 @@ public class CodeGenerationService extends Service {
    * 
    */
   public String updateRepositoryOfModel(Serializable... serializedModel) {
+	
     SimpleModel model = (SimpleModel) serializedModel[0];
     String modelName = model.getName();
-    L2pLogger.logEvent(Event.SERVICE_MESSAGE,
-        "updateRepositoryOfModel: Received model with name " + modelName);
+    L2pLogger.logEvent(Event.SERVICE_MESSAGE,"updateRepositoryOfModel: Received model with name " + modelName);
 
     // old model only used for microservice and frontend components
     SimpleModel oldModel = null;
 
     if (serializedModel.length > 1) {
       oldModel = (SimpleModel) serializedModel[1];
-      L2pLogger.logEvent(Event.SERVICE_MESSAGE,
-          "updateRepositoryOfModel: Received old model with name " + oldModel.getName());
+      L2pLogger.logEvent(Event.SERVICE_MESSAGE,"updateRepositoryOfModel: Received old model with name " + oldModel.getName());
     }
 
     for (int i = 0; i < model.getAttributes().size(); i++) {
       if (model.getAttributes().get(i).getName().equals("type")) {
+    	  
         String type = model.getAttributes().get(i).getValue();
         String deleteReturnMessage;
         try {
@@ -290,8 +290,7 @@ public class CodeGenerationService extends Service {
                     "updateRepositoryOfModel: Calling synchronizeSourceCode now..");
 
                 MicroserviceSynchronization.synchronizeSourceCode(microservice, oldMicroservice,
-                    this.getTracedFiles(MicroserviceGenerator.getRepositoryName(microservice)),
-                    this.templateRepository, this.gitOrganization, this.usedGitHost ,this);
+                    this.getTracedFiles(MicroserviceGenerator.getRepositoryName(microservice)),(BaseGitHostAdapter) gitAdapter,this);
 
                 L2pLogger.logEvent(Event.SERVICE_MESSAGE, "updateRepositoryOfModel: Synchronized!");
                 return "done";
@@ -344,8 +343,7 @@ public class CodeGenerationService extends Service {
                 FrontendComponentSynchronization.synchronizeSourceCode(frontendComponent,
                     oldFrontendComponent,
                     this.getTracedFiles(
-                        FrontendComponentGenerator.getRepositoryName(frontendComponent)),
-                    this.templateRepository, this.gitOrganization, this.usedGitHost, this);
+                        FrontendComponentGenerator.getRepositoryName(frontendComponent)),(BaseGitHostAdapter) gitAdapter, this);
 
                 L2pLogger.logEvent(Event.SERVICE_MESSAGE, "updateRepositoryOfModel: Synchronized!");
                 return "done";
