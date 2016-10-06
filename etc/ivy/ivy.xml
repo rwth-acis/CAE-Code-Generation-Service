@@ -6,6 +6,7 @@
 	</publications>
     <dependencies>
       <dependency org="i5" name="las2peer" rev="0.6.0" changing="true" />
+      <dependency org="i5" name="las2peer-web-connector" rev="0.6.0" />
       <dependency org="i5" name="cae-simple-model-representation" rev="0.3"/>
       <dependency org="i5" name="cae-github-proxy-service" rev="0.2"/>
       <dependency org="junit" name="junit" rev="4.12"/>
