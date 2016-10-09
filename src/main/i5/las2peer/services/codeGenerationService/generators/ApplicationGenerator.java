@@ -152,11 +152,11 @@ public class ApplicationGenerator extends Generator {
             ObjectLoader loader = reader.open(objectId);
             // copy the content of the repository and switch out the "old" paths
             
-            // TODO: Content paths have to be independet from the git provider or all cases have to be met
+            // TODO: Content paths have to be independent from the git provider or all cases have to be met
             
-            String oldLogoAddress = "https://github.com/" + gitAdapter.getGitOrganization() + "/"
+            String oldLogoAddress = gitAdapter.getBaseURL() + gitAdapter.getGitOrganization() + "/"
                 + microserviceRepositoryName + "/blob/master/img/logo.png";
-            String newLogoAddress = "https://github.com/" + gitAdapter.getGitOrganization() + "/"
+            String newLogoAddress = gitAdapter.getBaseURL() + gitAdapter.getGitOrganization() + "/"
                 + repositoryName + "/blob/master/" + microserviceRepositoryName + "/img/logo.png";
             switch (treeWalk.getNameString()) {
               case "README.md":
@@ -360,7 +360,7 @@ public class ApplicationGenerator extends Generator {
     	  // TODO Deployment is hardcoded to gh pages !!! Needs to be changed
         try {
           pushToRemoteRepository(applicationRepository, "gh-pages",
-              "gh-pages", gitAdapter);
+              "gh-pages", gitAdapter, false);
         } catch (Exception e) {
           logger.printStackTrace(e);
           throw new GitHostException(e.getMessage());
@@ -387,8 +387,10 @@ public class ApplicationGenerator extends Generator {
 
       // close all open resources
     } finally {
-      applicationRepository.close();
-      treeWalk.close();
+    	if(applicationRepository != null)
+    		applicationRepository.close();
+    	if (treeWalk != null) 
+    		treeWalk.close();
     }
   }
 

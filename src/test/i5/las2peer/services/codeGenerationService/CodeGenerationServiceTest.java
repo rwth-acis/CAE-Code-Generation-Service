@@ -339,7 +339,6 @@ public class CodeGenerationServiceTest {
     try {
       String returnMessage = (String) node.invoke(testService,serviceNameVersion, "createFromModel",parameters);
       assertEquals("done", returnMessage);
-      Thread.sleep(5000);
       returnMessage = (String) node.invoke(testService,serviceNameVersion, "updateRepositoryOfModel", parameters);
       assertEquals("done", returnMessage);
     } catch (Exception e) {

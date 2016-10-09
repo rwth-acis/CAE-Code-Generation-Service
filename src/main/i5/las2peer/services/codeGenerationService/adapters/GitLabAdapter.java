@@ -206,15 +206,14 @@ public class GitLabAdapter extends BaseGitHostAdapter{
 			}
 		}
 		
-		if (id == -1) {
-			throw new GitHostException("Could not find id for project " + name + " with: " + arr.toJSONString());
+		if (id != -1) {
+			// example: http://ginkgo.informatik.rwth-aachen.de:4080/api/v3/projects/2
+			deleteResource(baseURL + "api/v3/" + "projects/" + id);
 		}
 		
 		}catch (ParseException e) {
 			throw new GitHostException("Failed to delete repo");
 		}
-		// example: http://ginkgo.informatik.rwth-aachen.de:4080/api/v3/projects/2
-		deleteResource(baseURL + "api/v3/" + "projects/" + id);
 	}
 	
 	/**

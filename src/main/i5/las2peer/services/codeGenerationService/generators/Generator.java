@@ -403,7 +403,11 @@ public abstract class Generator {
    * 
    */
   public static Repository pushToRemoteRepository(Repository repository, BaseGitHostAdapter gitAdapter) throws GitHostException {
-    return pushToRemoteRepository(repository, "master", "master", gitAdapter);
+    return pushToRemoteRepository(repository, "master", "master", gitAdapter, false);
+  }
+  
+  public static Repository pushToRemoteRepository(Repository repository, BaseGitHostAdapter gitAdapter, boolean forcePush) throws GitHostException {
+	  return pushToRemoteRepository(repository, "master", "master", gitAdapter, forcePush);
   }
 
 
@@ -424,7 +428,7 @@ public abstract class Generator {
    * 
    */
   public static Repository pushToRemoteRepository(Repository repository, String localBranchName, 
-		  String remoteBranchName, BaseGitHostAdapter gitAdapter)
+		  String remoteBranchName, BaseGitHostAdapter gitAdapter, boolean forcePush)
       throws GitHostException {
     CredentialsProvider credentialsProvider =
         new UsernamePasswordCredentialsProvider(gitAdapter.getGitUser(), gitAdapter.getGitPassword());
@@ -659,5 +663,4 @@ public abstract class Generator {
       logger.printStackTrace(e);
     }
   }
-
 }

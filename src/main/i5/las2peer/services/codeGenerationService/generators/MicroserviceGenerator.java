@@ -128,304 +128,299 @@ public class MicroserviceGenerator extends Generator {
    *         other exceptions and prints their message.
    * 
    */
+  
+  public static void createSourceCode(Microservice microservice, 
+		  String templateRepositoryName, BaseGitHostAdapter gitAdapter, boolean forcePush) throws GitHostException {
+	// variables to be closed in the final block
+	    Repository microserviceRepository = null;
+	    TreeWalk treeWalk = null;
+
+	    // helper variables
+	    String packageName = microservice.getResourceName().substring(0, 1).toLowerCase()
+	        + microservice.getResourceName().substring(1);
+
+	    // variables holding content to be modified and added to repository later
+	    BufferedImage logo = null;
+	    String license = null;
+	    String userAgentGeneratorWindows = null;
+	    String userAgentGeneratorUnix = null;
+	    String antUserProperties = null;
+	    String ivySettings = null;
+	    String gitignore = null;
+	    String databaseManager = null;
+	    String serviceClass = null;
+	    String serviceTest = null;
+	    String genericHttpMethod = null;
+	    String genericHttpMethodBody = null;
+	    String genericApiResponse = null;
+	    String genericHttpResponse = null;
+	    String genericTestCase = null;
+	    String databaseConfig = null;
+	    String databaseInstantiation = null;
+	    String serviceInvocation = null;
+	    String databaseScript = null;
+	    String genericTable = null;
+	    String guidances = null;
+
+	    try {
+	    	
+	      PersonIdent caeUser = new PersonIdent(gitAdapter.getGitUser(), gitAdapter.getGitPassword());
+	      String repositoryName = getRepositoryName(microservice);
+	      TraceModel traceModel = new TraceModel();
+	      
+	      // 
+	      try {
+
+	        // now load the TreeWalk containing the template repository content
+	        treeWalk = getTemplateRepositoryContent(gitAdapter);
+	        treeWalk.setFilter(PathFilter.create("backend/"));
+	        ObjectReader reader = treeWalk.getObjectReader();
+	        
+	        // walk through the tree and retrieve the needed templates
+	        while (treeWalk.next()) {
+	          ObjectId objectId = treeWalk.getObjectId(0);
+	          ObjectLoader loader = reader.open(objectId);
+	          String path = treeWalk.getPathString().replace("backend/", "");
+	          
+	          switch (treeWalk.getNameString()) {
+	            // start with the "easy" replacements, and store the other template files for later
+	            case ".project":
+	              String projectFile = new String(loader.getBytes(), "UTF-8");
+	              generateOtherArtifacts(Template.createInitialTemplateEngine(traceModel, path),
+	                  microservice, gitAdapter.getGitOrganization(), projectFile);
+	              break;
+	            case "guidances.json":
+	              guidances = new String(loader.getBytes(), "UTF-8");
+	              break;
+	            case "logo_services.png":
+	              logo = ImageIO.read(loader.openStream());
+	              break;
+	            case "README.md":
+	              String readMe = new String(loader.getBytes(), "UTF-8");
+	              generateOtherArtifacts(Template.createInitialTemplateEngine(traceModel, path),
+	                  microservice, gitAdapter.getGitOrganization(), readMe);
+	              break;
+	            case "LICENSE.txt":
+	              license = new String(loader.getBytes(), "UTF-8");
+	              break;
+	            case "build.xml":
+	              String buildFile = new String(loader.getBytes(), "UTF-8");
+	              generateOtherArtifacts(Template.createInitialTemplateEngine(traceModel, path),
+	                  microservice, gitAdapter.getGitOrganization(), buildFile);
+	              break;
+	            case "start_network.bat":
+	              String startScriptWindows = new String(loader.getBytes(), "UTF-8");
+	              generateOtherArtifacts(Template.createInitialTemplateEngine(traceModel, path),
+	                  microservice, gitAdapter.getGitOrganization(), startScriptWindows);
+	              break;
+	            case "start_network.sh":
+	              String startScriptUnix = new String(loader.getBytes(), "UTF-8");
+	              generateOtherArtifacts(Template.createInitialTemplateEngine(traceModel, path),
+	                  microservice, gitAdapter.getGitOrganization(), startScriptUnix);
+	              break;
+	            case "start_UserAgentGenerator.bat":
+	              userAgentGeneratorWindows = new String(loader.getBytes(), "UTF-8");
+	              break;
+	            case "start_UserAgentGenerator.sh":
+	              userAgentGeneratorUnix = new String(loader.getBytes(), "UTF-8");
+	              break;
+	            case "nodeInfo.xml":
+	              String nodeInfo = new String(loader.getBytes(), "UTF-8");
+	              generateOtherArtifacts(Template.createInitialTemplateEngine(traceModel, path),
+	                  microservice, gitAdapter.getGitOrganization(), nodeInfo);
+	              break;
+	            case "service.properties":
+	              String antServiceProperties = new String(loader.getBytes(), "UTF-8");
+	              generateOtherArtifacts(Template.createInitialTemplateEngine(traceModel, path),
+	                  microservice, gitAdapter.getGitOrganization(), antServiceProperties);
+	              break;
+	            case "user.properties":
+	              antUserProperties = new String(loader.getBytes(), "UTF-8");
+	              break;
+	            case "ivy.xml":
+	              String ivy = new String(loader.getBytes(), "UTF-8");
+	              generateOtherArtifacts(Template.createInitialTemplateEngine(traceModel, path),
+	                  microservice, gitAdapter.getGitOrganization(), ivy);
+	              break;
+	            case "ivysettings.xml":
+	              ivySettings = new String(loader.getBytes(), "UTF-8");
+	              break;
+	            case "i5.las2peer.services.servicePackage.ServiceClass.properties":
+	              String serviceProperties = new String(loader.getBytes(), "UTF-8");
+	              TemplateEngine serviceTemplateEngine = Template.createInitialTemplateEngine(
+	                  traceModel, getServicePropertiesFileName(microservice));
+	              generateOtherArtifacts(serviceTemplateEngine, microservice, gitAdapter.getGitOrganization(),
+	                  serviceProperties);
+	              break;
+	            case "i5.las2peer.webConnector.WebConnector.properties":
+	              String webConnectorConfig = new String(loader.getBytes(), "UTF-8");
+	              generateOtherArtifacts(Template.createInitialTemplateEngine(traceModel, path),
+	                  microservice, gitAdapter.getGitOrganization(), webConnectorConfig);
+	              break;
+	            case ".gitignore":
+	              gitignore = new String(loader.getBytes(), "UTF-8");
+	              break;
+	            case ".classpath":
+	              String classpath = new String(loader.getBytes(), "UTF-8");
+	              generateOtherArtifacts(Template.createInitialTemplateEngine(traceModel, path),
+	                  microservice, gitAdapter.getGitOrganization(), classpath);
+	              break;
+	            case "DatabaseManager.java":
+	              if (microservice.getDatabase() != null) {
+	                databaseManager = new String(loader.getBytes(), "UTF-8");
+	                generateOtherArtifacts(
+	                    Template.createInitialTemplateEngine(traceModel,
+	                        "src/main/i5/las2peer/services/" + packageName
+	                            + "/database/DatabaseManager.java"),
+	                    microservice, gitAdapter.getGitOrganization(), databaseManager);
+	              }
+	              break;
+	            case "ServiceClass.java":
+	              serviceClass = new String(loader.getBytes(), "UTF-8");
+	              break;
+	            case "genericHTTPMethod.txt":
+	              genericHttpMethod = new String(loader.getBytes(), "UTF-8");
+	              break;
+	            case "genericHTTPMethodBody.txt":
+	              genericHttpMethodBody = new String(loader.getBytes(), "UTF-8");
+	              break;
+	            case "genericHTTPResponse.txt":
+	              genericHttpResponse = new String(loader.getBytes(), "UTF-8");
+	              break;
+	            case "genericApiResponse.txt":
+	              genericApiResponse = new String(loader.getBytes(), "UTF-8");
+	              break;
+	            case "ServiceTest.java":
+	              serviceTest = new String(loader.getBytes(), "UTF-8");
+	              break;
+	            case "genericTestMethod.txt":
+	              genericTestCase = new String(loader.getBytes(), "UTF-8");
+	              break;
+	            case "databaseConfig.txt":
+	              databaseConfig = new String(loader.getBytes(), "UTF-8");
+	              break;
+	            case "databaseInstantiation.txt":
+	              databaseInstantiation = new String(loader.getBytes(), "UTF-8");
+	              break;
+	            case "genericServiceInvocation.txt":
+	              serviceInvocation = new String(loader.getBytes(), "UTF-8");
+	              break;
+	            case "database.sql":
+	              databaseScript = new String(loader.getBytes(), "UTF-8");
+	              break;
+	            case "genericTable.txt":
+	              genericTable = new String(loader.getBytes(), "UTF-8");
+	              break;
+	          }
+	        }
+	      } catch (Exception e) {
+	        logger.printStackTrace(e);
+	        throw new GitHostException(e.getMessage());
+	      }
+
+	      microserviceRepository = generateNewRepository(repositoryName, gitAdapter);
+	      
+	      // generate service class and test
+	      String repositoryLocation = gitAdapter.getBaseURL() + gitAdapter.getGitOrganization() + "/" + repositoryName;
+
+	      FileTraceModel serviceClassTraceModel =
+	          new FileTraceModel(traceModel, getServiceFileName(microservice));
+	      traceModel.addFileTraceModel(serviceClassTraceModel);
+
+	      TemplateStrategy strategy = new InitialGenerationStrategy();
+	      TemplateEngine serviceTemplateEngine = new TemplateEngine(strategy, serviceClassTraceModel);
+
+	      generateNewServiceClass(serviceTemplateEngine, serviceClass, microservice, repositoryLocation,
+	          genericHttpMethod, genericHttpMethodBody, genericApiResponse, genericHttpResponse,
+	          databaseConfig, databaseInstantiation, serviceInvocation);
+
+	      FileTraceModel serviceTestTraceModel =
+	          new FileTraceModel(traceModel, getServiceTestFileName(microservice));
+	      traceModel.addFileTraceModel(serviceTestTraceModel);
+
+	      TemplateEngine serviceTestTemplateEngine =
+	          new TemplateEngine(new InitialGenerationStrategy(), serviceTestTraceModel);
+
+	      generateNewServiceTest(serviceTestTemplateEngine, serviceTest, microservice, genericTestCase);
+
+	      // add not traced files to new repository, e.g. static files
+
+	      // configuration and build stuff
+	      microserviceRepository = createTextFileInRepository(microserviceRepository, "etc/ivy/",
+	          "ivysettings.xml", ivySettings);
+
+	      microserviceRepository = createTextFileInRepository(microserviceRepository,
+	          "etc/ant_configuration/", "user.properties", antUserProperties);
+
+	      microserviceRepository =
+	          createTextFileInRepository(microserviceRepository, "", ".gitignore", gitignore);
+
+	      // scripts
+	      microserviceRepository = createTextFileInRepository(microserviceRepository, "bin/",
+	          "start_UserAgentGenerator.bat", userAgentGeneratorWindows);
+	      microserviceRepository = createTextFileInRepository(microserviceRepository, "bin/",
+	          "start_UserAgentGenerator.sh", userAgentGeneratorUnix);
+	      // doc
+	      microserviceRepository =
+	          createTextFileInRepository(microserviceRepository, "", "LICENSE.txt", license);
+	      microserviceRepository =
+	          createImageFileInRepository(microserviceRepository, "img/", "logo.png", logo);
+	      // source code
+	      if (databaseManager != null) {
+	        FileTraceModel databaseScriptTraceModel =
+	            new FileTraceModel(traceModel, getDatabaseScriptFileName(microservice));
+	        traceModel.addFileTraceModel(databaseScriptTraceModel);
+
+	        TemplateEngine databaseScriptTemplateEngine =
+	            new TemplateEngine(new InitialGenerationStrategy(), databaseScriptTraceModel);
+
+	        microserviceRepository = createTextFileInRepository(microserviceRepository,
+	            "src/main/i5/las2peer/services/" + packageName + "/database/", "DatabaseManager.java",
+	            databaseManager);
+
+	        generateDatabaseScript(databaseScriptTemplateEngine, databaseScript, genericTable,
+	            microservice);
+	      }
+
+	      createTextFileInRepository(microserviceRepository, "traces/", "guidances.json", guidances);
+
+	      // add traced files to new repository
+	      createTracedFilesInRepository(traceModel, microserviceRepository);
+
+	      // commit files
+	      try {
+	        Git.wrap(microserviceRepository).commit()
+	            .setMessage("Generated microservice version " + microservice.getVersion())
+	            .setCommitter(caeUser).call();
+	      } catch (Exception e) {
+	        logger.printStackTrace(e);
+	        throw new GitHostException(e.getMessage());
+	      }
+
+	      // push (local) repository content to GitHub repository
+	      try {
+	        pushToRemoteRepository(microserviceRepository, gitAdapter, forcePush);
+	      } catch (Exception e) {
+	        logger.printStackTrace(e);
+	        throw new GitHostException(e.getMessage());
+	      }
+
+	      // close all open resources
+	    } catch (GitHostException e) {
+	    	throw e;
+	    } finally {
+	      if(microserviceRepository != null) {
+	    	  microserviceRepository.close();
+	      }
+	      treeWalk.close();
+	    }
+  }
+  
   public static void createSourceCode(Microservice microservice, String templateRepositoryName,
       BaseGitHostAdapter gitAdapter)
       throws GitHostException {
-
-    // variables to be closed in the final block
-    Repository microserviceRepository = null;
-    TreeWalk treeWalk = null;
-
-    // helper variables
-    String packageName = microservice.getResourceName().substring(0, 1).toLowerCase()
-        + microservice.getResourceName().substring(1);
-
-    // variables holding content to be modified and added to repository later
-    BufferedImage logo = null;
-    String license = null;
-    String userAgentGeneratorWindows = null;
-    String userAgentGeneratorUnix = null;
-    String antUserProperties = null;
-    String ivySettings = null;
-    String gitignore = null;
-    String databaseManager = null;
-    String serviceClass = null;
-    String serviceTest = null;
-    String genericHttpMethod = null;
-    String genericHttpMethodBody = null;
-    String genericApiResponse = null;
-    String genericHttpResponse = null;
-    String genericTestCase = null;
-    String databaseConfig = null;
-    String databaseInstantiation = null;
-    String serviceInvocation = null;
-    String databaseScript = null;
-    String genericTable = null;
-    String guidances = null;
-
-    try {
-    	
-      PersonIdent caeUser = new PersonIdent(gitAdapter.getGitUser(), gitAdapter.getGitPassword());
-      String repositoryName = getRepositoryName(microservice);
-      TraceModel traceModel = new TraceModel();
-      
-      // 
-      try {
-
-        // now load the TreeWalk containing the template repository content
-        treeWalk = getTemplateRepositoryContent(gitAdapter);
-        treeWalk.setFilter(PathFilter.create("backend/"));
-        ObjectReader reader = treeWalk.getObjectReader();
-        
-        // walk through the tree and retrieve the needed templates
-        while (treeWalk.next()) {
-          ObjectId objectId = treeWalk.getObjectId(0);
-          ObjectLoader loader = reader.open(objectId);
-          String path = treeWalk.getPathString().replace("backend/", "");
-          
-          switch (treeWalk.getNameString()) {
-            // start with the "easy" replacements, and store the other template files for later
-            case ".project":
-              String projectFile = new String(loader.getBytes(), "UTF-8");
-              generateOtherArtifacts(Template.createInitialTemplateEngine(traceModel, path),
-                  microservice, gitAdapter.getGitOrganization(), projectFile);
-              break;
-            case "guidances.json":
-              guidances = new String(loader.getBytes(), "UTF-8");
-              break;
-            case "logo_services.png":
-              logo = ImageIO.read(loader.openStream());
-              break;
-            case "README.md":
-              String readMe = new String(loader.getBytes(), "UTF-8");
-              generateOtherArtifacts(Template.createInitialTemplateEngine(traceModel, path),
-                  microservice, gitAdapter.getGitOrganization(), readMe);
-              break;
-            case "LICENSE.txt":
-              license = new String(loader.getBytes(), "UTF-8");
-              break;
-            case "build.xml":
-              String buildFile = new String(loader.getBytes(), "UTF-8");
-              generateOtherArtifacts(Template.createInitialTemplateEngine(traceModel, path),
-                  microservice, gitAdapter.getGitOrganization(), buildFile);
-              break;
-            case "start_network.bat":
-              String startScriptWindows = new String(loader.getBytes(), "UTF-8");
-              generateOtherArtifacts(Template.createInitialTemplateEngine(traceModel, path),
-                  microservice, gitAdapter.getGitOrganization(), startScriptWindows);
-              break;
-            case "start_network.sh":
-              String startScriptUnix = new String(loader.getBytes(), "UTF-8");
-              generateOtherArtifacts(Template.createInitialTemplateEngine(traceModel, path),
-                  microservice, gitAdapter.getGitOrganization(), startScriptUnix);
-              break;
-            case "start_UserAgentGenerator.bat":
-              userAgentGeneratorWindows = new String(loader.getBytes(), "UTF-8");
-              break;
-            case "start_UserAgentGenerator.sh":
-              userAgentGeneratorUnix = new String(loader.getBytes(), "UTF-8");
-              break;
-            case "nodeInfo.xml":
-              String nodeInfo = new String(loader.getBytes(), "UTF-8");
-              generateOtherArtifacts(Template.createInitialTemplateEngine(traceModel, path),
-                  microservice, gitAdapter.getGitOrganization(), nodeInfo);
-              break;
-            case "service.properties":
-              String antServiceProperties = new String(loader.getBytes(), "UTF-8");
-              generateOtherArtifacts(Template.createInitialTemplateEngine(traceModel, path),
-                  microservice, gitAdapter.getGitOrganization(), antServiceProperties);
-              break;
-            case "user.properties":
-              antUserProperties = new String(loader.getBytes(), "UTF-8");
-              break;
-            case "ivy.xml":
-              String ivy = new String(loader.getBytes(), "UTF-8");
-              generateOtherArtifacts(Template.createInitialTemplateEngine(traceModel, path),
-                  microservice, gitAdapter.getGitOrganization(), ivy);
-              break;
-            case "ivysettings.xml":
-              ivySettings = new String(loader.getBytes(), "UTF-8");
-              break;
-            case "i5.las2peer.services.servicePackage.ServiceClass.properties":
-              String serviceProperties = new String(loader.getBytes(), "UTF-8");
-              TemplateEngine serviceTemplateEngine = Template.createInitialTemplateEngine(
-                  traceModel, getServicePropertiesFileName(microservice));
-              generateOtherArtifacts(serviceTemplateEngine, microservice, gitAdapter.getGitOrganization(),
-                  serviceProperties);
-              break;
-            case "i5.las2peer.webConnector.WebConnector.properties":
-              String webConnectorConfig = new String(loader.getBytes(), "UTF-8");
-              generateOtherArtifacts(Template.createInitialTemplateEngine(traceModel, path),
-                  microservice, gitAdapter.getGitOrganization(), webConnectorConfig);
-              break;
-            case ".gitignore":
-              gitignore = new String(loader.getBytes(), "UTF-8");
-              break;
-            case ".classpath":
-              String classpath = new String(loader.getBytes(), "UTF-8");
-              generateOtherArtifacts(Template.createInitialTemplateEngine(traceModel, path),
-                  microservice, gitAdapter.getGitOrganization(), classpath);
-              break;
-            case "DatabaseManager.java":
-              if (microservice.getDatabase() != null) {
-                databaseManager = new String(loader.getBytes(), "UTF-8");
-                generateOtherArtifacts(
-                    Template.createInitialTemplateEngine(traceModel,
-                        "src/main/i5/las2peer/services/" + packageName
-                            + "/database/DatabaseManager.java"),
-                    microservice, gitAdapter.getGitOrganization(), databaseManager);
-              }
-              break;
-            case "ServiceClass.java":
-              serviceClass = new String(loader.getBytes(), "UTF-8");
-              break;
-            case "genericHTTPMethod.txt":
-              genericHttpMethod = new String(loader.getBytes(), "UTF-8");
-              break;
-            case "genericHTTPMethodBody.txt":
-              genericHttpMethodBody = new String(loader.getBytes(), "UTF-8");
-              break;
-            case "genericHTTPResponse.txt":
-              genericHttpResponse = new String(loader.getBytes(), "UTF-8");
-              break;
-            case "genericApiResponse.txt":
-              genericApiResponse = new String(loader.getBytes(), "UTF-8");
-              break;
-            case "ServiceTest.java":
-              serviceTest = new String(loader.getBytes(), "UTF-8");
-              break;
-            case "genericTestMethod.txt":
-              genericTestCase = new String(loader.getBytes(), "UTF-8");
-              break;
-            case "databaseConfig.txt":
-              databaseConfig = new String(loader.getBytes(), "UTF-8");
-              break;
-            case "databaseInstantiation.txt":
-              databaseInstantiation = new String(loader.getBytes(), "UTF-8");
-              break;
-            case "genericServiceInvocation.txt":
-              serviceInvocation = new String(loader.getBytes(), "UTF-8");
-              break;
-            case "database.sql":
-              databaseScript = new String(loader.getBytes(), "UTF-8");
-              break;
-            case "genericTable.txt":
-              genericTable = new String(loader.getBytes(), "UTF-8");
-              break;
-          }
-        }
-      } catch (Exception e) {
-        logger.printStackTrace(e);
-        throw new GitHostException(e.getMessage());
-      }
-
-      microserviceRepository = generateNewRepository(repositoryName, gitAdapter);
-      
-      // generate service class and test
-      /*
-      String repositoryLocation = "";
-      if (Objects.equals(usedGitHost, "GitLab")) {
-    	  //TODO: Check url
-    	  repositoryLocation = "http://ginkgo.informatik.rwth-aachen.de:4080/" + gitAdapter.getGitOrganization() + "/" + repositoryName;
-      }
-      if (Objects.equals(usedGitHost, "GitHub")) {
-    	  repositoryLocation = "https://github.com/" + gitAdapter.getGitOrganization() + "/" + repositoryName;
-      }
-      */
-      
-      String repositoryLocation = gitAdapter.getBaseURL() + gitAdapter.getGitOrganization() + "/" + repositoryName;
-
-      FileTraceModel serviceClassTraceModel =
-          new FileTraceModel(traceModel, getServiceFileName(microservice));
-      traceModel.addFileTraceModel(serviceClassTraceModel);
-
-      TemplateStrategy strategy = new InitialGenerationStrategy();
-      TemplateEngine serviceTemplateEngine = new TemplateEngine(strategy, serviceClassTraceModel);
-
-      generateNewServiceClass(serviceTemplateEngine, serviceClass, microservice, repositoryLocation,
-          genericHttpMethod, genericHttpMethodBody, genericApiResponse, genericHttpResponse,
-          databaseConfig, databaseInstantiation, serviceInvocation);
-
-      FileTraceModel serviceTestTraceModel =
-          new FileTraceModel(traceModel, getServiceTestFileName(microservice));
-      traceModel.addFileTraceModel(serviceTestTraceModel);
-
-      TemplateEngine serviceTestTemplateEngine =
-          new TemplateEngine(new InitialGenerationStrategy(), serviceTestTraceModel);
-
-      generateNewServiceTest(serviceTestTemplateEngine, serviceTest, microservice, genericTestCase);
-
-      // add not traced files to new repository, e.g. static files
-
-      // configuration and build stuff
-      microserviceRepository = createTextFileInRepository(microserviceRepository, "etc/ivy/",
-          "ivysettings.xml", ivySettings);
-
-      microserviceRepository = createTextFileInRepository(microserviceRepository,
-          "etc/ant_configuration/", "user.properties", antUserProperties);
-
-      microserviceRepository =
-          createTextFileInRepository(microserviceRepository, "", ".gitignore", gitignore);
-
-      // scripts
-      microserviceRepository = createTextFileInRepository(microserviceRepository, "bin/",
-          "start_UserAgentGenerator.bat", userAgentGeneratorWindows);
-      microserviceRepository = createTextFileInRepository(microserviceRepository, "bin/",
-          "start_UserAgentGenerator.sh", userAgentGeneratorUnix);
-      // doc
-      microserviceRepository =
-          createTextFileInRepository(microserviceRepository, "", "LICENSE.txt", license);
-      microserviceRepository =
-          createImageFileInRepository(microserviceRepository, "img/", "logo.png", logo);
-      // source code
-      if (databaseManager != null) {
-        FileTraceModel databaseScriptTraceModel =
-            new FileTraceModel(traceModel, getDatabaseScriptFileName(microservice));
-        traceModel.addFileTraceModel(databaseScriptTraceModel);
-
-        TemplateEngine databaseScriptTemplateEngine =
-            new TemplateEngine(new InitialGenerationStrategy(), databaseScriptTraceModel);
-
-        microserviceRepository = createTextFileInRepository(microserviceRepository,
-            "src/main/i5/las2peer/services/" + packageName + "/database/", "DatabaseManager.java",
-            databaseManager);
-
-        generateDatabaseScript(databaseScriptTemplateEngine, databaseScript, genericTable,
-            microservice);
-      }
-
-      createTextFileInRepository(microserviceRepository, "traces/", "guidances.json", guidances);
-
-      // add traced files to new repository
-      createTracedFilesInRepository(traceModel, microserviceRepository);
-
-      // commit files
-      try {
-        Git.wrap(microserviceRepository).commit()
-            .setMessage("Generated microservice version " + microservice.getVersion())
-            .setCommitter(caeUser).call();
-      } catch (Exception e) {
-        logger.printStackTrace(e);
-        throw new GitHostException(e.getMessage());
-      }
-
-      // push (local) repository content to GitHub repository
-      try {
-        pushToRemoteRepository(microserviceRepository, gitAdapter);
-      } catch (Exception e) {
-        logger.printStackTrace(e);
-        throw new GitHostException(e.getMessage());
-      }
-
-      // close all open resources
-    } catch (GitHostException e) {
-    	throw e;
-    } finally {
-      if(microserviceRepository != null) {
-    	  microserviceRepository.close();
-      }
-      treeWalk.close();
-    }
+	  createSourceCode(microservice, templateRepositoryName, gitAdapter, false);
+    
   }
 
   protected static void generateOtherArtifacts(TemplateEngine templateEngine,

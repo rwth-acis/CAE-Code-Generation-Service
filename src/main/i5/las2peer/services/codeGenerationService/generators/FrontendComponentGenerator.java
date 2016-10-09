@@ -67,237 +67,242 @@ public class FrontendComponentGenerator extends Generator {
    *         other exceptions and prints their message.
    * 
    */
+  public static void createSourceCode(FrontendComponent frontendComponent, BaseGitHostAdapter gitAdapter, boolean forcePush) throws GitHostException{
+	// variables to be closed in the final block
+	    Repository frontendComponentRepository = null;
+	    TreeWalk treeWalk = null;
+
+	    // helper variables
+	    // variables holding content to be modified and added to repository later
+	    String widget = null;
+	    String applicationScript = null;
+	    String las2peerWidgetLibrary = null;
+	    String style = null;
+	    String readMe = null;
+	    BufferedImage logo = null;
+	    String htmlElementTemplate = null;
+	    String functionTemplate = null;
+	    String microserviceCallTemplate = null;
+	    String iwcResponseTemplate = null;
+	    String eventTemplate = null;
+	    String yjsImports = null;
+	    String yjs = null;
+	    String yText = null;
+	    String yWebsockets = null;
+	    String yArray = null;
+	    String yMemory = null;
+	    String iwc = null;
+	    String yjsInit = null;
+	    String guidances = null;
+
+	    try {
+	      PersonIdent caeUser = new PersonIdent(gitAdapter.getGitUser(), gitAdapter.getGitUserMail());
+	      String repositoryName = getRepositoryName(frontendComponent);
+	      frontendComponentRepository =
+	          generateNewRepository(repositoryName, gitAdapter);
+
+
+	      try {
+	        // now load the TreeWalk containing the template repository content
+	        treeWalk = getTemplateRepositoryContent(gitAdapter);
+	        treeWalk.setFilter(PathFilter.create("frontend/"));
+	        ObjectReader reader = treeWalk.getObjectReader();
+	        // walk through the tree and retrieve the needed templates
+	        while (treeWalk.next()) {
+	          ObjectId objectId = treeWalk.getObjectId(0);
+	          ObjectLoader loader = reader.open(objectId);
+
+	          switch (treeWalk.getNameString()) {
+	            case "widget.xml":
+	              widget = new String(loader.getBytes(), "UTF-8");
+	              break;
+	            case "genericHtmlElement.txt":
+	              htmlElementTemplate = new String(loader.getBytes(), "UTF-8");
+	              break;
+	            case "genericEvent.txt":
+	              eventTemplate = new String(loader.getBytes(), "UTF-8");
+	              break;
+	            case "applicationScript.js":
+	              applicationScript = new String(loader.getBytes(), "UTF-8");
+	              break;
+	            case "guidances.json":
+	              guidances = new String(loader.getBytes(), "UTF-8");
+	              break;
+	            case "genericFunction.txt":
+	              functionTemplate = new String(loader.getBytes(), "UTF-8");
+	              break;
+	            case "genericMicroserviceCall.txt":
+	              microserviceCallTemplate = new String(loader.getBytes(), "UTF-8");
+	              break;
+	            case "genericIWCResponse.txt":
+	              iwcResponseTemplate = new String(loader.getBytes(), "UTF-8");
+	              break;
+	            case "yjs-imports.txt":
+	              yjsImports = new String(loader.getBytes(), "UTF-8");
+	              break;
+	            case "las2peerWidgetLibrary.js":
+	              las2peerWidgetLibrary = new String(loader.getBytes(), "UTF-8");
+	              break;
+	            case "iwc.js":
+	              iwc = new String(loader.getBytes(), "UTF-8");
+	              break;
+	            case "y.js":
+	              yjs = new String(loader.getBytes(), "UTF-8");
+	              break;
+	            case "y-array.js":
+	              yArray = new String(loader.getBytes(), "UTF-8");
+	              break;
+	            case "y-text.js":
+	              yText = new String(loader.getBytes(), "UTF-8");
+	              break;
+	            case "y-websockets-client.js":
+	              yWebsockets = new String(loader.getBytes(), "UTF-8");
+	              break;
+	            case "y-memory.js":
+	              yMemory = new String(loader.getBytes(), "UTF-8");
+	              break;
+	            case "yjsInit.txt":
+	              yjsInit = new String(loader.getBytes(), "UTF-8");
+	              break;
+	            // case "yjsBindCode.txt":
+	            // yjsBindCode = new String(loader.getBytes(), "UTF-8");
+	            // break;
+	            // case "yjsSyncedTemplate.txt":
+	            // yjsSyncedCode = new String(loader.getBytes(), "UTF-8");
+	            // break;
+	            case "style.css":
+	              style = new String(loader.getBytes(), "UTF-8");
+	              break;
+	            case "README.md":
+	              readMe = new String(loader.getBytes(), "UTF-8");
+	              readMe = readMe.replace("$Repository_Name$", repositoryName);
+	              readMe = readMe.replace("$Widget_Name$", frontendComponent.getName());
+	              readMe = readMe.replace("$Organization_Name$", gitAdapter.getGitOrganization());
+	              break;
+	            case "logo_frontend.png":
+	              logo = ImageIO.read(loader.openStream());
+	              break;
+	          }
+	        }
+	      } catch (Exception e) {
+	        logger.printStackTrace(e);
+	        throw new GitHostException(e.getMessage());
+	      }
+	      // the global traceModel
+	      TraceModel traceModel = new TraceModel();
+
+	      FileTraceModel widgetTraceModel = new FileTraceModel(traceModel, "widget.xml");
+	      TemplateStrategy strategy = new InitialGenerationStrategy();
+	      TemplateEngine widgetTemplateEngine = new TemplateEngine(strategy, widgetTraceModel);
+
+	      // add html elements to widget source code
+	      createWidgetCode(widgetTemplateEngine, widget, htmlElementTemplate, yjsImports,
+	          gitAdapter.getGitOrganization(), repositoryName, frontendComponent);
+
+	      // add widget file trace model to gloabl trace model
+
+	      traceModel.addFileTraceModel(widgetTraceModel);
+
+	      // add functions to application script
+
+	      FileTraceModel applicationScriptTraceModel =
+	          new FileTraceModel(traceModel, "js/applicationScript.js");
+	      TemplateStrategy applicationScriptStrategy = new InitialGenerationStrategy();
+	      TemplateEngine applicationScriptTemplateEngine =
+	          new TemplateEngine(applicationScriptStrategy, applicationScriptTraceModel);
+
+	      Template applicationTemplate = applicationScriptTemplateEngine.createTemplate(
+	          frontendComponent.getWidgetModelId() + ":applicationScript:", applicationScript);
+
+	      applicationScriptTemplateEngine.addTemplate(applicationTemplate);
+
+	      createApplicationScript(applicationTemplate, functionTemplate, microserviceCallTemplate,
+	          iwcResponseTemplate, htmlElementTemplate, frontendComponent);
+
+	      // add events to elements
+	      addEventsToApplicationScript(applicationTemplate, widgetTemplateEngine, eventTemplate,
+	          frontendComponent);
+	      // add (possible) Yjs collaboration stuff
+	      addYjsCollaboration(applicationTemplate, applicationScriptTemplateEngine, yjsInit,
+	          frontendComponent);
+
+	      // add applicationscript file trace model to gloabl trace model
+
+	      traceModel.addFileTraceModel(applicationScriptTraceModel);
+
+	      // add files to new repository
+
+	      frontendComponentRepository =
+	          createTextFileInRepository(frontendComponentRepository, "traces/", "tracedFiles.json",
+	              traceModel.toJSONObject().toJSONString().replace("\\", ""));
+
+	      frontendComponentRepository = createTextFileInRepository(frontendComponentRepository, "",
+	          "widget.xml", widgetTemplateEngine.getContent());
+	      frontendComponentRepository = createTextFileInRepository(frontendComponentRepository,
+	          "traces/", "widget.xml.traces", widgetTemplateEngine.toJSONObject().toJSONString());
+
+	      frontendComponentRepository = createTextFileInRepository(frontendComponentRepository, "js/",
+	          "applicationScript.js", applicationScriptTemplateEngine.getContent());
+	      frontendComponentRepository = createTextFileInRepository(frontendComponentRepository,
+	          "traces/js/", "applicationScript.js.traces",
+	          applicationScriptTemplateEngine.toJSONObject().toJSONString());
+
+	      // libraries
+	      frontendComponentRepository = createTextFileInRepository(frontendComponentRepository,
+	          "js/lib/", "las2peerWidgetLibrary.js", las2peerWidgetLibrary);
+	      frontendComponentRepository =
+	          createTextFileInRepository(frontendComponentRepository, "js/lib/", "iwc.js", iwc);
+	      // y-is (if needed)
+	      // if (widgetTemplateEngine.getContent().contains("/js/lib/y.js")) {
+	      frontendComponentRepository =
+	          createTextFileInRepository(frontendComponentRepository, "js/lib/", "y.js", yjs);
+	      frontendComponentRepository =
+	          createTextFileInRepository(frontendComponentRepository, "js/lib/", "y-array.js", yArray);
+	      frontendComponentRepository =
+	          createTextFileInRepository(frontendComponentRepository, "js/lib/", "y-text.js", yText);
+	      frontendComponentRepository = createTextFileInRepository(frontendComponentRepository,
+	          "js/lib/", "y-websockets-client.js", yWebsockets);
+	      frontendComponentRepository = createTextFileInRepository(frontendComponentRepository,
+	          "js/lib/", "y-memory.js", yMemory);
+	      // }
+	      frontendComponentRepository =
+	          createTextFileInRepository(frontendComponentRepository, "css/", "style.css", style);
+	      frontendComponentRepository =
+	          createTextFileInRepository(frontendComponentRepository, "", "README.md", readMe);
+	      frontendComponentRepository =
+	          createImageFileInRepository(frontendComponentRepository, "img/", "logo.png", logo);
+	      frontendComponentRepository = createTextFileInRepository(frontendComponentRepository,
+	          "traces/", "guidances.json", guidances);
+
+	      // commit files
+	      try {
+	        Git.wrap(frontendComponentRepository).commit()
+	            .setMessage("Generated frontend component " + frontendComponent.getVersion())
+	            .setCommitter(caeUser).call();
+	      } catch (Exception e) {
+	        logger.printStackTrace(e);
+	        throw new GitHostException(e.getMessage());
+	      }
+
+	      // push (local) repository content to GitHub repository "gh-pages" branch
+	      try {
+	        pushToRemoteRepository(frontendComponentRepository, "master", "gh-pages", gitAdapter, forcePush);
+	      } catch (Exception e) {
+	        logger.printStackTrace(e);
+	        throw new GitHostException(e.getMessage());
+	      }
+
+	      // close all open resources
+	    } finally {
+	    	if(frontendComponentRepository != null)
+	    		frontendComponentRepository.close();
+	    	if(treeWalk != null)
+	    		treeWalk.close();
+	    }
+  }
+  
   public static void createSourceCode(FrontendComponent frontendComponent, BaseGitHostAdapter gitAdapter) throws GitHostException {
-
-    // variables to be closed in the final block
-    Repository frontendComponentRepository = null;
-    TreeWalk treeWalk = null;
-
-    // helper variables
-    // variables holding content to be modified and added to repository later
-    String widget = null;
-    String applicationScript = null;
-    String las2peerWidgetLibrary = null;
-    String style = null;
-    String readMe = null;
-    BufferedImage logo = null;
-    String htmlElementTemplate = null;
-    String functionTemplate = null;
-    String microserviceCallTemplate = null;
-    String iwcResponseTemplate = null;
-    String eventTemplate = null;
-    String yjsImports = null;
-    String yjs = null;
-    String yText = null;
-    String yWebsockets = null;
-    String yArray = null;
-    String yMemory = null;
-    String iwc = null;
-    String yjsInit = null;
-    String guidances = null;
-
-    try {
-      PersonIdent caeUser = new PersonIdent(gitAdapter.getGitUser(), gitAdapter.getGitUserMail());
-      String repositoryName = getRepositoryName(frontendComponent);
-      frontendComponentRepository =
-          generateNewRepository(repositoryName, gitAdapter);
-
-
-      try {
-        // now load the TreeWalk containing the template repository content
-        treeWalk = getTemplateRepositoryContent(gitAdapter);
-        treeWalk.setFilter(PathFilter.create("frontend/"));
-        ObjectReader reader = treeWalk.getObjectReader();
-        // walk through the tree and retrieve the needed templates
-        while (treeWalk.next()) {
-          ObjectId objectId = treeWalk.getObjectId(0);
-          ObjectLoader loader = reader.open(objectId);
-
-          switch (treeWalk.getNameString()) {
-            case "widget.xml":
-              widget = new String(loader.getBytes(), "UTF-8");
-              break;
-            case "genericHtmlElement.txt":
-              htmlElementTemplate = new String(loader.getBytes(), "UTF-8");
-              break;
-            case "genericEvent.txt":
-              eventTemplate = new String(loader.getBytes(), "UTF-8");
-              break;
-            case "applicationScript.js":
-              applicationScript = new String(loader.getBytes(), "UTF-8");
-              break;
-            case "guidances.json":
-              guidances = new String(loader.getBytes(), "UTF-8");
-              break;
-            case "genericFunction.txt":
-              functionTemplate = new String(loader.getBytes(), "UTF-8");
-              break;
-            case "genericMicroserviceCall.txt":
-              microserviceCallTemplate = new String(loader.getBytes(), "UTF-8");
-              break;
-            case "genericIWCResponse.txt":
-              iwcResponseTemplate = new String(loader.getBytes(), "UTF-8");
-              break;
-            case "yjs-imports.txt":
-              yjsImports = new String(loader.getBytes(), "UTF-8");
-              break;
-            case "las2peerWidgetLibrary.js":
-              las2peerWidgetLibrary = new String(loader.getBytes(), "UTF-8");
-              break;
-            case "iwc.js":
-              iwc = new String(loader.getBytes(), "UTF-8");
-              break;
-            case "y.js":
-              yjs = new String(loader.getBytes(), "UTF-8");
-              break;
-            case "y-array.js":
-              yArray = new String(loader.getBytes(), "UTF-8");
-              break;
-            case "y-text.js":
-              yText = new String(loader.getBytes(), "UTF-8");
-              break;
-            case "y-websockets-client.js":
-              yWebsockets = new String(loader.getBytes(), "UTF-8");
-              break;
-            case "y-memory.js":
-              yMemory = new String(loader.getBytes(), "UTF-8");
-              break;
-            case "yjsInit.txt":
-              yjsInit = new String(loader.getBytes(), "UTF-8");
-              break;
-            // case "yjsBindCode.txt":
-            // yjsBindCode = new String(loader.getBytes(), "UTF-8");
-            // break;
-            // case "yjsSyncedTemplate.txt":
-            // yjsSyncedCode = new String(loader.getBytes(), "UTF-8");
-            // break;
-            case "style.css":
-              style = new String(loader.getBytes(), "UTF-8");
-              break;
-            case "README.md":
-              readMe = new String(loader.getBytes(), "UTF-8");
-              readMe = readMe.replace("$Repository_Name$", repositoryName);
-              readMe = readMe.replace("$Widget_Name$", frontendComponent.getName());
-              readMe = readMe.replace("$Organization_Name$", gitAdapter.getGitOrganization());
-              break;
-            case "logo_frontend.png":
-              logo = ImageIO.read(loader.openStream());
-              break;
-          }
-        }
-      } catch (Exception e) {
-        logger.printStackTrace(e);
-        throw new GitHostException(e.getMessage());
-      }
-      // the global traceModel
-      TraceModel traceModel = new TraceModel();
-
-      FileTraceModel widgetTraceModel = new FileTraceModel(traceModel, "widget.xml");
-      TemplateStrategy strategy = new InitialGenerationStrategy();
-      TemplateEngine widgetTemplateEngine = new TemplateEngine(strategy, widgetTraceModel);
-
-      // add html elements to widget source code
-      createWidgetCode(widgetTemplateEngine, widget, htmlElementTemplate, yjsImports,
-          gitAdapter.getGitOrganization(), repositoryName, frontendComponent);
-
-      // add widget file trace model to gloabl trace model
-
-      traceModel.addFileTraceModel(widgetTraceModel);
-
-      // add functions to application script
-
-      FileTraceModel applicationScriptTraceModel =
-          new FileTraceModel(traceModel, "js/applicationScript.js");
-      TemplateStrategy applicationScriptStrategy = new InitialGenerationStrategy();
-      TemplateEngine applicationScriptTemplateEngine =
-          new TemplateEngine(applicationScriptStrategy, applicationScriptTraceModel);
-
-      Template applicationTemplate = applicationScriptTemplateEngine.createTemplate(
-          frontendComponent.getWidgetModelId() + ":applicationScript:", applicationScript);
-
-      applicationScriptTemplateEngine.addTemplate(applicationTemplate);
-
-      createApplicationScript(applicationTemplate, functionTemplate, microserviceCallTemplate,
-          iwcResponseTemplate, htmlElementTemplate, frontendComponent);
-
-      // add events to elements
-      addEventsToApplicationScript(applicationTemplate, widgetTemplateEngine, eventTemplate,
-          frontendComponent);
-      // add (possible) Yjs collaboration stuff
-      addYjsCollaboration(applicationTemplate, applicationScriptTemplateEngine, yjsInit,
-          frontendComponent);
-
-      // add applicationscript file trace model to gloabl trace model
-
-      traceModel.addFileTraceModel(applicationScriptTraceModel);
-
-      // add files to new repository
-
-      frontendComponentRepository =
-          createTextFileInRepository(frontendComponentRepository, "traces/", "tracedFiles.json",
-              traceModel.toJSONObject().toJSONString().replace("\\", ""));
-
-      frontendComponentRepository = createTextFileInRepository(frontendComponentRepository, "",
-          "widget.xml", widgetTemplateEngine.getContent());
-      frontendComponentRepository = createTextFileInRepository(frontendComponentRepository,
-          "traces/", "widget.xml.traces", widgetTemplateEngine.toJSONObject().toJSONString());
-
-      frontendComponentRepository = createTextFileInRepository(frontendComponentRepository, "js/",
-          "applicationScript.js", applicationScriptTemplateEngine.getContent());
-      frontendComponentRepository = createTextFileInRepository(frontendComponentRepository,
-          "traces/js/", "applicationScript.js.traces",
-          applicationScriptTemplateEngine.toJSONObject().toJSONString());
-
-      // libraries
-      frontendComponentRepository = createTextFileInRepository(frontendComponentRepository,
-          "js/lib/", "las2peerWidgetLibrary.js", las2peerWidgetLibrary);
-      frontendComponentRepository =
-          createTextFileInRepository(frontendComponentRepository, "js/lib/", "iwc.js", iwc);
-      // y-is (if needed)
-      // if (widgetTemplateEngine.getContent().contains("/js/lib/y.js")) {
-      frontendComponentRepository =
-          createTextFileInRepository(frontendComponentRepository, "js/lib/", "y.js", yjs);
-      frontendComponentRepository =
-          createTextFileInRepository(frontendComponentRepository, "js/lib/", "y-array.js", yArray);
-      frontendComponentRepository =
-          createTextFileInRepository(frontendComponentRepository, "js/lib/", "y-text.js", yText);
-      frontendComponentRepository = createTextFileInRepository(frontendComponentRepository,
-          "js/lib/", "y-websockets-client.js", yWebsockets);
-      frontendComponentRepository = createTextFileInRepository(frontendComponentRepository,
-          "js/lib/", "y-memory.js", yMemory);
-      // }
-      frontendComponentRepository =
-          createTextFileInRepository(frontendComponentRepository, "css/", "style.css", style);
-      frontendComponentRepository =
-          createTextFileInRepository(frontendComponentRepository, "", "README.md", readMe);
-      frontendComponentRepository =
-          createImageFileInRepository(frontendComponentRepository, "img/", "logo.png", logo);
-      frontendComponentRepository = createTextFileInRepository(frontendComponentRepository,
-          "traces/", "guidances.json", guidances);
-
-      // commit files
-      try {
-        Git.wrap(frontendComponentRepository).commit()
-            .setMessage("Generated frontend component " + frontendComponent.getVersion())
-            .setCommitter(caeUser).call();
-      } catch (Exception e) {
-        logger.printStackTrace(e);
-        throw new GitHostException(e.getMessage());
-      }
-
-      // push (local) repository content to GitHub repository "gh-pages" branch
-      try {
-        pushToRemoteRepository(frontendComponentRepository, "master", "gh-pages", gitAdapter);
-      } catch (Exception e) {
-        logger.printStackTrace(e);
-        throw new GitHostException(e.getMessage());
-      }
-
-      // close all open resources
-    } finally {
-      frontendComponentRepository.close();
-      treeWalk.close();
-    }
+	  createSourceCode(frontendComponent, gitAdapter, false);
   }
 
 
