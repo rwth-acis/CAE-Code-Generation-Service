@@ -47,8 +47,6 @@ public class MicroserviceSynchronization extends MicroserviceGenerator {
    * @param microservice The updated microservice model
    * @param oldMicroservice The current/old microservice model
    * @param files The traced files with the current source code
-   * @param templateRepositoryName the name of the template repository on GitHub
-   * @param gitHubOrganization the organization that is used in the CAE
    * @param service An instance of {@link i5.las2peer.api.Service} needed to invoke the GitHubProxy
    *        service
  * @throws ModelParseException 

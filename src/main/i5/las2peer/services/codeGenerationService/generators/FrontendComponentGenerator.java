@@ -57,11 +57,6 @@ public class FrontendComponentGenerator extends Generator {
    * Creates source code from a CAE frontend component model and pushes it to GitHub.
    * 
    * @param frontendComponent the frontend component model
-   * @param templateRepositoryName the name of the template repository on GitHub
-   * @param gitHubOrganization the organization that is used in the CAE
-   * @param gitHubUser the CAE user
-   * @param gitHubUserMail the mail of the CAE user
-   * @param gitHubPassword the password of the CAE user
    * 
    * @throws GitHostException thrown if anything goes wrong during this process. Wraps around all
    *         other exceptions and prints their message.
