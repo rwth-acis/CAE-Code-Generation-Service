@@ -67,6 +67,8 @@ public class CodeGenerationService extends Service {
   private boolean useModelSynchronization;
   private final L2pLogger logger = L2pLogger.getInstance(CodeGenerationService.class.getName());
   
+  public static final String DEPLOYMENT_REPO = "CAE-Deployment-Temp";
+  
   // ftp properties
   private boolean pushToFs;
   private String frontendDirectory;
@@ -302,33 +304,6 @@ public class CodeGenerationService extends Service {
 
             if(gitAdapter instanceof GitLabAdapter) {
             	// Use pseudo-update to circumvent gitlab deletion/creation problem
-            	if (useModelSynchronization) {
-                    // inform the GitHubProxy service that we may have deleted a remote repository
-                    // it will then delete the local repository
-                  	L2pLogger.logEvent(Event.SERVICE_MESSAGE, "Using model sync: Deleting local repo");
-                    deleteReturnMessage = this.deleteLocalRepository(MicroserviceGenerator.getRepositoryName(microservice));
-                    if (!deleteReturnMessage.equals("done")) {
-                      return deleteReturnMessage; // error happened
-                    }
-                  }
-            	
-            	// This is where things get different
-            	/*
-            	 * if (Generator.existsRemoteRepository(MicroserviceGenerator.getRepositoryName(microservice), (BaseGitHostAdapter) gitAdapter)) {
-                	L2pLogger.logEvent(Event.SERVICE_MESSAGE, "Using model sync: Remote exits. Calling delete repo of model");
-                  deleteReturnMessage = deleteRepositoryOfModel(serializedModel);
-                  
-                  if (!deleteReturnMessage.equals("done")) {
-                    return deleteReturnMessage; // error happened
-                  }
-                }
-
-                L2pLogger.logEvent(Event.SERVICE_MESSAGE,
-                    "updateRepositoryOfModel: Calling createFromModel now..");
-
-                return createFromModel(serializedModel);
-            	 */
-            	// TODO ...
             	return pseudoUpdateRepositoryOfModel(serializedModel); 
             	
             } else {
@@ -384,13 +359,14 @@ public class CodeGenerationService extends Service {
                 L2pLogger.logEvent(Event.SERVICE_MESSAGE, "updateRepositoryOfModel: Synchronized!");
                 return "done";
               } else {
-
-                L2pLogger.logEvent(Event.SERVICE_MESSAGE,
-                    "updateRepositoryOfModel: Calling delete (old) repository method now..");
-
-                if (useModelSynchronization) {
+                if(gitAdapter instanceof GitLabAdapter) {
+                	return pseudoUpdateRepositoryOfModel(serializedModel);
+                } else {
+                if (useModelSynchronization) {                	
                   // inform the GitHubProxy service that we may have deleted a remote repository
                   // it will then delete the local repository
+                	L2pLogger.logEvent(Event.SERVICE_MESSAGE,
+                            "updateRepositoryOfModel: Calling delete (old) repository method now..");
                   deleteReturnMessage = this.deleteLocalRepository(
                       FrontendComponentGenerator.getRepositoryName(frontendComponent));
                   if (!deleteReturnMessage.equals("done")) {
@@ -408,6 +384,7 @@ public class CodeGenerationService extends Service {
                 L2pLogger.logEvent(Event.SERVICE_MESSAGE,
                     "updateRepositoryOfModel: Calling createFromModel now..");
                 return createFromModel(serializedModel);
+                }
 
               }
 
@@ -420,6 +397,7 @@ public class CodeGenerationService extends Service {
               // check first if model can be constructed
               // (in case of an invalid model, keep the old repository)
               new Application(serializedModel);
+              /*
               L2pLogger.logEvent(Event.SERVICE_MESSAGE,
                   "updateRepositoryOfModel: Calling delete (old) repository method now..");
               deleteReturnMessage = deleteRepositoryOfModel(serializedModel);
@@ -429,6 +407,9 @@ public class CodeGenerationService extends Service {
               L2pLogger.logEvent(Event.SERVICE_ERROR,
                   "updateRepositoryOfModel: Calling createFromModel now..");
               return createFromModel(serializedModel);
+              */
+              return pseudoUpdateRepositoryOfModel(serializedModel);
+              
             default:
               return "Error: Model has to have an attribute 'type' that is either "
                   + "'microservice', 'frontend-component' or 'application'!";
@@ -456,7 +437,7 @@ public class CodeGenerationService extends Service {
 	  // force push
 	  //TODO: add more cleanup here later
 	  // first get repo names / etc. 
-	  return createFromModel(serializedModel, true);
+	  return createFromModel(true, serializedModel);
   }
   
   /**
@@ -470,7 +451,7 @@ public class CodeGenerationService extends Service {
     try {
       Serializable[] payload = {repositoryName};
 
-      this.invokeServiceMethod("i5.las2peer.services.gitHubProxyService.GitHubProxyService@0.1",
+      this.invokeServiceMethod("i5.las2peer.services.gitHubProxyService.GitHubProxyService@0.2",
           "deleteLocalRepository", payload);
 
     } catch (Exception e) {
@@ -539,7 +520,7 @@ public class CodeGenerationService extends Service {
     HashMap<String, JSONObject> files = new HashMap<String, JSONObject>();
     try {
       files = (HashMap<String, JSONObject>) this.invokeServiceMethod(
-          "i5.las2peer.services.gitHubProxyService.GitHubProxyService@0.1", "getAllTracedFiles",
+          "i5.las2peer.services.gitHubProxyService.GitHubProxyService@0.2", "getAllTracedFiles",
           payload);
     } catch (Exception e) {
       logger.printStackTrace(e);
@@ -620,13 +601,13 @@ public class CodeGenerationService extends Service {
                   "deployApplicationModel: Creating application model now..");
               Application application = new Application(serializedModel);
 
-              String repositoryName = "CAE-Deployment-Temp";
+              String repositoryName = DEPLOYMENT_REPO;
 
-              if (Generator.existsRemoteRepository(repositoryName, (BaseGitHostAdapter) this.gitAdapter)) {
+              /**if (Generator.existsRemoteRepository(repositoryName, (BaseGitHostAdapter) this.gitAdapter)) {
                 Generator.deleteRemoteRepository(repositoryName, (BaseGitHostAdapter) this.gitAdapter);
                 L2pLogger.logEvent(Event.SERVICE_MESSAGE,
                     "deployApplicationModel: Deleted old repository!");
-              }
+              }*/
 
               L2pLogger.logEvent(Event.SERVICE_MESSAGE,
                   "deployApplicationModel: Copying repository to deployment repository");
@@ -647,7 +628,7 @@ public class CodeGenerationService extends Service {
           L2pLogger.logEvent(Event.SERVICE_MESSAGE,
               "createFromModel: GitHub access exception: " + e2.getMessage());
           logger.printStackTrace(e2);
-          return "Error: Generating code failed because of failing GitHub access: " + e2.getMessage();
+          return "Error: Generating code failed because of failing GitHub access in prepareDeploymentApplicationModel: " + e2.getMessage();
         }
       }
     }

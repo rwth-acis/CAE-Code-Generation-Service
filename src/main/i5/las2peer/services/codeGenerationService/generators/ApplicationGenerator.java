@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 
 import javax.imageio.ImageIO;
@@ -18,6 +19,9 @@ import org.eclipse.jgit.lib.ObjectLoader;
 import org.eclipse.jgit.lib.ObjectReader;
 import org.eclipse.jgit.lib.PersonIdent;
 import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.lib.StoredConfig;
+import org.eclipse.jgit.transport.RemoteConfig;
+import org.eclipse.jgit.transport.URIish;
 import org.eclipse.jgit.treewalk.TreeWalk;
 import org.eclipse.jgit.treewalk.filter.PathFilter;
 import org.json.simple.JSONObject;
@@ -25,6 +29,7 @@ import org.json.simple.parser.JSONParser;
 
 import i5.las2peer.logging.L2pLogger;
 import i5.las2peer.logging.NodeObserver.Event;
+import i5.las2peer.services.codeGenerationService.CodeGenerationService;
 import i5.las2peer.services.codeGenerationService.adapters.BaseGitHostAdapter;
 import i5.las2peer.services.codeGenerationService.exception.GitHostException;
 import i5.las2peer.services.codeGenerationService.models.application.Application;
@@ -89,9 +94,58 @@ public class ApplicationGenerator extends Generator {
     try {
       PersonIdent caeUser = new PersonIdent(gitAdapter.getGitUser(), gitAdapter.getGitUserMail());
 
-
-      applicationRepository =
-          generateNewRepository(repositoryName, gitAdapter);
+      if(!repositoryName.equals(CodeGenerationService.DEPLOYMENT_REPO)) {
+    	  if (!existsRemoteRepository(repositoryName, gitAdapter)) {
+    		  applicationRepository = generateNewRepository(repositoryName, gitAdapter);
+	      } else {
+	    	  applicationRepository = getRemoteRepository(repositoryName, gitAdapter);
+	    	  Git git = Git.wrap(applicationRepository);
+	          StoredConfig config = git.getRepository().getConfig();
+	          
+	          RemoteConfig remoteConfig = null;
+	          
+	          try {
+	          remoteConfig = new RemoteConfig(config, "Remote");
+	          remoteConfig.addURI(new URIish(gitAdapter.getBaseURL() + gitAdapter.getGitOrganization() + "/" + repositoryName + ".git"));
+	    		
+	          
+	          remoteConfig.update(config);
+	          config.save();
+	          } catch (URISyntaxException e) {
+	        	  throw new GitHostException("Malformed url: " + e.getMessage());
+	          } catch (IOException e) {
+	        	  throw new GitHostException("IO exception: " + e.getMessage());
+	          }
+	      }
+      }else {
+    	  if(!existsRemoteRepository(CodeGenerationService.DEPLOYMENT_REPO, gitAdapter)) {
+    		  applicationRepository = generateNewRepository(CodeGenerationService.DEPLOYMENT_REPO, gitAdapter);
+    	  } else {
+    		  
+    		  applicationRepository = getRemoteRepository(CodeGenerationService.DEPLOYMENT_REPO, gitAdapter);
+	    	  Git git = Git.wrap(applicationRepository);
+	          StoredConfig config = git.getRepository().getConfig();
+	          
+	          RemoteConfig remoteConfig = null;
+	          
+	          try {
+	          remoteConfig = new RemoteConfig(config, "Remote");
+	          remoteConfig.addURI(new URIish(gitAdapter.getBaseURL() + gitAdapter.getGitOrganization() + "/" + repositoryName + ".git"));
+	    		
+	          
+	          remoteConfig.update(config);
+	          config.save();
+	          } catch (URISyntaxException e) {
+	        	  throw new GitHostException("Malformed url: " + e.getMessage());
+	          } catch (IOException e) {
+	        	  throw new GitHostException("IO exception: " + e.getMessage());
+	          }
+    	  }
+      }
+      
+      if(applicationRepository == null) {
+    	  throw new GitHostException("Repository reference is null. This should not happen");
+      }
 
       // now we start by adding a readMe from the template repository (and thereby initializing the
       // master branch, which is needed to create a "gh-pages" branch afterwards
@@ -226,7 +280,7 @@ public class ApplicationGenerator extends Generator {
       if (!forDeploy) {
         // push (local) repository content to GitHub repository "master" branch
         try {
-          pushToRemoteRepository(applicationRepository, gitAdapter);
+          pushToRemoteRepository(applicationRepository, gitAdapter, true);
         } catch (Exception e) {
           logger.printStackTrace(e);
           throw new GitHostException(e.getMessage());
@@ -262,10 +316,10 @@ public class ApplicationGenerator extends Generator {
               newWidgetHome = "$WIDGET_URL$:$HTTP_PORT$" + "/" + frontendComponentRepositoryName;
             }
 
-            String oldLogoAddress = "https://github.com/" + gitAdapter.getGitOrganization() + "/"
+            String oldLogoAddress = gitAdapter.getBaseURL() + gitAdapter.getGitOrganization() + "/"
                 + frontendComponentRepositoryName + "/blob/gh-pages/img/logo.png";
             String newLogoAddress =
-                "https://github.com/" + gitAdapter.getGitOrganization() + "/" + repositoryName
+                gitAdapter.getBaseURL() + gitAdapter.getGitOrganization() + "/" + repositoryName
                     + "/blob/gh-pages/" + frontendComponentRepositoryName + "/img/logo.png";
             switch (treeWalk.getNameString()) {
               case "README.md":
@@ -360,7 +414,7 @@ public class ApplicationGenerator extends Generator {
     	  // TODO Deployment is hardcoded to gh pages !!! Needs to be changed
         try {
           pushToRemoteRepository(applicationRepository, "gh-pages",
-              "gh-pages", gitAdapter, false);
+              "gh-pages", gitAdapter, true);
         } catch (Exception e) {
           logger.printStackTrace(e);
           throw new GitHostException(e.getMessage());
@@ -378,7 +432,7 @@ public class ApplicationGenerator extends Generator {
       } else {
         // push (local) repository content to GitHub repository "master" branch
         try {
-          pushToRemoteRepository(applicationRepository, gitAdapter);
+          pushToRemoteRepository(applicationRepository, gitAdapter, true);
         } catch (Exception e) {
           logger.printStackTrace(e);
           throw new GitHostException(e.getMessage());

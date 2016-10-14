@@ -4,6 +4,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
 import java.io.BufferedInputStream;
+import java.io.Console;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileReader;
@@ -184,7 +185,7 @@ public class ModelSynchronizationTest extends Generator {
 
       model3 = loadModel("./testModels/JUnitTestService1.model");
       updatedModel3 = loadModel("./testModels/JUnitTestService2.model");
-
+      
       FileReader reader = new FileReader(propertiesFile);
       properties.load(reader);
       gitUser = properties.getProperty("gitUser");
@@ -401,7 +402,7 @@ public class ModelSynchronizationTest extends Generator {
       String repositoryName = "frontendComponent-" + model2.getName().replace(" ", "-");
       Serializable[] models = {(Serializable) model2};
       Serializable[] parameters = {models};
-
+      
       String returnMessage =
           (String) node.invoke(testService, serviceNameVersion, "createFromModel", parameters);
       assertEquals("done", returnMessage);
