@@ -89,6 +89,9 @@ public class CodeGenerationService extends Service {
     	// Abort
     	throw new GitHostException("No valid git provider selected");
     }
+    
+    //Create git helper
+    
   }
 
 
