@@ -383,7 +383,7 @@ public class FrontendComponentGenerator extends Generator {
     widgetTemplate.setVariable("$Widget_Height$", frontendComponent.getWidgetHeight() + "");
 
     // String widgetHome = "http://" + gitHubOrganization + ".github.io/" + repositoryName;
-    String widgetHome = "http://ginkgo.informatik.rwth-aachen.de:4080/"+gitHubOrganization+"/"+repositoryName+"/raw/gh-pages/";
+    String widgetHome = "http://ginkgo.informatik.rwth-aachen.de:9081/"+gitHubOrganization+"/"+repositoryName+"/";
     widgetTemplate.setVariable("$Widget_Home$", widgetHome);
     widgetTemplate.setVariableIfNotSet("$Main_Content$", "");
     widgetTemplate.setVariableIfNotSet("$Additional_Imports$", "");

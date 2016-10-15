@@ -42,10 +42,6 @@ import i5.las2peer.services.codeGenerationService.models.frontendComponent.Front
  * 
  */
 public class ApplicationGenerator extends Generator {
-	
-	public static boolean pushToFs = false;
-	public static String frontendDirectory;
-	
 
   private static final L2pLogger logger =
       L2pLogger.getInstance(ApplicationGenerator.class.getName());
@@ -295,6 +291,7 @@ public class ApplicationGenerator extends Generator {
         }
       }
 
+      // TODO !!!
       // fetch frontend component repository contents and add them
       // TODO: Change paths here too, paths have to be generated depending on git host and deployment (no gh pages if using gitlab !!!)
       for (String frontendComponentName : application.getFrontendComponents().keySet()) {
@@ -307,10 +304,13 @@ public class ApplicationGenerator extends Generator {
             ObjectId objectId = treeWalk.getObjectId(0);
             ObjectLoader loader = reader.open(objectId);
             // copy the content of the repository and switch out the "old" paths
-            String oldWidgetHome =
+            String oldWidgetHome = "http://ginkgo.informatik.rwth-aachen.de:9081/"+gitAdapter.getGitOrganization()+"/"+frontendComponentRepositoryName+"/";
+            String newWidgetHome = "http://ginkgo.informatik.rwth-aachen.de:9081/"+gitAdapter.getGitOrganization()+"/"+repositoryName+"/"+frontendComponentRepositoryName+"/";
+            
+            /*String oldWidgetHome =
                 "http://" + gitAdapter.getGitOrganization() + ".github.io/" + frontendComponentRepositoryName;
             String newWidgetHome = "http://" + gitAdapter.getGitOrganization() + ".github.io/" + repositoryName
-                + "/" + frontendComponentRepositoryName;
+                + "/" + frontendComponentRepositoryName;*/
             if (forDeploy) {
               // use other url for deployment, replaced later by the dockerfile
               newWidgetHome = "$WIDGET_URL$:$HTTP_PORT$" + "/" + frontendComponentRepositoryName;
@@ -418,17 +418,7 @@ public class ApplicationGenerator extends Generator {
         } catch (Exception e) {
           logger.printStackTrace(e);
           throw new GitHostException(e.getMessage());
-        }
-        
-        if (pushToFs) {
-            File destDir = new File(frontendDirectory);
-
-            try {
-                FileUtils.copyDirectory(applicationRepository.getDirectory(), destDir);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }    	  
+        } 
       } else {
         // push (local) repository content to GitHub repository "master" branch
         try {

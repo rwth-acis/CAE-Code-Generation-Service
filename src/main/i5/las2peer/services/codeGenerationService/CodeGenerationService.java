@@ -71,9 +71,6 @@ public class CodeGenerationService extends Service {
     // read and set properties-file values
     setFieldValues();
     
-    ApplicationGenerator.pushToFs = pushToFs;
-    ApplicationGenerator.frontendDirectory = frontendDirectory;
-    
     // Create git adapter matching the usedGitHost
     if(Objects.equals(usedGitHost, "GitHub")) {
     	this.gitAdapter = new GitHubAdapter(gitUser,gitPassword,gitOrganization,templateRepository,gitUserMail); 
