@@ -28,7 +28,6 @@ import i5.las2peer.services.codeGenerationService.adapters.GitHubAdapter;
 import i5.las2peer.services.codeGenerationService.adapters.GitLabAdapter;
 import i5.las2peer.services.codeGenerationService.exception.GitHostException;
 import i5.las2peer.services.codeGenerationService.generators.Generator;
-import i5.las2peer.services.gitHubProxyService.GitHubProxyService;
 
 
 /**
@@ -43,7 +42,7 @@ public class CodeGenerationServiceTest {
   private static final String codeGenerationService =
       CodeGenerationService.class.getName();
 
-  private static final String gitHubProxyService = GitHubProxyService.class.getName();
+  private static final String gitHubProxyService = "i5.las2peer.services.gitHubProxyService.GitHubProxyService";
 
   private static SimpleModel model1;
   private static SimpleModel model2;
@@ -158,7 +157,7 @@ public class CodeGenerationServiceTest {
     testService = ServiceAgent.createServiceAgent(serviceNameVersion, "a pass");
     testService.unlockPrivateKey("a pass");
 
-    gitHubProxyServiceNameVersion = new ServiceNameVersion(gitHubProxyService, "0.1");
+    gitHubProxyServiceNameVersion = new ServiceNameVersion(gitHubProxyService, "0.2");
     gitHubProxyTestService = ServiceAgent.createServiceAgent(gitHubProxyServiceNameVersion, "a pass");
     gitHubProxyTestService.unlockPrivateKey("a pass");
 
