@@ -57,11 +57,12 @@ public class CodeGenerationService extends Service {
   private String dockerJobName;
   private String jenkinsUrl;
   private String jenkinsJobToken;
+  private String deploymentRepo; 
 
   private boolean useModelSynchronization;
   private final L2pLogger logger = L2pLogger.getInstance(CodeGenerationService.class.getName());
   
-  public static final String DEPLOYMENT_REPO = "CAE-Deployment-Temp";
+  
   
   // ftp properties
   private boolean pushToFs;
@@ -73,6 +74,7 @@ public class CodeGenerationService extends Service {
     
     ApplicationGenerator.pushToFs = pushToFs;
     ApplicationGenerator.frontendDirectory = frontendDirectory;
+    ApplicationGenerator.deploymentRepo = deploymentRepo;
     
     // Create git adapter matching the usedGitHost
     if(Objects.equals(usedGitHost, "GitHub")) {
@@ -595,7 +597,7 @@ public class CodeGenerationService extends Service {
                   "deployApplicationModel: Creating application model now..");
               Application application = new Application(serializedModel);
 
-              String repositoryName = DEPLOYMENT_REPO;
+              String repositoryName = deploymentRepo;
 
               /**if (Generator.existsRemoteRepository(repositoryName, (BaseGitHostAdapter) this.gitAdapter)) {
                 Generator.deleteRemoteRepository(repositoryName, (BaseGitHostAdapter) this.gitAdapter);
