@@ -306,8 +306,8 @@ public class ApplicationGenerator extends Generator {
             ObjectId objectId = treeWalk.getObjectId(0);
             ObjectLoader loader = reader.open(objectId);
             // copy the content of the repository and switch out the "old" paths
-            String oldWidgetHome = "http://ginkgo.informatik.rwth-aachen.de:9081/"+gitAdapter.getGitOrganization()+"/"+frontendComponentRepositoryName+"/";
-            String newWidgetHome = "http://ginkgo.informatik.rwth-aachen.de:9081/"+gitAdapter.getGitOrganization()+"/"+repositoryName+"/"+frontendComponentRepositoryName+"/";
+            String oldWidgetHome = "http://ginkgo.informatik.rwth-aachen.de:9081/"+gitAdapter.getGitOrganization()+"/"+frontendComponentRepositoryName;
+            String newWidgetHome = "http://ginkgo.informatik.rwth-aachen.de:9081/"+gitAdapter.getGitOrganization()+"/"+repositoryName+"/"+frontendComponentRepositoryName;
             
             /*String oldWidgetHome =
                 "http://" + gitAdapter.getGitOrganization() + ".github.io/" + frontendComponentRepositoryName;
