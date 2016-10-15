@@ -43,6 +43,8 @@ import i5.las2peer.services.codeGenerationService.models.frontendComponent.Front
  */
 public class ApplicationGenerator extends Generator {
 
+	public static String deploymentRepo;
+
   private static final L2pLogger logger =
       L2pLogger.getInstance(ApplicationGenerator.class.getName());
 
@@ -90,7 +92,7 @@ public class ApplicationGenerator extends Generator {
     try {
       PersonIdent caeUser = new PersonIdent(gitAdapter.getGitUser(), gitAdapter.getGitUserMail());
 
-      if(!repositoryName.equals(CodeGenerationService.DEPLOYMENT_REPO)) {
+      if(!repositoryName.equals(deploymentRepo)) {
     	  if (!existsRemoteRepository(repositoryName, gitAdapter)) {
     		  applicationRepository = generateNewRepository(repositoryName, gitAdapter);
 	      } else {
@@ -114,11 +116,11 @@ public class ApplicationGenerator extends Generator {
 	          }
 	      }
       }else {
-    	  if(!existsRemoteRepository(CodeGenerationService.DEPLOYMENT_REPO, gitAdapter)) {
-    		  applicationRepository = generateNewRepository(CodeGenerationService.DEPLOYMENT_REPO, gitAdapter);
+    	  if(!existsRemoteRepository(deploymentRepo, gitAdapter)) {
+    		  applicationRepository = generateNewRepository(deploymentRepo, gitAdapter);
     	  } else {
     		  
-    		  applicationRepository = getRemoteRepository(CodeGenerationService.DEPLOYMENT_REPO, gitAdapter);
+    		  applicationRepository = getRemoteRepository(deploymentRepo, gitAdapter);
 	    	  Git git = Git.wrap(applicationRepository);
 	          StoredConfig config = git.getRepository().getConfig();
 	          
