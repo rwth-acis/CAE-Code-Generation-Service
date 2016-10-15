@@ -1,7 +1,9 @@
 package i5.las2peer.services.codeGenerationService.generators;
 
 import java.awt.image.BufferedImage;
+import java.io.IOException;
 import java.net.MalformedURLException;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.Objects;
 
@@ -13,6 +15,9 @@ import org.eclipse.jgit.lib.ObjectLoader;
 import org.eclipse.jgit.lib.ObjectReader;
 import org.eclipse.jgit.lib.PersonIdent;
 import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.lib.StoredConfig;
+import org.eclipse.jgit.transport.RemoteConfig;
+import org.eclipse.jgit.transport.URIish;
 import org.eclipse.jgit.treewalk.TreeWalk;
 import org.eclipse.jgit.treewalk.filter.PathFilter;
 import org.eclipse.jgit.util.GitDateParser;
@@ -318,7 +323,28 @@ public class MicroserviceGenerator extends Generator {
 	        throw new GitHostException(e.getMessage());
 	      }
 
-	      microserviceRepository = generateNewRepository(repositoryName, gitAdapter);
+	      if (!forcePush) {
+	    	  microserviceRepository = generateNewRepository(repositoryName, gitAdapter);
+	      } else {
+	    	  microserviceRepository = getRemoteRepository(repositoryName, gitAdapter);
+	    	  Git git = Git.wrap(microserviceRepository);
+	          StoredConfig config = git.getRepository().getConfig();
+	          
+	          RemoteConfig remoteConfig = null;
+	          
+	          try {
+	          remoteConfig = new RemoteConfig(config, "Remote");
+	          remoteConfig.addURI(new URIish(gitAdapter.getBaseURL() + gitAdapter.getGitOrganization() + "/" + repositoryName + ".git"));
+	    		
+	          
+	          remoteConfig.update(config);
+	          config.save();
+	          } catch (URISyntaxException e) {
+	        	  throw new GitHostException("Malformed url: " + e.getMessage());
+	          } catch (IOException e) {
+	        	  throw new GitHostException("IO exception: " + e.getMessage());
+	          }
+	      }
 	      
 	      // generate service class and test
 	      String repositoryLocation = gitAdapter.getBaseURL() + gitAdapter.getGitOrganization() + "/" + repositoryName;

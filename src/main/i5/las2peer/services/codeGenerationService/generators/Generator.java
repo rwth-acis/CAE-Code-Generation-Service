@@ -222,7 +222,7 @@ public abstract class Generator {
    * @throws GitHostException if anything goes wrong during retrieving the repository's content
    * 
    */
-  private static Repository getRemoteRepository(String repositoryName, BaseGitHostAdapter gitAdapter)
+  protected static Repository getRemoteRepository(String repositoryName, BaseGitHostAdapter gitAdapter)
       throws GitHostException {
 	  String repositoryAddress;
 	repositoryAddress = gitAdapter.getBaseURL() + gitAdapter.getGitOrganization() + "/" + repositoryName + ".git";
@@ -429,11 +429,13 @@ public abstract class Generator {
     CredentialsProvider credentialsProvider =
         new UsernamePasswordCredentialsProvider(gitAdapter.getGitUser(), gitAdapter.getGitPassword());
     try {
-      // the "setRemote" parameter name is defined in the generateNewRepository method
-      RefSpec spec =
-          new RefSpec("refs/heads/" + localBranchName + ":refs/heads/" + remoteBranchName);
-      Git.wrap(repository).push().setRemote("Remote").setCredentialsProvider(credentialsProvider)
-          .setRefSpecs(spec).call();
+    	RefSpec spec = new RefSpec("refs/heads/" + localBranchName + ":refs/heads/" + remoteBranchName);
+    	if(forcePush){
+    		Git.wrap(repository).push().setForce(true).setRemote("Remote").setCredentialsProvider(credentialsProvider).setRefSpecs(spec).call();
+    	} else {
+    		// the "setRemote" parameter name is defined in the generateNewRepository method
+    		Git.wrap(repository).push().setRemote("Remote").setCredentialsProvider(credentialsProvider).setRefSpecs(spec).call();
+    	}
     } catch (Exception e) {
       logger.printStackTrace(e);
       throw new GitHostException(e.getMessage());
@@ -542,7 +544,7 @@ public abstract class Generator {
       String[][] files, Service service) {
     Serializable[] payload = {repositoryName, commitMessage, files};
     try {
-      service.invokeServiceMethod("i5.las2peer.services.gitHubProxyService.GitHubProxyService@0.1",
+      service.invokeServiceMethod("i5.las2peer.services.gitHubProxyService.GitHubProxyService@0.2",
           "storeAndCommitFilesRaw", payload);
     } catch (Exception e) {
       logger.printStackTrace(e);
@@ -626,7 +628,7 @@ public abstract class Generator {
       String oldFileName, Service service) {
     Serializable[] payload = {repositoryName, newFileName, oldFileName};
     try {
-      service.invokeServiceMethod("i5.las2peer.services.gitHubProxyService.GitHubProxyService@0.1",
+      service.invokeServiceMethod("i5.las2peer.services.gitHubProxyService.GitHubProxyService@0.2",
           "renameFile", payload);
     } catch (Exception e) {
       logger.printStackTrace(e);
@@ -646,7 +648,7 @@ public abstract class Generator {
       Service service) {
     Serializable[] payload = {repositoryName, fileName};
     try {
-      service.invokeServiceMethod("i5.las2peer.services.gitHubProxyService.GitHubProxyService@0.1",
+      service.invokeServiceMethod("i5.las2peer.services.gitHubProxyService.GitHubProxyService@0.2",
           "deleteFile", payload);
     } catch (Exception e) {
       logger.printStackTrace(e);
