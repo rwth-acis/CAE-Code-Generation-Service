@@ -474,8 +474,11 @@ public class ApplicationGenerator extends Generator {
 
       if (result.containsKey("executable")) {
         JSONObject executeable = (JSONObject) result.get("executable");
-        URI uri = new URI((String) executeable.get("url"));
-        return uri.getPath();
+        String path = new URI((String) executeable.get("url")).getPath();
+        if (path.startsWith("jenkins/") || path.startsWith("/jenkins")) {
+        	path = path.substring("jenkins/".length(), path.length());
+        }
+        return path;
       } else {
         return null;
       }
@@ -563,6 +566,9 @@ public class ApplicationGenerator extends Generator {
         L2pLogger.logEvent(Event.SERVICE_MESSAGE, "Job started!");
         URI uri = new URI(connection.getHeaderField("Location"));
         String path = uri.getPath();
+        if (path.startsWith("jenkins/") || path.startsWith("/jenkins")) {
+        	path = path.substring("jenkins/".length(), path.length());
+        }
         return path;
       }
     } catch (Exception e) {
