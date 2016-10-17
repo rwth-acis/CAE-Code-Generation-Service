@@ -14,6 +14,8 @@ import javax.imageio.ImageIO;
 
 import org.apache.commons.io.FileUtils;
 import org.eclipse.jgit.api.Git;
+import org.eclipse.jgit.api.errors.GitAPIException;
+import org.eclipse.jgit.errors.NoWorkTreeException;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.ObjectLoader;
 import org.eclipse.jgit.lib.ObjectReader;
@@ -138,6 +140,15 @@ public class ApplicationGenerator extends Generator {
 	          } catch (IOException e) {
 	        	  throw new GitHostException("IO exception: " + e.getMessage());
 	          }
+	          
+	          // TODO delete all files...
+	          
+	          try {
+	        	  Git.wrap(applicationRepository).rm().addFilepattern(".").call();
+				
+				} catch (NoWorkTreeException | GitAPIException e) {
+					 throw new GitHostException("Exception: " + e.getMessage());
+				}
     	  }
       }
       
