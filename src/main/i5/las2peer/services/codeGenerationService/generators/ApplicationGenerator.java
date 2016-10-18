@@ -13,17 +13,26 @@ import java.net.URL;
 import javax.imageio.ImageIO;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.http.auth.UsernamePasswordCredentials;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.GitAPIException;
+import org.eclipse.jgit.errors.CorruptObjectException;
+import org.eclipse.jgit.errors.IncorrectObjectTypeException;
+import org.eclipse.jgit.errors.MissingObjectException;
 import org.eclipse.jgit.errors.NoWorkTreeException;
+import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.ObjectLoader;
 import org.eclipse.jgit.lib.ObjectReader;
 import org.eclipse.jgit.lib.PersonIdent;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.StoredConfig;
+import org.eclipse.jgit.revwalk.RevTree;
+import org.eclipse.jgit.revwalk.RevWalk;
+import org.eclipse.jgit.transport.CredentialsProvider;
 import org.eclipse.jgit.transport.RemoteConfig;
 import org.eclipse.jgit.transport.URIish;
+import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider;
 import org.eclipse.jgit.treewalk.TreeWalk;
 import org.eclipse.jgit.treewalk.filter.PathFilter;
 import org.json.simple.JSONObject;
@@ -81,6 +90,10 @@ public class ApplicationGenerator extends Generator {
    * 
    * @throws GitHostException thrown if anything goes wrong during this process. Wraps around all
    *         other exceptions and prints their message.
+ * @throws IOException 
+ * @throws CorruptObjectException 
+ * @throws IncorrectObjectTypeException 
+ * @throws MissingObjectException 
    * 
    */
   public static void createSourceCode(String repositoryName, Application application, 
@@ -144,9 +157,24 @@ public class ApplicationGenerator extends Generator {
 	          // TODO delete all files...
 	          
 	          try {
-	        	  Git.wrap(applicationRepository).rm().addFilepattern(".").call();
+	        	  CredentialsProvider cp = new UsernamePasswordCredentialsProvider(gitAdapter.getGitUser(),gitAdapter.getGitPassword());
+	        	  
+	        	  TreeWalk rmWalk = new TreeWalk(applicationRepository);
+	        	  ObjectId lastCommitId = applicationRepository.resolve(Constants.HEAD);
+	        	  RevWalk revWalk = new RevWalk(applicationRepository);
+	              RevTree tree = revWalk.parseCommit(lastCommitId).getTree();
+	              rmWalk.addTree(tree);
+	              rmWalk.setRecursive(true);
+	        	  
+
+        		  while (rmWalk.next()) {
+        			 git.rm().addFilepattern(rmWalk.getPathString()).call();
+        		  }
+	        	  
+	        	  git.commit().setMessage("Clear").call();
+	        	  git.push().setForce(false).setCredentialsProvider(cp).call();
 				
-				} catch (NoWorkTreeException | GitAPIException e) {
+				} catch (IOException | NoWorkTreeException | GitAPIException e) {
 					 throw new GitHostException("Exception: " + e.getMessage());
 				}
     	  }
