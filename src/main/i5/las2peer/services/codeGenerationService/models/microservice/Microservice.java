@@ -225,8 +225,15 @@ public class Microservice {
         // add response to http method and remove from temp responses if edge was validated
         // successfully
         case "HTTP Method to HTTP Response":
+        
+        	if(tempHttpResponses.isEmpty()) {
+        		throw new ModelParseException("There are no HTTP Responses left, an edge might be duplicated! From: " +
+        				this.httpMethods.get(currentEdgeSource).getName());
+        	}
+        	
           currentHttpMethod = this.httpMethods.get(currentEdgeSource);
           HttpResponse currentHttpResponse = tempHttpResponses.get(currentEdgeTarget);
+          
           if (currentHttpMethod == null || currentHttpResponse == null) {
             throw new ModelParseException("Wrong HTTP Method to HTTP Response Edge!");
           }
@@ -254,7 +261,7 @@ public class Microservice {
     }
     // check, if all responses were correctly connected to an http method
     if (!tempHttpResponses.isEmpty()) {
-      throw new ModelParseException("All htp responses must be connected to an http metod!");
+      throw new ModelParseException("All http responses must be connected to an http method!");
     }
     // check, if all internal call parameters were correctly connected to an internal call
     if (!tempInternalCallParameters.isEmpty()) {
