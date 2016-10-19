@@ -90,7 +90,7 @@ public class CodeGenerationService extends Service {
     	throw new GitHostException("No valid git provider selected");
     }
     
-    //Create git helper
+    //TODO: Create git helper instance
     
   }
 
