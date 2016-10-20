@@ -52,9 +52,9 @@ public class GitUtility {
 	private CredentialsProvider provider;
 	private L2pLogger logger;
 	
-	public GitUtility(String gitUser, String gitPasswort, String gitHostOrganization, String baseURL) {
+	public GitUtility(String gitUser, String gitPassword, String gitOrganization, String baseURL) {
 		 logger = L2pLogger.getInstance(CodeGenerationService.class.getName());
-		 this.provider = new UsernamePasswordCredentialsProvider(gitUser, gitPasswort);
+		 this.provider = new UsernamePasswordCredentialsProvider(gitUser, gitPassword);
 		 this.gitHostOrganization = gitHostOrganization;
 		 this.baseURL = baseURL;
 	}

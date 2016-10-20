@@ -23,5 +23,6 @@
 	<classpathentry kind="lib" path="lib/xpp3-1.1.4c.jar"/>
 	<classpathentry kind="lib" path="lib/las2peer-0.6.0.jar"/>
 	<classpathentry kind="lib" path="lib/commons-io-2.4.jar"/>
+	<classpathentry kind="lib" path="lib/las2peer-web-connector-0.6.0.jar"/>
 	<classpathentry kind="output" path="output"/>
 </classpath>
