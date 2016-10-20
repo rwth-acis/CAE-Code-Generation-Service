@@ -381,27 +381,10 @@ public class CodeGenerationService extends Service {
                 }
 
               }
-
-
-            // TODO Check update of applications
               
             case "application":
-              L2pLogger.logEvent(Event.SERVICE_MESSAGE,
-                  "updateRepositoryOfModel: Checking application model now..");
-              // check first if model can be constructed
-              // (in case of an invalid model, keep the old repository)
+              L2pLogger.logEvent(Event.SERVICE_MESSAGE,"updateRepositoryOfModel: Checking application model now..");
               new Application(serializedModel);
-              /*
-              L2pLogger.logEvent(Event.SERVICE_MESSAGE,
-                  "updateRepositoryOfModel: Calling delete (old) repository method now..");
-              deleteReturnMessage = deleteRepositoryOfModel(serializedModel);
-              if (!deleteReturnMessage.equals("done")) {
-                return deleteReturnMessage; // error happened
-              }
-              L2pLogger.logEvent(Event.SERVICE_ERROR,
-                  "updateRepositoryOfModel: Calling createFromModel now..");
-              return createFromModel(serializedModel);
-              */
               return pseudoUpdateRepositoryOfModel(serializedModel);
               
             default:
@@ -428,9 +411,7 @@ public class CodeGenerationService extends Service {
   public String pseudoUpdateRepositoryOfModel(Serializable... serializedModel) {
 	  SimpleModel model = (SimpleModel) serializedModel[0];
 	  String modelName = model.getName();
-	  // force push
-	  //TODO: add more cleanup here later
-	  // first get repo names / etc. 
+	  // force push 
 	  return createFromModel(true, serializedModel);
   }
   
