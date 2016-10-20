@@ -4,7 +4,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
 import java.io.BufferedInputStream;
-import java.io.Console;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileReader;
@@ -43,8 +42,6 @@ import i5.las2peer.services.codeGenerationService.models.traceModel.TraceModel;
 import i5.las2peer.services.codeGenerationService.traces.segments.CompositeSegment;
 import i5.las2peer.services.codeGenerationService.traces.segments.ContentSegment;
 import i5.las2peer.services.codeGenerationService.traces.segments.UnprotectedSegment;
-import i5.las2peer.services.gitHubProxyService.GitHubProxyService;
-
 
 /**
  * 
@@ -55,9 +52,8 @@ public class ModelSynchronizationTest extends Generator {
 
   private static LocalNode node;
 
-  private static final String codeGenerationService =
-      CodeGenerationService.class.getCanonicalName();
-  private static final String gitHubProxyService = GitHubProxyService.class.getCanonicalName();
+  private static final String codeGenerationService = CodeGenerationService.class.getCanonicalName();
+ 
 
   private static SimpleModel model1;
   private static SimpleModel updatedModel1;
@@ -76,9 +72,7 @@ public class ModelSynchronizationTest extends Generator {
   private static String gitOrganization = null;
   private static String gitUser = null;
   private static String gitPassword = null;
-  @SuppressWarnings("unused")
   private static String gitUserMail = null;
-  @SuppressWarnings("unused")
   private static String templateRepository = null;
   
   private static GitHostAdapter gitAdapter;
@@ -219,13 +213,7 @@ public class ModelSynchronizationTest extends Generator {
     testService = ServiceAgent.createServiceAgent(serviceNameVersion, "a pass");
     testService.unlockPrivateKey("a pass");
 
-    gitHubProxyServiceNameVersion = new ServiceNameVersion(gitHubProxyService, "0.1");
-    gitHubProxyTestService =
-        ServiceAgent.createServiceAgent(gitHubProxyServiceNameVersion, "a pass");
-    gitHubProxyTestService.unlockPrivateKey("a pass");
-
     node.registerReceiver(testService);
-    node.registerReceiver(gitHubProxyTestService);
 
   }
 
