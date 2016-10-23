@@ -11,6 +11,7 @@ import java.io.InputStream;
 import java.io.ObjectInput;
 import java.io.ObjectInputStream;
 import java.io.Serializable;
+import java.util.Objects;
 import java.util.Properties;
 
 import org.junit.AfterClass;
@@ -21,7 +22,11 @@ import i5.cae.simpleModel.SimpleModel;
 import i5.las2peer.p2p.LocalNode;
 import i5.las2peer.p2p.ServiceNameVersion;
 import i5.las2peer.security.ServiceAgent;
-import i5.las2peer.services.codeGenerationService.exception.GitHubException;
+import i5.las2peer.services.codeGenerationService.adapters.BaseGitHostAdapter;
+import i5.las2peer.services.codeGenerationService.adapters.GitHostAdapter;
+import i5.las2peer.services.codeGenerationService.adapters.GitHubAdapter;
+import i5.las2peer.services.codeGenerationService.adapters.GitLabAdapter;
+import i5.las2peer.services.codeGenerationService.exception.GitHostException;
 import i5.las2peer.services.codeGenerationService.generators.Generator;
 
 
@@ -35,7 +40,9 @@ public class CodeGenerationServiceTest {
   private static LocalNode node;
 
   private static final String codeGenerationService =
-      CodeGenerationService.class.getCanonicalName();
+      CodeGenerationService.class.getName();
+
+  private static final String gitHubProxyService = "i5.las2peer.services.gitHubProxyService.GitHubProxyService";
 
   private static SimpleModel model1;
   private static SimpleModel model2;
@@ -43,14 +50,23 @@ public class CodeGenerationServiceTest {
   private static SimpleModel[] model4;
   private static ServiceAgent testService;
   private static ServiceNameVersion serviceNameVersion;
-  private static String gitHubOrganization = null;
-  private static String gitHubUser = null;
-  private static String gitHubPassword = null;
+
+  private static ServiceAgent gitHubProxyTestService;
+  private static ServiceNameVersion gitHubProxyServiceNameVersion;
+
+  private static String usedGitHost = null;
+  private static String gitOrganization = null;
+  private static String gitUser = null;
+  private static String gitPassword = null;
   @SuppressWarnings("unused")
-  private static String gitHubUserMail = null;
+  private static String gitUserMail = null;
   @SuppressWarnings("unused")
   private static String templateRepository = null;
 
+  private static GitHostAdapter gitAdapter;
+  private static String baseURL = null;
+  private static String token = null;
+  
 
   /**
    * 
@@ -107,11 +123,26 @@ public class CodeGenerationServiceTest {
 
       FileReader reader = new FileReader(propertiesFile);
       properties.load(reader);
-      gitHubUser = properties.getProperty("gitHubUser");
-      gitHubUserMail = properties.getProperty("gitHubUserMail");
-      gitHubOrganization = properties.getProperty("gitHubOrganization");
+      gitUser = properties.getProperty("gitUser");
+      gitUserMail = properties.getProperty("gitUserMail");
+      gitOrganization = properties.getProperty("gitOrganization");
       templateRepository = properties.getProperty("templateRepository");
-      gitHubPassword = properties.getProperty("gitHubPassword");
+      gitPassword = properties.getProperty("gitHubPassword");
+      usedGitHost = properties.getProperty("usedGitHost");
+      
+      baseURL = properties.getProperty("baseURL");
+      token = properties.getProperty("token");
+      
+      
+      if (Objects.equals(usedGitHost, "GitHub")) {
+      	gitAdapter = new GitHubAdapter(gitUser, gitPassword, gitOrganization, templateRepository, gitUserMail);
+      } else if (Objects.equals(usedGitHost, "GitLab")) {
+    	gitAdapter = new GitLabAdapter(baseURL, token, gitUser, gitPassword, gitOrganization, templateRepository, gitUserMail);
+      } else {
+    	  fail("Property usedGitHost not valid!");
+      }
+      
+      
 
     } catch (IOException ex) {
       fail("Error reading test models and configuration file!");
@@ -121,12 +152,17 @@ public class CodeGenerationServiceTest {
     // start node
     node = LocalNode.newNode();
     node.launch();
-    
-    serviceNameVersion = 
-    		new ServiceNameVersion(codeGenerationService,"0.1");
+
+    serviceNameVersion = new ServiceNameVersion(codeGenerationService, "0.1");
     testService = ServiceAgent.createServiceAgent(serviceNameVersion, "a pass");
     testService.unlockPrivateKey("a pass");
 
+    gitHubProxyServiceNameVersion = new ServiceNameVersion(gitHubProxyService, "0.2");
+    gitHubProxyTestService = ServiceAgent.createServiceAgent(gitHubProxyServiceNameVersion, "a pass");
+    gitHubProxyTestService.unlockPrivateKey("a pass");
+
+
+    node.registerReceiver(gitHubProxyTestService);
     node.registerReceiver(testService);
 
     // waiting here not needed because no connector is running!
@@ -141,7 +177,7 @@ public class CodeGenerationServiceTest {
    * 
    * @throws Exception
    * 
-  **/
+   **/
   @AfterClass
   public static void shutDownServer() throws Exception {
     String model1GitHubName = "microservice-" + model1.getName().replace(" ", "-");
@@ -149,34 +185,33 @@ public class CodeGenerationServiceTest {
     String model3GitHubName = "frontendComponent-" + model3.getName().replace(" ", "-");
     String model4GitHubName = "application-" + model4[0].getName().replace(" ", "-");
 
+    Thread.sleep(5000);
+    
     try {
-      Generator.deleteRemoteRepository(model1GitHubName, gitHubOrganization, gitHubUser,
-          gitHubPassword);
-    } catch (GitHubException e) {
+      Generator.deleteRemoteRepository(model1GitHubName, (BaseGitHostAdapter) gitAdapter);
+    } catch (GitHostException e) {
       e.printStackTrace();
       // that's ok, maybe some error / failure in previous tests caused this
       // catch it, to make sure that every other repository gets deleted
     }
     try {
-      Generator.deleteRemoteRepository(model2GitHubName, gitHubOrganization, gitHubUser,
-          gitHubPassword);
-    } catch (GitHubException e) {
+      Generator.deleteRemoteRepository(model2GitHubName, (BaseGitHostAdapter) gitAdapter);
+    } catch (GitHostException e) {
       e.printStackTrace();
       // that's ok, maybe some error / failure in previous tests caused this
       // catch it, to make sure that every other repository gets deleted
     }
     try {
-      Generator.deleteRemoteRepository(model3GitHubName, gitHubOrganization, gitHubUser,
-          gitHubPassword);
-    } catch (GitHubException e) {
+      Generator.deleteRemoteRepository(model3GitHubName, (BaseGitHostAdapter) gitAdapter);
+    } catch (GitHostException e) {
       e.printStackTrace();
       // that's ok, maybe some error / failure in previous tests caused this
       // catch it, to make sure that every other repository gets deleted
     }
     try {
-      Generator.deleteRemoteRepository(model4GitHubName, gitHubOrganization, gitHubUser,
-          gitHubPassword);
-    } catch (GitHubException e) {
+      gitAdapter.deleteRepo("Test123");
+      Generator.deleteRemoteRepository(model4GitHubName, (BaseGitHostAdapter) gitAdapter);
+    } catch (GitHostException e) {
       e.printStackTrace();
       // that's ok, maybe some error / failure in previous tests caused this
       // catch it, to make sure that every other repository gets deleted
@@ -197,9 +232,7 @@ public class CodeGenerationServiceTest {
     Serializable[] content = {(Serializable) model1};
     Serializable[] parameters = {content};
     try {
-      String returnMessage = (String) node.invokeLocally(testService.getId(),
-    		  serviceNameVersion, "createFromModel",
-          parameters);
+      String returnMessage = (String) node.invoke(testService,serviceNameVersion, "createFromModel",parameters);
       assertEquals("done", returnMessage);
     } catch (Exception e) {
       e.printStackTrace();
@@ -213,11 +246,11 @@ public class CodeGenerationServiceTest {
    * Posts a new application model to the service.
    * 
    */
-  @Test
+  
   public void testCreateApplication() {
     Serializable[] parameters = {(Serializable) model4};
     try {
-      String returnMessage = (String) node.invokeLocally(testService.getId(),
+      String returnMessage = (String) node.invoke(testService,
     		  serviceNameVersion, "createFromModel",
           parameters);
       assertEquals("done", returnMessage);
@@ -237,7 +270,7 @@ public class CodeGenerationServiceTest {
   public void testGetCommViewModel() {
     Serializable[] parameters = {(Serializable) model4};
     try {
-      SimpleModel simpleModel = (SimpleModel) node.invokeLocally(testService.getId(),
+      SimpleModel simpleModel = (SimpleModel) node.invoke(testService,
     		  serviceNameVersion, "getCommunicationViewOfApplicationModel", parameters);
       assertEquals("CAE Example Application", simpleModel.getName());
       // TODO more attributes of model checking
@@ -258,7 +291,7 @@ public class CodeGenerationServiceTest {
     Serializable[] content = {(Serializable) model3};
     Serializable[] parameters = {content};
     try {
-      String returnMessage = (String) node.invokeLocally(testService.getId(),
+      String returnMessage = (String) node.invoke(testService,
     		  serviceNameVersion, "createFromModel",
           parameters);
       assertEquals("done", returnMessage);
@@ -279,11 +312,11 @@ public class CodeGenerationServiceTest {
     Serializable[] content = {(Serializable) model2};
     Serializable[] parameters = {content};
     try {
-      String returnMessage = (String) node.invokeLocally(testService.getId(),
+      String returnMessage = (String) node.invoke(testService,
     		  serviceNameVersion, "createFromModel",
           parameters);
       assertEquals("done", returnMessage);
-      returnMessage = (String) node.invokeLocally(testService.getId(),
+      returnMessage = (String) node.invoke(testService,
           serviceNameVersion, "deleteRepositoryOfModel", parameters);
       assertEquals("done", returnMessage);
     } catch (Exception e) {
@@ -303,17 +336,39 @@ public class CodeGenerationServiceTest {
     Serializable[] content = {(Serializable) model2};
     Serializable[] parameters = {content};
     try {
-      String returnMessage = (String) node.invokeLocally(testService.getId(),
-    		  serviceNameVersion, "createFromModel",
-          parameters);
+      String returnMessage = (String) node.invoke(testService,serviceNameVersion, "createFromModel",parameters);
       assertEquals("done", returnMessage);
-      returnMessage = (String) node.invokeLocally(testService.getId(),
-    		  serviceNameVersion, "updateRepositoryOfModel", parameters);
+      returnMessage = (String) node.invoke(testService,serviceNameVersion, "updateRepositoryOfModel", parameters);
       assertEquals("done", returnMessage);
     } catch (Exception e) {
       e.printStackTrace();
       fail(e.getMessage());
     }
+  }
+  
+  /**
+   * Internal adapter tests
+   */
+  @Test
+  public void testRepoCreation() {
+	  try{
+		  gitAdapter.createRepo("Test123", "test description");
+	  } catch (Exception e) {
+		  e.printStackTrace();
+		  fail(e.getMessage());
+	  }
+  }
+  
+  @Test
+  public void testRepoDeletion(){
+	  try {
+		  gitAdapter.createRepo("delTest123", "Test description");
+		  Thread.sleep(5000);
+		  gitAdapter.deleteRepo("delTest123");
+	  } catch (Exception e) {
+		e.printStackTrace();
+		fail(e.getMessage());
+	}
   }
 
 }

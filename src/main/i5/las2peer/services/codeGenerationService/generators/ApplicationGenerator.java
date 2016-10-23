@@ -1,21 +1,50 @@
 package i5.las2peer.services.codeGenerationService.generators;
 
 import java.awt.image.BufferedImage;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.URL;
 
 import javax.imageio.ImageIO;
 
+import org.apache.commons.io.FileUtils;
+import org.apache.http.auth.UsernamePasswordCredentials;
 import org.eclipse.jgit.api.Git;
+import org.eclipse.jgit.api.errors.GitAPIException;
+import org.eclipse.jgit.errors.CorruptObjectException;
+import org.eclipse.jgit.errors.IncorrectObjectTypeException;
+import org.eclipse.jgit.errors.MissingObjectException;
+import org.eclipse.jgit.errors.NoWorkTreeException;
+import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.ObjectLoader;
 import org.eclipse.jgit.lib.ObjectReader;
 import org.eclipse.jgit.lib.PersonIdent;
 import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.lib.StoredConfig;
+import org.eclipse.jgit.revwalk.RevTree;
+import org.eclipse.jgit.revwalk.RevWalk;
+import org.eclipse.jgit.transport.CredentialsProvider;
+import org.eclipse.jgit.transport.RemoteConfig;
+import org.eclipse.jgit.transport.URIish;
+import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider;
 import org.eclipse.jgit.treewalk.TreeWalk;
 import org.eclipse.jgit.treewalk.filter.PathFilter;
+import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
 
 import i5.las2peer.logging.L2pLogger;
-import i5.las2peer.services.codeGenerationService.exception.GitHubException;
+import i5.las2peer.logging.NodeObserver.Event;
+import i5.las2peer.services.codeGenerationService.CodeGenerationService;
+import i5.las2peer.services.codeGenerationService.adapters.BaseGitHostAdapter;
+import i5.las2peer.services.codeGenerationService.exception.GitHostException;
 import i5.las2peer.services.codeGenerationService.models.application.Application;
+import i5.las2peer.services.codeGenerationService.models.frontendComponent.FrontendComponent;
 
 /**
  * 
@@ -24,6 +53,8 @@ import i5.las2peer.services.codeGenerationService.models.application.Application
  * 
  */
 public class ApplicationGenerator extends Generator {
+
+	public static String deploymentRepo;
 
   private static final L2pLogger logger =
       L2pLogger.getInstance(ApplicationGenerator.class.getName());
@@ -34,34 +65,130 @@ public class ApplicationGenerator extends Generator {
    * Creates source code from a CAE application model and pushes it to GitHub.
    * 
    * @param application the application model
-   * @param templateRepositoryName the name of the template repository on GitHub
-   * @param gitHubOrganization the organization that is used in the CAE
-   * @param gitHubUser the CAE user
-   * @param gitHubUserMail the mail of the CAE user
-   * @param gitHubPassword the password of the CAE user
    * 
-   * @throws GitHubException thrown if anything goes wrong during this process. Wraps around all
+   * @throws GitHostException thrown if anything goes wrong during this process. Wraps around all
    *         other exceptions and prints their message.
    * 
    */
-  public static void createSourceCode(Application application, String templateRepositoryName,
-      String gitHubOrganization, String gitHubUser, String gitHubUserMail, String gitHubPassword)
-          throws GitHubException {
+  public static void createSourceCode(Application application, BaseGitHostAdapter gitAdapter)
+      throws GitHostException {
+	  if (gitAdapter == null) {
+		throw new GitHostException("Adapter is null!");
+	  }
+    String repositoryName = "application-" + application.getName().replace(" ", "-");
+    createSourceCode(repositoryName, application, gitAdapter, false);
+  }
+
+  /**
+   * 
+   * Creates source code from a CAE application model and pushes it to GitHub.
+   * 
+   * @param repositoryName the repository of the application to use
+   * @param application the application model
+   * @param forDeploy True, if the source code is intended to use for deployment purpose, e.g. no
+   *        gh-pages branch will be used
+   * 
+   * @throws GitHostException thrown if anything goes wrong during this process. Wraps around all
+   *         other exceptions and prints their message.
+ * @throws IOException 
+ * @throws CorruptObjectException 
+ * @throws IncorrectObjectTypeException 
+ * @throws MissingObjectException 
+   * 
+   */
+  public static void createSourceCode(String repositoryName, Application application, 
+		  BaseGitHostAdapter gitAdapter, boolean forDeploy) throws GitHostException {
+	  if (gitAdapter == null) {
+			throw new GitHostException("Adapter is null!");
+	  }
     // variables to be closed in the final block
     Repository applicationRepository = null;
     TreeWalk treeWalk = null;
     try {
-      PersonIdent caeUser = new PersonIdent(gitHubUser, gitHubUserMail);
-      String repositoryName = "application-" + application.getName().replace(" ", "-");
+      PersonIdent caeUser = new PersonIdent(gitAdapter.getGitUser(), gitAdapter.getGitUserMail());
 
-      applicationRepository =
-          generateNewRepository(repositoryName, gitHubOrganization, gitHubUser, gitHubPassword);
+      if(!repositoryName.equals(deploymentRepo)) {
+    	  if (!existsRemoteRepository(repositoryName, gitAdapter)) {
+    		  applicationRepository = generateNewRepository(repositoryName, gitAdapter);
+	      } else {
+	    	  applicationRepository = getRemoteRepository(repositoryName, gitAdapter);
+	    	  Git git = Git.wrap(applicationRepository);
+	          StoredConfig config = git.getRepository().getConfig();
+	          
+	          RemoteConfig remoteConfig = null;
+	          
+	          try {
+	          remoteConfig = new RemoteConfig(config, "Remote");
+	          remoteConfig.addURI(new URIish(gitAdapter.getBaseURL() + gitAdapter.getGitOrganization() + "/" + repositoryName + ".git"));
+	    		
+	          
+	          remoteConfig.update(config);
+	          config.save();
+	          } catch (URISyntaxException e) {
+	        	  throw new GitHostException("Malformed url: " + e.getMessage());
+	          } catch (IOException e) {
+	        	  throw new GitHostException("IO exception: " + e.getMessage());
+	          }
+	      }
+      }else {
+    	  if(!existsRemoteRepository(deploymentRepo, gitAdapter)) {
+    		  applicationRepository = generateNewRepository(deploymentRepo, gitAdapter);
+    	  } else {
+    		  
+    		  applicationRepository = getRemoteRepository(deploymentRepo, gitAdapter);
+	    	  Git git = Git.wrap(applicationRepository);
+	          StoredConfig config = git.getRepository().getConfig();
+	          
+	          RemoteConfig remoteConfig = null;
+	          
+	          try {
+	          remoteConfig = new RemoteConfig(config, "Remote");
+	          remoteConfig.addURI(new URIish(gitAdapter.getBaseURL() + gitAdapter.getGitOrganization() + "/" + repositoryName + ".git"));
+	    		
+	          
+	          remoteConfig.update(config);
+	          config.save();
+	          } catch (URISyntaxException e) {
+	        	  throw new GitHostException("Malformed url: " + e.getMessage());
+	          } catch (IOException e) {
+	        	  throw new GitHostException("IO exception: " + e.getMessage());
+	          }
+	          
+	          
+	          //Remove all files to clear the repository, this is a workaround for gitlabs delayed repo deletion
+	          try {
+	        	  CredentialsProvider cp = new UsernamePasswordCredentialsProvider(gitAdapter.getGitUser(),gitAdapter.getGitPassword());
+	        	  
+	        	  TreeWalk rmWalk = new TreeWalk(applicationRepository);
+	        	  ObjectId lastCommitId = applicationRepository.resolve(Constants.HEAD);
+	        	  RevWalk revWalk = new RevWalk(applicationRepository);
+	              RevTree tree = revWalk.parseCommit(lastCommitId).getTree();
+	              rmWalk.addTree(tree);
+	              rmWalk.setRecursive(true);
+	        	  
+
+        		  while (rmWalk.next()) {
+        			 git.rm().addFilepattern(rmWalk.getPathString()).call();
+        		  }
+	        	  
+	        	  git.commit().setMessage("Clear").call();
+	        	  git.push().setForce(false).setCredentialsProvider(cp).call();
+				
+				} catch (IOException | NoWorkTreeException | GitAPIException e) {
+					 throw new GitHostException("Exception: " + e.getMessage());
+				}
+    	  }
+      }
+      
+      if(applicationRepository == null) {
+    	  throw new GitHostException("Repository reference is null. This should not happen");
+      }
 
       // now we start by adding a readMe from the template repository (and thereby initializing the
       // master branch, which is needed to create a "gh-pages" branch afterwards
       String readMe = null;
       BufferedImage logo = null;
-      treeWalk = getTemplateRepositoryContent(templateRepositoryName, gitHubOrganization);
+      treeWalk = getTemplateRepositoryContent(gitAdapter);
       treeWalk.setFilter(PathFilter.create("application/"));
       ObjectReader reader = treeWalk.getObjectReader();
       // walk through the tree and retrieve the needed templates
@@ -74,7 +201,7 @@ public class ApplicationGenerator extends Generator {
               readMe = new String(loader.getBytes(), "UTF-8");
               readMe = readMe.replace("$Repository_Name$", repositoryName);
               readMe = readMe.replace("$Application_Name$", application.getName());
-              readMe = readMe.replace("$Organization_Name$", gitHubOrganization);
+              readMe = readMe.replace("$Organization_Name$", gitAdapter.getGitOrganization());
               break;
             case "logo_application.png":
               logo = ImageIO.read(loader.openStream());
@@ -92,30 +219,33 @@ public class ApplicationGenerator extends Generator {
             .setCommitter(caeUser).call();
       } catch (Exception e) {
         logger.printStackTrace(e);
-        throw new GitHubException(e.getMessage());
+        throw new GitHostException(e.getMessage());
       }
 
-      // create "gh-pages" branch
-      try {
-        Git.wrap(applicationRepository).branchCreate().setName("gh-pages").call();
-      } catch (Exception e) {
-        logger.printStackTrace(e);
-        throw new GitHubException(e.getMessage());
+      if (!forDeploy) {
+        // create "gh-pages" branch
+        try {
+          Git.wrap(applicationRepository).branchCreate().setName("gh-pages").call();
+        } catch (Exception e) {
+          logger.printStackTrace(e);
+          throw new GitHostException(e.getMessage());
+        }
       }
 
       // fetch microservice repository contents and add them
       for (String microserviceName : application.getMicroservices().keySet()) {
         String microserviceRepositoryName = "microservice-" + microserviceName.replace(" ", "-");
-        treeWalk = getRepositoryContent(microserviceRepositoryName, gitHubOrganization);
+        treeWalk = getRepositoryContent(microserviceRepositoryName, gitAdapter);
         reader = treeWalk.getObjectReader();
         try {
           while (treeWalk.next()) {
             ObjectId objectId = treeWalk.getObjectId(0);
             ObjectLoader loader = reader.open(objectId);
             // copy the content of the repository and switch out the "old" paths
-            String oldLogoAddress = "https://github.com/" + gitHubOrganization + "/"
+            
+            String oldLogoAddress = gitAdapter.getBaseURL() + gitAdapter.getGitOrganization() + "/"
                 + microserviceRepositoryName + "/blob/master/img/logo.png";
-            String newLogoAddress = "https://github.com/" + gitHubOrganization + "/"
+            String newLogoAddress = gitAdapter.getBaseURL() + gitAdapter.getGitOrganization() + "/"
                 + repositoryName + "/blob/master/" + microserviceRepositoryName + "/img/logo.png";
             switch (treeWalk.getNameString()) {
               case "README.md":
@@ -125,6 +255,10 @@ public class ApplicationGenerator extends Generator {
                     microserviceRepositoryName + "/", "README.md", frontendReadme);
                 break;
               default:
+                // skip traces
+                if (treeWalk.getPathString().contains("traces/")) {
+                  continue;
+                }
                 // determine type and then "pass it on"
                 // TODO: I'm sure there is a more elegant way to do this
                 String fileName = treeWalk.getNameString();
@@ -165,7 +299,7 @@ public class ApplicationGenerator extends Generator {
           }
         } catch (Exception e) {
           logger.printStackTrace(e);
-          throw new GitHubException(e.getMessage());
+          throw new GitHostException(e.getMessage());
         }
         treeWalk.close();
         // commit files
@@ -174,44 +308,55 @@ public class ApplicationGenerator extends Generator {
               .setMessage("Added microservice " + microserviceName).setCommitter(caeUser).call();
         } catch (Exception e) {
           logger.printStackTrace(e);
-          throw new GitHubException(e.getMessage());
+          throw new GitHostException(e.getMessage());
         }
       }
-      // push (local) repository content to GitHub repository "master" branch
-      try {
-        pushToRemoteRepository(applicationRepository, gitHubUser, gitHubPassword);
-      } catch (Exception e) {
-        logger.printStackTrace(e);
-        throw new GitHubException(e.getMessage());
-      }
 
-      // switch branch to "gh-pages"
-      try {
-        Git.wrap(applicationRepository).checkout().setName("gh-pages").call();
-      } catch (Exception e) {
-        logger.printStackTrace(e);
-        throw new GitHubException(e.getMessage());
+      if (!forDeploy) {
+        // push (local) repository content to GitHub repository "master" branch
+        try {
+          pushToRemoteRepository(applicationRepository, gitAdapter, true);
+        } catch (Exception e) {
+          logger.printStackTrace(e);
+          throw new GitHostException(e.getMessage());
+        }
+
+        // switch branch to "gh-pages"
+        try {
+          Git.wrap(applicationRepository).checkout().setName("gh-pages").call();
+        } catch (Exception e) {
+          logger.printStackTrace(e);
+          throw new GitHostException(e.getMessage());
+        }
       }
 
       // fetch frontend component repository contents and add them
       for (String frontendComponentName : application.getFrontendComponents().keySet()) {
         String frontendComponentRepositoryName =
             "frontendComponent-" + frontendComponentName.replace(" ", "-");
-        treeWalk = getRepositoryContent(frontendComponentRepositoryName, gitHubOrganization);
+        treeWalk = getRepositoryContent(frontendComponentRepositoryName, gitAdapter);
         reader = treeWalk.getObjectReader();
         try {
           while (treeWalk.next()) {
             ObjectId objectId = treeWalk.getObjectId(0);
             ObjectLoader loader = reader.open(objectId);
             // copy the content of the repository and switch out the "old" paths
-            String oldWidgetHome =
-                "http://" + gitHubOrganization + ".github.io/" + frontendComponentRepositoryName;
-            String newWidgetHome = "http://" + gitHubOrganization + ".github.io/" + repositoryName
-                + "/" + frontendComponentRepositoryName;
-            String oldLogoAddress = "https://github.com/" + gitHubOrganization + "/"
+            String oldWidgetHome = "http://ginkgo.informatik.rwth-aachen.de:9081/"+gitAdapter.getGitOrganization()+"/"+frontendComponentRepositoryName;
+            String newWidgetHome = "http://ginkgo.informatik.rwth-aachen.de:9081/"+gitAdapter.getGitOrganization()+"/"+repositoryName+"/"+frontendComponentRepositoryName;
+            
+            /*String oldWidgetHome =
+                "http://" + gitAdapter.getGitOrganization() + ".github.io/" + frontendComponentRepositoryName;
+            String newWidgetHome = "http://" + gitAdapter.getGitOrganization() + ".github.io/" + repositoryName
+                + "/" + frontendComponentRepositoryName;*/
+            if (forDeploy) {
+              // use other url for deployment, replaced later by the dockerfile
+              newWidgetHome = "$WIDGET_URL$:$HTTP_PORT$" + "/" + frontendComponentRepositoryName;
+            }
+
+            String oldLogoAddress = gitAdapter.getBaseURL() + gitAdapter.getGitOrganization() + "/"
                 + frontendComponentRepositoryName + "/blob/gh-pages/img/logo.png";
             String newLogoAddress =
-                "https://github.com/" + gitHubOrganization + "/" + repositoryName
+                gitAdapter.getBaseURL() + gitAdapter.getGitOrganization() + "/" + repositoryName
                     + "/blob/gh-pages/" + frontendComponentRepositoryName + "/img/logo.png";
             switch (treeWalk.getNameString()) {
               case "README.md":
@@ -223,10 +368,29 @@ public class ApplicationGenerator extends Generator {
               case "widget.xml":
                 String widget = new String(loader.getBytes(), "UTF-8");
                 widget = widget.replace(oldWidgetHome, newWidgetHome);
+
                 applicationRepository = createTextFileInRepository(applicationRepository,
                     frontendComponentRepositoryName + "/", "widget.xml", widget);
                 break;
+              case "applicationScript.js":
+                String applicationScript = new String(loader.getBytes(), "UTF-8");
+
+                if (forDeploy) {
+                  FrontendComponent frontendComponent =
+                      application.getFrontendComponents().get(frontendComponentName);
+                  applicationScript = applicationScript.replace(
+                      frontendComponent.getMicroserviceAddress(), "$STEEN_URL$:$STEEN_PORT$");
+                }
+
+                applicationRepository = createTextFileInRepository(applicationRepository,
+                    frontendComponentRepositoryName + "/js/", "applicationScript.js",
+                    applicationScript);
+                break;
               default:
+                // skip traces
+                if (treeWalk.getPathString().contains("traces/")) {
+                  continue;
+                }
                 // determine type and then "pass it on"
                 // TODO: I'm sure there is a more elegant way to do this
                 String fileName = treeWalk.getNameString();
@@ -269,7 +433,7 @@ public class ApplicationGenerator extends Generator {
           }
         } catch (Exception e) {
           logger.printStackTrace(e);
-          throw new GitHubException(e.getMessage());
+          throw new GitHostException(e.getMessage());
         }
         treeWalk.close();
         // commit files
@@ -279,23 +443,172 @@ public class ApplicationGenerator extends Generator {
               .call();
         } catch (Exception e) {
           logger.printStackTrace(e);
-          throw new GitHubException(e.getMessage());
+          throw new GitHostException(e.getMessage());
         }
       }
-      // push (local) repository content to GitHub repository "gh-pages" branch
-      try {
-        pushToRemoteRepository(applicationRepository, gitHubUser, gitHubPassword, "gh-pages",
-            "gh-pages");
-      } catch (Exception e) {
-        logger.printStackTrace(e);
-        throw new GitHubException(e.getMessage());
+      if (!forDeploy) {
+        // push (local) repository content to repository "gh-pages" branch
+        try {
+          pushToRemoteRepository(applicationRepository, "gh-pages",
+              "gh-pages", gitAdapter, true);
+        } catch (Exception e) {
+          logger.printStackTrace(e);
+          throw new GitHostException(e.getMessage());
+        } 
+      } else {
+        // push (local) repository content to repository "master" branch
+        try {
+          pushToRemoteRepository(applicationRepository, gitAdapter, true);
+        } catch (Exception e) {
+          logger.printStackTrace(e);
+          throw new GitHostException(e.getMessage());
+        }
       }
 
       // close all open resources
     } finally {
-      applicationRepository.close();
-      treeWalk.close();
+    	if(applicationRepository != null)
+    		applicationRepository.close();
+    	if (treeWalk != null) 
+    		treeWalk.close();
     }
   }
 
+  /**
+   * Get the build path of the Jenkins remote api for a queue item. If the queue item is still
+   * pending, null is returned.
+   * 
+   * @param queueItem The path of the queue item
+   * @param jenkinsUrl The base path of Jenkins
+   * @return The build path for the queue item, or Null if the is still pending/waiting
+   * @throws Exception Possible exceptions from the http request
+   */
+
+  private static String getBuildPath(String queueItem, String jenkinsUrl) throws Exception {
+    URL url = new URL(jenkinsUrl + queueItem + "api/json");
+    HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+    connection.setRequestMethod("GET");
+    connection.setDoOutput(true);
+    connection.setUseCaches(false);
+
+    if (connection.getResponseCode() != 200) {
+      // queue item may be deleted, so its no longer queued
+      return null;
+    } else {
+      String message = "";
+      BufferedReader reader =
+          new BufferedReader(new InputStreamReader(connection.getInputStream()));
+      for (String line; (line = reader.readLine()) != null;) {
+        message += line + "\n";
+      }
+      reader.close();
+      JSONParser parser = new JSONParser();
+      JSONObject result = (JSONObject) parser.parse(message);
+
+
+      if (result.containsKey("executable")) {
+        JSONObject executeable = (JSONObject) result.get("executable");
+        String path = new URI((String) executeable.get("url")).getPath();
+        if (path.startsWith("jenkins/") || path.startsWith("/jenkins")) {
+        	path = path.substring("jenkins/".length(), path.length());
+        }
+        return path;
+      } else {
+        return null;
+      }
+    }
+
+  }
+
+  /**
+   * Get the job console text of a build of a queue item. When the item is still pending, the string
+   * "Pending" is returned.
+   * 
+   * @param queueItem The path of the queue item
+   * @param jenkinsUrl The base path of Jenkins
+   * @return The console text of a build of a queue item or "Pending" if the item is still
+   *         pending/waiting for its execution
+   */
+
+  public static String deployStatus(String queueItem, String jenkinsUrl) {
+    try {
+      String buildPath = getBuildPath(queueItem, jenkinsUrl);
+      if (buildPath == null) {
+        return "Pending";
+      } else {
+
+        URL url = new URL(jenkinsUrl + buildPath + "consoleText");
+        HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+        connection.setRequestMethod("GET");
+        connection.setDoOutput(true);
+        connection.setUseCaches(false);
+
+        String message = "";
+        BufferedReader reader =
+            new BufferedReader(new InputStreamReader(connection.getInputStream()));
+        for (String line; (line = reader.readLine()) != null;) {
+          message += line + "\n";
+        }
+        reader.close();
+        // forward (in case of) error
+        if (connection.getResponseCode() != 200) {
+          throw new Exception("Jenkins error: " + message);
+        } else {
+          return message;
+        }
+
+      }
+
+    } catch (Exception e) {
+      logger.printStackTrace(e);
+      return "Error:" + e.getMessage();
+    }
+  }
+
+  /**
+   * Start a job for the deployment of an application
+   * 
+   * @param jenkinsUrl The base path of Jenkins
+   * @param jobToken The token to start the job
+   * @param jobName The name of the job to start
+   * @return The path of the queue item of the started job
+   */
+
+  public static String deployApplication(String jenkinsUrl, String jobToken, String jobName) {
+
+    try {
+
+      L2pLogger.logEvent(Event.SERVICE_MESSAGE, "Starting Jenkin job: " + jobName);
+
+      URL url = new URL(jenkinsUrl + "/job/" + jobName + "/build?token=" + jobToken);
+      HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+      connection.setRequestMethod("GET");
+      connection.setDoOutput(true);
+      connection.setUseCaches(false);
+
+      // forward (in case of) error
+      if (connection.getResponseCode() != 201) {
+        String message = "";
+        BufferedReader reader =
+            new BufferedReader(new InputStreamReader(connection.getErrorStream()));
+        for (String line; (line = reader.readLine()) != null;) {
+          message += line;
+        }
+        reader.close();
+        throw new Exception(message);
+      } else {
+        L2pLogger.logEvent(Event.SERVICE_MESSAGE, "Job started!");
+        URI uri = new URI(connection.getHeaderField("Location"));
+        String path = uri.getPath();
+        if (path.startsWith("jenkins/") || path.startsWith("/jenkins")) {
+        	path = path.substring("jenkins/".length(), path.length());
+        }
+        return path;
+      }
+    } catch (Exception e) {
+      logger.printStackTrace(e);
+      return "Error";
+    }
+
+  }
 }
