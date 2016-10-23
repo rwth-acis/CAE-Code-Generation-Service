@@ -600,9 +600,13 @@ public class FrontendComponentGenerator extends Generator {
           functionTemplate.appendVariable("$Function_Body$", contentVar);
 
           microserviceCallFile.setVariable("$Content$", microserviceCall.getContent());
+          
+          // TODO workaround
+          String contentType =  microserviceCall.getContentType().toString();
+          if (contentType.equals("application/json"))
+        	  contentType = "text/plain";
 
-          microserviceCallFile.setVariable("$Content_Type$",
-              microserviceCall.getContentType().toString());
+          microserviceCallFile.setVariable("$Content_Type$", contentType);
         } else {
           // no content specified, just remove placeholder / insert empty entries
           microserviceCallFile.setVariable("$Content$", "\"\"");
