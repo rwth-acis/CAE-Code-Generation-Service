@@ -128,7 +128,7 @@ public class MicroserviceGenerator extends Generator {
    * 
    * @param microservice the microservice model
  * @param templateRepositoryName the name of the template repository on GitHub
- * @param gitAdapter TODO
+ * @param gitAdapter The gitAdapter that manages operations on GitHub/GitLab etc.
    * @throws GitHostException thrown if anything goes wrong during this process. Wraps around all
    *         other exceptions and prints their message.
    * 

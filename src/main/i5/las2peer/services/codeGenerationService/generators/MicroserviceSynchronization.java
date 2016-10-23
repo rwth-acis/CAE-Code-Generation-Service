@@ -232,9 +232,9 @@ public class MicroserviceSynchronization extends MicroserviceGenerator {
 
         if (fileName.equals(serviceOldFileName)) {
           oldFileTraceModel.setFileName(serviceFileName);
-          //TODO gitLab?
+          
           String repositoryLocation =
-              "https://github.com/" + gitAdapter.getGitOrganization() + "/" + getRepositoryName(microservice);
+              gitAdapter.getBaseURL() + gitAdapter.getGitOrganization() + "/" + getRepositoryName(microservice);
 
           generateNewServiceClass(templateEngine, serviceClass, microservice, repositoryLocation,
               genericHttpMethod, genericHttpMethodBody, genericApiResponse, genericHttpResponse,

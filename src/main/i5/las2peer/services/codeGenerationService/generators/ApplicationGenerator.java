@@ -154,8 +154,8 @@ public class ApplicationGenerator extends Generator {
 	        	  throw new GitHostException("IO exception: " + e.getMessage());
 	          }
 	          
-	          // TODO delete all files...
 	          
+	          //Remove all files to clear the repository, this is a workaround for gitlabs delayed repo deletion
 	          try {
 	        	  CredentialsProvider cp = new UsernamePasswordCredentialsProvider(gitAdapter.getGitUser(),gitAdapter.getGitPassword());
 	        	  
@@ -242,8 +242,6 @@ public class ApplicationGenerator extends Generator {
             ObjectId objectId = treeWalk.getObjectId(0);
             ObjectLoader loader = reader.open(objectId);
             // copy the content of the repository and switch out the "old" paths
-            
-            // TODO: Content paths have to be independent from the git provider or all cases have to be met
             
             String oldLogoAddress = gitAdapter.getBaseURL() + gitAdapter.getGitOrganization() + "/"
                 + microserviceRepositoryName + "/blob/master/img/logo.png";
@@ -332,9 +330,7 @@ public class ApplicationGenerator extends Generator {
         }
       }
 
-      // TODO !!!
       // fetch frontend component repository contents and add them
-      // TODO: Change paths here too, paths have to be generated depending on git host and deployment (no gh pages if using gitlab !!!)
       for (String frontendComponentName : application.getFrontendComponents().keySet()) {
         String frontendComponentRepositoryName =
             "frontendComponent-" + frontendComponentName.replace(" ", "-");
@@ -451,8 +447,7 @@ public class ApplicationGenerator extends Generator {
         }
       }
       if (!forDeploy) {
-        // push (local) repository content to GitHub repository "gh-pages" branch
-    	  // TODO Deployment is hardcoded to gh pages !!! Needs to be changed
+        // push (local) repository content to repository "gh-pages" branch
         try {
           pushToRemoteRepository(applicationRepository, "gh-pages",
               "gh-pages", gitAdapter, true);
@@ -461,7 +456,7 @@ public class ApplicationGenerator extends Generator {
           throw new GitHostException(e.getMessage());
         } 
       } else {
-        // push (local) repository content to GitHub repository "master" branch
+        // push (local) repository content to repository "master" branch
         try {
           pushToRemoteRepository(applicationRepository, gitAdapter, true);
         } catch (Exception e) {
