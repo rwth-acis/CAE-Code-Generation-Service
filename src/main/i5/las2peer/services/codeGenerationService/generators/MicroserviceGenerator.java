@@ -819,7 +819,9 @@ public class MicroserviceGenerator extends Generator {
 
         // check if payload is a JSON and cast if so
         if (currentPayload.getPayloadType() == PayloadType.JSONObject) {
-          consumesAnnotation = "MediaType.APPLICATION_JSON";
+        	// TODO workaround
+          // consumesAnnotation = "MediaType.APPLICATION_JSON";
+          consumesAnnotation = "MediaType.TEXT_PLAIN";
           parameterCode += "String " + currentPayload.getName() + ", ";
 
           Template castTemplate = templateEngine.createTemplate(
