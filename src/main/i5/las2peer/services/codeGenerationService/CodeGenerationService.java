@@ -1,14 +1,9 @@
 package i5.las2peer.services.codeGenerationService;
 
-import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.io.ObjectOutput;
-import java.io.ObjectOutputStream;
-import java.io.OutputStream;
 import java.io.Serializable;
 import java.net.HttpURLConnection;
 import java.util.Base64;
@@ -25,7 +20,6 @@ import javax.ws.rs.QueryParam;
 
 import org.apache.commons.io.FileUtils;
 import org.eclipse.jgit.api.Git;
-import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider;
 import org.eclipse.jgit.treewalk.TreeWalk;
 import org.eclipse.jgit.treewalk.filter.PathFilter;
 import org.json.simple.JSONArray;
@@ -34,7 +28,6 @@ import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 
 import i5.cae.simpleModel.SimpleModel;
-import i5.las2peer.api.Service;
 import i5.las2peer.logging.L2pLogger;
 import i5.las2peer.logging.NodeObserver.Event;
 import i5.las2peer.restMapper.HttpResponse;
@@ -993,7 +986,7 @@ public class CodeGenerationService extends RESTService {
                   "updateRepositoryOfModel: Checking application model now..");
               // check first if model can be constructed
               // (in case of an invalid model, keep the old repository)
-              new Application(serializedModel);
+              //new Application(serializedModel);
               /*
               L2pLogger.logEvent(Event.SERVICE_MESSAGE,
                   "updateRepositoryOfModel: Calling delete (old) repository method now..");

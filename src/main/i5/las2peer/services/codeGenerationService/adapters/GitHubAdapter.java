@@ -8,10 +8,10 @@ import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Base64;
-import java.util.Objects;
-
 import org.json.simple.JSONObject;
 
+import i5.las2peer.logging.L2pLogger;
+import i5.las2peer.services.codeGenerationService.CodeGenerationService;
 import i5.las2peer.services.codeGenerationService.exception.GitHostException;
 
 /**
@@ -20,7 +20,6 @@ import i5.las2peer.services.codeGenerationService.exception.GitHostException;
  * Manages operations on GitHub that are not directly possible via git. Thus the GitHub api is used.
  */
 public class GitHubAdapter extends BaseGitHostAdapter {
-
 	//TODO: Exception handling
 	
 	private GitHubAdapter(String gitUser, String gitPassword, String gitOrganization, String templateRepository,
@@ -47,14 +46,14 @@ public class GitHubAdapter extends BaseGitHostAdapter {
 	  String body = JSONObject.toJSONString(jsonObject);
 	
 	  String authString = this.gitUser + ":" + this.gitPassword;
+	  
 	  byte[] authEncBytes = Base64.getEncoder().encode(authString.getBytes());
-	  String authStringEnc = new String(authEncBytes);
-	
+	  String authStringEnc;
 	  
 	  URL url;
 	  try {
 		  url = new URL("https://api.github.com/orgs/" + this.gitOrganization + "/repos");
-	  
+		  authStringEnc = new String(authEncBytes,"UTF-8");
 	  
 		  HttpURLConnection connection = (HttpURLConnection) url.openConnection();
 		  connection.setRequestMethod("POST");

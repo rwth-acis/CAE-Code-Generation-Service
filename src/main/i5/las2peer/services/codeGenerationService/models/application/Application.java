@@ -50,6 +50,7 @@ public class Application {
 
     // now construct models for all components (starting with the first component, first entry of
     // array is application model itself! TODO: think of different version handling
+    //TODO: Check this
     for (int i = 1; i < modelComponents.length; i++) {
       for (int j = 0; j < modelComponents[i].getAttributes().size(); j++) {
         if (modelComponents[i].getAttributes().get(j).getName().equals("type")) {
@@ -57,19 +58,21 @@ public class Application {
           switch (type) {
             case "microservice":
               if (this.microservices.containsKey(modelComponents[i].getName())) {
-                throw new ModelParseException(
-                    "Error: More than one microservice with name " + modelComponents[i].getName());
-              }
+               // throw new ModelParseException(
+                    //"Error: More than one microservice with name " + modelComponents[i].getName());
+              } else {
               this.microservices.put(modelComponents[i].getName(),
                   new Microservice(modelComponents[i]));
+              }
               break;
             case "frontend-component":
               if (this.frontendComponents.containsKey(modelComponents[i].getName())) {
-                throw new ModelParseException("Error: More than one frontend-component with name "
-                    + modelComponents[i].getName());
-              }
+                //throw new ModelParseException("Error in Application constructor: More than one frontend-component with name "
+                    //+ modelComponents[i].getName());
+              }else {
               this.frontendComponents.put(modelComponents[i].getName(),
                   new FrontendComponent(modelComponents[i]));
+              }
               break;
             default:
               throw new ModelParseException(
