@@ -1,39 +1,25 @@
 package i5.las2peer.services.codeGenerationService;
 
 import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.Serializable;
-import java.net.HttpURLConnection;
-import java.util.Base64;
 import java.util.HashMap;
 import java.util.Objects;
-
-import javax.ws.rs.Consumes;
-import javax.ws.rs.GET;
-import javax.ws.rs.PUT;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
-import javax.ws.rs.QueryParam;
 
 import org.apache.commons.io.FileUtils;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.treewalk.TreeWalk;
-import org.eclipse.jgit.treewalk.filter.PathFilter;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 
 import i5.cae.simpleModel.SimpleModel;
+import i5.las2peer.api.Context;
 import i5.las2peer.logging.L2pLogger;
 import i5.las2peer.logging.NodeObserver.Event;
-import i5.las2peer.restMapper.HttpResponse;
-import i5.las2peer.restMapper.MediaType;
 import i5.las2peer.restMapper.RESTService;
-import i5.las2peer.restMapper.annotations.ContentParam;
+import i5.las2peer.restMapper.annotations.ServicePath;
 import i5.las2peer.services.codeGenerationService.adapters.BaseGitHostAdapter;
 import i5.las2peer.services.codeGenerationService.adapters.GitHostAdapter;
 import i5.las2peer.services.codeGenerationService.adapters.GitHubAdapter;
@@ -52,9 +38,11 @@ import i5.las2peer.services.codeGenerationService.models.frontendComponent.Front
 import i5.las2peer.services.codeGenerationService.models.microservice.Microservice;
 import i5.las2peer.services.codeGenerationService.templateEngine.ModelViolationDetection;
 import i5.las2peer.services.codeGenerationService.utilities.GitUtility;
-import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.ApiResponse;
-import io.swagger.annotations.ApiResponses;
+import io.swagger.annotations.Api;
+import io.swagger.annotations.Contact;
+import io.swagger.annotations.Info;
+import io.swagger.annotations.License;
+import io.swagger.annotations.SwaggerDefinition;
 
 /**
  * 
@@ -63,6 +51,9 @@ import io.swagger.annotations.ApiResponses;
  * A LAS2peer service used for generating code from send models. Part of the CAE.
  * 
  */
+@Api
+@SwaggerDefinition(info = @Info(title = "CAE Code Generation Service", version = "0.1", description = "A LAS2peer service used for generating code and managing remote repositories. Part of the CAE.", termsOfService = "none", contact = @Contact(name = "Peter de Lange", url = "https://github.com/PedeLa/", email = "lange@dbis.rwth-aachen.de"), license = @License(name = "BSD", url = "https://github.com/PedeLa/CAE-Model-Persistence-Service//blob/master/LICENSE.txt")))
+@ServicePath("CodeGen")
 public class CodeGenerationService extends RESTService {
 
   // Git service properties
@@ -85,13 +76,16 @@ public class CodeGenerationService extends RESTService {
   // The git helper utility
   private GitUtility gitUtility;
   
+  //Proxy helper
+  private GitProxy gitProxy;
+  
   // jenkins properties
   private String buildJobName;
   private String dockerJobName;
   private String jenkinsUrl;
   private String jenkinsJobToken;
 
-  private boolean useModelSynchronization;
+  boolean useModelSynchronization;
   private final L2pLogger logger = L2pLogger.getInstance(CodeGenerationService.class.getName());
   
   public static final String DEPLOYMENT_REPO = "CAE-Deployment-Temp";
@@ -100,7 +94,7 @@ public class CodeGenerationService extends RESTService {
   private boolean pushToFs;
   private String frontendDirectory;
 
-  public CodeGenerationService() throws GitHostException {
+public CodeGenerationService() throws GitHostException {
     // read and set properties-file values
     setFieldValues();
     
@@ -109,579 +103,23 @@ public class CodeGenerationService extends RESTService {
     
     // Create git adapter matching the usedGitHost
     if(Objects.equals(usedGitHost, "GitHub")) {
-    	this.gitAdapter = new GitHubAdapter(gitUser,gitPassword,gitOrganization,templateRepository,gitUserMail); 
+    	gitAdapter = new GitHubAdapter(gitUser,gitPassword,gitOrganization,templateRepository,gitUserMail); 
     } else if (Objects.equals(usedGitHost, "GitLab")) {
-    	this.gitAdapter = new GitLabAdapter(baseURL,token,gitUser,gitPassword,gitOrganization,templateRepository,gitUserMail);
+    	gitAdapter = new GitLabAdapter(baseURL,token,gitUser,gitPassword,gitOrganization,templateRepository,gitUserMail);
     } else {
     	// Abort
     	throw new GitHostException("No valid git provider selected");
     }
-    this.gitUtility = new GitUtility(gitUser, gitPassword, gitOrganization, baseURL);
+    gitUtility = new GitUtility(gitUser, gitPassword, gitOrganization, baseURL);
+    gitProxy = new GitProxy(gitUtility, logger);
   }
 
-  /*--------------------------------------------
-   * REST endpoints (github proxy functionality)
-   * -------------------------------------------
-   */
-  
-  /**
-   * Merges the development branch of the given repository with the master/gh-pages branch and
-   * pushes the changes to the remote repository.
-   * 
-   * @param repositoryName The name of the repository to push the local changes to
-   * @return HttpResponse containing the status code of the request or the result of the model
-   *         violation if it fails
-   */
-
-  @SuppressWarnings("unchecked")
-  @PUT
-  @Path("{repositoryName}/push/")
-  @Produces(MediaType.APPLICATION_JSON)
-  @ApiOperation(value = "Merge and push the commits to the remote repository",
-      notes = "Push the commits to the remote repo.")
-  @ApiResponses(
-      value = {@ApiResponse(code = HttpURLConnection.HTTP_OK, message = "OK"), @ApiResponse(
-          code = HttpURLConnection.HTTP_INTERNAL_ERROR, message = "Internal server error")})
-  public HttpResponse pushToRemote(@PathParam("repositoryName") String repositoryName) {
-    try {
-
-      // determine which branch to merge in
-      boolean isFrontend = repositoryName.startsWith("frontendComponent-");
-      String masterBranchName = isFrontend ? "gh-pages" : "master";
-
-      gitUtility.mergeIntoMasterBranch(repositoryName,  masterBranchName);
-      JSONObject result = new JSONObject();
-      result.put("status", "ok");
-      HttpResponse r = new HttpResponse(result.toJSONString(), HttpURLConnection.HTTP_OK);
-      return r;
-    } catch (Exception e) {
-      logger.printStackTrace(e);
-      HttpResponse r = new HttpResponse("Internal Error", HttpURLConnection.HTTP_INTERNAL_ERROR);
-      return r;
-    }
+  @Override
+  protected void initResources() {
+	  getResourceConfig().packages("i5.las2peer.services.codeGenerationService");
   }
   
-  /**
-   * Store the content and traces of a file in a repository and commit it to the local repository.
-   * 
-   * @param repositoryName The name of the repository
-   * @param content A json string containing the content of the file encoded in base64 and its file
-   *        traces
-   * @return HttpResponse with the status code of the request
-   */
-
-  @SuppressWarnings("unchecked")
-  @PUT
-  @Path("{repositoryName}/file/")
-  @Consumes(MediaType.APPLICATION_JSON)
-  @Produces(MediaType.APPLICATION_JSON)
-  @ApiOperation(
-      value = "Stores the content for the given file in the local repository and commits the changes.",
-      notes = "Stores the content for the given file in the local repository and commits the changes.")
-  @ApiResponses(value = {@ApiResponse(code = HttpURLConnection.HTTP_OK, message = "OK, file found"),
-      @ApiResponse(code = HttpURLConnection.HTTP_INTERNAL_ERROR, message = "Internal server error"),
-      @ApiResponse(code = HttpURLConnection.HTTP_NOT_FOUND, message = "404, file not found")})
-  public synchronized HttpResponse storeAndCommitFle(
-      @PathParam("repositoryName") String repositoryName, @ContentParam String content) {
-    try {
-      JSONObject result = new JSONObject();
-
-      JSONParser parser = new JSONParser();
-      JSONObject contentObject = (JSONObject) parser.parse(content);
-      String filePath = contentObject.get("filename").toString();
-      String fileContent = contentObject.get("content").toString();
-      String commitMessage = contentObject.get("commitMessage").toString();
-      JSONObject traces = (JSONObject) contentObject.get("traces");
-
-      byte[] base64decodedBytes = Base64.getDecoder().decode(fileContent);
-      String decodedString = new String(base64decodedBytes, "utf-8");
-
-      try (Git git = gitUtility.getLocalGit(repositoryName, "development");) {
-
-        File file = new File(git.getRepository().getDirectory().getParent(), filePath);
-        if (file.exists()) {
-
-          FileWriter fW = new FileWriter(file, false);
-          fW.write(decodedString);
-          fW.close();
-          // call model violation check of the code generation service if enabled
-          if (this.useModelCheck) {
-            JSONObject tracedFileObject = new JSONObject();
-            tracedFileObject.put("content", fileContent);
-            tracedFileObject.put("fileTraces", traces);
-
-            HashMap<String, JSONObject> tracedFile = new HashMap<String, JSONObject>();
-            tracedFile.put(filePath, tracedFileObject);
-
-            Serializable[] payload = {getGuidances(git), tracedFile};
-            JSONArray feedback = (JSONArray) this.invokeServiceMethod(
-                "i5.las2peer.services.codeGenerationService.CodeGenerationService@0.1",
-                "checkModel", payload);
-            if (feedback.size() > 0) {
-
-              result.put("status", "Model violation check fails");
-              result.put("feedbackItems", feedback);
-              HttpResponse r = new HttpResponse(result.toJSONString(), HttpURLConnection.HTTP_OK);
-              return r;
-            }
-          }
-          // check generation id to avoid conflicts
-          JSONObject currentTraceFile = getFileTraces(git, filePath);
-          if (currentTraceFile != null) {
-            String generationId = (String) currentTraceFile.get("generationId");
-            String payloadGenerationId = (String) traces.get("generationId");
-            if (!generationId.equals(payloadGenerationId)) {
-              HttpResponse r = new HttpResponse("Commit rejected. Wrong generation id",
-                  HttpURLConnection.HTTP_CONFLICT);
-              return r;
-            }
-          }
-
-          File traceFile =
-              new File(git.getRepository().getDirectory().getParent(), getTraceFileName(filePath));
-
-          fW = new FileWriter(traceFile, false);
-          fW.write(traces.toJSONString());
-          fW.close();
-
-          git.add().addFilepattern(filePath).addFilepattern(getTraceFileName(filePath)).call();
-          git.commit().setAuthor(gitUser, gitUserMail).setMessage(commitMessage).call();
-
-          result.put("status", "OK, file stored and commited");
-          HttpResponse r = new HttpResponse(result.toJSONString(), HttpURLConnection.HTTP_OK);
-          return r;
-        } else {
-          HttpResponse r = new HttpResponse("404", HttpURLConnection.HTTP_NOT_FOUND);
-          return r;
-        }
-
-      }
-
-    } catch (Exception e) {
-      logger.printStackTrace(e);
-      HttpResponse r = new HttpResponse("Internal Error", HttpURLConnection.HTTP_INTERNAL_ERROR);
-      return r;
-    }
-  }
-  
-  /**
-   * Calculate and returns the file name and segment id for a given model id.
-   * 
-   * @param repositoryName The name of the repository
-   * @param modelId The id of the model.
-   * @return HttpResponse with the status code of the request and the file name and segment id of
-   *         the model
-   */
-
-  @SuppressWarnings("unchecked")
-  @GET
-  @Path("{repositoryName}/segment/{modelId}")
-  @Produces(MediaType.APPLICATION_JSON)
-  @ApiOperation(value = "Returns the segment id and filename for the given model id.",
-      notes = "Returns the segment id and filename.")
-  @ApiResponses(value = {
-      @ApiResponse(code = HttpURLConnection.HTTP_OK, message = "OK, segment found"),
-      @ApiResponse(code = HttpURLConnection.HTTP_INTERNAL_ERROR, message = "Internal server error"),
-      @ApiResponse(code = HttpURLConnection.HTTP_NOT_FOUND, message = "404, segment not found")})
-  public HttpResponse getSegmentOfModelId(@PathParam("repositoryName") String repositoryName,
-      @PathParam("modelId") String modelId) {
-
-    try (Git git = gitUtility.getLocalGit(repositoryName, "development");) {
-
-      JSONObject resultObject = new JSONObject();
-
-      JSONObject traceModel = getTraceModel(git);
-      JSONObject modelsToFiles = (JSONObject) traceModel.get("modelsToFile");
-
-      if (modelsToFiles != null) {
-        if (modelsToFiles.containsKey(modelId)) {
-          JSONArray fileList = (JSONArray) ((JSONObject) modelsToFiles.get(modelId)).get("files");
-          String fileName = (String) fileList.get(0);
-          JSONObject fileTraceModel = getFileTraces(git, fileName);
-          JSONObject fileTraces = (JSONObject) fileTraceModel.get("traces");
-          JSONArray segments = (JSONArray) ((JSONObject) fileTraces.get(modelId)).get("segments");
-          String segmentId = (String) segments.get(0);
-
-          resultObject.put("fileName", fileName);
-          resultObject.put("segmentId", segmentId);
-
-        } else {
-          throw new FileNotFoundException();
-        }
-      } else {
-        throw new Exception("Error: modelsToFiles mapping not found!");
-      }
-
-      HttpResponse r = new HttpResponse(resultObject.toJSONString(), HttpURLConnection.HTTP_OK);
-      return r;
-    } catch (FileNotFoundException fileNotFoundException) {
-      HttpResponse r = new HttpResponse("Not found", HttpURLConnection.HTTP_NOT_FOUND);
-      return r;
-    } catch (Exception e) {
-      logger.printStackTrace(e);
-      HttpResponse r = new HttpResponse("Internal Error", HttpURLConnection.HTTP_INTERNAL_ERROR);
-      return r;
-    }
-
-  }
-
-  /**
-   * Get the files needed for the live preview widget collected in one response
-   * 
-   * @param repositoryName The name of the repository
-   * @return HttpResponse containing the status code of the request and the content of the needed
-   *         files for the live preview widget encoded in base64 if everything was fine.
-   */
-
-  @SuppressWarnings("unchecked")
-  @GET
-  @Path("{repositoryName}/livePreviewFiles/")
-  @Produces(MediaType.APPLICATION_JSON)
-  @ApiOperation(
-      value = "Returns all needed files for the live preview widget of the given repository encoded in Base64.",
-      notes = "Returns all needed files for the live preview widget.")
-  @ApiResponses(value = {@ApiResponse(code = HttpURLConnection.HTTP_OK, message = "OK, file found"),
-      @ApiResponse(code = HttpURLConnection.HTTP_INTERNAL_ERROR, message = "Internal server error"),
-      @ApiResponse(code = HttpURLConnection.HTTP_NOT_FOUND, message = "404, file not found")})
-  public HttpResponse getLivePreviewFiles(@PathParam("repositoryName") String repositoryName) {
-    if (repositoryName.startsWith("frontendComponent")
-        && gitUtility.existsLocalRepository(repositoryName)) {
-
-      try (Git git = gitUtility.getLocalGit(repositoryName)) {
-        if (git.getRepository().getBranch().equals("development")) {
-
-          JSONObject result = new JSONObject();
-          JSONArray fileList = new JSONArray();
-
-          String[] neededFileNames = {"widget.xml", "js/applicationScript.js"};
-
-          for (String fileName : neededFileNames) {
-            String content = gitUtility.getFileContent(git.getRepository(), fileName);
-            String contentBase64 = Base64.getEncoder().encodeToString(content.getBytes("utf-8"));
-
-            JSONObject fileObject = new JSONObject();
-            fileObject.put("fileName", fileName);
-            fileObject.put("content", contentBase64);
-            fileList.add(fileObject);
-          }
-
-          result.put("files", fileList);
-          HttpResponse r = new HttpResponse(result.toJSONString(), HttpURLConnection.HTTP_OK);
-          return r;
-        } else {
-          HttpResponse r = new HttpResponse(repositoryName + " currently unavailable",
-              HttpURLConnection.HTTP_UNAVAILABLE);
-          return r;
-        }
-      } catch (FileNotFoundException e) {
-        logger.info(repositoryName + " not found");
-        HttpResponse r =
-            new HttpResponse(repositoryName + " not found", HttpURLConnection.HTTP_NOT_FOUND);
-        return r;
-      } catch (Exception e) {
-        logger.printStackTrace(e);
-        HttpResponse r = new HttpResponse("Internal Error", HttpURLConnection.HTTP_INTERNAL_ERROR);
-        return r;
-      }
-    } else {
-      HttpResponse r = new HttpResponse("Only frontend components are supported",
-          HttpURLConnection.HTTP_NOT_ACCEPTABLE);
-      return r;
-    }
-
-  }
-
-  /**
-   * Returns the content encoded in base64 of a file in a repository
-   * 
-   * @param repositoryName The name of the repository
-   * @param fileName The absolute path of the file
-   * @return HttpResponse containing the status code of the request and the content of the file
-   *         encoded in base64 if everything was fine.
-   */
-
-  @SuppressWarnings("unchecked")
-  @GET
-  @Path("{repositoryName}/file/")
-  @Produces(MediaType.APPLICATION_JSON)
-  @ApiOperation(
-      value = "Returns the content of the given file within the specified repository encoded in Base64.",
-      notes = "Returns the content of the given file within the specified repository.")
-  @ApiResponses(value = {@ApiResponse(code = HttpURLConnection.HTTP_OK, message = "OK, file found"),
-      @ApiResponse(code = HttpURLConnection.HTTP_INTERNAL_ERROR, message = "Internal server error"),
-      @ApiResponse(code = HttpURLConnection.HTTP_NOT_FOUND, message = "404, file not found")})
-  public HttpResponse getFileInRepository(@PathParam("repositoryName") String repositoryName,
-      @QueryParam("file") String fileName) {
-
-    try (Git git = gitUtility.getLocalGit(repositoryName, "development")) {
-
-      JSONObject fileTraces = getFileTraces(git, fileName);
-
-      String content = gitUtility.getFileContent(git.getRepository(), fileName);
-      String contentBase64 = Base64.getEncoder().encodeToString(content.getBytes("utf-8"));
-
-      JSONObject resultObject = new JSONObject();
-      resultObject.put("content", contentBase64);
-
-      // add file traces to the json response if one exists
-      if (fileTraces != null) {
-        resultObject.put("traceModel", fileTraces);
-      }
-
-      HttpResponse r = new HttpResponse(resultObject.toJSONString(), HttpURLConnection.HTTP_OK);
-      return r;
-    } catch (FileNotFoundException fileNotFoundException) {
-      HttpResponse r = new HttpResponse("Not found", HttpURLConnection.HTTP_NOT_FOUND);
-      return r;
-    } catch (Exception e) {
-      logger.printStackTrace(e);
-      HttpResponse r = new HttpResponse("Internal Error", HttpURLConnection.HTTP_INTERNAL_ERROR);
-      return r;
-    }
-
-  }
-
-  
-  /* ------------------------------------------------------------------------------------------
-   * Main CAE methods
-   *-------------------------------------------------------------------------------------------
-   */
-  
-  /**
-   * List all files of a folder of a repository.
-   * 
-   * @param repositoryName the name of the repository
-   * @param path the path of the folder whose files should be listed
-   * @return HttpResponse containing the files of the given repository as a json string
-   * 
-   */
-
-  @SuppressWarnings("unchecked")
-  @GET
-  @Path("/{repoName}/files")
-  @Produces(MediaType.APPLICATION_JSON)
-  @ApiOperation(value = "Lists all files of a folder of the given repository.",
-      notes = "Lists all files of the given repository.")
-  @ApiResponses(value = {
-      @ApiResponse(code = HttpURLConnection.HTTP_OK, message = "OK, repository of the model found"),
-      @ApiResponse(code = HttpURLConnection.HTTP_INTERNAL_ERROR,
-          message = "Internal server error")})
-  public HttpResponse listFilesInRepository(@PathParam("repoName") String repositoryName,
-      @QueryParam("path") String path) {
-
-    if (path == null) {
-      path = "";
-    } else if (path.equals("/")) {
-      path = "";
-    }
-
-    JSONObject jsonResponse = new JSONObject();
-    JSONArray files = new JSONArray();
-    jsonResponse.put("files", files);
-    try (Git git = gitUtility.getLocalGit(repositoryName, "development");) {
-
-      JSONArray tracedFiles = (JSONArray) getTraceModel(git).get("tracedFiles");
-      TreeWalk treeWalk = gitUtility.getRepositoryTreeWalk(git.getRepository());
-
-      if (path.isEmpty()) {
-        while (treeWalk.next()) {
-          addFile(treeWalk, files, tracedFiles);
-        }
-      } else {
-
-        PathFilter filter = PathFilter.create(path);
-        boolean folderFound = false;
-        treeWalk.setFilter(filter);
-
-        while (treeWalk.next()) {
-
-          if (!folderFound && treeWalk.isSubtree()) {
-            treeWalk.enterSubtree();
-          }
-          if (treeWalk.getPathString().equals(path)) {
-            folderFound = true;
-            continue;
-          }
-          if (folderFound) {
-            addFiletoFileList(treeWalk, files, tracedFiles, path);
-          }
-        }
-      }
-
-    } catch (Exception e) {
-      L2pLogger.logEvent(Event.SERVICE_ERROR, "getModelFiles: exception fetching files: " + e);
-      logger.printStackTrace(e);
-      HttpResponse r = new HttpResponse("IO error!", HttpURLConnection.HTTP_INTERNAL_ERROR);
-      return r;
-    }
-
-    HttpResponse r =
-        new HttpResponse(jsonResponse.toString().replace("\\", ""), HttpURLConnection.HTTP_OK);
-    return r;
-  }
-
-  /**
-   * Deletes a local repository
-   * 
-   * @param repositoryName The repository to delete
-   * @return HttpResponse containing a status code
-   */
-
-  @GET
-  @Path("/{repoName}/delete")
-  @Produces(MediaType.APPLICATION_JSON)
-  @ApiOperation(value = "Deletes the local repository of the given repository name",
-      notes = "Deletes the local repository.")
-  @ApiResponses(value = {
-      @ApiResponse(code = HttpURLConnection.HTTP_OK, message = "OK, local repository deleted"),
-      @ApiResponse(code = HttpURLConnection.HTTP_INTERNAL_ERROR,
-          message = "Internal server error")})
-  public HttpResponse deleteLocalRepositoryREST(@PathParam("repoName") String repositoryName) {
-    /*try {
-      FileUtils.deleteDirectory(new File(repositoryName));
-    } catch (IOException e) {
-      e.printStackTrace();
-      logger.printStackTrace(e);
-      return new HttpResponse(e.getMessage(), HttpURLConnection.HTTP_INTERNAL_ERROR);
-    }
-    return new HttpResponse("Ok", HttpURLConnection.HTTP_OK);
-    */
-	  String result = deleteLocalRepository(repositoryName);
-	  if(Objects.equals(result,"done")) {
-		  return new HttpResponse("Ok", HttpURLConnection.HTTP_OK);
-	  } else {
-		  return new HttpResponse(result, HttpURLConnection.HTTP_INTERNAL_ERROR);
-	  }
-  }
-
-  
-  /*--------------------------------------------
-   * Git Host Proxy helper methods
-   * -------------------------------------------
-   */
-  
-  private String getTraceFileName(String fileName) {
-	  return "traces/" + fileName + ".traces";
-  }
-  
-  /**
-   * A private helper method to add the current file or folder of a tree walk to a json array.
-   * 
-   * @param tw The tree walk which current file/folder should be added to the json array
-   * @param files The json array the current file/folder should be added
-   * @param path The path of the current file
-   */
-
-  @SuppressWarnings("unchecked")
-  private void addFiletoFileList(TreeWalk tw, JSONArray fileList, JSONArray tracedFiles,
-      String path) {
-    String name = tw.getPathString();
-
-    JSONObject fileObject = new JSONObject();
-
-    if (tw.isSubtree()) {
-      if (name.equals("traces")) {
-        return;
-      }
-      fileObject.put("type", "folder");
-    } else if (!tracedFiles.contains(name)) {
-      return;
-    } else {
-      fileObject.put("type", "file");
-    }
-    fileObject.put("path", name);
-    fileList.add(fileObject);
-  }
-
-  /**
-   * A private helper method to add the current file or folder of a tree walk to a json array
-   * 
-   * @param tw The tree walk which current file/folder should be added to the json array
-   * @param files The json array the current file/folder should be added
-   */
-
-  private void addFile(TreeWalk tw, JSONArray files, JSONArray tracedFiles) {
-    addFiletoFileList(tw, files, tracedFiles, "");
-  }
-  
-  /**
-   * Get the traces for a file
-   * 
-   * @param git The git object of the repository of the file
-   * @param fullFileName The file name whose traces should be returned. Must be the full file name,
-   *        i.e. with full file path
-   * @return A JSONObject of the file traces or null if the file does not have any traces
-   * @throws Exception Thrown if something went wrong
-   */
-  @SuppressWarnings("unchecked")
-  private JSONObject getFileTraces(Git git, String fullFileName) throws Exception {
-    JSONObject traceModel = getTraceModel(git);
-    JSONArray tracedFiles = (JSONArray) traceModel.get("tracedFiles");
-    JSONObject fileTraces = null;
-
-    if (tracedFiles.contains(fullFileName)) {
-
-      try {
-        String content =
-            gitUtility.getFileContent(git.getRepository(), getTraceFileName(fullFileName));
-        JSONParser parser = new JSONParser();
-        fileTraces = (JSONObject) parser.parse(content);
-        fileTraces.put("generationId", traceModel.get("id"));
-      } catch (GitHelperException e) {
-        logger.printStackTrace(e);
-        //TODO: Handle exception better
-      }
-    }
-    return fileTraces;
-  }
-  
-  @SuppressWarnings("unchecked")
-  private JSONObject getGuidances(Git git) {
-
-    JSONObject guidances = new JSONObject();
-    // add empty json array
-    guidances.put("guidances", new JSONArray());
-
-    JSONParser parser = new JSONParser();
-    String content = "traces/guidances.json";
-    if (content.length() > 0) {
-      try {
-        guidances = (JSONObject) parser.parse(gitUtility.getFileContent(git.getRepository(), content));
-      } catch (Exception e) {
-        logger.printStackTrace(e);
-      }
-    }
-    return guidances;
-  }
-  
-  /**
-   * Get the global trace model of a component
-   * 
-   * @param git The git object of the repository
-   * @return A JSONObject of the trace model.
- * @throws  
-   * @throws Exception Thrown if something went wrong.
-   */
-
-  @SuppressWarnings("unchecked")
-  private JSONObject getTraceModel(Git git) {
-    JSONObject result = new JSONObject();
-    JSONArray tracedFiles = new JSONArray();
-    result.put("tracedFiles", tracedFiles);
-    try {
-      String jsonCode = gitUtility.getFileContent(git.getRepository(), "traces/tracedFiles.json");
-      JSONParser parser = new JSONParser();
-      result = (JSONObject) parser.parse(jsonCode);
-    } catch (GitHelperException e) {
-      // if a global trace model is not found, the error should be logged
-      logger.printStackTrace(e);
-    } catch (ParseException e) {
-    	//TODO: Handle exception
-    }
-
-    return result;
-  }
-  
+    
   /**
    * 
    * Creates a new GitHub repository with the source code according to the passed on model.
@@ -885,7 +323,7 @@ public class CodeGenerationService extends RESTService {
                 L2pLogger.logEvent(Event.SERVICE_MESSAGE, "updateRepositoryOfModel: Calling synchronizeSourceCode now..");
 
                 MicroserviceSynchronization.synchronizeSourceCode(microservice, oldMicroservice,
-                    this.getTracedFiles(MicroserviceGenerator.getRepositoryName(microservice)),(BaseGitHostAdapter) gitAdapter,this);
+                    this.getTracedFiles(MicroserviceGenerator.getRepositoryName(microservice)),(BaseGitHostAdapter) gitAdapter,CodeGenerationService.this);
 
                 L2pLogger.logEvent(Event.SERVICE_MESSAGE, "updateRepositoryOfModel: Synchronized!");
                 return "done";
@@ -944,7 +382,7 @@ public class CodeGenerationService extends RESTService {
                 FrontendComponentSynchronization.synchronizeSourceCode(frontendComponent,
                     oldFrontendComponent,
                     this.getTracedFiles(
-                        FrontendComponentGenerator.getRepositoryName(frontendComponent)),(BaseGitHostAdapter) gitAdapter, this);
+                        FrontendComponentGenerator.getRepositoryName(frontendComponent)),(BaseGitHostAdapter) gitAdapter, CodeGenerationService.this);
 
                 L2pLogger.logEvent(Event.SERVICE_MESSAGE, "updateRepositoryOfModel: Synchronized!");
                 return "done";
@@ -1037,7 +475,7 @@ public class CodeGenerationService extends RESTService {
    * @return a status string
    */
 
-  private String deleteLocalRepository(String repositoryName) {
+  public String deleteLocalRepository(String repositoryName) {
 	  try {
 		  FileUtils.deleteDirectory(new File(repositoryName));
 	  } catch (IOException e) {
@@ -1105,7 +543,7 @@ public class CodeGenerationService extends RESTService {
     Serializable[] payload = {repositoryName};
     HashMap<String, JSONObject> files = new HashMap<String, JSONObject>();
     try {
-      files = (HashMap<String, JSONObject>) this.invokeServiceMethod(
+      files = (HashMap<String, JSONObject>) Context.getCurrent().invoke(
           "i5.las2peer.services.gitHubProxyService.GitHubProxyService@0.2", "getAllTracedFiles",
           payload);
     } catch (Exception e) {
@@ -1220,5 +658,32 @@ public class CodeGenerationService extends RESTService {
     }
     return "Model has no attribute 'type'!";
   }
+  
+  /*--------------------------------------------
+   * Getter/Setter
+   * -------------------------------------------
+   */
+  public GitUtility getGitUtility() {
+	return gitUtility;
+  }
 
+  public GitProxy getGitProxy() {
+	return gitProxy;
+  }
+
+  public L2pLogger getLogger() {
+	  return logger;
+  }
+
+  public boolean isUseModelCheck() {
+	  return useModelCheck;
+  }
+  
+  public String getGitUser() {
+	  return gitUser;
+  }
+  
+  public String getGitUserMail() {
+	  return gitUserMail;
+  }
 }
