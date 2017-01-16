@@ -53,7 +53,7 @@ public class GitHubAdapter extends BaseGitHostAdapter {
 	  URL url;
 	  try {
 		  url = new URL("https://api.github.com/orgs/" + this.gitOrganization + "/repos");
-		  authStringEnc = new String(authEncBytes,"UTF-8");
+		  authStringEnc = new String(authEncBytes);
 	  
 		  HttpURLConnection connection = (HttpURLConnection) url.openConnection();
 		  connection.setRequestMethod("POST");
