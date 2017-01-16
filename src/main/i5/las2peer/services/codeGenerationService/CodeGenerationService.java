@@ -1,8 +1,15 @@
 package i5.las2peer.services.codeGenerationService;
 
+import java.io.BufferedOutputStream;
 import java.io.File;
+import java.io.FileOutputStream;
+import java.io.FileWriter;
 import java.io.IOException;
+import java.io.ObjectOutput;
+import java.io.ObjectOutputStream;
+import java.io.OutputStream;
 import java.io.Serializable;
+import java.util.Base64;
 import java.util.HashMap;
 import java.util.Objects;
 
@@ -101,6 +108,17 @@ public CodeGenerationService() throws GitHostException {
     ApplicationGenerator.pushToFs = pushToFs;
     ApplicationGenerator.frontendDirectory = frontendDirectory;
     
+    //Check if non-optional properties are set
+    if(Objects.equals(baseURL, "")){
+    	//Empty base url leads to wrong paths later on
+    	throw new GitHostException("No valid base url specified");
+    } else {
+    	//Check for trailing slash, to prevent annoying errors
+    	if(!baseURL.endsWith("/")){
+    		baseURL = baseURL.concat("/");
+    	}
+    }
+    
     // Create git adapter matching the usedGitHost
     if(Objects.equals(usedGitHost, "GitHub")) {
     	gitAdapter = new GitHubAdapter(gitUser,gitPassword,gitOrganization,templateRepository,gitUserMail); 
@@ -116,7 +134,8 @@ public CodeGenerationService() throws GitHostException {
 
   @Override
   protected void initResources() {
-	  getResourceConfig().packages("i5.las2peer.services.codeGenerationService");
+	  //getResourceConfig().packages("i5.las2peer.services.codeGenerationService");
+	  getResourceConfig().register(RESTResources.class);
   }
   
     
@@ -148,7 +167,7 @@ public CodeGenerationService() throws GitHostException {
       } catch (IOException ex) {
     	  
       }
-      */
+     */
 
     // find out what type of model we got (microservice, frontend-component or application)
     for (int i = 0; i < model.getAttributes().size(); i++) {
@@ -552,6 +571,90 @@ public CodeGenerationService() throws GitHostException {
     return files;
   }
 
+  /**
+   * Get a list containing all traced files of a given repository
+   * 
+   * @param repositoryName The name of the repository
+   * @return A list of all traced files
+   */
+
+  @SuppressWarnings("unchecked")
+  public HashMap<String, JSONObject> getAllTracedFiles(String repositoryName) {
+    HashMap<String, JSONObject> files = new HashMap<String, JSONObject>();
+
+    try (Git git = gitUtility.getLocalGit(repositoryName, "development");) {
+      JSONArray tracedFiles = (JSONArray) gitProxy.getTraceModel(git).get("tracedFiles");
+
+      try (TreeWalk treeWalk = gitUtility.getRepositoryTreeWalk(git.getRepository(), true)) {
+        while (treeWalk.next()) {
+          if (tracedFiles.contains(treeWalk.getPathString())) {
+            JSONObject fileObject = new JSONObject();
+            String content =
+                gitUtility.getFileContent(git.getRepository(), treeWalk.getPathString());
+            JSONObject fileTraces = gitProxy.getFileTraces(git, treeWalk.getPathString());
+
+            fileObject.put("content",
+                Base64.getEncoder().encodeToString(content.getBytes("utf-8")));
+            fileObject.put("fileTraces", fileTraces);
+
+            files.put(treeWalk.getPathString(), fileObject);
+          }
+        }
+      }
+
+    } catch (Exception e) {
+      logger.printStackTrace(e);
+    }
+
+    return files;
+  }
+
+  /**
+   * Store the content of the files encoded in based64 to a repository
+   * 
+   * @param repositoryName The name of the repository
+   * @param commitMessage The commit message to use
+   * @param files The file list containing the files to commit
+   * @return A status string
+   */
+
+  public String storeAndCommitFilesRaw(String repositoryName, String commitMessage,
+      String[][] files) {
+
+    try (Git git = gitUtility.getLocalGit(repositoryName, "development");) {
+      for (String[] fileData : files) {
+
+        String filePath = fileData[0];
+        String content = fileData[1];
+
+        byte[] base64decodedBytes = Base64.getDecoder().decode(content);
+        String decodedString = new String(base64decodedBytes, "utf-8");
+
+        File file = new File(git.getRepository().getDirectory().getParent(), filePath);
+        if (!file.exists()) {
+          File dirs = file.getParentFile();
+          dirs.mkdirs();
+          file.createNewFile();
+        }
+        FileWriter fW = new FileWriter(file, false);
+        fW.write(decodedString);
+        fW.close();
+
+        git.add().addFilepattern(filePath).call();
+
+      }
+
+      git.commit().setAuthor(this.gitUser, this.gitUserMail).setMessage(commitMessage).call();
+
+
+    } catch (Exception e) {
+      logger.printStackTrace(e);
+      return e.getMessage();
+    }
+
+    return "done";
+  }
+  
   /**
    * Performs a model violation check against the given files
    * 
