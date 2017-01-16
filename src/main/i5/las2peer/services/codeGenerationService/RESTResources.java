@@ -40,13 +40,13 @@ import io.swagger.annotations.ApiResponses;
 
 @Path("/")
 public class RESTResources {
-	private final CodeGenerationService service = (CodeGenerationService) Context.getCurrent();
+	private final CodeGenerationService service = (CodeGenerationService) Context.getCurrent().getService();
 	protected GitUtility gitUtility;
 	private boolean useModelCheck;
 	private String gitUser;
 	private String gitUserMail;
 	private GitProxy gitProxy;
-	
+
 	public RESTResources() {
 		gitUtility = service.getGitUtility();
 		useModelCheck = service.isUseModelCheck();
@@ -54,410 +54,415 @@ public class RESTResources {
 		gitUserMail = service.getGitUserMail();
 		gitProxy = service.getGitProxy();
 	}
-	  /*--------------------------------------------
-	   * REST endpoints (github proxy functionality)
-	   * -------------------------------------------
-	   */
-	  
-	  /**
-	   * Merges the development branch of the given repository with the master/gh-pages branch and
-	   * pushes the changes to the remote repository.
-	   * 
-	   * @param repositoryName The name of the repository to push the local changes to
-	   * @return HttpResponse containing the status code of the request or the result of the model
-	   *         violation if it fails
-	   */
 
-	  @SuppressWarnings("unchecked")
-	  @PUT
-	  @Path("{repositoryName}/push/")
-	  @Produces(MediaType.APPLICATION_JSON)
-	  @ApiOperation(value = "Merge and push the commits to the remote repository",
-	      notes = "Push the commits to the remote repo.")
-	  @ApiResponses(
-	      value = {@ApiResponse(code = HttpURLConnection.HTTP_OK, message = "OK"), @ApiResponse(
-	          code = HttpURLConnection.HTTP_INTERNAL_ERROR, message = "Internal server error")})
-	  public Response pushToRemote(@PathParam("repositoryName") String repositoryName) {
-	    try {
-	      // determine which branch to merge in
-	      boolean isFrontend = repositoryName.startsWith("frontendComponent-");
-	      String masterBranchName = isFrontend ? "gh-pages" : "master";
+	@GET
+	@Path("test/")
+	public Response baseTest() {
+		return Response.ok("CodeGen service").build();
+	}
 
-	      gitUtility.mergeIntoMasterBranch(repositoryName,  masterBranchName);
-	      JSONObject result = new JSONObject();
-	      result.put("status", "ok");
-	      return Response.ok(result.toJSONString()).build();
-	    } catch (Exception e) {
-	      service.getLogger().printStackTrace(e);
-	      throw new InternalServerErrorException("Internal Error");
-	    }
-	  }
-	  
-	  /**
-	   * Store the content and traces of a file in a repository and commit it to the local repository.
-	   * 
-	   * @param repositoryName The name of the repository
-	   * @param content A json string containing the content of the file encoded in base64 and its file
-	   *        traces
-	   * @return HttpResponse with the status code of the request
-	   */
+	/*--------------------------------------------
+	 * REST endpoints (github proxy functionality)
+	 * -------------------------------------------
+	 */
 
-	  @SuppressWarnings("unchecked")
-	  @PUT
-	  @Path("{repositoryName}/file/")
-	  @Consumes(MediaType.APPLICATION_JSON)
-	  @Produces(MediaType.APPLICATION_JSON)
-	  @ApiOperation(
-	      value = "Stores the content for the given file in the local repository and commits the changes.",
-	      notes = "Stores the content for the given file in the local repository and commits the changes.")
-	  @ApiResponses(value = {@ApiResponse(code = HttpURLConnection.HTTP_OK, message = "OK, file found"),
-	      @ApiResponse(code = HttpURLConnection.HTTP_INTERNAL_ERROR, message = "Internal server error"),
-	      @ApiResponse(code = HttpURLConnection.HTTP_NOT_FOUND, message = "404, file not found")})
-	  public synchronized Response storeAndCommitFle(
-	      @PathParam("repositoryName") String repositoryName, String content) {
-	    try {
-	      JSONObject result = new JSONObject();
+	/**
+	 * Merges the development branch of the given repository with the
+	 * master/gh-pages branch and pushes the changes to the remote repository.
+	 * 
+	 * @param repositoryName
+	 *            The name of the repository to push the local changes to
+	 * @return HttpResponse containing the status code of the request or the
+	 *         result of the model violation if it fails
+	 */
 
-	      JSONParser parser = new JSONParser();
-	      JSONObject contentObject = (JSONObject) parser.parse(content);
-	      String filePath = contentObject.get("filename").toString();
-	      String fileContent = contentObject.get("content").toString();
-	      String commitMessage = contentObject.get("commitMessage").toString();
-	      JSONObject traces = (JSONObject) contentObject.get("traces");
+	@SuppressWarnings("unchecked")
+	@PUT
+	@Path("{repositoryName}/push/")
+	@Produces(MediaType.APPLICATION_JSON)
+	@ApiOperation(value = "Merge and push the commits to the remote repository", notes = "Push the commits to the remote repo.")
+	@ApiResponses(value = { @ApiResponse(code = HttpURLConnection.HTTP_OK, message = "OK"),
+			@ApiResponse(code = HttpURLConnection.HTTP_INTERNAL_ERROR, message = "Internal server error") })
+	public Response pushToRemote(@PathParam("repositoryName") String repositoryName) {
+		try {
+			// determine which branch to merge in
+			boolean isFrontend = repositoryName.startsWith("frontendComponent-");
+			String masterBranchName = isFrontend ? "gh-pages" : "master";
 
-	      byte[] base64decodedBytes = Base64.getDecoder().decode(fileContent);
-	      String decodedString = new String(base64decodedBytes, "utf-8");
+			gitUtility.mergeIntoMasterBranch(repositoryName, masterBranchName);
+			JSONObject result = new JSONObject();
+			result.put("status", "ok");
+			return Response.ok(result.toJSONString()).build();
+		} catch (Exception e) {
+			service.getLogger().printStackTrace(e);
+			throw new InternalServerErrorException("Internal Error");
+		}
+	}
 
-	      try (Git git = gitUtility.getLocalGit(repositoryName, "development");) {
+	/**
+	 * Store the content and traces of a file in a repository and commit it to
+	 * the local repository.
+	 * 
+	 * @param repositoryName
+	 *            The name of the repository
+	 * @param content
+	 *            A json string containing the content of the file encoded in
+	 *            base64 and its file traces
+	 * @return HttpResponse with the status code of the request
+	 */
 
-	        File file = new File(git.getRepository().getDirectory().getParent(), filePath);
-	        if (file.exists()) {
+	@SuppressWarnings("unchecked")
+	@PUT
+	@Path("{repositoryName}/file/")
+	@Consumes(MediaType.APPLICATION_JSON)
+	@Produces(MediaType.APPLICATION_JSON)
+	@ApiOperation(value = "Stores the content for the given file in the local repository and commits the changes.", notes = "Stores the content for the given file in the local repository and commits the changes.")
+	@ApiResponses(value = { @ApiResponse(code = HttpURLConnection.HTTP_OK, message = "OK, file found"),
+			@ApiResponse(code = HttpURLConnection.HTTP_INTERNAL_ERROR, message = "Internal server error"),
+			@ApiResponse(code = HttpURLConnection.HTTP_NOT_FOUND, message = "404, file not found") })
+	public synchronized Response storeAndCommitFle(@PathParam("repositoryName") String repositoryName, String content) {
+		try {
+			JSONObject result = new JSONObject();
 
-	          FileWriter fW = new FileWriter(file, false);
-	          fW.write(decodedString);
-	          fW.close();
-	          // call model violation check of the code generation service if enabled
-	          if (useModelCheck) {
-	            JSONObject tracedFileObject = new JSONObject();
-	            tracedFileObject.put("content", fileContent);
-	            tracedFileObject.put("fileTraces", traces);
+			JSONParser parser = new JSONParser();
+			JSONObject contentObject = (JSONObject) parser.parse(content);
+			String filePath = contentObject.get("filename").toString();
+			String fileContent = contentObject.get("content").toString();
+			String commitMessage = contentObject.get("commitMessage").toString();
+			JSONObject traces = (JSONObject) contentObject.get("traces");
 
-	            HashMap<String, JSONObject> tracedFile = new HashMap<String, JSONObject>();
-	            tracedFile.put(filePath, tracedFileObject);
+			byte[] base64decodedBytes = Base64.getDecoder().decode(fileContent);
+			String decodedString = new String(base64decodedBytes, "utf-8");
 
-	            Serializable[] payload = {gitProxy.getGuidances(git), tracedFile};
-	            JSONArray feedback = (JSONArray) Context.getCurrent().invoke(
-	                "i5.las2peer.services.codeGenerationService.CodeGenerationService@0.1",
-	                "checkModel", payload);
-	            if (feedback.size() > 0) {
-	              result.put("status", "Model violation check fails");
-	              result.put("feedbackItems", feedback);
-	              return Response.ok(result.toJSONString()).build();
-	            }
-	          }
-	          // check generation id to avoid conflicts
-	          JSONObject currentTraceFile = gitProxy.getFileTraces(git, filePath);
-	          if (currentTraceFile != null) {
-	            String generationId = (String) currentTraceFile.get("generationId");
-	            String payloadGenerationId = (String) traces.get("generationId");
-	            if (!generationId.equals(payloadGenerationId)) {
-	            	return Response.status(409).entity("Commit rejected. Wrong generation id").build();
-	            }
-	          }
+			try (Git git = gitUtility.getLocalGit(repositoryName, "development");) {
 
-	          File traceFile =
-	              new File(git.getRepository().getDirectory().getParent(), gitProxy.getTraceFileName(filePath));
+				File file = new File(git.getRepository().getDirectory().getParent(), filePath);
+				if (file.exists()) {
 
-	          fW = new FileWriter(traceFile, false);
-	          fW.write(traces.toJSONString());
-	          fW.close();
+					FileWriter fW = new FileWriter(file, false);
+					fW.write(decodedString);
+					fW.close();
+					// call model violation check of the code generation service
+					// if enabled
+					if (useModelCheck) {
+						JSONObject tracedFileObject = new JSONObject();
+						tracedFileObject.put("content", fileContent);
+						tracedFileObject.put("fileTraces", traces);
 
-	          git.add().addFilepattern(filePath).addFilepattern(gitProxy.getTraceFileName(filePath)).call();
-	          git.commit().setAuthor(gitUser, gitUserMail).setMessage(commitMessage).call();
+						HashMap<String, JSONObject> tracedFile = new HashMap<String, JSONObject>();
+						tracedFile.put(filePath, tracedFileObject);
 
-	          result.put("status", "OK, file stored and commited");
-	          return Response.ok(result.toJSONString()).build();
-	        } else {
-	          throw new NotFoundException();
-	        }
+						Serializable[] payload = { gitProxy.getGuidances(git), tracedFile };
+						JSONArray feedback = (JSONArray) Context.getCurrent().invoke(
+								"i5.las2peer.services.codeGenerationService.CodeGenerationService@0.1", "checkModel",
+								payload);
+						if (feedback.size() > 0) {
+							result.put("status", "Model violation check fails");
+							result.put("feedbackItems", feedback);
+							return Response.ok(result.toJSONString()).build();
+						}
+					}
+					// check generation id to avoid conflicts
+					JSONObject currentTraceFile = gitProxy.getFileTraces(git, filePath);
+					if (currentTraceFile != null) {
+						String generationId = (String) currentTraceFile.get("generationId");
+						String payloadGenerationId = (String) traces.get("generationId");
+						if (!generationId.equals(payloadGenerationId)) {
+							return Response.status(409).entity("Commit rejected. Wrong generation id").build();
+						}
+					}
 
-	      }
+					File traceFile = new File(git.getRepository().getDirectory().getParent(),
+							gitProxy.getTraceFileName(filePath));
 
-	    } catch (Exception e) {
-	    	service.getLogger().printStackTrace(e);
-	    	throw new InternalServerErrorException();
-	    }
-	  }
-	  
-	  /**
-	   * Calculate and returns the file name and segment id for a given model id.
-	   * 
-	   * @param repositoryName The name of the repository
-	   * @param modelId The id of the model.
-	   * @return HttpResponse with the status code of the request and the file name and segment id of
-	   *         the model
-	   */
+					fW = new FileWriter(traceFile, false);
+					fW.write(traces.toJSONString());
+					fW.close();
 
-	  @SuppressWarnings("unchecked")
-	  @GET
-	  @Path("{repositoryName}/segment/{modelId}")
-	  @Produces(MediaType.APPLICATION_JSON)
-	  @ApiOperation(value = "Returns the segment id and filename for the given model id.",
-	      notes = "Returns the segment id and filename.")
-	  @ApiResponses(value = {
-	      @ApiResponse(code = HttpURLConnection.HTTP_OK, message = "OK, segment found"),
-	      @ApiResponse(code = HttpURLConnection.HTTP_INTERNAL_ERROR, message = "Internal server error"),
-	      @ApiResponse(code = HttpURLConnection.HTTP_NOT_FOUND, message = "404, segment not found")})
-	  public Response getSegmentOfModelId(@PathParam("repositoryName") String repositoryName,
-	      @PathParam("modelId") String modelId) {
+					git.add().addFilepattern(filePath).addFilepattern(gitProxy.getTraceFileName(filePath)).call();
+					git.commit().setAuthor(gitUser, gitUserMail).setMessage(commitMessage).call();
 
-	    try (Git git = gitUtility.getLocalGit(repositoryName, "development");) {
+					result.put("status", "OK, file stored and commited");
+					return Response.ok(result.toJSONString()).build();
+				} else {
+					throw new NotFoundException();
+				}
 
-	      JSONObject resultObject = new JSONObject();
+			}
 
-	      JSONObject traceModel = gitProxy.getTraceModel(git);
-	      JSONObject modelsToFiles = (JSONObject) traceModel.get("modelsToFile");
+		} catch (Exception e) {
+			service.getLogger().printStackTrace(e);
+			throw new InternalServerErrorException();
+		}
+	}
 
-	      if (modelsToFiles != null) {
-	        if (modelsToFiles.containsKey(modelId)) {
-	          JSONArray fileList = (JSONArray) ((JSONObject) modelsToFiles.get(modelId)).get("files");
-	          String fileName = (String) fileList.get(0);
-	          JSONObject fileTraceModel = gitProxy.getFileTraces(git, fileName);
-	          JSONObject fileTraces = (JSONObject) fileTraceModel.get("traces");
-	          JSONArray segments = (JSONArray) ((JSONObject) fileTraces.get(modelId)).get("segments");
-	          String segmentId = (String) segments.get(0);
+	/**
+	 * Calculate and returns the file name and segment id for a given model id.
+	 * 
+	 * @param repositoryName
+	 *            The name of the repository
+	 * @param modelId
+	 *            The id of the model.
+	 * @return HttpResponse with the status code of the request and the file
+	 *         name and segment id of the model
+	 */
 
-	          resultObject.put("fileName", fileName);
-	          resultObject.put("segmentId", segmentId);
+	@SuppressWarnings("unchecked")
+	@GET
+	@Path("{repositoryName}/segment/{modelId}")
+	@Produces(MediaType.APPLICATION_JSON)
+	@ApiOperation(value = "Returns the segment id and filename for the given model id.", notes = "Returns the segment id and filename.")
+	@ApiResponses(value = { @ApiResponse(code = HttpURLConnection.HTTP_OK, message = "OK, segment found"),
+			@ApiResponse(code = HttpURLConnection.HTTP_INTERNAL_ERROR, message = "Internal server error"),
+			@ApiResponse(code = HttpURLConnection.HTTP_NOT_FOUND, message = "404, segment not found") })
+	public Response getSegmentOfModelId(@PathParam("repositoryName") String repositoryName,
+			@PathParam("modelId") String modelId) {
 
-	        } else {
-	          throw new FileNotFoundException();
-	        }
-	      } else {
-	        throw new Exception("Error: modelsToFiles mapping not found!");
-	      }
+		try (Git git = gitUtility.getLocalGit(repositoryName, "development");) {
 
-	      return Response.ok(resultObject.toJSONString()).build();
-	    } catch (FileNotFoundException fileNotFoundException) {
-	      throw new NotFoundException();
-	    } catch (Exception e) {
-	      service.getLogger().printStackTrace(e);
-	      throw new InternalServerErrorException();
-	    }
+			JSONObject resultObject = new JSONObject();
 
-	  }
+			JSONObject traceModel = gitProxy.getTraceModel(git);
+			JSONObject modelsToFiles = (JSONObject) traceModel.get("modelsToFile");
 
-	  /**
-	   * Get the files needed for the live preview widget collected in one response
-	   * 
-	   * @param repositoryName The name of the repository
-	   * @return HttpResponse containing the status code of the request and the content of the needed
-	   *         files for the live preview widget encoded in base64 if everything was fine.
-	   */
+			if (modelsToFiles != null) {
+				if (modelsToFiles.containsKey(modelId)) {
+					JSONArray fileList = (JSONArray) ((JSONObject) modelsToFiles.get(modelId)).get("files");
+					String fileName = (String) fileList.get(0);
+					JSONObject fileTraceModel = gitProxy.getFileTraces(git, fileName);
+					JSONObject fileTraces = (JSONObject) fileTraceModel.get("traces");
+					JSONArray segments = (JSONArray) ((JSONObject) fileTraces.get(modelId)).get("segments");
+					String segmentId = (String) segments.get(0);
 
-	  @SuppressWarnings("unchecked")
-	  @GET
-	  @Path("{repositoryName}/livePreviewFiles/")
-	  @Produces(MediaType.APPLICATION_JSON)
-	  @ApiOperation(
-	      value = "Returns all needed files for the live preview widget of the given repository encoded in Base64.",
-	      notes = "Returns all needed files for the live preview widget.")
-	  @ApiResponses(value = {@ApiResponse(code = HttpURLConnection.HTTP_OK, message = "OK, file found"),
-	      @ApiResponse(code = HttpURLConnection.HTTP_INTERNAL_ERROR, message = "Internal server error"),
-	      @ApiResponse(code = HttpURLConnection.HTTP_NOT_FOUND, message = "404, file not found")})
-	  public Response getLivePreviewFiles(@PathParam("repositoryName") String repositoryName) {
-	    if (repositoryName.startsWith("frontendComponent")
-	        && gitUtility.existsLocalRepository(repositoryName)) {
+					resultObject.put("fileName", fileName);
+					resultObject.put("segmentId", segmentId);
 
-	      try (Git git = gitUtility.getLocalGit(repositoryName)) {
-	        if (git.getRepository().getBranch().equals("development")) {
+				} else {
+					throw new FileNotFoundException();
+				}
+			} else {
+				throw new Exception("Error: modelsToFiles mapping not found!");
+			}
 
-	          JSONObject result = new JSONObject();
-	          JSONArray fileList = new JSONArray();
+			return Response.ok(resultObject.toJSONString()).build();
+		} catch (FileNotFoundException fileNotFoundException) {
+			throw new NotFoundException();
+		} catch (Exception e) {
+			service.getLogger().printStackTrace(e);
+			throw new InternalServerErrorException();
+		}
 
-	          String[] neededFileNames = {"widget.xml", "js/applicationScript.js"};
+	}
 
-	          for (String fileName : neededFileNames) {
-	            String content = gitUtility.getFileContent(git.getRepository(), fileName);
-	            String contentBase64 = Base64.getEncoder().encodeToString(content.getBytes("utf-8"));
+	/**
+	 * Get the files needed for the live preview widget collected in one
+	 * response
+	 * 
+	 * @param repositoryName
+	 *            The name of the repository
+	 * @return HttpResponse containing the status code of the request and the
+	 *         content of the needed files for the live preview widget encoded
+	 *         in base64 if everything was fine.
+	 */
 
-	            JSONObject fileObject = new JSONObject();
-	            fileObject.put("fileName", fileName);
-	            fileObject.put("content", contentBase64);
-	            fileList.add(fileObject);
-	          }
+	@SuppressWarnings("unchecked")
+	@GET
+	@Path("{repositoryName}/livePreviewFiles/")
+	@Produces(MediaType.APPLICATION_JSON)
+	@ApiOperation(value = "Returns all needed files for the live preview widget of the given repository encoded in Base64.", notes = "Returns all needed files for the live preview widget.")
+	@ApiResponses(value = { @ApiResponse(code = HttpURLConnection.HTTP_OK, message = "OK, file found"),
+			@ApiResponse(code = HttpURLConnection.HTTP_INTERNAL_ERROR, message = "Internal server error"),
+			@ApiResponse(code = HttpURLConnection.HTTP_NOT_FOUND, message = "404, file not found") })
+	public Response getLivePreviewFiles(@PathParam("repositoryName") String repositoryName) {
+		if (repositoryName.startsWith("frontendComponent") && gitUtility.existsLocalRepository(repositoryName)) {
 
-	          result.put("files", fileList);
-	          return Response.ok(result.toJSONString()).build();
-	        } else {
-	          throw new ServiceUnavailableException(repositoryName + " currently unavailable");
-	        }
-	      } catch (FileNotFoundException e) {
-	        service.getLogger().info(repositoryName + " not found");
-	        throw new NotFoundException(repositoryName + " not found");
-	      } catch (Exception e) {
-	        service.getLogger().printStackTrace(e);
-	        throw new InternalServerErrorException();
-	      }
-	    } else {
-	      throw new NotAcceptableException("Only frontend components are supported");
-	    }
+			try (Git git = gitUtility.getLocalGit(repositoryName)) {
+				if (git.getRepository().getBranch().equals("development")) {
 
-	  }
+					JSONObject result = new JSONObject();
+					JSONArray fileList = new JSONArray();
 
-	  /**
-	   * Returns the content encoded in base64 of a file in a repository
-	   * 
-	   * @param repositoryName The name of the repository
-	   * @param fileName The absolute path of the file
-	   * @return HttpResponse containing the status code of the request and the content of the file
-	   *         encoded in base64 if everything was fine.
-	   */
+					String[] neededFileNames = { "widget.xml", "js/applicationScript.js" };
 
-	  @SuppressWarnings("unchecked")
-	  @GET
-	  @Path("{repositoryName}/file/")
-	  @Produces(MediaType.APPLICATION_JSON)
-	  @ApiOperation(
-	      value = "Returns the content of the given file within the specified repository encoded in Base64.",
-	      notes = "Returns the content of the given file within the specified repository.")
-	  @ApiResponses(value = {@ApiResponse(code = HttpURLConnection.HTTP_OK, message = "OK, file found"),
-	      @ApiResponse(code = HttpURLConnection.HTTP_INTERNAL_ERROR, message = "Internal server error"),
-	      @ApiResponse(code = HttpURLConnection.HTTP_NOT_FOUND, message = "404, file not found")})
-	  public Response getFileInRepository(@PathParam("repositoryName") String repositoryName,
-	      @QueryParam("file") String fileName) {
+					for (String fileName : neededFileNames) {
+						String content = gitUtility.getFileContent(git.getRepository(), fileName);
+						String contentBase64 = Base64.getEncoder().encodeToString(content.getBytes("utf-8"));
 
-	    try (Git git = gitUtility.getLocalGit(repositoryName, "development")) {
+						JSONObject fileObject = new JSONObject();
+						fileObject.put("fileName", fileName);
+						fileObject.put("content", contentBase64);
+						fileList.add(fileObject);
+					}
 
-	      JSONObject fileTraces = gitProxy.getFileTraces(git, fileName);
+					result.put("files", fileList);
+					return Response.ok(result.toJSONString()).build();
+				} else {
+					throw new ServiceUnavailableException(repositoryName + " currently unavailable");
+				}
+			} catch (FileNotFoundException e) {
+				service.getLogger().info(repositoryName + " not found");
+				throw new NotFoundException(repositoryName + " not found");
+			} catch (Exception e) {
+				service.getLogger().printStackTrace(e);
+				throw new InternalServerErrorException();
+			}
+		} else {
+			throw new NotAcceptableException("Only frontend components are supported");
+		}
 
-	      String content = gitUtility.getFileContent(git.getRepository(), fileName);
-	      String contentBase64 = Base64.getEncoder().encodeToString(content.getBytes("utf-8"));
+	}
 
-	      JSONObject resultObject = new JSONObject();
-	      resultObject.put("content", contentBase64);
+	/**
+	 * Returns the content encoded in base64 of a file in a repository
+	 * 
+	 * @param repositoryName
+	 *            The name of the repository
+	 * @param fileName
+	 *            The absolute path of the file
+	 * @return HttpResponse containing the status code of the request and the
+	 *         content of the file encoded in base64 if everything was fine.
+	 */
 
-	      // add file traces to the json response if one exists
-	      if (fileTraces != null) {
-	        resultObject.put("traceModel", fileTraces);
-	      }
-	      return Response.ok(resultObject.toJSONString()).build();
-	    } catch (FileNotFoundException fileNotFoundException) {
-	      throw new NotFoundException();
-	    } catch (Exception e) {
-	      service.getLogger().printStackTrace(e);
-	      throw new InternalServerErrorException();
-	    }
+	@SuppressWarnings("unchecked")
+	@GET
+	@Path("{repositoryName}/file/")
+	@Produces(MediaType.APPLICATION_JSON)
+	@ApiOperation(value = "Returns the content of the given file within the specified repository encoded in Base64.", notes = "Returns the content of the given file within the specified repository.")
+	@ApiResponses(value = { @ApiResponse(code = HttpURLConnection.HTTP_OK, message = "OK, file found"),
+			@ApiResponse(code = HttpURLConnection.HTTP_INTERNAL_ERROR, message = "Internal server error"),
+			@ApiResponse(code = HttpURLConnection.HTTP_NOT_FOUND, message = "404, file not found") })
+	public Response getFileInRepository(@PathParam("repositoryName") String repositoryName,
+			@QueryParam("file") String fileName) {
 
-	  }
+		try (Git git = gitUtility.getLocalGit(repositoryName, "development")) {
 
-	  
-	  /* ------------------------------------------------------------------------------------------
-	   * Main CAE methods
-	   *-------------------------------------------------------------------------------------------
-	   */
-	  
-	  /**
-	   * List all files of a folder of a repository.
-	   * 
-	   * @param repositoryName the name of the repository
-	   * @param path the path of the folder whose files should be listed
-	   * @return HttpResponse containing the files of the given repository as a json string
-	   * 
-	   */
+			JSONObject fileTraces = gitProxy.getFileTraces(git, fileName);
 
-	  @SuppressWarnings("unchecked")
-	  @GET
-	  @Path("/{repoName}/files")
-	  @Produces(MediaType.APPLICATION_JSON)
-	  @ApiOperation(value = "Lists all files of a folder of the given repository.",
-	      notes = "Lists all files of the given repository.")
-	  @ApiResponses(value = {
-	      @ApiResponse(code = HttpURLConnection.HTTP_OK, message = "OK, repository of the model found"),
-	      @ApiResponse(code = HttpURLConnection.HTTP_INTERNAL_ERROR,
-	          message = "Internal server error")})
-	  public Response listFilesInRepository(@PathParam("repoName") String repositoryName,
-	      @QueryParam("path") String path) {
+			String content = gitUtility.getFileContent(git.getRepository(), fileName);
+			String contentBase64 = Base64.getEncoder().encodeToString(content.getBytes("utf-8"));
 
-	    if (path == null) {
-	      path = "";
-	    } else if (path.equals("/")) {
-	      path = "";
-	    }
+			JSONObject resultObject = new JSONObject();
+			resultObject.put("content", contentBase64);
 
-	    JSONObject jsonResponse = new JSONObject();
-	    JSONArray files = new JSONArray();
-	    jsonResponse.put("files", files);
-	    try (Git git = gitUtility.getLocalGit(repositoryName, "development");) {
+			// add file traces to the json response if one exists
+			if (fileTraces != null) {
+				resultObject.put("traceModel", fileTraces);
+			}
+			return Response.ok(resultObject.toJSONString()).build();
+		} catch (FileNotFoundException fileNotFoundException) {
+			throw new NotFoundException();
+		} catch (Exception e) {
+			service.getLogger().printStackTrace(e);
+			throw new InternalServerErrorException();
+		}
 
-	      JSONArray tracedFiles = (JSONArray) gitProxy.getTraceModel(git).get("tracedFiles");
-	      TreeWalk treeWalk = gitUtility.getRepositoryTreeWalk(git.getRepository());
+	}
 
-	      if (path.isEmpty()) {
-	        while (treeWalk.next()) {
-	          gitProxy.addFile(treeWalk, files, tracedFiles);
-	        }
-	      } else {
+	/*
+	 * -------------------------------------------------------------------------
+	 * ----------------- Main CAE methods
+	 * -------------------------------------------------------------------------
+	 * ------------------
+	 */
 
-	        PathFilter filter = PathFilter.create(path);
-	        boolean folderFound = false;
-	        treeWalk.setFilter(filter);
+	/**
+	 * List all files of a folder of a repository.
+	 * 
+	 * @param repositoryName
+	 *            the name of the repository
+	 * @param path
+	 *            the path of the folder whose files should be listed
+	 * @return HttpResponse containing the files of the given repository as a
+	 *         json string
+	 * 
+	 */
 
-	        while (treeWalk.next()) {
+	@SuppressWarnings("unchecked")
+	@GET
+	@Path("/{repoName}/files")
+	@Produces(MediaType.APPLICATION_JSON)
+	@ApiOperation(value = "Lists all files of a folder of the given repository.", notes = "Lists all files of the given repository.")
+	@ApiResponses(value = {
+			@ApiResponse(code = HttpURLConnection.HTTP_OK, message = "OK, repository of the model found"),
+			@ApiResponse(code = HttpURLConnection.HTTP_INTERNAL_ERROR, message = "Internal server error") })
+	public Response listFilesInRepository(@PathParam("repoName") String repositoryName,
+			@QueryParam("path") String path) {
 
-	          if (!folderFound && treeWalk.isSubtree()) {
-	            treeWalk.enterSubtree();
-	          }
-	          if (treeWalk.getPathString().equals(path)) {
-	            folderFound = true;
-	            continue;
-	          }
-	          if (folderFound) {
-	            gitProxy.addFiletoFileList(treeWalk, files, tracedFiles, path);
-	          }
-	        }
-	      }
+		if (path == null) {
+			path = "";
+		} else if (path.equals("/")) {
+			path = "";
+		}
 
-	    } catch (Exception e) {
-	      L2pLogger.logEvent(Event.SERVICE_ERROR, "getModelFiles: exception fetching files: " + e);
-	      service.getLogger().printStackTrace(e);
-	      throw new InternalServerErrorException("IO error!");
-	    }
-	    return Response.ok(jsonResponse.toString().replace("\\", "")).build();
-	  }
+		JSONObject jsonResponse = new JSONObject();
+		JSONArray files = new JSONArray();
+		jsonResponse.put("files", files);
+		try (Git git = gitUtility.getLocalGit(repositoryName, "development");) {
 
-	  /**
-	   * Deletes a local repository
-	   * 
-	   * @param repositoryName The repository to delete
-	   * @return HttpResponse containing a status code
-	   */
+			JSONArray tracedFiles = (JSONArray) gitProxy.getTraceModel(git).get("tracedFiles");
+			TreeWalk treeWalk = gitUtility.getRepositoryTreeWalk(git.getRepository());
 
-	  @GET
-	  @Path("/{repoName}/delete")
-	  @Produces(MediaType.APPLICATION_JSON)
-	  @ApiOperation(value = "Deletes the local repository of the given repository name",
-	      notes = "Deletes the local repository.")
-	  @ApiResponses(value = {
-	      @ApiResponse(code = HttpURLConnection.HTTP_OK, message = "OK, local repository deleted"),
-	      @ApiResponse(code = HttpURLConnection.HTTP_INTERNAL_ERROR,
-	          message = "Internal server error")})
-	  public Response deleteLocalRepositoryREST(@PathParam("repoName") String repositoryName) {
-	    /*try {
-	      FileUtils.deleteDirectory(new File(repositoryName));
-	    } catch (IOException e) {
-	      e.printStackTrace();
-	      logger.printStackTrace(e);
-	      return new HttpResponse(e.getMessage(), HttpURLConnection.HTTP_INTERNAL_ERROR);
-	    }
-	    return new HttpResponse("Ok", HttpURLConnection.HTTP_OK);
-	    */
-		  String result = service.deleteLocalRepository(repositoryName);
-		  if(Objects.equals(result,"done")) {
-			  return Response.ok().build();
-		  } else {
-			  throw new InternalServerErrorException();
-		  }
-	  }
-	  
+			if (path.isEmpty()) {
+				while (treeWalk.next()) {
+					gitProxy.addFile(treeWalk, files, tracedFiles);
+				}
+			} else {
+
+				PathFilter filter = PathFilter.create(path);
+				boolean folderFound = false;
+				treeWalk.setFilter(filter);
+
+				while (treeWalk.next()) {
+
+					if (!folderFound && treeWalk.isSubtree()) {
+						treeWalk.enterSubtree();
+					}
+					if (treeWalk.getPathString().equals(path)) {
+						folderFound = true;
+						continue;
+					}
+					if (folderFound) {
+						gitProxy.addFiletoFileList(treeWalk, files, tracedFiles, path);
+					}
+				}
+			}
+
+		} catch (Exception e) {
+			L2pLogger.logEvent(Event.SERVICE_ERROR, "getModelFiles: exception fetching files: " + e);
+			service.getLogger().printStackTrace(e);
+			throw new InternalServerErrorException("IO error!");
+		}
+		return Response.ok(jsonResponse.toString().replace("\\", "")).build();
+	}
+
+	/**
+	 * Deletes a local repository
+	 * 
+	 * @param repositoryName
+	 *            The repository to delete
+	 * @return HttpResponse containing a status code
+	 */
+
+	@GET
+	@Path("/{repoName}/delete")
+	@Produces(MediaType.APPLICATION_JSON)
+	@ApiOperation(value = "Deletes the local repository of the given repository name", notes = "Deletes the local repository.")
+	@ApiResponses(value = { @ApiResponse(code = HttpURLConnection.HTTP_OK, message = "OK, local repository deleted"),
+			@ApiResponse(code = HttpURLConnection.HTTP_INTERNAL_ERROR, message = "Internal server error") })
+	public Response deleteLocalRepositoryREST(@PathParam("repoName") String repositoryName) {
+		/*
+		 * try { FileUtils.deleteDirectory(new File(repositoryName)); } catch
+		 * (IOException e) { e.printStackTrace(); logger.printStackTrace(e);
+		 * return new HttpResponse(e.getMessage(),
+		 * HttpURLConnection.HTTP_INTERNAL_ERROR); } return new
+		 * HttpResponse("Ok", HttpURLConnection.HTTP_OK);
+		 */
+		String result = service.deleteLocalRepository(repositoryName);
+		if (Objects.equals(result, "done")) {
+			return Response.ok().build();
+		} else {
+			throw new InternalServerErrorException();
+		}
+	}
+
 }
