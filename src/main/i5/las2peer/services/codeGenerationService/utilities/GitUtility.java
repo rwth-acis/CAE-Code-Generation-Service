@@ -55,7 +55,7 @@ public class GitUtility {
 	public GitUtility(String gitUser, String gitPassword, String gitOrganization, String baseURL) {
 		 logger = L2pLogger.getInstance(CodeGenerationService.class.getName());
 		 this.provider = new UsernamePasswordCredentialsProvider(gitUser, gitPassword);
-		 this.gitHostOrganization = gitHostOrganization;
+		 this.gitHostOrganization = gitOrganization;
 		 this.baseURL = baseURL;
 	}
 	
@@ -331,10 +331,7 @@ public class GitUtility {
 	
 	private Repository createLocalRepository(String repositoryName) throws GitHelperException {
 		L2pLogger.logEvent(Event.SERVICE_MESSAGE, "created new local repository " + repositoryName);
-	    
-	    String repositoryAddress =
-	        baseURL + gitHostOrganization + "/" + repositoryName + ".git";
-	    
+	    String repositoryAddress = baseURL + gitHostOrganization + "/" + repositoryName + ".git";
 	    Repository repository = null;
 
 	    boolean isFrontend = repositoryName.startsWith("frontendComponent-");

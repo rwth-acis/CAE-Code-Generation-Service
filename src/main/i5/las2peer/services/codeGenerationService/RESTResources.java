@@ -274,7 +274,7 @@ public class RESTResources {
 			@ApiResponse(code = HttpURLConnection.HTTP_INTERNAL_ERROR, message = "Internal server error"),
 			@ApiResponse(code = HttpURLConnection.HTTP_NOT_FOUND, message = "404, file not found") })
 	public Response getLivePreviewFiles(@PathParam("repositoryName") String repositoryName) {
-		if (repositoryName.startsWith("frontendComponent") && gitUtility.existsLocalRepository(repositoryName)) {
+		if (repositoryName.startsWith("frontendComponent")) {
 
 			try (Git git = gitUtility.getLocalGit(repositoryName)) {
 				if (git.getRepository().getBranch().equals("development")) {
