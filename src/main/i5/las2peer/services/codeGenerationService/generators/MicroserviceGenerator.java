@@ -128,7 +128,7 @@ public class MicroserviceGenerator extends Generator {
    * 
    * @param microservice the microservice model
  * @param templateRepositoryName the name of the template repository on GitHub
- * @param gitAdapter TODO
+ * @param gitAdapter The gitAdapter that manages operations on GitHub/GitLab etc.
    * @throws GitHostException thrown if anything goes wrong during this process. Wraps around all
    *         other exceptions and prints their message.
    * 
@@ -819,7 +819,9 @@ public class MicroserviceGenerator extends Generator {
 
         // check if payload is a JSON and cast if so
         if (currentPayload.getPayloadType() == PayloadType.JSONObject) {
-          consumesAnnotation = "MediaType.APPLICATION_JSON";
+        	// TODO workaround
+          // consumesAnnotation = "MediaType.APPLICATION_JSON";
+          consumesAnnotation = "MediaType.TEXT_PLAIN";
           parameterCode += "String " + currentPayload.getName() + ", ";
 
           Template castTemplate = templateEngine.createTemplate(

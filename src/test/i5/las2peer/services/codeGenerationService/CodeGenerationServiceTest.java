@@ -41,7 +41,7 @@ public class CodeGenerationServiceTest {
 
   private static final String codeGenerationService =
       CodeGenerationService.class.getName();
-
+  
   private static SimpleModel model1;
   private static SimpleModel model2;
   private static SimpleModel model3;
@@ -151,7 +151,6 @@ public class CodeGenerationServiceTest {
     serviceNameVersion = new ServiceNameVersion(codeGenerationService, "0.1");
     testService = ServiceAgent.createServiceAgent(serviceNameVersion, "a pass");
     testService.unlockPrivateKey("a pass");
-    
     node.registerReceiver(testService);
 
     // waiting here not needed because no connector is running!

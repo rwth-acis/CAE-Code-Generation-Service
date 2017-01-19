@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.io.ObjectOutput;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
+
 import java.io.Serializable;
 import java.util.Base64;
 import java.util.HashMap;
@@ -91,11 +92,12 @@ public class CodeGenerationService extends RESTService {
   private String dockerJobName;
   private String jenkinsUrl;
   private String jenkinsJobToken;
+  private String deploymentRepo; 
 
   boolean useModelSynchronization;
   private final L2pLogger logger = L2pLogger.getInstance(CodeGenerationService.class.getName());
   
-  public static final String DEPLOYMENT_REPO = "CAE-Deployment-Temp";
+  
   
   // ftp properties
   private boolean pushToFs;
@@ -105,8 +107,7 @@ public CodeGenerationService() throws GitHostException {
     // read and set properties-file values
     setFieldValues();
     
-    ApplicationGenerator.pushToFs = pushToFs;
-    ApplicationGenerator.frontendDirectory = frontendDirectory;
+    ApplicationGenerator.deploymentRepo = deploymentRepo;
     
     //Check if non-optional properties are set
     if(Objects.equals(baseURL, "")){
@@ -434,9 +435,6 @@ public CodeGenerationService() throws GitHostException {
                 }
 
               }
-
-
-            // TODO Check update of applications
               
             case "application":
               L2pLogger.logEvent(Event.SERVICE_MESSAGE,
@@ -481,9 +479,7 @@ public CodeGenerationService() throws GitHostException {
   public String pseudoUpdateRepositoryOfModel(Serializable... serializedModel) {
 	  SimpleModel model = (SimpleModel) serializedModel[0];
 	  String modelName = model.getName();
-	  // force push
-	  //TODO: add more cleanup here later
-	  // first get repo names / etc. 
+	  // force push 
 	  return createFromModel(true, serializedModel);
   }
   
@@ -728,7 +724,7 @@ public CodeGenerationService() throws GitHostException {
                   "deployApplicationModel: Creating application model now..");
               Application application = new Application(serializedModel);
 
-              String repositoryName = DEPLOYMENT_REPO;
+              String repositoryName = deploymentRepo;
 
               /**if (Generator.existsRemoteRepository(repositoryName, (BaseGitHostAdapter) this.gitAdapter)) {
                 Generator.deleteRemoteRepository(repositoryName, (BaseGitHostAdapter) this.gitAdapter);

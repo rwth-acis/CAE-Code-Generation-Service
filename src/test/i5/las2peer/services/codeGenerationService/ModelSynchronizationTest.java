@@ -54,7 +54,9 @@ public class ModelSynchronizationTest extends Generator {
 
   private static LocalNode node;
 
+
   private static final String codeGenerationService = CodeGenerationService.class.getCanonicalName();
+
 
   private static SimpleModel model1;
   private static SimpleModel updatedModel1;

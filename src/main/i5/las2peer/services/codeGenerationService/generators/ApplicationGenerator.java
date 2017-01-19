@@ -13,15 +13,26 @@ import java.net.URL;
 import javax.imageio.ImageIO;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.http.auth.UsernamePasswordCredentials;
 import org.eclipse.jgit.api.Git;
+import org.eclipse.jgit.api.errors.GitAPIException;
+import org.eclipse.jgit.errors.CorruptObjectException;
+import org.eclipse.jgit.errors.IncorrectObjectTypeException;
+import org.eclipse.jgit.errors.MissingObjectException;
+import org.eclipse.jgit.errors.NoWorkTreeException;
+import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.ObjectLoader;
 import org.eclipse.jgit.lib.ObjectReader;
 import org.eclipse.jgit.lib.PersonIdent;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.StoredConfig;
+import org.eclipse.jgit.revwalk.RevTree;
+import org.eclipse.jgit.revwalk.RevWalk;
+import org.eclipse.jgit.transport.CredentialsProvider;
 import org.eclipse.jgit.transport.RemoteConfig;
 import org.eclipse.jgit.transport.URIish;
+import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider;
 import org.eclipse.jgit.treewalk.TreeWalk;
 import org.eclipse.jgit.treewalk.filter.PathFilter;
 import org.json.simple.JSONObject;
@@ -42,10 +53,8 @@ import i5.las2peer.services.codeGenerationService.models.frontendComponent.Front
  * 
  */
 public class ApplicationGenerator extends Generator {
-	
-	public static boolean pushToFs = false;
-	public static String frontendDirectory;
-	
+
+	public static String deploymentRepo;
 
   private static final L2pLogger logger =
       L2pLogger.getInstance(ApplicationGenerator.class.getName());
@@ -81,6 +90,10 @@ public class ApplicationGenerator extends Generator {
    * 
    * @throws GitHostException thrown if anything goes wrong during this process. Wraps around all
    *         other exceptions and prints their message.
+ * @throws IOException 
+ * @throws CorruptObjectException 
+ * @throws IncorrectObjectTypeException 
+ * @throws MissingObjectException 
    * 
    */
   public static void createSourceCode(String repositoryName, Application application, 
@@ -94,7 +107,7 @@ public class ApplicationGenerator extends Generator {
     try {
       PersonIdent caeUser = new PersonIdent(gitAdapter.getGitUser(), gitAdapter.getGitUserMail());
 
-      if(!repositoryName.equals(CodeGenerationService.DEPLOYMENT_REPO)) {
+      if(!repositoryName.equals(deploymentRepo)) {
     	  if (!existsRemoteRepository(repositoryName, gitAdapter)) {
     		  applicationRepository = generateNewRepository(repositoryName, gitAdapter);
 	      } else {
@@ -118,11 +131,11 @@ public class ApplicationGenerator extends Generator {
 	          }
 	      }
       }else {
-    	  if(!existsRemoteRepository(CodeGenerationService.DEPLOYMENT_REPO, gitAdapter)) {
-    		  applicationRepository = generateNewRepository(CodeGenerationService.DEPLOYMENT_REPO, gitAdapter);
+    	  if(!existsRemoteRepository(deploymentRepo, gitAdapter)) {
+    		  applicationRepository = generateNewRepository(deploymentRepo, gitAdapter);
     	  } else {
     		  
-    		  applicationRepository = getRemoteRepository(CodeGenerationService.DEPLOYMENT_REPO, gitAdapter);
+    		  applicationRepository = getRemoteRepository(deploymentRepo, gitAdapter);
 	    	  Git git = Git.wrap(applicationRepository);
 	          StoredConfig config = git.getRepository().getConfig();
 	          
@@ -140,6 +153,30 @@ public class ApplicationGenerator extends Generator {
 	          } catch (IOException e) {
 	        	  throw new GitHostException("IO exception: " + e.getMessage());
 	          }
+	          
+	          
+	          //Remove all files to clear the repository, this is a workaround for gitlabs delayed repo deletion
+	          try {
+	        	  CredentialsProvider cp = new UsernamePasswordCredentialsProvider(gitAdapter.getGitUser(),gitAdapter.getGitPassword());
+	        	  
+	        	  TreeWalk rmWalk = new TreeWalk(applicationRepository);
+	        	  ObjectId lastCommitId = applicationRepository.resolve(Constants.HEAD);
+	        	  RevWalk revWalk = new RevWalk(applicationRepository);
+	              RevTree tree = revWalk.parseCommit(lastCommitId).getTree();
+	              rmWalk.addTree(tree);
+	              rmWalk.setRecursive(true);
+	        	  
+
+        		  while (rmWalk.next()) {
+        			 git.rm().addFilepattern(rmWalk.getPathString()).call();
+        		  }
+	        	  
+	        	  git.commit().setMessage("Clear").call();
+	        	  git.push().setForce(false).setCredentialsProvider(cp).call();
+				
+				} catch (IOException | NoWorkTreeException | GitAPIException e) {
+					 throw new GitHostException("Exception: " + e.getMessage());
+				}
     	  }
       }
       
@@ -205,8 +242,6 @@ public class ApplicationGenerator extends Generator {
             ObjectId objectId = treeWalk.getObjectId(0);
             ObjectLoader loader = reader.open(objectId);
             // copy the content of the repository and switch out the "old" paths
-            
-            // TODO: Content paths have to be independent from the git provider or all cases have to be met
             
             String oldLogoAddress = gitAdapter.getBaseURL() + gitAdapter.getGitOrganization() + "/"
                 + microserviceRepositoryName + "/blob/master/img/logo.png";
@@ -296,7 +331,6 @@ public class ApplicationGenerator extends Generator {
       }
 
       // fetch frontend component repository contents and add them
-      // TODO: Change paths here too, paths have to be generated depending on git host and deployment (no gh pages if using gitlab !!!)
       for (String frontendComponentName : application.getFrontendComponents().keySet()) {
         String frontendComponentRepositoryName =
             "frontendComponent-" + frontendComponentName.replace(" ", "-");
@@ -307,10 +341,13 @@ public class ApplicationGenerator extends Generator {
             ObjectId objectId = treeWalk.getObjectId(0);
             ObjectLoader loader = reader.open(objectId);
             // copy the content of the repository and switch out the "old" paths
-            String oldWidgetHome =
+            String oldWidgetHome = "http://ginkgo.informatik.rwth-aachen.de:9081/"+gitAdapter.getGitOrganization()+"/"+frontendComponentRepositoryName;
+            String newWidgetHome = "http://ginkgo.informatik.rwth-aachen.de:9081/"+gitAdapter.getGitOrganization()+"/"+repositoryName+"/"+frontendComponentRepositoryName;
+            
+            /*String oldWidgetHome =
                 "http://" + gitAdapter.getGitOrganization() + ".github.io/" + frontendComponentRepositoryName;
             String newWidgetHome = "http://" + gitAdapter.getGitOrganization() + ".github.io/" + repositoryName
-                + "/" + frontendComponentRepositoryName;
+                + "/" + frontendComponentRepositoryName;*/
             if (forDeploy) {
               // use other url for deployment, replaced later by the dockerfile
               newWidgetHome = "$WIDGET_URL$:$HTTP_PORT$" + "/" + frontendComponentRepositoryName;
@@ -410,27 +447,16 @@ public class ApplicationGenerator extends Generator {
         }
       }
       if (!forDeploy) {
-        // push (local) repository content to GitHub repository "gh-pages" branch
-    	  // TODO Deployment is hardcoded to gh pages !!! Needs to be changed
+        // push (local) repository content to repository "gh-pages" branch
         try {
           pushToRemoteRepository(applicationRepository, "gh-pages",
               "gh-pages", gitAdapter, true);
         } catch (Exception e) {
           logger.printStackTrace(e);
           throw new GitHostException(e.getMessage());
-        }
-        
-        if (pushToFs) {
-            File destDir = new File(frontendDirectory);
-
-            try {
-                FileUtils.copyDirectory(applicationRepository.getDirectory(), destDir);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }    	  
+        } 
       } else {
-        // push (local) repository content to GitHub repository "master" branch
+        // push (local) repository content to repository "master" branch
         try {
           pushToRemoteRepository(applicationRepository, gitAdapter, true);
         } catch (Exception e) {
@@ -482,8 +508,11 @@ public class ApplicationGenerator extends Generator {
 
       if (result.containsKey("executable")) {
         JSONObject executeable = (JSONObject) result.get("executable");
-        URI uri = new URI((String) executeable.get("url"));
-        return uri.getPath();
+        String path = new URI((String) executeable.get("url")).getPath();
+        if (path.startsWith("jenkins/") || path.startsWith("/jenkins")) {
+        	path = path.substring("jenkins/".length(), path.length());
+        }
+        return path;
       } else {
         return null;
       }
@@ -571,6 +600,9 @@ public class ApplicationGenerator extends Generator {
         L2pLogger.logEvent(Event.SERVICE_MESSAGE, "Job started!");
         URI uri = new URI(connection.getHeaderField("Location"));
         String path = uri.getPath();
+        if (path.startsWith("jenkins/") || path.startsWith("/jenkins")) {
+        	path = path.substring("jenkins/".length(), path.length());
+        }
         return path;
       }
     } catch (Exception e) {

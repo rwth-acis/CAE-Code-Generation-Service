@@ -174,7 +174,6 @@ public abstract class Generator {
    * content. Repository is used "read-only" here.
    * 
    * @param repositoryName the name of the template repository
-   * @param gitHubOrganization the organization that is used in the CAE
    * 
    * @return a {@link org.eclipse.jgit.treewalk.TreeWalk}
    * 
@@ -217,7 +216,6 @@ public abstract class Generator {
    * Clones a repository from GitHub to the local machine and returns it.
    * 
    * @param repositoryName the name of the repository
-   * @param gitHubOrganization the organization that is used in the CAE
    * 
    * @return a {@link org.eclipse.jgit.lib.Repository}
    * 
@@ -417,8 +415,6 @@ public abstract class Generator {
    * created by {@link #generateNewRepository}.
    * 
    * @param repository the {@link org.eclipse.jgit.lib.Repository} to be pushed to GitHub
-   * @param gitHubUser the CAE user
-   * @param gitHubPassword the password of the CAE user
    * @param localBranchName the name of the branch that should be pushed from
    * @param remoteBranchName the name of the branch that should be pushed to
    * 
@@ -453,9 +449,6 @@ public abstract class Generator {
    * Deletes a repository on GitHub, given by its name.
    * 
    * @param name the name of the repository
-   * @param gitHubOrganization the name of the repositories organization
-   * @param gitHubUser the name of the GitHub user
-   * @param gitHubPassword the password of the GitHub user
    * 
    * @throws GitHostException if deletion was not successful
    * 
@@ -470,9 +463,6 @@ public abstract class Generator {
    * Uses the ls remote git command to determine if the repository exists.
    * 
    * @param name The name of the repository
-   * @param gitHubOrganization The git hub organization
-   * @param gitHubUser The git hub user
-   * @param gitHubPassword The git hub password
    * @return True, if the repository exists, otherwise false
    */
 
@@ -540,8 +530,7 @@ public abstract class Generator {
 
   /**
    * Commit multiple files to the github repository. Like
-   * {@link i5.las2peer.services.codeGenerationService.CodeGenerationService#commitFile(String, JSONObject)}
-   * , but without any trace information and for multiple files
+   * commitFile, but without any trace information and for multiple files
    * 
    * @param repositoryName The name of the repository
    * @param commitMessage A commit message

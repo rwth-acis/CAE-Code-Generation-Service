@@ -57,11 +57,6 @@ public class FrontendComponentGenerator extends Generator {
    * Creates source code from a CAE frontend component model and pushes it to GitHub.
    * 
    * @param frontendComponent the frontend component model
-   * @param templateRepositoryName the name of the template repository on GitHub
-   * @param gitHubOrganization the organization that is used in the CAE
-   * @param gitHubUser the CAE user
-   * @param gitHubUserMail the mail of the CAE user
-   * @param gitHubPassword the password of the CAE user
    * 
    * @throws GitHostException thrown if anything goes wrong during this process. Wraps around all
    *         other exceptions and prints their message.
@@ -387,7 +382,8 @@ public class FrontendComponentGenerator extends Generator {
     widgetTemplate.setVariable("$Widget_Width$", frontendComponent.getWidgetWidth() + "");
     widgetTemplate.setVariable("$Widget_Height$", frontendComponent.getWidgetHeight() + "");
 
-    String widgetHome = "http://" + gitHubOrganization + ".github.io/" + repositoryName;
+    // String widgetHome = "http://" + gitHubOrganization + ".github.io/" + repositoryName;
+    String widgetHome = "http://ginkgo.informatik.rwth-aachen.de:9081/"+gitHubOrganization+"/"+repositoryName;
     widgetTemplate.setVariable("$Widget_Home$", widgetHome);
     widgetTemplate.setVariableIfNotSet("$Main_Content$", "");
     widgetTemplate.setVariableIfNotSet("$Additional_Imports$", "");
@@ -604,9 +600,13 @@ public class FrontendComponentGenerator extends Generator {
           functionTemplate.appendVariable("$Function_Body$", contentVar);
 
           microserviceCallFile.setVariable("$Content$", microserviceCall.getContent());
+          
+          // TODO workaround
+          String contentType =  microserviceCall.getContentType().toString();
+          if (contentType.equals("application/json"))
+        	  contentType = "text/plain";
 
-          microserviceCallFile.setVariable("$Content_Type$",
-              microserviceCall.getContentType().toString());
+          microserviceCallFile.setVariable("$Content_Type$", contentType);
         } else {
           // no content specified, just remove placeholder / insert empty entries
           microserviceCallFile.setVariable("$Content$", "\"\"");
