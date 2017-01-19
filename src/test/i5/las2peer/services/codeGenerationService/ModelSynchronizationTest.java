@@ -54,9 +54,9 @@ public class ModelSynchronizationTest extends Generator {
 
   private static LocalNode node;
 
-  private static final String codeGenerationService =
-      CodeGenerationService.class.getCanonicalName();
-  private static final String gitHubProxyService = "i5.las2peer.services.gitHubProxyService.GitHubProxyService";
+
+  private static final String codeGenerationService = CodeGenerationService.class.getCanonicalName();
+
 
   private static SimpleModel model1;
   private static SimpleModel updatedModel1;
@@ -66,10 +66,6 @@ public class ModelSynchronizationTest extends Generator {
 
   private static ServiceAgent testService;
   private static ServiceNameVersion serviceNameVersion;
-
-
-  private static ServiceAgent gitHubProxyTestService;
-  private static ServiceNameVersion gitHubProxyServiceNameVersion;
 
   private static String usedGitHost = null;
   private static String gitOrganization = null;
@@ -96,7 +92,7 @@ public class ModelSynchronizationTest extends Generator {
 
   private static String commitFilesRaw(String repositoryName, List<String[]> fileList)
       throws Exception {
-    return (String) node.invoke(gitHubProxyTestService, gitHubProxyServiceNameVersion,
+    return (String) node.invoke(testService, serviceNameVersion,
         "storeAndCommitFilesRaw", new Serializable[] {repositoryName,
             "Code regeneration/Model synchronization", fileList.toArray(new String[][] {})});
   }
@@ -126,8 +122,8 @@ public class ModelSynchronizationTest extends Generator {
   private static HashMap<String, JSONObject> getAllTracedFiles(String prefix, SimpleModel model)
       throws Exception {
     String repositoryName = prefix + "-" + model.getName().replace(" ", "-");
-    return (HashMap<String, JSONObject>) node.invoke(gitHubProxyTestService,
-        gitHubProxyServiceNameVersion, "getAllTracedFiles", new Serializable[] {repositoryName});
+    return (HashMap<String, JSONObject>) node.invoke(testService,
+        serviceNameVersion, "getAllTracedFiles", new Serializable[] {repositoryName});
   }
 
   private static void deleteRepositoryOfModel(String prefix, SimpleModel model) {
@@ -138,7 +134,7 @@ public class ModelSynchronizationTest extends Generator {
       e.printStackTrace();
     }
     try {
-      node.invoke(gitHubProxyTestService, gitHubProxyServiceNameVersion, "deleteLocalRepository",
+      node.invoke(testService, serviceNameVersion, "deleteLocalRepository",
           new Serializable[] {repositoryName});
 
     } catch (Exception e) {
@@ -218,14 +214,9 @@ public class ModelSynchronizationTest extends Generator {
     testService = ServiceAgent.createServiceAgent(serviceNameVersion, "a pass");
     testService.unlockPrivateKey("a pass");
 
-    gitHubProxyServiceNameVersion = new ServiceNameVersion(gitHubProxyService, "0.1");
-    gitHubProxyTestService =
-        ServiceAgent.createServiceAgent(gitHubProxyServiceNameVersion, "a pass");
-    gitHubProxyTestService.unlockPrivateKey("a pass");
+    
 
     node.registerReceiver(testService);
-    node.registerReceiver(gitHubProxyTestService);
-
   }
 
 
