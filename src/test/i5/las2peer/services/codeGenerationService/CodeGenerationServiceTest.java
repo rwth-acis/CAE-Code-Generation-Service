@@ -41,18 +41,13 @@ public class CodeGenerationServiceTest {
 
   private static final String codeGenerationService =
       CodeGenerationService.class.getName();
-
-  private static final String gitHubProxyService = "i5.las2peer.services.gitHubProxyService.GitHubProxyService";
-
+  
   private static SimpleModel model1;
   private static SimpleModel model2;
   private static SimpleModel model3;
   private static SimpleModel[] model4;
   private static ServiceAgent testService;
   private static ServiceNameVersion serviceNameVersion;
-
-  private static ServiceAgent gitHubProxyTestService;
-  private static ServiceNameVersion gitHubProxyServiceNameVersion;
 
   private static String usedGitHost = null;
   private static String gitOrganization = null;
@@ -127,7 +122,7 @@ public class CodeGenerationServiceTest {
       gitUserMail = properties.getProperty("gitUserMail");
       gitOrganization = properties.getProperty("gitOrganization");
       templateRepository = properties.getProperty("templateRepository");
-      gitPassword = properties.getProperty("gitHubPassword");
+      gitPassword = properties.getProperty("gitPassword");
       usedGitHost = properties.getProperty("usedGitHost");
       
       baseURL = properties.getProperty("baseURL");
@@ -156,13 +151,6 @@ public class CodeGenerationServiceTest {
     serviceNameVersion = new ServiceNameVersion(codeGenerationService, "0.1");
     testService = ServiceAgent.createServiceAgent(serviceNameVersion, "a pass");
     testService.unlockPrivateKey("a pass");
-
-    gitHubProxyServiceNameVersion = new ServiceNameVersion(gitHubProxyService, "0.2");
-    gitHubProxyTestService = ServiceAgent.createServiceAgent(gitHubProxyServiceNameVersion, "a pass");
-    gitHubProxyTestService.unlockPrivateKey("a pass");
-
-
-    node.registerReceiver(gitHubProxyTestService);
     node.registerReceiver(testService);
 
     // waiting here not needed because no connector is running!
