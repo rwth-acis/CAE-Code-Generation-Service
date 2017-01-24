@@ -339,13 +339,13 @@ public class ApplicationGenerator extends Generator {
             ObjectId objectId = treeWalk.getObjectId(0);
             ObjectLoader loader = reader.open(objectId);
             // copy the content of the repository and switch out the "old" paths
-            String oldWidgetHome = "http://ginkgo.informatik.rwth-aachen.de:9081/"+gitAdapter.getGitOrganization()+"/"+frontendComponentRepositoryName;
-            String newWidgetHome = "http://ginkgo.informatik.rwth-aachen.de:9081/"+gitAdapter.getGitOrganization()+"/"+repositoryName+"/"+frontendComponentRepositoryName;
+            //TODO: URLS
+            //String oldWidgetHome = "http://ginkgo.informatik.rwth-aachen.de:9081/"+gitAdapter.getGitOrganization()+"/"+frontendComponentRepositoryName;
+            //String newWidgetHome = "http://ginkgo.informatik.rwth-aachen.de:9081/"+gitAdapter.getGitOrganization()+"/"+repositoryName+"/"+frontendComponentRepositoryName;
             
-            /*String oldWidgetHome =
-                "http://" + gitAdapter.getGitOrganization() + ".github.io/" + frontendComponentRepositoryName;
-            String newWidgetHome = "http://" + gitAdapter.getGitOrganization() + ".github.io/" + repositoryName
-                + "/" + frontendComponentRepositoryName;*/
+            String oldWidgetHome = "https://" + gitAdapter.getGitOrganization() + ".github.io/" + frontendComponentRepositoryName;
+            String newWidgetHome = "https://" + gitAdapter.getGitOrganization() + ".github.io/" + repositoryName
+                + "/" + frontendComponentRepositoryName;
             if (forDeploy) {
               // use other url for deployment, replaced later by the dockerfile
               newWidgetHome = "$WIDGET_URL$:$HTTP_PORT$" + "/" + frontendComponentRepositoryName;
