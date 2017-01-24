@@ -43,8 +43,10 @@ import org.json.simple.JSONObject;
 
 import com.sun.corba.se.pept.transport.Connection;
 
+import i5.las2peer.api.Context;
 import i5.las2peer.api.Service;
 import i5.las2peer.logging.L2pLogger;
+import i5.las2peer.services.codeGenerationService.CodeGenerationService;
 import i5.las2peer.services.codeGenerationService.adapters.BaseGitHostAdapter;
 import i5.las2peer.services.codeGenerationService.adapters.GitLabAdapter;
 import i5.las2peer.services.codeGenerationService.exception.GitHostException;
@@ -535,17 +537,11 @@ public abstract class Generator {
    * @param repositoryName The name of the repository
    * @param commitMessage A commit message
    * @param files An array containing the file names and file contents
-   * @param service An instance of {@link i5.las2peer.api.Service} needed to invoke the GitHubProxy
-   *        service
    */
-
-
   private static void commitMultipleFilesRaw(String repositoryName, String commitMessage,
-      String[][] files, Service service) {
-    Serializable[] payload = {repositoryName, commitMessage, files};
+      String[][] files) {
     try {
-      service.invokeServiceMethod("i5.las2peer.services.gitHubProxyService.GitHubProxyService@0.2",
-          "storeAndCommitFilesRaw", payload);
+    	((CodeGenerationService) Context.getCurrent().getService()).storeAndCommitFilesRaw(repositoryName, commitMessage, files);
     } catch (Exception e) {
       logger.printStackTrace(e);
     }
@@ -556,14 +552,12 @@ public abstract class Generator {
    * 
    * @param fileList A list containing the files that should be updated
    * @param repositoryName The name of the repository
-   * @param service An instance of {@link i5.las2peer.api.Service} needed to invoke the GitHubProxy
-   *        service
    */
 
   protected static void updateTracedFilesInRepository(List<String[]> fileList,
       String repositoryName, Service service) {
     commitMultipleFilesRaw(repositoryName, "Code regeneration/Model synchronization",
-        fileList.toArray(new String[][] {}), service);
+        fileList.toArray(new String[][] {}));
   }
 
   /**
@@ -620,16 +614,12 @@ public abstract class Generator {
    * @param repositoryName The name of the repository
    * @param newFileName The new file name
    * @param oldFileName The old file name
-   * @param service An instance of {@link i5.las2peer.api.Service} needed to invoke the GitHubProxy
-   *        service
    */
 
   protected static void renameFileInRepository(String repositoryName, String newFileName,
-      String oldFileName, Service service) {
-    Serializable[] payload = {repositoryName, newFileName, oldFileName};
+      String oldFileName) {
     try {
-      service.invokeServiceMethod("i5.las2peer.services.gitHubProxyService.GitHubProxyService@0.2",
-          "renameFile", payload);
+    	((CodeGenerationService) Context.getCurrent().getService()).getGitUtility().renameFile(repositoryName, newFileName, oldFileName);
     } catch (Exception e) {
       logger.printStackTrace(e);
     }
@@ -640,16 +630,11 @@ public abstract class Generator {
    * 
    * @param repositoryName The name of the repository
    * @param fileName The name of the file that must be deleted
-   * @param service An instance of {@link i5.las2peer.api.Service} needed to invoke the GitHubProxy
-   *        service
    */
 
-  protected static void deleteFileInLocalRepository(String repositoryName, String fileName,
-      Service service) {
-    Serializable[] payload = {repositoryName, fileName};
+  protected static void deleteFileInLocalRepository(String repositoryName, String fileName) {
     try {
-      service.invokeServiceMethod("i5.las2peer.services.gitHubProxyService.GitHubProxyService@0.2",
-          "deleteFile", payload);
+    	((CodeGenerationService) Context.getCurrent().getService()).getGitUtility().deleteFile(repositoryName, fileName);
     } catch (Exception e) {
       logger.printStackTrace(e);
     }
