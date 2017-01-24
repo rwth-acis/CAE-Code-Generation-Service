@@ -14,7 +14,6 @@ import org.eclipse.jgit.treewalk.TreeWalk;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import i5.cae.simpleModel.SimpleModel;
-import i5.las2peer.api.Context;
 import i5.las2peer.logging.L2pLogger;
 import i5.las2peer.logging.NodeObserver.Event;
 import i5.las2peer.restMapper.RESTService;
@@ -342,8 +341,6 @@ public class CodeGenerationService extends RESTService {
             	
             } else {
                 if (useModelSynchronization) {
-                  // inform the GitHubProxy service that we may have deleted a remote repository
-                  // it will then delete the local repository
                 	L2pLogger.logEvent(Event.SERVICE_MESSAGE, "Using model sync: Deleting local repo");
                   deleteReturnMessage = this.deleteLocalRepository(MicroserviceGenerator.getRepositoryName(microservice));
                   if (!deleteReturnMessage.equals("done")) {
@@ -397,8 +394,6 @@ public class CodeGenerationService extends RESTService {
                 	return pseudoUpdateRepositoryOfModel(serializedModel);
                 } else {
                 if (useModelSynchronization) {                	
-                  // inform the GitHubProxy service that we may have deleted a remote repository
-                  // it will then delete the local repository
                 	L2pLogger.logEvent(Event.SERVICE_MESSAGE,
                             "updateRepositoryOfModel: Calling delete (old) repository method now..");
                   deleteReturnMessage = this.deleteLocalRepository(
@@ -533,20 +528,15 @@ public class CodeGenerationService extends RESTService {
   }
 
   /**
-   * Fetch all traced files of a repository from the GitHub proxy service
+   * Fetch all traced files of a repository
    * 
    * @param repositoryName The name of the repository
    * @return a map containing all traced files
    */
-
-  @SuppressWarnings("unchecked")
   private HashMap<String, JSONObject> getTracedFiles(String repositoryName) {
-    Serializable[] payload = {repositoryName};
     HashMap<String, JSONObject> files = new HashMap<String, JSONObject>();
     try {
-      files = (HashMap<String, JSONObject>) Context.getCurrent().invoke(
-          "i5.las2peer.services.gitHubProxyService.GitHubProxyService@0.2", "getAllTracedFiles",
-          payload);
+    	files = getAllTracedFiles(repositoryName);
     } catch (Exception e) {
       logger.printStackTrace(e);
     }
