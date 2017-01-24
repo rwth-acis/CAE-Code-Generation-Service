@@ -221,6 +221,7 @@ public class GitLabAdapter extends BaseGitHostAdapter{
 	 * @param name The name of the repository.
 	 * @param description The description.
 	 */
+	@SuppressWarnings("unchecked")
 	public void createRepo(String name, String description) throws GitHostException {
 		//Get namespace id for group
 		JSONObject result = getJSONObject(baseURL + "api/v3/" + "groups/" + this.getGitOrganization());

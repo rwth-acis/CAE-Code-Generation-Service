@@ -1,14 +1,8 @@
 package i5.las2peer.services.codeGenerationService;
 
-import java.io.BufferedOutputStream;
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.io.ObjectOutput;
-import java.io.ObjectOutputStream;
-import java.io.OutputStream;
-
 import java.io.Serializable;
 import java.util.Base64;
 import java.util.HashMap;
@@ -19,9 +13,6 @@ import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.treewalk.TreeWalk;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
-import org.json.simple.parser.JSONParser;
-import org.json.simple.parser.ParseException;
-
 import i5.cae.simpleModel.SimpleModel;
 import i5.las2peer.api.Context;
 import i5.las2peer.logging.L2pLogger;
@@ -32,7 +23,6 @@ import i5.las2peer.services.codeGenerationService.adapters.BaseGitHostAdapter;
 import i5.las2peer.services.codeGenerationService.adapters.GitHostAdapter;
 import i5.las2peer.services.codeGenerationService.adapters.GitHubAdapter;
 import i5.las2peer.services.codeGenerationService.adapters.GitLabAdapter;
-import i5.las2peer.services.codeGenerationService.exception.GitHelperException;
 import i5.las2peer.services.codeGenerationService.exception.GitHostException;
 import i5.las2peer.services.codeGenerationService.exception.ModelParseException;
 import i5.las2peer.services.codeGenerationService.generators.ApplicationGenerator;
@@ -99,11 +89,7 @@ public class CodeGenerationService extends RESTService {
   
   
   
-  // ftp properties
-  private boolean pushToFs;
-  private String frontendDirectory;
-
-public CodeGenerationService() throws GitHostException {
+  public CodeGenerationService() throws GitHostException {
     // read and set properties-file values
     setFieldValues();
     
@@ -478,7 +464,7 @@ public CodeGenerationService() throws GitHostException {
 
   public String pseudoUpdateRepositoryOfModel(Serializable... serializedModel) {
 	  SimpleModel model = (SimpleModel) serializedModel[0];
-	  String modelName = model.getName();
+	  model.getName();
 	  // force push 
 	  return createFromModel(true, serializedModel);
   }

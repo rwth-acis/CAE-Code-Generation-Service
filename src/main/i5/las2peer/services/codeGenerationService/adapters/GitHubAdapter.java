@@ -10,8 +10,6 @@ import java.net.URL;
 import java.util.Base64;
 import org.json.simple.JSONObject;
 
-import i5.las2peer.logging.L2pLogger;
-import i5.las2peer.services.codeGenerationService.CodeGenerationService;
 import i5.las2peer.services.codeGenerationService.exception.GitHostException;
 
 /**
@@ -37,6 +35,7 @@ public class GitHubAdapter extends BaseGitHostAdapter {
 	 * @param name the value to be used as a name for the repository.
 	 * @param description the repository description.
 	 */
+	@SuppressWarnings("unchecked")
 	@Override
 	public void createRepo(String name, String description) throws GitHostException {
 		

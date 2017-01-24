@@ -2,27 +2,18 @@ package i5.las2peer.services.codeGenerationService.generators;
 
 import java.awt.image.BufferedImage;
 import java.io.BufferedOutputStream;
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.io.ObjectOutput;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
-import java.io.OutputStreamWriter;
 import java.io.PrintStream;
-import java.io.Serializable;
 import java.io.UnsupportedEncodingException;
-import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
-
 import javax.imageio.ImageIO;
 
 import org.eclipse.jgit.api.Git;
@@ -39,16 +30,11 @@ import org.eclipse.jgit.transport.RemoteConfig;
 import org.eclipse.jgit.transport.URIish;
 import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider;
 import org.eclipse.jgit.treewalk.TreeWalk;
-import org.json.simple.JSONObject;
-
-import com.sun.corba.se.pept.transport.Connection;
-
 import i5.las2peer.api.Context;
 import i5.las2peer.api.Service;
 import i5.las2peer.logging.L2pLogger;
 import i5.las2peer.services.codeGenerationService.CodeGenerationService;
 import i5.las2peer.services.codeGenerationService.adapters.BaseGitHostAdapter;
-import i5.las2peer.services.codeGenerationService.adapters.GitLabAdapter;
 import i5.las2peer.services.codeGenerationService.exception.GitHostException;
 import i5.las2peer.services.codeGenerationService.models.traceModel.FileTraceModel;
 import i5.las2peer.services.codeGenerationService.models.traceModel.TraceModel;
@@ -78,7 +64,6 @@ public abstract class Generator {
    * @throws GitHostException if anything goes wrong during this creation process
    * 
    */
-  @SuppressWarnings("unchecked")
   public static Repository generateNewRepository(String name, BaseGitHostAdapter gitAdapter) throws GitHostException {
 
     Git git = null;

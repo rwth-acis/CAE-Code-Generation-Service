@@ -2,7 +2,6 @@ package i5.las2peer.services.codeGenerationService.generators;
 
 import java.awt.image.BufferedImage;
 import java.io.BufferedReader;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
@@ -12,8 +11,6 @@ import java.net.URL;
 
 import javax.imageio.ImageIO;
 
-import org.apache.commons.io.FileUtils;
-import org.apache.http.auth.UsernamePasswordCredentials;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.errors.CorruptObjectException;
@@ -40,7 +37,6 @@ import org.json.simple.parser.JSONParser;
 
 import i5.las2peer.logging.L2pLogger;
 import i5.las2peer.logging.NodeObserver.Event;
-import i5.las2peer.services.codeGenerationService.CodeGenerationService;
 import i5.las2peer.services.codeGenerationService.adapters.BaseGitHostAdapter;
 import i5.las2peer.services.codeGenerationService.exception.GitHostException;
 import i5.las2peer.services.codeGenerationService.models.application.Application;
@@ -173,7 +169,9 @@ public class ApplicationGenerator extends Generator {
 	        	  
 	        	  git.commit().setMessage("Clear").call();
 	        	  git.push().setForce(false).setCredentialsProvider(cp).call();
-				
+	        	  
+	        	  rmWalk.close();
+	        	  revWalk.close();
 				} catch (IOException | NoWorkTreeException | GitAPIException e) {
 					 throw new GitHostException("Exception: " + e.getMessage());
 				}
