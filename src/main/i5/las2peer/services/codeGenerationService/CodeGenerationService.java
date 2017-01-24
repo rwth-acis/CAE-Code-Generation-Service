@@ -1,20 +1,38 @@
 package i5.las2peer.services.codeGenerationService;
 
+import java.io.BufferedOutputStream;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.ObjectOutput;
+import java.io.ObjectOutputStream;
+import java.io.OutputStream;
+
 import java.io.Serializable;
+import java.util.Base64;
 import java.util.HashMap;
 import java.util.Objects;
 
+import org.apache.commons.io.FileUtils;
+import org.eclipse.jgit.api.Git;
+import org.eclipse.jgit.treewalk.TreeWalk;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
+import org.json.simple.parser.ParseException;
 
 import i5.cae.simpleModel.SimpleModel;
-import i5.las2peer.api.Service;
+import i5.las2peer.api.Context;
 import i5.las2peer.logging.L2pLogger;
 import i5.las2peer.logging.NodeObserver.Event;
+import i5.las2peer.restMapper.RESTService;
+import i5.las2peer.restMapper.annotations.ServicePath;
 import i5.las2peer.services.codeGenerationService.adapters.BaseGitHostAdapter;
 import i5.las2peer.services.codeGenerationService.adapters.GitHostAdapter;
 import i5.las2peer.services.codeGenerationService.adapters.GitHubAdapter;
 import i5.las2peer.services.codeGenerationService.adapters.GitLabAdapter;
+import i5.las2peer.services.codeGenerationService.exception.GitHelperException;
 import i5.las2peer.services.codeGenerationService.exception.GitHostException;
 import i5.las2peer.services.codeGenerationService.exception.ModelParseException;
 import i5.las2peer.services.codeGenerationService.generators.ApplicationGenerator;
@@ -27,6 +45,12 @@ import i5.las2peer.services.codeGenerationService.models.application.Application
 import i5.las2peer.services.codeGenerationService.models.frontendComponent.FrontendComponent;
 import i5.las2peer.services.codeGenerationService.models.microservice.Microservice;
 import i5.las2peer.services.codeGenerationService.templateEngine.ModelViolationDetection;
+import i5.las2peer.services.codeGenerationService.utilities.GitUtility;
+import io.swagger.annotations.Api;
+import io.swagger.annotations.Contact;
+import io.swagger.annotations.Info;
+import io.swagger.annotations.License;
+import io.swagger.annotations.SwaggerDefinition;
 
 /**
  * 
@@ -35,7 +59,10 @@ import i5.las2peer.services.codeGenerationService.templateEngine.ModelViolationD
  * A LAS2peer service used for generating code from send models. Part of the CAE.
  * 
  */
-public class CodeGenerationService extends Service {
+@Api
+@SwaggerDefinition(info = @Info(title = "CAE Code Generation Service", version = "0.1", description = "A LAS2peer service used for generating code and managing remote repositories. Part of the CAE.", termsOfService = "none", contact = @Contact(name = "Peter de Lange", url = "https://github.com/PedeLa/", email = "lange@dbis.rwth-aachen.de"), license = @License(name = "BSD", url = "https://github.com/PedeLa/CAE-Model-Persistence-Service//blob/master/LICENSE.txt")))
+@ServicePath("CodeGen")
+public class CodeGenerationService extends RESTService {
 
   // Git service properties
   private String gitUser;
@@ -45,6 +72,8 @@ public class CodeGenerationService extends Service {
   private String gitUserMail;
   private String usedGitHost;
   
+  private boolean useModelCheck;
+  
   //GitLab specific
   private String baseURL;
   private String token;
@@ -52,6 +81,12 @@ public class CodeGenerationService extends Service {
   //The git service adapter object
   private GitHostAdapter gitAdapter;
 
+  // The git helper utility
+  private GitUtility gitUtility;
+  
+  //Proxy helper
+  private GitProxy gitProxy;
+  
   // jenkins properties
   private String buildJobName;
   private String dockerJobName;
@@ -59,7 +94,7 @@ public class CodeGenerationService extends Service {
   private String jenkinsJobToken;
   private String deploymentRepo; 
 
-  private boolean useModelSynchronization;
+  boolean useModelSynchronization;
   private final L2pLogger logger = L2pLogger.getInstance(CodeGenerationService.class.getName());
   
   
@@ -68,24 +103,43 @@ public class CodeGenerationService extends Service {
   private boolean pushToFs;
   private String frontendDirectory;
 
-  public CodeGenerationService() throws GitHostException {
+public CodeGenerationService() throws GitHostException {
     // read and set properties-file values
     setFieldValues();
     
     ApplicationGenerator.deploymentRepo = deploymentRepo;
     
+    //Check if non-optional properties are set
+    if(Objects.equals(baseURL, "")){
+    	//Empty base url leads to wrong paths later on
+    	throw new GitHostException("No valid base url specified");
+    } else {
+    	//Check for trailing slash, to prevent annoying errors
+    	if(!baseURL.endsWith("/")){
+    		baseURL = baseURL.concat("/");
+    	}
+    }
+    
     // Create git adapter matching the usedGitHost
     if(Objects.equals(usedGitHost, "GitHub")) {
-    	this.gitAdapter = new GitHubAdapter(gitUser,gitPassword,gitOrganization,templateRepository,gitUserMail); 
+    	gitAdapter = new GitHubAdapter(gitUser,gitPassword,gitOrganization,templateRepository,gitUserMail); 
     } else if (Objects.equals(usedGitHost, "GitLab")) {
-    	this.gitAdapter = new GitLabAdapter(baseURL,token,gitUser,gitPassword,gitOrganization,templateRepository,gitUserMail);
+    	gitAdapter = new GitLabAdapter(baseURL,token,gitUser,gitPassword,gitOrganization,templateRepository,gitUserMail);
     } else {
     	// Abort
     	throw new GitHostException("No valid git provider selected");
     }
+    gitUtility = new GitUtility(gitUser, gitPassword, gitOrganization, baseURL);
+    gitProxy = new GitProxy(gitUtility, logger);
   }
 
-
+  @Override
+  protected void initResources() {
+	  //getResourceConfig().packages("i5.las2peer.services.codeGenerationService");
+	  getResourceConfig().register(RESTResources.class);
+  }
+  
+    
   /**
    * 
    * Creates a new GitHub repository with the source code according to the passed on model.
@@ -114,7 +168,7 @@ public class CodeGenerationService extends Service {
       } catch (IOException ex) {
     	  
       }
-      */
+     */
 
     // find out what type of model we got (microservice, frontend-component or application)
     for (int i = 0; i < model.getAttributes().size(); i++) {
@@ -289,7 +343,7 @@ public class CodeGenerationService extends Service {
                 L2pLogger.logEvent(Event.SERVICE_MESSAGE, "updateRepositoryOfModel: Calling synchronizeSourceCode now..");
 
                 MicroserviceSynchronization.synchronizeSourceCode(microservice, oldMicroservice,
-                    this.getTracedFiles(MicroserviceGenerator.getRepositoryName(microservice)),(BaseGitHostAdapter) gitAdapter,this);
+                    this.getTracedFiles(MicroserviceGenerator.getRepositoryName(microservice)),(BaseGitHostAdapter) gitAdapter,CodeGenerationService.this);
 
                 L2pLogger.logEvent(Event.SERVICE_MESSAGE, "updateRepositoryOfModel: Synchronized!");
                 return "done";
@@ -348,7 +402,7 @@ public class CodeGenerationService extends Service {
                 FrontendComponentSynchronization.synchronizeSourceCode(frontendComponent,
                     oldFrontendComponent,
                     this.getTracedFiles(
-                        FrontendComponentGenerator.getRepositoryName(frontendComponent)),(BaseGitHostAdapter) gitAdapter, this);
+                        FrontendComponentGenerator.getRepositoryName(frontendComponent)),(BaseGitHostAdapter) gitAdapter, CodeGenerationService.this);
 
                 L2pLogger.logEvent(Event.SERVICE_MESSAGE, "updateRepositoryOfModel: Synchronized!");
                 return "done";
@@ -383,8 +437,22 @@ public class CodeGenerationService extends Service {
               }
               
             case "application":
-              L2pLogger.logEvent(Event.SERVICE_MESSAGE,"updateRepositoryOfModel: Checking application model now..");
-              new Application(serializedModel);
+              L2pLogger.logEvent(Event.SERVICE_MESSAGE,
+                  "updateRepositoryOfModel: Checking application model now..");
+              // check first if model can be constructed
+              // (in case of an invalid model, keep the old repository)
+              //new Application(serializedModel);
+              /*
+              L2pLogger.logEvent(Event.SERVICE_MESSAGE,
+                  "updateRepositoryOfModel: Calling delete (old) repository method now..");
+              deleteReturnMessage = deleteRepositoryOfModel(serializedModel);
+              if (!deleteReturnMessage.equals("done")) {
+                return deleteReturnMessage; // error happened
+              }
+              L2pLogger.logEvent(Event.SERVICE_ERROR,
+                  "updateRepositoryOfModel: Calling createFromModel now..");
+              return createFromModel(serializedModel);
+              */
               return pseudoUpdateRepositoryOfModel(serializedModel);
               
             default:
@@ -416,26 +484,22 @@ public class CodeGenerationService extends Service {
   }
   
   /**
-   * Deletes a local repository by invoking the GitHub proxy service
+   * Deletes a local repository
    * 
    * @param repositoryName The name of the repository to be deleted
    * @return a status string
    */
 
-  private String deleteLocalRepository(String repositoryName) {
-    try {
-      Serializable[] payload = {repositoryName};
-
-      this.invokeServiceMethod("i5.las2peer.services.gitHubProxyService.GitHubProxyService@0.2",
-          "deleteLocalRepository", payload);
-
-    } catch (Exception e) {
-      logger.printStackTrace(e);
-      return e.getMessage();
-    }
-    return "done";
+  public String deleteLocalRepository(String repositoryName) {
+	  try {
+		  FileUtils.deleteDirectory(new File(repositoryName));
+	  } catch (IOException e) {
+		  e.printStackTrace();
+		  logger.printStackTrace(e);
+		  return e.getMessage();
+	  }
+	  return "done";
   }
-
 
   /**
    * 
@@ -494,7 +558,7 @@ public class CodeGenerationService extends Service {
     Serializable[] payload = {repositoryName};
     HashMap<String, JSONObject> files = new HashMap<String, JSONObject>();
     try {
-      files = (HashMap<String, JSONObject>) this.invokeServiceMethod(
+      files = (HashMap<String, JSONObject>) Context.getCurrent().invoke(
           "i5.las2peer.services.gitHubProxyService.GitHubProxyService@0.2", "getAllTracedFiles",
           payload);
     } catch (Exception e) {
@@ -503,6 +567,90 @@ public class CodeGenerationService extends Service {
     return files;
   }
 
+  /**
+   * Get a list containing all traced files of a given repository
+   * 
+   * @param repositoryName The name of the repository
+   * @return A list of all traced files
+   */
+
+  @SuppressWarnings("unchecked")
+  public HashMap<String, JSONObject> getAllTracedFiles(String repositoryName) {
+    HashMap<String, JSONObject> files = new HashMap<String, JSONObject>();
+
+    try (Git git = gitUtility.getLocalGit(repositoryName, "development");) {
+      JSONArray tracedFiles = (JSONArray) gitProxy.getTraceModel(git).get("tracedFiles");
+
+      try (TreeWalk treeWalk = gitUtility.getRepositoryTreeWalk(git.getRepository(), true)) {
+        while (treeWalk.next()) {
+          if (tracedFiles.contains(treeWalk.getPathString())) {
+            JSONObject fileObject = new JSONObject();
+            String content =
+                gitUtility.getFileContent(git.getRepository(), treeWalk.getPathString());
+            JSONObject fileTraces = gitProxy.getFileTraces(git, treeWalk.getPathString());
+
+            fileObject.put("content",
+                Base64.getEncoder().encodeToString(content.getBytes("utf-8")));
+            fileObject.put("fileTraces", fileTraces);
+
+            files.put(treeWalk.getPathString(), fileObject);
+          }
+        }
+      }
+
+    } catch (Exception e) {
+      logger.printStackTrace(e);
+    }
+
+    return files;
+  }
+
+  /**
+   * Store the content of the files encoded in based64 to a repository
+   * 
+   * @param repositoryName The name of the repository
+   * @param commitMessage The commit message to use
+   * @param files The file list containing the files to commit
+   * @return A status string
+   */
+
+  public String storeAndCommitFilesRaw(String repositoryName, String commitMessage,
+      String[][] files) {
+
+    try (Git git = gitUtility.getLocalGit(repositoryName, "development");) {
+      for (String[] fileData : files) {
+
+        String filePath = fileData[0];
+        String content = fileData[1];
+
+        byte[] base64decodedBytes = Base64.getDecoder().decode(content);
+        String decodedString = new String(base64decodedBytes, "utf-8");
+
+        File file = new File(git.getRepository().getDirectory().getParent(), filePath);
+        if (!file.exists()) {
+          File dirs = file.getParentFile();
+          dirs.mkdirs();
+          file.createNewFile();
+        }
+        FileWriter fW = new FileWriter(file, false);
+        fW.write(decodedString);
+        fW.close();
+
+        git.add().addFilepattern(filePath).call();
+
+      }
+
+      git.commit().setAuthor(this.gitUser, this.gitUserMail).setMessage(commitMessage).call();
+
+
+    } catch (Exception e) {
+      logger.printStackTrace(e);
+      return e.getMessage();
+    }
+
+    return "done";
+  }
+  
   /**
    * Performs a model violation check against the given files
    * 
@@ -609,5 +757,32 @@ public class CodeGenerationService extends Service {
     }
     return "Model has no attribute 'type'!";
   }
+  
+  /*--------------------------------------------
+   * Getter/Setter
+   * -------------------------------------------
+   */
+  public GitUtility getGitUtility() {
+	return gitUtility;
+  }
 
+  public GitProxy getGitProxy() {
+	return gitProxy;
+  }
+
+  public L2pLogger getLogger() {
+	  return logger;
+  }
+
+  public boolean isUseModelCheck() {
+	  return useModelCheck;
+  }
+  
+  public String getGitUser() {
+	  return gitUser;
+  }
+  
+  public String getGitUserMail() {
+	  return gitUserMail;
+  }
 }
