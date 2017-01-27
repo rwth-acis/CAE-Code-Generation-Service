@@ -95,6 +95,31 @@ public class CodeGenerationService extends RESTService {
     ApplicationGenerator.deploymentRepo = deploymentRepo;
     
     //Check if non-optional properties are set
+    //gitUser
+    //gitUserMail
+    //gitOrganization
+    //templateRepository
+    //deploymentRepo
+    //gitPassword
+    //baseURL
+    if(Objects.equals(gitUser, "")){
+    	throw new GitHostException("Git user not set!");
+    }
+    if (Objects.equals(gitUserMail, "")) {
+		throw new GitHostException("Git user mail not set!");
+	}
+    if (Objects.equals(gitOrganization, "")) {
+		throw new GitHostException("Git organization not set!");
+	}
+    if (Objects.equals(templateRepository, "")) {
+		throw new GitHostException("Template repository not set!");
+	}
+    if(Objects.equals(deploymentRepo, "")) {
+    	throw new GitHostException("Deployment repository not set!");
+    }
+    if(Objects.equals(gitPassword, "")) {
+    	throw new GitHostException("Git host password not set");
+    }
     if(Objects.equals(baseURL, "")){
     	//Empty base url leads to wrong paths later on
     	throw new GitHostException("No valid base url specified");
