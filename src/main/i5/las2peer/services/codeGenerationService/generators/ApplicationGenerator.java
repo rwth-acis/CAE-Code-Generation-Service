@@ -97,6 +97,9 @@ public class ApplicationGenerator extends Generator {
 	  if (gitAdapter == null) {
 			throw new GitHostException("Adapter is null!");
 	  }
+	  if (repositoryName == null || repositoryName.equals("")) {
+		  throw new GitHostException("Repository is not set!");
+	  }
     // variables to be closed in the final block
     Repository applicationRepository = null;
     TreeWalk treeWalk = null;
