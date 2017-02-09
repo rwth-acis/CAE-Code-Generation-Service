@@ -2,11 +2,8 @@ package i5.las2peer.services.codeGenerationService.generators;
 
 import java.awt.image.BufferedImage;
 import java.io.IOException;
-import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 import java.net.URL;
-import java.util.Objects;
-
 import javax.imageio.ImageIO;
 
 import org.eclipse.jgit.api.Git;
@@ -20,8 +17,6 @@ import org.eclipse.jgit.transport.RemoteConfig;
 import org.eclipse.jgit.transport.URIish;
 import org.eclipse.jgit.treewalk.TreeWalk;
 import org.eclipse.jgit.treewalk.filter.PathFilter;
-import org.eclipse.jgit.util.GitDateParser;
-
 import i5.las2peer.logging.L2pLogger;
 import i5.las2peer.services.codeGenerationService.adapters.BaseGitHostAdapter;
 import i5.las2peer.services.codeGenerationService.exception.GitHostException;

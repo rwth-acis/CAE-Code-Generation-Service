@@ -1,14 +1,8 @@
 package i5.las2peer.services.codeGenerationService;
 
-import java.io.BufferedOutputStream;
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.io.ObjectOutput;
-import java.io.ObjectOutputStream;
-import java.io.OutputStream;
-
 import java.io.Serializable;
 import java.util.Base64;
 import java.util.HashMap;
@@ -19,11 +13,7 @@ import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.treewalk.TreeWalk;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
-import org.json.simple.parser.JSONParser;
-import org.json.simple.parser.ParseException;
-
 import i5.cae.simpleModel.SimpleModel;
-import i5.las2peer.api.Context;
 import i5.las2peer.logging.L2pLogger;
 import i5.las2peer.logging.NodeObserver.Event;
 import i5.las2peer.restMapper.RESTService;
@@ -32,7 +22,6 @@ import i5.las2peer.services.codeGenerationService.adapters.BaseGitHostAdapter;
 import i5.las2peer.services.codeGenerationService.adapters.GitHostAdapter;
 import i5.las2peer.services.codeGenerationService.adapters.GitHubAdapter;
 import i5.las2peer.services.codeGenerationService.adapters.GitLabAdapter;
-import i5.las2peer.services.codeGenerationService.exception.GitHelperException;
 import i5.las2peer.services.codeGenerationService.exception.GitHostException;
 import i5.las2peer.services.codeGenerationService.exception.ModelParseException;
 import i5.las2peer.services.codeGenerationService.generators.ApplicationGenerator;
@@ -99,17 +88,38 @@ public class CodeGenerationService extends RESTService {
   
   
   
-  // ftp properties
-  private boolean pushToFs;
-  private String frontendDirectory;
-
-public CodeGenerationService() throws GitHostException {
+  public CodeGenerationService() throws GitHostException {
     // read and set properties-file values
     setFieldValues();
     
     ApplicationGenerator.deploymentRepo = deploymentRepo;
     
     //Check if non-optional properties are set
+    //gitUser
+    //gitUserMail
+    //gitOrganization
+    //templateRepository
+    //deploymentRepo
+    //gitPassword
+    //baseURL
+    if(Objects.equals(gitUser, "")){
+    	throw new GitHostException("Git user not set!");
+    }
+    if (Objects.equals(gitUserMail, "")) {
+		throw new GitHostException("Git user mail not set!");
+	}
+    if (Objects.equals(gitOrganization, "")) {
+		throw new GitHostException("Git organization not set!");
+	}
+    if (Objects.equals(templateRepository, "")) {
+		throw new GitHostException("Template repository not set!");
+	}
+    if(Objects.equals(deploymentRepo, "")) {
+    	throw new GitHostException("Deployment repository not set!");
+    }
+    if(Objects.equals(gitPassword, "")) {
+    	throw new GitHostException("Git host password not set");
+    }
     if(Objects.equals(baseURL, "")){
     	//Empty base url leads to wrong paths later on
     	throw new GitHostException("No valid base url specified");
@@ -356,8 +366,6 @@ public CodeGenerationService() throws GitHostException {
             	
             } else {
                 if (useModelSynchronization) {
-                  // inform the GitHubProxy service that we may have deleted a remote repository
-                  // it will then delete the local repository
                 	L2pLogger.logEvent(Event.SERVICE_MESSAGE, "Using model sync: Deleting local repo");
                   deleteReturnMessage = this.deleteLocalRepository(MicroserviceGenerator.getRepositoryName(microservice));
                   if (!deleteReturnMessage.equals("done")) {
@@ -411,8 +419,6 @@ public CodeGenerationService() throws GitHostException {
                 	return pseudoUpdateRepositoryOfModel(serializedModel);
                 } else {
                 if (useModelSynchronization) {                	
-                  // inform the GitHubProxy service that we may have deleted a remote repository
-                  // it will then delete the local repository
                 	L2pLogger.logEvent(Event.SERVICE_MESSAGE,
                             "updateRepositoryOfModel: Calling delete (old) repository method now..");
                   deleteReturnMessage = this.deleteLocalRepository(
@@ -478,7 +484,7 @@ public CodeGenerationService() throws GitHostException {
 
   public String pseudoUpdateRepositoryOfModel(Serializable... serializedModel) {
 	  SimpleModel model = (SimpleModel) serializedModel[0];
-	  String modelName = model.getName();
+	  model.getName();
 	  // force push 
 	  return createFromModel(true, serializedModel);
   }
@@ -547,20 +553,15 @@ public CodeGenerationService() throws GitHostException {
   }
 
   /**
-   * Fetch all traced files of a repository from the GitHub proxy service
+   * Fetch all traced files of a repository
    * 
    * @param repositoryName The name of the repository
    * @return a map containing all traced files
    */
-
-  @SuppressWarnings("unchecked")
   private HashMap<String, JSONObject> getTracedFiles(String repositoryName) {
-    Serializable[] payload = {repositoryName};
     HashMap<String, JSONObject> files = new HashMap<String, JSONObject>();
     try {
-      files = (HashMap<String, JSONObject>) Context.getCurrent().invoke(
-          "i5.las2peer.services.gitHubProxyService.GitHubProxyService@0.2", "getAllTracedFiles",
-          payload);
+    	files = getAllTracedFiles(repositoryName);
     } catch (Exception e) {
       logger.printStackTrace(e);
     }

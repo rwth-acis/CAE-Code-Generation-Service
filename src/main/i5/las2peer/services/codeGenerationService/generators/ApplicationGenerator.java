@@ -2,7 +2,6 @@ package i5.las2peer.services.codeGenerationService.generators;
 
 import java.awt.image.BufferedImage;
 import java.io.BufferedReader;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
@@ -12,8 +11,6 @@ import java.net.URL;
 
 import javax.imageio.ImageIO;
 
-import org.apache.commons.io.FileUtils;
-import org.apache.http.auth.UsernamePasswordCredentials;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.errors.CorruptObjectException;
@@ -40,7 +37,6 @@ import org.json.simple.parser.JSONParser;
 
 import i5.las2peer.logging.L2pLogger;
 import i5.las2peer.logging.NodeObserver.Event;
-import i5.las2peer.services.codeGenerationService.CodeGenerationService;
 import i5.las2peer.services.codeGenerationService.adapters.BaseGitHostAdapter;
 import i5.las2peer.services.codeGenerationService.exception.GitHostException;
 import i5.las2peer.services.codeGenerationService.models.application.Application;
@@ -100,6 +96,9 @@ public class ApplicationGenerator extends Generator {
 		  BaseGitHostAdapter gitAdapter, boolean forDeploy) throws GitHostException {
 	  if (gitAdapter == null) {
 			throw new GitHostException("Adapter is null!");
+	  }
+	  if (repositoryName == null || repositoryName.equals("")) {
+		  throw new GitHostException("Repository is not set!");
 	  }
     // variables to be closed in the final block
     Repository applicationRepository = null;
@@ -173,7 +172,9 @@ public class ApplicationGenerator extends Generator {
 	        	  
 	        	  git.commit().setMessage("Clear").call();
 	        	  git.push().setForce(false).setCredentialsProvider(cp).call();
-				
+	        	  
+	        	  rmWalk.close();
+	        	  revWalk.close();
 				} catch (IOException | NoWorkTreeException | GitAPIException e) {
 					 throw new GitHostException("Exception: " + e.getMessage());
 				}
@@ -341,13 +342,13 @@ public class ApplicationGenerator extends Generator {
             ObjectId objectId = treeWalk.getObjectId(0);
             ObjectLoader loader = reader.open(objectId);
             // copy the content of the repository and switch out the "old" paths
-            String oldWidgetHome = "http://ginkgo.informatik.rwth-aachen.de:9081/"+gitAdapter.getGitOrganization()+"/"+frontendComponentRepositoryName;
-            String newWidgetHome = "http://ginkgo.informatik.rwth-aachen.de:9081/"+gitAdapter.getGitOrganization()+"/"+repositoryName+"/"+frontendComponentRepositoryName;
+            //TODO: URLS
+            //String oldWidgetHome = "http://ginkgo.informatik.rwth-aachen.de:9081/"+gitAdapter.getGitOrganization()+"/"+frontendComponentRepositoryName;
+            //String newWidgetHome = "http://ginkgo.informatik.rwth-aachen.de:9081/"+gitAdapter.getGitOrganization()+"/"+repositoryName+"/"+frontendComponentRepositoryName;
             
-            /*String oldWidgetHome =
-                "http://" + gitAdapter.getGitOrganization() + ".github.io/" + frontendComponentRepositoryName;
-            String newWidgetHome = "http://" + gitAdapter.getGitOrganization() + ".github.io/" + repositoryName
-                + "/" + frontendComponentRepositoryName;*/
+            String oldWidgetHome = "https://" + gitAdapter.getGitOrganization() + ".github.io/" + frontendComponentRepositoryName;
+            String newWidgetHome = "https://" + gitAdapter.getGitOrganization() + ".github.io/" + repositoryName
+                + "/" + frontendComponentRepositoryName;
             if (forDeploy) {
               // use other url for deployment, replaced later by the dockerfile
               newWidgetHome = "$WIDGET_URL$:$HTTP_PORT$" + "/" + frontendComponentRepositoryName;

@@ -47,9 +47,6 @@ public class MicroserviceSynchronization extends MicroserviceGenerator {
    * @param microservice The updated microservice model
    * @param oldMicroservice The current/old microservice model
    * @param files The traced files with the current source code
-   * @param service An instance of {@link i5.las2peer.api.Service} needed to invoke the GitHubProxy
-   *        service
- * @throws ModelParseException 
    */
 
   public static void synchronizeSourceCode(Microservice microservice, Microservice oldMicroservice,
@@ -156,19 +153,19 @@ public class MicroserviceSynchronization extends MicroserviceGenerator {
     // if the old service file was renamed, we need to rename it in the local repo
     if (!serviceFileName.equals(serviceOldFileName)) {
       renameFileInRepository(getRepositoryName(oldMicroservice), serviceFileName,
-          serviceOldFileName, service);
+          serviceOldFileName);
     }
 
     // if the old service test file was renamed, we need to rename it in the local repo
     if (!serviceTestFileName.equals(serviceOldTestFileName)) {
       renameFileInRepository(getRepositoryName(oldMicroservice), serviceTestFileName,
-          serviceOldTestFileName, service);
+          serviceOldTestFileName);
     }
 
     // if the old service properties file was renamed, we need to rename it in the local repo
     if (!servicePropertiesFileName.equals(serviceOldPropertiesFileName)) {
       renameFileInRepository(getRepositoryName(oldMicroservice), servicePropertiesFileName,
-          serviceOldPropertiesFileName, service);
+          serviceOldPropertiesFileName);
     }
 
     // now loop through the traced files and synchronize them
@@ -185,11 +182,10 @@ public class MicroserviceSynchronization extends MicroserviceGenerator {
           microservice, gitAdapter.getGitOrganization(), databaseManager);
     } else if (files.containsKey(oldDatabaseManagerFileName)
         && microservice.getDatabase() == null) {
-      deleteFileInLocalRepository(getRepositoryName(oldMicroservice), oldDatabaseManagerFileName,
-          service);
+      deleteFileInLocalRepository(getRepositoryName(oldMicroservice), oldDatabaseManagerFileName);
     } else if (!oldDatabaseManagerFileName.equals(newDatabaseManagerFileName)) {
       renameFileInRepository(getRepositoryName(oldMicroservice), newDatabaseManagerFileName,
-          oldDatabaseManagerFileName, service);
+          oldDatabaseManagerFileName);
     }
 
     // special case for database script, as it is not always traced
@@ -205,12 +201,11 @@ public class MicroserviceSynchronization extends MicroserviceGenerator {
           microservice);
 
     } else if (files.containsKey(databaseOldScriptFileName) && microservice.getDatabase() == null) {
-      deleteFileInLocalRepository(getRepositoryName(oldMicroservice), databaseOldScriptFileName,
-          service);
+      deleteFileInLocalRepository(getRepositoryName(oldMicroservice), databaseOldScriptFileName);
     } else if (!databaseOldScriptFileName.equals(databaseScriptFileName)) {
 
       renameFileInRepository(getRepositoryName(oldMicroservice), databaseScriptFileName,
-          databaseOldScriptFileName, service);
+          databaseOldScriptFileName);
     }
 
 
