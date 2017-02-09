@@ -1,5 +1,7 @@
 package i5.las2peer.services.codeGenerationService.adapters;
 
+import i5.las2peer.services.codeGenerationService.exception.GitHostException;
+
 /**
  * 
  * @author jonask
@@ -20,7 +22,7 @@ public abstract class BaseGitHostAdapter implements GitHostAdapter {
 	protected String baseURL = "";
 
 	protected BaseGitHostAdapter(String gitUser, String gitPassword, String gitOrganization, String templateRepository,
-			String gitUserMail, String baseURL) {
+			String gitUserMail, String baseURL) throws GitHostException {
 		super();
 		this.gitUser = gitUser;
 		this.gitPassword = gitPassword;
@@ -28,6 +30,14 @@ public abstract class BaseGitHostAdapter implements GitHostAdapter {
 		this.templateRepository = templateRepository;
 		this.gitUserMail = gitUserMail;
 		this.baseURL = baseURL;
+		
+		if(gitUser.isEmpty() || 
+				gitPassword.isEmpty() || 
+				gitOrganization.isEmpty() || 
+				templateRepository.isEmpty() ||
+				gitUserMail.isEmpty()) {
+			throw new GitHostException("Not all required properties are set");
+		}
 	}
 
 	public String getGitUser() {

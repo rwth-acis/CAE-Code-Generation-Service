@@ -21,12 +21,12 @@ public class GitHubAdapter extends BaseGitHostAdapter {
 	//TODO: Exception handling
 	
 	private GitHubAdapter(String gitUser, String gitPassword, String gitOrganization, String templateRepository,
-			String gitUserMail, String baseURL) {
+			String gitUserMail, String baseURL) throws GitHostException {
 		super(gitUser, gitPassword, gitOrganization, templateRepository, gitUserMail, baseURL);
 	}
 
 	public GitHubAdapter(String gitUser, String gitPassword, String gitOrganization, String templateRepository, 
-			String gitUserMail) {
+			String gitUserMail) throws GitHostException {
 		this(gitUser,gitPassword,gitOrganization,templateRepository,gitUserMail,"https://github.com/");
 	}
 
