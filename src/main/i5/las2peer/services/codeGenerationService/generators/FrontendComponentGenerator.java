@@ -373,6 +373,7 @@ public class FrontendComponentGenerator extends Generator {
 
 
     // widget meta-data and path replacements
+    //TODO: Urls hardcoded!!!
     widgetTemplate.setVariable("$Widget_Title$", frontendComponent.getWidgetName());
     widgetTemplate.setVariable("$Widget_Description$", frontendComponent.getWidgetDescription());
     widgetTemplate.setVariable("$Widget_Developer_Name$",
@@ -382,8 +383,8 @@ public class FrontendComponentGenerator extends Generator {
     widgetTemplate.setVariable("$Widget_Width$", frontendComponent.getWidgetWidth() + "");
     widgetTemplate.setVariable("$Widget_Height$", frontendComponent.getWidgetHeight() + "");
 
-    String widgetHome = "http://" + gitHubOrganization + ".github.io/" + repositoryName;
-    //String widgetHome = "http://ginkgo.informatik.rwth-aachen.de:9081/"+gitHubOrganization+"/"+repositoryName;
+    //String widgetHome = "http://" + gitHubOrganization + ".github.io/" + repositoryName;
+    String widgetHome = "http://cloud10.dbis.rwth-aachen.de:9090/"+repositoryName;
     widgetTemplate.setVariable("$Widget_Home$", widgetHome);
     widgetTemplate.setVariableIfNotSet("$Main_Content$", "");
     widgetTemplate.setVariableIfNotSet("$Additional_Imports$", "");
