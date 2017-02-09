@@ -184,8 +184,11 @@ public class CodeGenerationService extends RESTService {
 				try {
 					switch (type) {
 					case "microservice":
+						// Create an object representing the microservice model
 						L2pLogger.logEvent(Event.SERVICE_MESSAGE, "createFromModel: Creating microservice model now..");
 						Microservice microservice = new Microservice(model);
+						
+						// Generate the code (and repositories) for this model
 						L2pLogger.logEvent(Event.SERVICE_MESSAGE,
 								"createFromModel: Creating microservice source code now..");
 						MicroserviceGenerator.createSourceCode(microservice, this.templateRepository,
@@ -193,6 +196,7 @@ public class CodeGenerationService extends RESTService {
 						L2pLogger.logEvent(Event.SERVICE_MESSAGE, "createFromModel: Created!");
 						return "done";
 
+					//The same for the two other types
 					case "frontend-component":
 						L2pLogger.logEvent(Event.SERVICE_MESSAGE,
 								"createFromModel: Creating frontend component model now..");
