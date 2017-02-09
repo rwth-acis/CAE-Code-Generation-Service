@@ -145,7 +145,6 @@ public class CodeGenerationService extends RESTService {
 
   @Override
   protected void initResources() {
-	  //getResourceConfig().packages("i5.las2peer.services.codeGenerationService");
 	  getResourceConfig().register(RESTResources.class);
   }
   
@@ -161,81 +160,77 @@ public class CodeGenerationService extends RESTService {
    *         message
    * 
    */
-  public String createFromModel(boolean forcePush, Serializable... serializedModel) {
+	public String createFromModel(boolean forcePush, Serializable... serializedModel) {
 
-    SimpleModel model = (SimpleModel) serializedModel[0];
+		SimpleModel model = (SimpleModel) serializedModel[0];
 
-    L2pLogger.logEvent(Event.SERVICE_MESSAGE,
-        "createFromModel: Received model with name " + model.getName());
-    // TESTING: write as file
-    /*
-    try {
-    	OutputStream file = new FileOutputStream("testModels/" + model.getName() + ".model");
-    	OutputStream buffer = new BufferedOutputStream(file);
-    	ObjectOutput output = new ObjectOutputStream(buffer);
-    	output.writeObject(model);
-    	output.close();
-      } catch (IOException ex) {
-    	  
-      }
-     */
+		L2pLogger.logEvent(Event.SERVICE_MESSAGE, "createFromModel: Received model with name " + model.getName());
+		// TESTING: write as file
+		/*
+		 * try { OutputStream file = new FileOutputStream("testModels/" +
+		 * model.getName() + ".model"); OutputStream buffer = new
+		 * BufferedOutputStream(file); ObjectOutput output = new
+		 * ObjectOutputStream(buffer); output.writeObject(model);
+		 * output.close(); } catch (IOException ex) {
+		 * 
+		 * }
+		 */
 
-    // find out what type of model we got (microservice, frontend-component or application)
-    for (int i = 0; i < model.getAttributes().size(); i++) {
-      if (model.getAttributes().get(i).getName().equals("type")) {
-        String type = model.getAttributes().get(i).getValue();
-        try {
-          switch (type) {
-            case "microservice":
-              L2pLogger.logEvent(Event.SERVICE_MESSAGE,
-                  "createFromModel: Creating microservice model now..");
-              Microservice microservice = new Microservice(model);
-              L2pLogger.logEvent(Event.SERVICE_MESSAGE,
-                  "createFromModel: Creating microservice source code now..");
-              MicroserviceGenerator.createSourceCode(microservice, this.templateRepository,
-                  (BaseGitHostAdapter) gitAdapter, forcePush);
-              L2pLogger.logEvent(Event.SERVICE_MESSAGE, "createFromModel: Created!");
-              return "done";  
-              
-            case "frontend-component":
-              L2pLogger.logEvent(Event.SERVICE_MESSAGE,
-                  "createFromModel: Creating frontend component model now..");
-              FrontendComponent frontendComponent = new FrontendComponent(model);
-              L2pLogger.logEvent(Event.SERVICE_MESSAGE,
-                  "createFromModel: Creating frontend component source code now..");
-              FrontendComponentGenerator.createSourceCode(frontendComponent, (BaseGitHostAdapter) gitAdapter, forcePush);
-              L2pLogger.logEvent(Event.SERVICE_MESSAGE, "createFromModel: Created!");
-              return "done";
-              
-            case "application":
-              L2pLogger.logEvent(Event.SERVICE_MESSAGE,
-                  "createFromModel: Creating application model now..");
-              Application application = new Application(serializedModel);
-              L2pLogger.logEvent(Event.SERVICE_MESSAGE,
-                  "createFromModel: Creating application source code now..");
-              ApplicationGenerator.createSourceCode(application, (BaseGitHostAdapter) gitAdapter);
-              L2pLogger.logEvent(Event.SERVICE_MESSAGE, "createFromModel: Created!");
-              return "done";
-            default:
-              return "Error: Model has to have an attribute 'type' that is either "
-                  + "'microservice', 'frontend-component' or 'application'!";
-          }
-        } catch (ModelParseException e1) {
-          L2pLogger.logEvent(Event.SERVICE_MESSAGE,
-              "createFromModel: Model parsing exception: " + e1.getMessage());
-          logger.printStackTrace(e1);
-          return "Error: Parsing model failed with " + e1.getMessage();
-        } catch (GitHostException e2) {
-          L2pLogger.logEvent(Event.SERVICE_MESSAGE,
-              "createFromModel: GitHub access exception: " + e2.getMessage());
-          logger.printStackTrace(e2);
-          return "Error: Generating code failed because of failing GitHub access: "
-              + e2.getMessage();
-        }
-      }
-    }
-    return "Model has no attribute 'type'!";
-  }
+		// find out what type of model we got (microservice, frontend-component
+		// or application)
+		for (int i = 0; i < model.getAttributes().size(); i++) {
+			if (model.getAttributes().get(i).getName().equals("type")) {
+				String type = model.getAttributes().get(i).getValue();
+				try {
+					switch (type) {
+					case "microservice":
+						L2pLogger.logEvent(Event.SERVICE_MESSAGE, "createFromModel: Creating microservice model now..");
+						Microservice microservice = new Microservice(model);
+						L2pLogger.logEvent(Event.SERVICE_MESSAGE,
+								"createFromModel: Creating microservice source code now..");
+						MicroserviceGenerator.createSourceCode(microservice, this.templateRepository,
+								(BaseGitHostAdapter) gitAdapter, forcePush);
+						L2pLogger.logEvent(Event.SERVICE_MESSAGE, "createFromModel: Created!");
+						return "done";
+
+					case "frontend-component":
+						L2pLogger.logEvent(Event.SERVICE_MESSAGE,
+								"createFromModel: Creating frontend component model now..");
+						FrontendComponent frontendComponent = new FrontendComponent(model);
+						L2pLogger.logEvent(Event.SERVICE_MESSAGE,
+								"createFromModel: Creating frontend component source code now..");
+						FrontendComponentGenerator.createSourceCode(frontendComponent, (BaseGitHostAdapter) gitAdapter,
+								forcePush);
+						L2pLogger.logEvent(Event.SERVICE_MESSAGE, "createFromModel: Created!");
+						return "done";
+
+					case "application":
+						L2pLogger.logEvent(Event.SERVICE_MESSAGE, "createFromModel: Creating application model now..");
+						Application application = new Application(serializedModel);
+						L2pLogger.logEvent(Event.SERVICE_MESSAGE,
+								"createFromModel: Creating application source code now..");
+						ApplicationGenerator.createSourceCode(application, (BaseGitHostAdapter) gitAdapter);
+						L2pLogger.logEvent(Event.SERVICE_MESSAGE, "createFromModel: Created!");
+						return "done";
+					default:
+						return "Error: Model has to have an attribute 'type' that is either "
+								+ "'microservice', 'frontend-component' or 'application'!";
+					}
+				} catch (ModelParseException e1) {
+					L2pLogger.logEvent(Event.SERVICE_MESSAGE,
+							"createFromModel: Model parsing exception: " + e1.getMessage());
+					logger.printStackTrace(e1);
+					return "Error: Parsing model failed with " + e1.getMessage();
+				} catch (GitHostException e2) {
+					L2pLogger.logEvent(Event.SERVICE_MESSAGE,
+							"createFromModel: GitHub access exception: " + e2.getMessage());
+					logger.printStackTrace(e2);
+					return "Error: Generating code failed because of failing GitHub access: " + e2.getMessage();
+				}
+			}
+		}
+		return "Model has no attribute 'type'!";
+	}
   
   public String createFromModel(Serializable... serializedModel) {
 	  return createFromModel(false, serializedModel);
