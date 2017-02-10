@@ -384,7 +384,7 @@ public class FrontendComponentGenerator extends Generator {
     widgetTemplate.setVariable("$Widget_Height$", frontendComponent.getWidgetHeight() + "");
 
     //String widgetHome = "http://" + gitHubOrganization + ".github.io/" + repositoryName;
-    String widgetHome = "http://cloud10.dbis.rwth-aachen.de:9090/"+repositoryName;
+    String widgetHome = "http://cloud10.dbis.rwth-aachen.de:8088/"+repositoryName;
     widgetTemplate.setVariable("$Widget_Home$", widgetHome);
     widgetTemplate.setVariableIfNotSet("$Main_Content$", "");
     widgetTemplate.setVariableIfNotSet("$Additional_Imports$", "");
