@@ -50,11 +50,8 @@ import i5.las2peer.services.codeGenerationService.models.frontendComponent.Front
  */
 public class ApplicationGenerator extends Generator {
 
-	public static String deploymentRepo;
-
-  private static final L2pLogger logger =
-      L2pLogger.getInstance(ApplicationGenerator.class.getName());
-
+  public static String deploymentRepo;
+  private static final L2pLogger logger = L2pLogger.getInstance(ApplicationGenerator.class.getName());
 
   /**
    * 
@@ -523,7 +520,7 @@ public class ApplicationGenerator extends Generator {
 
   /**
    * Get the job console text of a build of a queue item. When the item is still pending, the string
-   * "Pending" is returned.
+   * "Pending" is returned. This consumes an URL provided by jenkins.
    * 
    * @param queueItem The path of the queue item
    * @param jenkinsUrl The base path of Jenkins
@@ -567,7 +564,9 @@ public class ApplicationGenerator extends Generator {
   }
 
   /**
-   * Start a job for the deployment of an application
+   * Start a job for the deployment of an application by making a HTTP request to the URL jenkins provides us with.
+   * They have to following format: PlaceWhereJenkinsIsHosted/job/[jobName]/build?token=[token]
+   * with token being the secret that has been set in Jenkins
    * 
    * @param jenkinsUrl The base path of Jenkins
    * @param jobToken The token to start the job
