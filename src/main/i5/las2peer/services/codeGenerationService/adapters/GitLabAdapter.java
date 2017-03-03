@@ -26,7 +26,7 @@ public class GitLabAdapter extends BaseGitHostAdapter{
 	private String token;
 		
 	public GitLabAdapter(String baseURL, String token, String gitUser, String gitPassword, String gitOrganization, 
-			String templateRepository, String gitUserMail) {
+			String templateRepository, String gitUserMail) throws GitHostException {
 		super(gitUser, gitPassword, gitOrganization, templateRepository, gitUserMail, baseURL);
 		this.token = token;
 

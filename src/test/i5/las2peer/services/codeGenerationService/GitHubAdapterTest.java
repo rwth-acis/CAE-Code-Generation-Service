@@ -59,8 +59,9 @@ public class GitHubAdapterTest {
 	
 	@Test
 	public void createRepoTest() {
-		GitHostAdapter gitAdapter =  new GitHubAdapter(gitUser, gitPassword, gitOrganization, templateRepository, gitUserMail);
-		try {
+		GitHostAdapter gitAdapter = null;
+		try{
+			gitAdapter =  new GitHubAdapter(gitUser, gitPassword, gitOrganization, templateRepository, gitUserMail);
 			gitAdapter.createRepo("Testrepo", "testdescription");
 		} catch (GitHostException e) {
 			e.printStackTrace();
@@ -101,17 +102,29 @@ public class GitHubAdapterTest {
 		}catch(GitHostException e) {
 			e.printStackTrace();
 			fail();
+		} catch(NullPointerException e) {
+			e.printStackTrace();
+			fail();
 		}
 		
 	}
 	
 	@Test
 	public void deleteRepoTest() {
-		GitHostAdapter gitAdapter = new GitHubAdapter(gitUser, gitPassword, gitOrganization, templateRepository, gitUserMail);
-	
+		GitHostAdapter gitAdapter = null;
+		try {
+			gitAdapter = new GitHubAdapter(gitUser, gitPassword, gitOrganization, templateRepository, gitUserMail);
+		} catch (GitHostException e) {
+			e.printStackTrace();
+			fail();
+		}
+		
 		try {
 			gitAdapter.createRepo("Testrepo", "test");
 		} catch(GitHostException e) {
+			e.printStackTrace();
+			fail();
+		} catch(NullPointerException e) {
 			e.printStackTrace();
 			fail();
 		}
@@ -119,6 +132,9 @@ public class GitHubAdapterTest {
 		try {
 			gitAdapter.deleteRepo("Testrepo");
 		} catch(GitHostException e) {
+			e.printStackTrace();
+			fail();
+		} catch(NullPointerException e) {
 			e.printStackTrace();
 			fail();
 		}

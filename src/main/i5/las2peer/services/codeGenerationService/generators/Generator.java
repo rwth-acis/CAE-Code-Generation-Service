@@ -49,7 +49,7 @@ public abstract class Generator {
 
 
   private static final L2pLogger logger =
-      L2pLogger.getInstance(ApplicationGenerator.class.getName());
+      L2pLogger.getInstance(Generator.class.getName());
 
   /**
    * 
