@@ -67,6 +67,8 @@ public class CodeGenerationService extends RESTService {
 	private String baseURL;
 	private String token;
 
+	private String oidcProvider;
+	
 	// The git service adapter object
 	private GitHostAdapter gitAdapter;
 
@@ -853,5 +855,11 @@ public class CodeGenerationService extends RESTService {
 	public String getWidgetHomeBaseURL() {
 		return widgetHomeBaseURL;
 	}
+
+	public String getOidcProvider() {
+		return oidcProvider;
+	}
+	
+	
 	
 }

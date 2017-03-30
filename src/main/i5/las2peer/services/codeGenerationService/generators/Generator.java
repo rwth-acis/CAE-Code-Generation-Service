@@ -624,4 +624,19 @@ public abstract class Generator {
       logger.printStackTrace(e);
     }
   }
+
+  /**
+   * Replace an exactly matching placeholder of the form %%something%%, otherwise nothing will be changed
+   * @param text The text to replace in
+   * @param placeholder The string to replace, format: %%something%%
+   * @return The string with replacements
+   */
+  protected static String replaceExactMatch(String text, String placeholder, String replacement) {
+	  if(placeholder.startsWith("%%") && placeholder.endsWith("%%")){
+		  text = text.replace(placeholder, replacement);
+		  return text;
+	  } else {
+		  return text;
+	  }
+  }
 }

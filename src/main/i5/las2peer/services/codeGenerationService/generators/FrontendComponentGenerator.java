@@ -138,8 +138,10 @@ public class FrontendComponentGenerator extends Generator {
 	              yjsImports = new String(loader.getBytes(), "UTF-8");
 	              break;
 	            case "las2peerWidgetLibrary.js":
-	            	//TODO: OIDC
 	              las2peerWidgetLibrary = new String(loader.getBytes(), "UTF-8");
+	              las2peerWidgetLibrary = replaceExactMatch(las2peerWidgetLibrary, 
+	            		  "%%oidcProvider%%", 
+	            		  ((CodeGenerationService)Context.getCurrent().getService()).getOidcProvider());
 	              break;
 	            case "iwc.js":
 	              iwc = new String(loader.getBytes(), "UTF-8");
