@@ -64,10 +64,11 @@ public class CodeGenerationService extends RESTService {
 
 	private boolean useModelCheck;
 
-	// GitLab specific
 	private String baseURL;
 	private String token;
 
+	private String oidcProvider;
+	
 	// The git service adapter object
 	private GitHostAdapter gitAdapter;
 
@@ -86,6 +87,9 @@ public class CodeGenerationService extends RESTService {
 
 	boolean useModelSynchronization;
 	private final L2pLogger logger = L2pLogger.getInstance(CodeGenerationService.class.getName());
+	
+	//The base URL where generated and deployed widget's files are hosted
+	private String widgetHomeBaseURL;
 
 	public CodeGenerationService() throws GitHostException {
 		// read and set properties-file values
@@ -125,6 +129,17 @@ public class CodeGenerationService extends RESTService {
 		} else {
 			// Check for trailing slash, to prevent annoying errors
 			if (!baseURL.endsWith("/")) {
+				baseURL = baseURL.concat("/");
+			}
+		}
+		if (Objects.equals(widgetHomeBaseURL, "")) {
+			// Warn about empty base path and that github.io is used
+			logger.warning("Using github pages base path as no url is specified!");
+			//"http://" + gitHubOrganization + ".github.io/"
+			widgetHomeBaseURL = "http://" + gitOrganization + ".github.io/";
+		} else {
+			// Check for trailing slash
+			if(!widgetHomeBaseURL.endsWith("/")) {
 				baseURL = baseURL.concat("/");
 			}
 		}
@@ -824,4 +839,27 @@ public class CodeGenerationService extends RESTService {
 	public String getGitUserMail() {
 		return gitUserMail;
 	}
+
+	public String getUsedGitHost() {
+		return usedGitHost;
+	}
+	
+	public boolean usingGitHub() {
+		if (Objects.equals(usedGitHost, "GitHub")) {
+			return true;
+		} else {
+			return false;
+		}
+	}
+	
+	public String getWidgetHomeBaseURL() {
+		return widgetHomeBaseURL;
+	}
+
+	public String getOidcProvider() {
+		return oidcProvider;
+	}
+	
+	
+	
 }

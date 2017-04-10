@@ -17,7 +17,9 @@ import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.treewalk.TreeWalk;
 import org.eclipse.jgit.treewalk.filter.PathFilter;
 
+import i5.las2peer.api.Context;
 import i5.las2peer.logging.L2pLogger;
+import i5.las2peer.services.codeGenerationService.CodeGenerationService;
 import i5.las2peer.services.codeGenerationService.adapters.BaseGitHostAdapter;
 import i5.las2peer.services.codeGenerationService.exception.GitHostException;
 import i5.las2peer.services.codeGenerationService.models.frontendComponent.Event;
@@ -137,6 +139,9 @@ public class FrontendComponentGenerator extends Generator {
 	              break;
 	            case "las2peerWidgetLibrary.js":
 	              las2peerWidgetLibrary = new String(loader.getBytes(), "UTF-8");
+	              las2peerWidgetLibrary = replaceExactMatch(las2peerWidgetLibrary, 
+	            		  "%%oidcProvider%%", 
+	            		  ((CodeGenerationService)Context.getCurrent().getService()).getOidcProvider());
 	              break;
 	            case "iwc.js":
 	              iwc = new String(loader.getBytes(), "UTF-8");
@@ -376,15 +381,14 @@ public class FrontendComponentGenerator extends Generator {
     //TODO: Urls hardcoded!!!
     widgetTemplate.setVariable("$Widget_Title$", frontendComponent.getWidgetName());
     widgetTemplate.setVariable("$Widget_Description$", frontendComponent.getWidgetDescription());
-    widgetTemplate.setVariable("$Widget_Developer_Name$",
-        frontendComponent.getWidgetDeveloperName());
-    widgetTemplate.setVariable("$Widget_Developer_Mail$",
-        frontendComponent.getWidgetDeveloperMail());
+    widgetTemplate.setVariable("$Widget_Developer_Name$", frontendComponent.getWidgetDeveloperName());
+    widgetTemplate.setVariable("$Widget_Developer_Mail$", frontendComponent.getWidgetDeveloperMail());
     widgetTemplate.setVariable("$Widget_Width$", frontendComponent.getWidgetWidth() + "");
     widgetTemplate.setVariable("$Widget_Height$", frontendComponent.getWidgetHeight() + "");
 
     //String widgetHome = "http://" + gitHubOrganization + ".github.io/" + repositoryName;
-    String widgetHome = "http://cloud10.dbis.rwth-aachen.de:8088/"+repositoryName;
+    //String widgetHome = "http://cloud10.dbis.rwth-aachen.de:8088/"+repositoryName;
+    String widgetHome = ((CodeGenerationService) Context.getCurrent().getService()).getWidgetHomeBaseURL() + repositoryName;
     widgetTemplate.setVariable("$Widget_Home$", widgetHome);
     widgetTemplate.setVariableIfNotSet("$Main_Content$", "");
     widgetTemplate.setVariableIfNotSet("$Additional_Imports$", "");
