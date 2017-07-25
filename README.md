@@ -10,4 +10,4 @@ If you just want to try out the Community Application Editor you don't need to s
 * [Application Editor](http://cloud10.dbis.rwth-aachen.de:8081/spaces/CAEApplication)
 
 ## Installation
-Please refer to the [Model Persistence Service](https://github.com/rwth-acis/CAE-Model-Persistence-Service).
+For information on how to install the CAE take a look at the [wiki](https://github.com/rwth-acis/CAE/wiki/Deployment-and-Configuration).
