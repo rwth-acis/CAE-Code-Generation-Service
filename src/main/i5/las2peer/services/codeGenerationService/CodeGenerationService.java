@@ -206,6 +206,7 @@ public class CodeGenerationService extends RESTService {
 				try {
 					switch (type) {
 					case "microservice":
+						System.out.println("[Code Generation] Generating codes for microservice");
 						// Create an object representing the microservice model
 						L2pLogger.logEvent(Event.SERVICE_MESSAGE, "createFromModel: Creating microservice model now..");
 						Microservice microservice = new Microservice(model);
