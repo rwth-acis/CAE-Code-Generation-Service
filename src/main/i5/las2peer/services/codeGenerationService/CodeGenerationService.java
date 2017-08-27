@@ -13,6 +13,8 @@ import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.treewalk.TreeWalk;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
+//import com.google.code.gson.*;
+
 import i5.cae.simpleModel.SimpleModel;
 import i5.las2peer.logging.L2pLogger;
 import i5.las2peer.logging.NodeObserver.Event;
@@ -90,6 +92,8 @@ public class CodeGenerationService extends RESTService {
 	
 	//The base URL where generated and deployed widget's files are hosted
 	private String widgetHomeBaseURL;
+
+	//private Gson gson = new GsonBuilder().serializeSpecialFloatingPointValues().serializ‌​eNulls().create();  
 
 	public CodeGenerationService() throws GitHostException {
 		// read and set properties-file values
@@ -192,6 +196,7 @@ public class CodeGenerationService extends RESTService {
 		 * 
 		 * }
 		 */
+		//System.out.println(gson.toJson(model));
 
 		// find out what type of model we got (microservice, frontend-component
 		// or application)
@@ -334,6 +339,8 @@ public class CodeGenerationService extends RESTService {
 	 */
 	public String updateRepositoryOfModel(Serializable... serializedModel) {
 
+		System.out.println("[Code Generation] Update repository of model");
+
 		SimpleModel model = (SimpleModel) serializedModel[0];
 		String modelName = model.getName();
 		L2pLogger.logEvent(Event.SERVICE_MESSAGE, "updateRepositoryOfModel: Received model with name " + modelName);
@@ -365,7 +372,7 @@ public class CodeGenerationService extends RESTService {
 						// only if an old model and a remote repository exist,
 						// we can synchronize
 						// the model and source code
-
+						System.out.println("[Code Generation] Check model sync and old model");
 						if (useModelSynchronization && oldModel != null && MicroserviceSynchronization
 								.existsRemoteRepositoryForModel(microservice, (BaseGitHostAdapter) gitAdapter)) {
 							Microservice oldMicroservice = new Microservice(oldModel);

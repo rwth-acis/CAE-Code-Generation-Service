@@ -3,6 +3,7 @@ package i5.las2peer.services.codeGenerationService.models.microservice;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Arrays;
 
 import i5.cae.simpleModel.SimpleEntityAttribute;
 import i5.cae.simpleModel.SimpleModel;
@@ -40,6 +41,7 @@ public class Microservice {
    * 
    */
   public Microservice(SimpleModel model) throws ModelParseException {
+    System.out.println("[Code Generation] New code generation microservice");
     this.httpMethods = new HashMap<String, HttpMethod>();
 
     // used for checking node to edge dependencies for correctness
@@ -140,6 +142,8 @@ public class Microservice {
     boolean databaseToResourceEdge = false;
 
     ArrayList<SimpleEdge> edges = model.getEdges();
+    System.out.println("[Code Generation] List edges ");
+    edges.forEach((edge) -> System.out.println(edge.getLabelValue()));
     for (int edgeIndex = 0; edgeIndex < edges.size(); edgeIndex++) {
       String currentEdgeSource = edges.get(edgeIndex).getSourceNode();
       String currentEdgeTarget = edges.get(edgeIndex).getTargetNode();
@@ -216,7 +220,15 @@ public class Microservice {
         case "HTTP Method to HTTP Payload":
           HttpMethod currentHttpMethod = this.httpMethods.get(currentEdgeSource);
           HttpPayload currentHttpPayload = tempHttpPayloads.get(currentEdgeTarget);
+          System.out.println("[Code Generation] Check method and payloads");
+          if(currentHttpMethod != null)
+            System.out.println("[Code Generation] " + currentHttpMethod.getName());
+          
+          if(currentHttpPayload != null)
+            System.out.println("[Code Generation] " + currentHttpPayload.getName());
+
           if (currentHttpMethod == null || currentHttpPayload == null) {
+            System.out.println("[Code Generation] Current http method is null or current http payload is null");
             throw new ModelParseException("Wrong HTTP Method to HTTP Payload Edge!");
           }
           currentHttpMethod.addHttpPayload(currentHttpPayload);
@@ -234,7 +246,16 @@ public class Microservice {
           currentHttpMethod = this.httpMethods.get(currentEdgeSource);
           HttpResponse currentHttpResponse = tempHttpResponses.get(currentEdgeTarget);
           
+          System.out.println("[Code Generation] Check HTTP method to HTTP response");
+
+          if(currentHttpMethod != null)
+            System.out.println("[Code Generation] " + currentHttpMethod.getName());
+          
+          if(currentHttpResponse != null)
+            System.out.println("[Code Generation] " + currentHttpResponse.getName());
+          
           if (currentHttpMethod == null || currentHttpResponse == null) {
+            System.out.println("[Code Generation] empty current http method or http response");
             throw new ModelParseException("Wrong HTTP Method to HTTP Response Edge!");
           }
           currentHttpMethod.addHttpResponse(currentHttpResponse);
@@ -245,11 +266,29 @@ public class Microservice {
       }
     }
 
+    System.out.println("[Code Generation] Check http method to resource counts");
+    System.out.println("[Code Generation] " + httpMethodToResourceEdges);
+    System.out.println("[Code Generation] " + this.httpMethods.size());
+
+    System.out.println("[Code Generation] Check database to resources edges");
+    System.out.println("[Code Generation] " + databaseToResourceEdge);
+    System.out.println("[Code Generation] " + this.database.getName());
+
+    System.out.println("[Code Generation] Check database to tables edges");
+    System.out.println("[Code Generation] " + tableToDatabaseEdges);
+    System.out.println("[Code Generation] " + tempTables.size());
+
     // check for correct edge counts
-    if (!(httpMethodToResourceEdges == this.httpMethods.size())
-        || (!databaseToResourceEdge && this.database != null)
-        || !(tableToDatabaseEdges == tempTables.size())) {
-      throw new ModelParseException("Model is not fully connected!");
+    if (!(httpMethodToResourceEdges == this.httpMethods.size())) {
+      throw new ModelParseException("Not enough http method to resource edges with http methods size. Model is not fully connected!");
+    }
+    // check for correct edge counts
+    if (!(tableToDatabaseEdges == tempTables.size())) {
+      throw new ModelParseException("Not enough table to database edges. Model is not fully connected!");
+    }
+    // check database edges
+    if ((!databaseToResourceEdge && this.database != null)) {
+      throw new ModelParseException("No database to resource edge and database is not null. Model is not fully connected!");
     }
     // check if all columns were correctly connected to a table
     if (!tempColumns.isEmpty()) {

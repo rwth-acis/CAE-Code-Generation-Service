@@ -304,6 +304,7 @@ public class GitUtility {
 	}
 	
 	public void switchBranch(Git git, String branchName) throws GitHelperException {
+		logger.info("[SWITCH BRANCH] Trying to switch to branch " + branchName);
 		try {
 			if (git.getRepository().getBranch().equals(branchName)) {
 				return;
