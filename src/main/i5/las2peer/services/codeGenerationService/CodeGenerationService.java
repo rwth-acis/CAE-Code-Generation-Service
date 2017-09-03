@@ -181,9 +181,12 @@ public class CodeGenerationService extends RESTService {
 	 *         error, the error message
 	 * 
 	 */
-	public String createFromModel(boolean forcePush, Serializable... serializedModel) {
+	public String createFromModel(boolean forcePush, String metadataDoc, Serializable... serializedModel) {
 
 		SimpleModel model = (SimpleModel) serializedModel[0];
+
+		System.out.println("CREATE FROM MODEL METADATA DOC STRING: ");
+		System.out.println(metadataDoc);
 
 		L2pLogger.logEvent(Event.SERVICE_MESSAGE, "createFromModel: Received model with name " + model.getName());
 		// TESTING: write as file
@@ -338,9 +341,12 @@ public class CodeGenerationService extends RESTService {
 	 *         error, the error message
 	 * 
 	 */
-	public String updateRepositoryOfModel(Serializable... serializedModel) {
+	public String updateRepositoryOfModel(String metadataDoc, Serializable... serializedModel) {
 
 		System.out.println("[Code Generation] Update repository of model");
+
+		System.out.println("UPDATE REPOSITORY OF MODEL METADATA DOC STRING: ");
+		System.out.println(metadataDoc);
 
 		SimpleModel model = (SimpleModel) serializedModel[0];
 		String modelName = model.getName();

@@ -231,6 +231,7 @@ public class MicroserviceSynchronization extends MicroserviceGenerator {
                     String repositoryLocation =
                             gitAdapter.getBaseURL() + gitAdapter.getGitOrganization() + "/" + getRepositoryName(microservice);
 
+                    // TODO: Generate metadata information
                     generateNewServiceClass(templateEngine, serviceClass, microservice, repositoryLocation,
                             genericHttpMethod, genericHttpMethodBody, genericApiResponse, genericHttpResponse,
                             databaseConfig, databaseInstantiation, serviceInvocation);

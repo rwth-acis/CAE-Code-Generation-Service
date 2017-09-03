@@ -676,6 +676,8 @@ public class MicroserviceGenerator extends Generator {
 
         // http methods
         HttpMethod[] httpMethods = microservice.getHttpMethods().values().toArray(new HttpMethod[0]);
+
+        // generate REST methods and TODO generate metadata informations from swagger json
         for (int httpMethodIndex = 0; httpMethodIndex < httpMethods.length; httpMethodIndex++) {
             HttpMethod currentMethod = httpMethods[httpMethodIndex];
 
