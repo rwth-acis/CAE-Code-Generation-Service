@@ -265,6 +265,11 @@ public class MicroserviceGenerator extends Generator {
                             generateOtherArtifacts(Template.createInitialTemplateEngine(traceModel, path),
                                     microservice, gitAdapter.getGitOrganization(), classpath);
                             break;
+                        case "swagger.json":
+                            String swaggerJson = new String(loader.getBytes(), "UTF-8");
+                            generateOtherArtifacts(Template.createInitialTemplateEngine(traceModel, path),
+                                    microservice, gitAdapter.getGitOrganization(), swaggerJson);
+                            break;
                         case "DatabaseManager.java":
                             if (microservice.getDatabase() != null) {
                                 databaseManager = new String(loader.getBytes(), "UTF-8");
@@ -451,8 +456,6 @@ public class MicroserviceGenerator extends Generator {
         String packageName = getPackageName(microservice);
         String port = "8080";
 
-        System.out.println("[Microservice Generator - generateOtherArtifacts] Repository name " + repositoryName);
-
         // get the port: skip first 6 characters for search (http: / https:)
         try {
             port = String.valueOf(new URL(microservice.getPath()).getPort());
@@ -577,6 +580,11 @@ public class MicroserviceGenerator extends Generator {
                         microservice.getMicroserviceModelId() + ":databaseManager", templateContent);
                 template.setVariable("$Lower_Resource_Name$", packageName);
                 break;
+            case "swagger.json":
+                template = templateEngine.createTemplate(
+                            microservice.getMicroserviceModelId() + ":swagger", templateContent);
+                template.setVariable("$MetadataDoc$", microservice.getMetadataDocString());
+                break;
         }
 
         if (template != null) {
@@ -605,8 +613,8 @@ public class MicroserviceGenerator extends Generator {
                                                   String genericHttpMethodBody, String genericApiResponse, String genericHttpResponse,
                                                   String databaseConfig, String databaseInstantiation, String serviceInvocation) {
 
-        System.out.println("[Microservice Generator] Generate new service class for " + serviceClass);
-        System.out.println("[Microservice Generator] Repository name " + repositoryLocation);
+        System.out.println("[Microservice Generator - generateNewServiceClass] Generate new service class for " + serviceClass);
+        System.out.println("[Microservice Generator - generateNewServiceClass] Repository name " + repositoryLocation);
         // helper variables
         String packageName = microservice.getResourceName().substring(0, 1).toLowerCase()
                 + microservice.getResourceName().substring(1);
@@ -619,8 +627,8 @@ public class MicroserviceGenerator extends Generator {
                 templateEngine.createTemplate(microservice.getMicroserviceModelId(), serviceClass);
         templateEngine.addTemplate(serviceClassTemplate);
 
-        System.out.println("[Microservice Generator] Template engine file name " + templateEngine.getFileName());
-        System.out.println("[Microservice Generator] Service class template file name " + serviceClassTemplate.getTemplateFileName());
+        System.out.println("[Microservice Generator - generateNewServiceClass] Template engine file name " + templateEngine.getFileName());
+        System.out.println("[Microservice Generator - generateNewServiceClass] Service class template file name " + serviceClassTemplate.getTemplateFileName());
 
         templateEngine.addTrace(microservice.getMicroserviceModelId(), "RESTful Resource",
                 microservice.getResourceName(), serviceClassTemplate);

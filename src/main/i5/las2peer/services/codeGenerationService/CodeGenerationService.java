@@ -213,6 +213,7 @@ public class CodeGenerationService extends RESTService {
 						// Create an object representing the microservice model
 						L2pLogger.logEvent(Event.SERVICE_MESSAGE, "createFromModel: Creating microservice model now..");
 						Microservice microservice = new Microservice(model);
+						microservice.setMetadataDocString(metadataDoc);
 
 						// Generate the code (and repositories) for this model
 						L2pLogger.logEvent(Event.SERVICE_MESSAGE,
@@ -345,8 +346,7 @@ public class CodeGenerationService extends RESTService {
 
 		System.out.println("[Code Generation] Update repository of model");
 
-		System.out.println("UPDATE REPOSITORY OF MODEL METADATA DOC STRING: ");
-		System.out.println(metadataDoc);
+		System.out.println("UPDATE REPOSITORY OF MODEL");
 
 		SimpleModel model = (SimpleModel) serializedModel[0];
 		String modelName = model.getName();
@@ -375,6 +375,7 @@ public class CodeGenerationService extends RESTService {
 						// (in case of an invalid model, keep the old
 						// repository)
 						Microservice microservice = new Microservice(model);
+						microservice.setMetadataDocString(metadataDoc);
 
 						// only if an old model and a remote repository exist,
 						// we can synchronize
@@ -616,6 +617,9 @@ public class CodeGenerationService extends RESTService {
 		HashMap<String, JSONObject> files = new HashMap<String, JSONObject>();
 		try {
 			files = getAllTracedFiles(repositoryName);
+			for (String key : files.keySet()) {
+				System.out.println("FILES ITERATOR key: " + key);
+			}
 		} catch (Exception e) {
 			logger.printStackTrace(e);
 		}

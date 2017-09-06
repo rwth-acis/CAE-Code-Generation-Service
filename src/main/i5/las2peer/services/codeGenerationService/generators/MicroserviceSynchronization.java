@@ -52,7 +52,7 @@ public class MicroserviceSynchronization extends MicroserviceGenerator {
                                              HashMap<String, JSONObject> files, BaseGitHostAdapter gitAdapter, Service service) throws ModelParseException {
 
         // first load the needed templates from the template repository
-        System.out.println("[Microservice Synchronization] Synchronize source code");
+        System.out.println("[Microservice Synchronization - synchronizeSourceCode] Synchronize source code");
 
         // variables holding the template source code
         String serviceClass = null;
@@ -70,6 +70,7 @@ public class MicroserviceSynchronization extends MicroserviceGenerator {
         String genericTable = null;
         String databaseManager = null;
         String guidances = null;
+        String swaggerJson = null;
 
         try (TreeWalk treeWalk =
                      getTemplateRepositoryContent(gitAdapter)) {
@@ -80,6 +81,7 @@ public class MicroserviceSynchronization extends MicroserviceGenerator {
             while (treeWalk.next()) {
                 ObjectId objectId = treeWalk.getObjectId(0);
                 ObjectLoader loader = reader.open(objectId);
+                System.out.println("[Microservice Synchronization - synchronizeSourceCode] Treewalk file name " + treeWalk.getNameString());
                 switch (treeWalk.getNameString()) {
                     case "genericHTTPMethod.txt":
                         genericHttpMethod = new String(loader.getBytes(), "UTF-8");
@@ -125,6 +127,9 @@ public class MicroserviceSynchronization extends MicroserviceGenerator {
                     case "database.sql":
                         databaseScript = new String(loader.getBytes(), "UTF-8");
                         break;
+                    case "swagger.json":
+                        swaggerJson = new String(loader.getBytes(), "UTF-8");
+                        break;
                 }
             }
         } catch (Exception e) {
@@ -140,6 +145,9 @@ public class MicroserviceSynchronization extends MicroserviceGenerator {
         String databaseScriptFileName = getDatabaseScriptFileName(microservice);
         String newDatabaseManagerFileName = "src/main/i5/las2peer/services/"
                 + getPackageName(microservice) + "/database/DatabaseManager.java";
+        
+        String newSwaggerFileName = "src/main/i5/las2peer/services/"
+                + getPackageName(microservice) + "/swagger.json";
 
         // old file names
         String serviceOldFileName = getServiceFileName(oldMicroservice);
@@ -148,6 +156,9 @@ public class MicroserviceSynchronization extends MicroserviceGenerator {
         String databaseOldScriptFileName = getDatabaseScriptFileName(oldMicroservice);
         String oldDatabaseManagerFileName = "src/main/i5/las2peer/services/"
                 + getPackageName(oldMicroservice) + "/database/DatabaseManager.java";
+        
+        String oldSwaggerFileName = "src/main/i5/las2peer/services/"
+                + getPackageName(oldMicroservice) + "/swagger.json";
 
         // if the old service file was renamed, we need to rename it in the local repo
         if (!serviceFileName.equals(serviceOldFileName)) {
@@ -159,6 +170,12 @@ public class MicroserviceSynchronization extends MicroserviceGenerator {
         if (!serviceTestFileName.equals(serviceOldTestFileName)) {
             renameFileInRepository(getRepositoryName(oldMicroservice), serviceTestFileName,
                     serviceOldTestFileName);
+        }
+
+        // if the old swagger json file was renamed, we need to rename it in the local repo
+        if (!newSwaggerFileName.equals(oldSwaggerFileName)) {
+            renameFileInRepository(getRepositoryName(oldMicroservice), newSwaggerFileName,
+                    oldSwaggerFileName);
         }
 
         // if the old service properties file was renamed, we need to rename it in the local repo
@@ -215,6 +232,7 @@ public class MicroserviceSynchronization extends MicroserviceGenerator {
             byte[] base64decodedBytes = Base64.getDecoder().decode(content);
 
             try {
+                System.out.println("[Microservice Synchronization] Synchronizing " + fileName + " now ...");
                 L2pLogger.logEvent(Event.SERVICE_MESSAGE, "Synchronizing " + fileName + " now ...");
                 content = new String(base64decodedBytes, "utf-8");
                 JSONObject fileTraces = (JSONObject) fileObject.get("fileTraces");
@@ -225,7 +243,7 @@ public class MicroserviceSynchronization extends MicroserviceGenerator {
                 TemplateEngine templateEngine = new TemplateEngine(strategy, oldFileTraceModel);
 
                 if (fileName.equals(serviceOldFileName)) {
-                    System.out.println("[Microservice Synchronization] Same service file name");
+                    System.out.println("[Microservice Synchronization] Same service file name " + fileName + " with old file name " + serviceOldFileName);
                     oldFileTraceModel.setFileName(serviceFileName);
 
                     String repositoryLocation =

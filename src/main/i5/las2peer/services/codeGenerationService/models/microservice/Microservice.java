@@ -30,6 +30,7 @@ public class Microservice {
   private Map<String, HttpMethod> httpMethods;
   private Database database;
   private float version;
+  private String metadataDocString;
 
   /**
    * 
@@ -403,5 +404,13 @@ public class Microservice {
   public void setVersion(float version) {
     this.version = version;
   }
+
+  public void setMetadataDocString(String metadataDocString) {
+    this.metadataDocString = metadataDocString;
+  }
+
+  public String getMetadataDocString() {
+    return this.metadataDocString;
+  } 
 
 }
