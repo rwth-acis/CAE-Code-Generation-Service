@@ -263,8 +263,10 @@ public class CodeGenerationService extends RESTService {
 		return "Model has no attribute 'type'!";
 	}
 
-	public String createFromModel(Serializable... serializedModel) {
-		return createFromModel(false, serializedModel);
+	public String createFromModel(String metadataDoc, Serializable... serializedModel) {
+		System.out.println("CREATE FROM MODEL LINE 266");
+		System.out.println(metadataDoc);
+		return createFromModel(false, "", serializedModel);
 	}
 
 	/**
@@ -401,7 +403,7 @@ public class CodeGenerationService extends RESTService {
 							if (gitAdapter instanceof GitLabAdapter) {
 								// Use pseudo-update to circumvent gitlab
 								// deletion/creation problem
-								return pseudoUpdateRepositoryOfModel(serializedModel);
+								return pseudoUpdateRepositoryOfModel(metadataDoc, serializedModel);
 
 							} else {
 								if (useModelSynchronization) {
@@ -430,7 +432,7 @@ public class CodeGenerationService extends RESTService {
 								L2pLogger.logEvent(Event.SERVICE_MESSAGE,
 										"updateRepositoryOfModel: Calling createFromModel now..");
 
-								return createFromModel(serializedModel);
+								return createFromModel(metadataDoc, serializedModel);
 							}
 						}
 
@@ -463,7 +465,7 @@ public class CodeGenerationService extends RESTService {
 							return "done";
 						} else {
 							if (gitAdapter instanceof GitLabAdapter) {
-								return pseudoUpdateRepositoryOfModel(serializedModel);
+								return pseudoUpdateRepositoryOfModel(metadataDoc, serializedModel);
 							} else {
 								if (useModelSynchronization) {
 									L2pLogger.logEvent(Event.SERVICE_MESSAGE,
@@ -487,7 +489,7 @@ public class CodeGenerationService extends RESTService {
 
 								L2pLogger.logEvent(Event.SERVICE_MESSAGE,
 										"updateRepositoryOfModel: Calling createFromModel now..");
-								return createFromModel(serializedModel);
+								return createFromModel(metadataDoc, serializedModel);
 							}
 
 						}
@@ -510,7 +512,7 @@ public class CodeGenerationService extends RESTService {
 						 * "updateRepositoryOfModel: Calling createFromModel now.."
 						 * ); return createFromModel(serializedModel);
 						 */
-						return pseudoUpdateRepositoryOfModel(serializedModel);
+						return pseudoUpdateRepositoryOfModel("", serializedModel);
 
 					default:
 						return "Error: Model has to have an attribute 'type' that is either "
@@ -532,11 +534,11 @@ public class CodeGenerationService extends RESTService {
 		return "Model has no attribute 'type'!";
 	}
 
-	public String pseudoUpdateRepositoryOfModel(Serializable... serializedModel) {
+	public String pseudoUpdateRepositoryOfModel(String metadataDoc, Serializable... serializedModel) {
 		SimpleModel model = (SimpleModel) serializedModel[0];
 		model.getName();
 		// force push
-		return createFromModel(true, serializedModel);
+		return createFromModel(true, metadataDoc, serializedModel);
 	}
 
 	/**
