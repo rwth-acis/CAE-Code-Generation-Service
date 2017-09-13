@@ -1,6 +1,7 @@
 package i5.las2peer.services.codeGenerationService.generators;
 
 import java.awt.image.BufferedImage;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -37,6 +38,9 @@ import i5.las2peer.services.codeGenerationService.templateEngine.Template;
 import i5.las2peer.services.codeGenerationService.templateEngine.TemplateEngine;
 import i5.las2peer.services.codeGenerationService.templateEngine.TemplateStrategy;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 /**
  * 
  * Generates frontend component source code from passed on
@@ -64,7 +68,7 @@ public class FrontendComponentGenerator extends Generator {
    *         other exceptions and prints their message.
    * 
    */
-  public static void createSourceCode(FrontendComponent frontendComponent, BaseGitHostAdapter gitAdapter, boolean forcePush) throws GitHostException{
+  public static void createSourceCode(FrontendComponent frontendComponent, BaseGitHostAdapter gitAdapter, boolean forcePush, String metadataDoc) throws GitHostException{
 	// variables to be closed in the final block
 	    Repository frontendComponentRepository = null;
 	    TreeWalk treeWalk = null;
@@ -217,7 +221,7 @@ public class FrontendComponentGenerator extends Generator {
 	      applicationScriptTemplateEngine.addTemplate(applicationTemplate);
 
 	      createApplicationScript(applicationTemplate, functionTemplate, microserviceCallTemplate,
-	          iwcResponseTemplate, htmlElementTemplate, frontendComponent);
+	          iwcResponseTemplate, htmlElementTemplate, frontendComponent, metadataDoc);
 
 	      // add events to elements
 	      addEventsToApplicationScript(applicationTemplate, widgetTemplateEngine, eventTemplate,
@@ -301,8 +305,8 @@ public class FrontendComponentGenerator extends Generator {
 	    }
   }
   
-  public static void createSourceCode(FrontendComponent frontendComponent, BaseGitHostAdapter gitAdapter) throws GitHostException {
-	  createSourceCode(frontendComponent, gitAdapter, false);
+  public static void createSourceCode(FrontendComponent frontendComponent, BaseGitHostAdapter gitAdapter, String metadataDoc) throws GitHostException {
+	  createSourceCode(frontendComponent, gitAdapter, false, metadataDoc);
   }
 
 
@@ -491,7 +495,9 @@ public class FrontendComponentGenerator extends Generator {
   public static void createApplicationScript(Template applicationTemplate,
       String functionTemplateFile, String microserviceCallTemplateFile,
       String iwcResponseTemplateFile, String htmlElementTemplateFile,
-      FrontendComponent frontendComponent) {
+      FrontendComponent frontendComponent, String metadataDoc) {
+
+    ObjectMapper jsonMapper = new ObjectMapper();
 
     // add trace to application script
     applicationTemplate.getTemplateEngine().addTrace(frontendComponent.getWidgetModelId(),
@@ -535,6 +541,58 @@ public class FrontendComponentGenerator extends Generator {
         updatedElements.add(element);
       }
 
+      String jsDocString = "";
+
+      // check for function values in json tree
+      try {
+        JsonNode metadataTree = jsonMapper.readTree(metadataDoc);
+        List<JsonNode> operationNodes = metadataTree.findParents("operationId");
+
+        for (JsonNode operationNode: operationNodes) { 		      
+          String operationId = operationNode.get("operationId").asText();
+          if (operationId == function.getName()) {
+            jsDocString += "/**" + System.lineSeparator();
+            
+            // get function name and description
+            jsDocString += "*" + operationId + System.lineSeparator();
+            jsDocString += "*" + operationNode.get("summary").asText() + System.lineSeparator();
+
+            // iterate through params
+            JsonNode parameters = operationNode.get("parameters");
+            if (parameters.isArray()) {
+              for (JsonNode parameter : parameters) {
+                // get name and description and type
+                String parameterName = parameter.get("name").asText();
+                String parameterDescription = parameter.get("description").asText();
+                Boolean parameterRequired = parameter.get("required").asBoolean();
+
+                String parameterType = "";
+                if (parameter.get("type") != null) {
+                  parameterType = parameter.get("type").asText();
+                } else {
+                  parameterType = parameter.get("schema").get("$ref").asText();
+                  parameterType = parameterType.substring(parameterType.lastIndexOf("\\")+1);
+                }
+
+                // construct comment
+                if (parameterRequired)
+                  jsDocString += (String.format("* @param {%s} %s - %s", parameterType, parameterName, parameterDescription) + System.lineSeparator());
+                else
+                  jsDocString += (String.format("* @param {%s} [%s] - %s", parameterType, parameterName, parameterDescription) + System.lineSeparator());
+              }
+            }
+            
+            jsDocString += "*/" + System.lineSeparator(); 
+            break;
+          } 		
+        }  
+        
+      } catch (IOException ex) {
+        System.out.println(ex);
+      }
+      
+      // put generated jsdoc string
+      functionTemplate.setVariableForce("$Metadata_Doc$", jsDocString);
 
       // start creating the actual function
       functionTemplate.setVariable("$Function_Name$", function.getName());

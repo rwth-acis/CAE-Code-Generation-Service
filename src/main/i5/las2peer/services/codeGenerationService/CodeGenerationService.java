@@ -231,7 +231,7 @@ public class CodeGenerationService extends RESTService {
 						L2pLogger.logEvent(Event.SERVICE_MESSAGE,
 								"createFromModel: Creating frontend component source code now..");
 						FrontendComponentGenerator.createSourceCode(frontendComponent, (BaseGitHostAdapter) gitAdapter,
-								forcePush);
+								forcePush, metadataDoc);
 						L2pLogger.logEvent(Event.SERVICE_MESSAGE, "createFromModel: Created!");
 						return "done";
 
@@ -459,7 +459,7 @@ public class CodeGenerationService extends RESTService {
 									oldFrontendComponent,
 									this.getTracedFiles(
 											FrontendComponentGenerator.getRepositoryName(frontendComponent)),
-									(BaseGitHostAdapter) gitAdapter, CodeGenerationService.this);
+									(BaseGitHostAdapter) gitAdapter, CodeGenerationService.this, metadataDoc);
 
 							L2pLogger.logEvent(Event.SERVICE_MESSAGE, "updateRepositoryOfModel: Synchronized!");
 							return "done";
