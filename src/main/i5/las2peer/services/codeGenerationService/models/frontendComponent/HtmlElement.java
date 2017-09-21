@@ -5,7 +5,7 @@ import java.util.ArrayList;
 import i5.cae.simpleModel.SimpleEntityAttribute;
 import i5.cae.simpleModel.node.SimpleNode;
 import i5.las2peer.services.codeGenerationService.exception.ModelParseException;
-
+import java.util.HashMap;
 
 /**
  * 
@@ -21,7 +21,7 @@ public class HtmlElement {
    * 
    */
   public enum ElementType {
-    input, table, br, button, p, div, textarea, CUSTOM
+    input, table, br, button, p, div, textarea, CUSTOM, a, img, audio, video, text, iframe
   }
 
   private String modelId;
@@ -31,6 +31,10 @@ public class HtmlElement {
   private boolean collaborativeElement;
   private ArrayList<Event> events = new ArrayList<Event>();
 
+  //Taken from the wireframe
+  private HashMap<String, String> attributes = new HashMap<String, String>();
+  private HashMap<String, String> geometry = new HashMap<String, String>();
+  private String label;
 
   /**
    *
@@ -75,6 +79,24 @@ public class HtmlElement {
             case "CUSTOM":
               this.type = ElementType.CUSTOM;
               break;
+            case "a":
+              this.type = ElementType.a;
+              break;
+            case "img":
+              this.type = ElementType.img;
+              break;
+            case "audio":
+              this.type = ElementType.audio;
+              break;
+            case "video":
+              this.type = ElementType.video;
+              break;
+            case "text":
+              this.type = ElementType.text;
+              break;
+            case "iframe":
+              this.type = ElementType.iframe;
+              break;
             default:
               throw new ModelParseException("Unknown HtmlElement type: " + attribute.getValue());
           }
@@ -86,7 +108,20 @@ public class HtmlElement {
           this.collaborativeElement = Boolean.parseBoolean(attribute.getValue());
           break;
         default:
-          throw new ModelParseException("Unknown HtmlElement attribute: " + attribute.getName());
+          if(attribute.getSyncMetaId().contains("ui")){
+            if(attribute.getSyncMetaId().contains("uiAttr")){
+              attributes.put(attribute.getName(), attribute.getValue());
+            }else if(attribute.getSyncMetaId().contains("uiGeo")){
+              geometry.put(attribute.getName(), attribute.getValue());
+            }
+            else if(attribute.getSyncMetaId().contains("uiLabel")){
+              label = attribute.getValue();
+            }
+            else{
+              throw new ModelParseException("Unknown HtmlElement attribute: " + attribute.getName());
+            }
+          }
+          else throw new ModelParseException("Unknown HtmlElement attribute: " + attribute.getName());
       }
     }
   }
@@ -121,7 +156,17 @@ public class HtmlElement {
     return collaborativeElement;
   }
 
+  public HashMap<String, String> getAttributes(){
+    return attributes;
+  }
 
+  public HashMap<String, String> getGeometry() {
+    return geometry;
+  }
+
+  public String getLabel() {
+    return label;
+  }
   /**
    * 
    * Adds an {@link Event} to the HtmlElement.

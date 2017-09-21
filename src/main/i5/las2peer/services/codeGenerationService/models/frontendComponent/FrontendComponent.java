@@ -120,10 +120,10 @@ public class FrontendComponent {
         case "HTML Element":
           HtmlElement element = new HtmlElement(node);
           this.htmlElements.put(node.getId(), element);
-          if (tempIds.contains(element.getId())) {
-            throw new ModelParseException("Duplicate id found: " + element.getId());
+          if (tempIds.contains(element.getModelId())) {
+            throw new ModelParseException("Duplicate id found: " + element.getModelId());
           }
-          tempIds.add(element.getId());
+          tempIds.add(element.getModelId());
           break;
         case "Event":
           Event event = new Event(node);
@@ -294,6 +294,12 @@ public class FrontendComponent {
             throw new ModelParseException("Wrong Widget to Function edge!");
           }
           functionCount--;
+          break;
+        case "hasChild":
+            //actually not needed, consider removing this edge
+          if(!htmlElements.containsKey(currentEdgeSource) || !htmlElements.containsKey(currentEdgeTarget)){
+              throw new ModelParseException("Wrong hasChild edge");
+          }
           break;
         default:
           throw new ModelParseException("Unknown frontend component edge type: " + currentEdgeType);

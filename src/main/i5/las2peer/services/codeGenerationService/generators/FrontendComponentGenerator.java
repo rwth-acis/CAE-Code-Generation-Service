@@ -95,8 +95,7 @@ public class FrontendComponentGenerator extends Generator {
 	    try {
 	      PersonIdent caeUser = new PersonIdent(gitAdapter.getGitUser(), gitAdapter.getGitUserMail());
 	      String repositoryName = getRepositoryName(frontendComponent);
-	      frontendComponentRepository =
-	          generateNewRepository(repositoryName, gitAdapter);
+	      frontendComponentRepository = generateNewRepository(repositoryName, gitAdapter);
 
 
 	      try {
@@ -407,12 +406,10 @@ public class FrontendComponentGenerator extends Generator {
   private static Template createHtmlElementTemplate(HtmlElement element,
       String htmlElementTemplateFile, Template template) {
 
-    Template elementTemplate =
-        template.createTemplate(element.getModelId() + ":htmlElement", htmlElementTemplateFile);
+    Template elementTemplate = template.createTemplate(element.getModelId() + ":htmlElement", htmlElementTemplateFile);
 
     switch (element.getType()) {
       case CUSTOM:
-        elementTemplate.setVariable("$Element_Type$", element.getType().toString());
         elementTemplate.setVariable("$Element_Id$", element.getId());
         elementTemplate.setVariable("$Additional_Values$", " ");
         elementTemplate.setVariable("$Element_Content$", " ");
@@ -468,9 +465,46 @@ public class FrontendComponentGenerator extends Generator {
         elementTemplate.setVariable("$Element_Content$", " ");
         elementTemplate.setVariable("$Closing_Element$", "</" + element.getType().toString() + ">");
         break;
+        case a:
+            elementTemplate.setVariable("$Element_Id$", element.getId());
+            elementTemplate.setVariable("$Additional_Values$", " ");
+            elementTemplate.setVariable("$Element_Content$", " ");
+            elementTemplate.setVariable("$Closing_Element$", "</" + element.getType().toString() + ">");
+            break;
+        case img:
+            elementTemplate.setVariable("$Element_Id$", element.getId());
+            elementTemplate.setVariable("$Additional_Values$", " ");
+            elementTemplate.setVariable("$Element_Content$", " ");
+            elementTemplate.setVariable("$Closing_Element$", "</" + element.getType().toString() + ">");
+            break;
+        case audio:
+            elementTemplate.setVariable("$Element_Id$", element.getId());
+            elementTemplate.setVariable("$Additional_Values$", " ");
+            elementTemplate.setVariable("$Element_Content$", " ");
+            elementTemplate.setVariable("$Closing_Element$", "</" + element.getType().toString() + ">");
+            break;
+        case video:
+            elementTemplate.setVariable("$Element_Id$", element.getId());
+            elementTemplate.setVariable("$Additional_Values$", " ");
+            elementTemplate.setVariable("$Element_Content$", " ");
+            elementTemplate.setVariable("$Closing_Element$", "</" + element.getType().toString() + ">");
+            break;
+        case text:
+            elementTemplate.setVariable("$Element_Id$", element.getId());
+            elementTemplate.setVariable("$Additional_Values$", " ");
+            elementTemplate.setVariable("$Element_Content$", " ");
+            elementTemplate.setVariable("$Closing_Element$", "</" + element.getType().toString() + ">");
+            break;
+        case iframe:
+            elementTemplate.setVariable("$Element_Id$", element.getId());
+            elementTemplate.setVariable("$Additional_Values$", " ");
+            elementTemplate.setVariable("$Element_Content$", " ");
+            elementTemplate.setVariable("$Closing_Element$", "</" + element.getType().toString() + ">");
+            break;
       default:
         break;
     }
+
     return elementTemplate;
   }
 
