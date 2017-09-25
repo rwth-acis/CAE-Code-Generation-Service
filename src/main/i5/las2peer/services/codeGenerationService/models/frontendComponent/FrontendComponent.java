@@ -300,6 +300,10 @@ public class FrontendComponent {
           if(!htmlElements.containsKey(currentEdgeSource) || !htmlElements.containsKey(currentEdgeTarget)){
               throw new ModelParseException("Wrong hasChild edge");
           }
+          HtmlElement parent = htmlElements.get(currentEdgeSource);
+          HtmlElement child = htmlElements.get(currentEdgeTarget);
+          parent.addChildren(child);
+          child.setParent(parent);
           break;
         default:
           throw new ModelParseException("Unknown frontend component edge type: " + currentEdgeType);
