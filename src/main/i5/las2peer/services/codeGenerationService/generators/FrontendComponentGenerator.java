@@ -424,8 +424,17 @@ public class FrontendComponentGenerator extends Generator {
             case div:
                 elementTemplate.setVariable("$Element_Type$", element.getType().toString());
                 elementTemplate.setVariable("$Element_Id$", element.getId());
-                //TODO
-                elementTemplate.setVariable("$Element_Content$", " ");
+                if(element.hasChildren()){
+                    StringBuilder content = new StringBuilder();
+                    for(HtmlElement child : element.getChildren()){
+                        Template tpl = createHtmlElementTemplate(child, htmlElementTemplateFile, template);
+                        content.append(tpl.toString());
+
+                    }
+                    elementTemplate.setVariable("$Element_Content$", content.toString());
+                }
+                else
+                    elementTemplate.setVariable("$Element_Content$", " ");
                 elementTemplate.setVariable("$Closing_Element$", "</" + element.getType().toString() + ">");
                 break;
             case input:

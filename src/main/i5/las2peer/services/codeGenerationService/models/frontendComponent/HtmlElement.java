@@ -5,9 +5,6 @@ import java.util.ArrayList;
 import i5.cae.simpleModel.SimpleEntityAttribute;
 import i5.cae.simpleModel.node.SimpleNode;
 import i5.las2peer.services.codeGenerationService.exception.ModelParseException;
-import org.w3c.dom.html.HTMLElement;
-
-import javax.xml.crypto.dsig.keyinfo.KeyValue;
 import java.util.HashMap;
 
 /**
@@ -32,13 +29,13 @@ public class HtmlElement {
   private ElementType type;
   private boolean staticElement;
   private boolean collaborativeElement;
-  private ArrayList<Event> events = new ArrayList<Event>();
+  private ArrayList<Event> events = new ArrayList<>();
   private HtmlElement parent = null;
-  private ArrayList<HtmlElement> children = new ArrayList<HtmlElement>();
+  private ArrayList<HtmlElement> children = new ArrayList<>();
 
   //Taken from the wireframe
-  private HashMap<String, String> attributes = new HashMap<String, String>();
-  private HashMap<String, String> geometry = new HashMap<String, String>();
+  private HashMap<String, String> attributes = new HashMap<>();
+  private HashMap<String, String> geometry = new HashMap<>();
   private String label;
 
   /**
@@ -135,19 +132,28 @@ public class HtmlElement {
     StringBuilder code = new StringBuilder();
     for(String key : attributes.keySet()){
       String value = attributes.get(key);
-      if(value.length() > 0)
-        code.append(key).append("=\"").append(value).append("\" ");
+      if(value.length() > 0) {
+        if(value.equals("true"))
+          code.append(" ").append(key).append(" ");
+        else if(value.equals("false"))
+          //ignore attributes, because it is property and not set
+        else
+          code.append(" ").append(key).append("=\"").append(value).append("\" ");
+      }
     }
 
     // add geometry
     if(geometry.keySet().size() > 0) {
-      code.append("style=\" position: absolute; ");
+      if(this.hasParent())
+        code.append("style=\"position: relative; ");
+      else
+        code.append("style=\" position: absolute; ");
       String top = geometry.get("x");
       if (top.length() > 0)
-        code.append("top: ").append(top).append("px; ");
+        code.append("left: ").append(top).append("px; ");
       String left = geometry.get("y");
       if (left.length() > 0)
-        code.append("left: ").append(left).append("px; ");
+        code.append("top: ").append(left).append("px; ");
       String width = geometry.get("width");
       if (width.length() > 0)
         code.append("width: ").append(width).append("px; ");
@@ -192,25 +198,30 @@ public class HtmlElement {
     return attributes;
   }
 
-  public HashMap<String, String> getGeometry() {
+  /*public HashMap<String, String> getGeometry() {
     return geometry;
-  }
+  }*/
 
   public String getLabel() {
     return label;
   }
 
-  public void setParent(HtmlElement element){
+  void setParent(HtmlElement element){
     parent = element;
   }
 
-  public void addChildren(HtmlElement element){
+  void addChildren(HtmlElement element){
     children.add(element);
+  }
+
+  public ArrayList<HtmlElement> getChildren(){
+    return children;
   }
 
   public boolean hasParent(){
     return parent != null;
   }
+
 
   public boolean hasChildren(){
     return !children.isEmpty();
@@ -223,7 +234,7 @@ public class HtmlElement {
    * @param event an {@link Event}
    * 
    */
-  public void addEvent(Event event) {
+  void addEvent(Event event) {
     this.events.add(event);
   }
 
