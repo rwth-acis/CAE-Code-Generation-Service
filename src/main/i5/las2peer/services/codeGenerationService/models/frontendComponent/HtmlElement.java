@@ -135,10 +135,9 @@ public class HtmlElement {
       if(value.length() > 0) {
         if(value.equals("true"))
           code.append(" ").append(key).append(" ");
-        else if(value.equals("false"))
-          //ignore attributes, because it is property and not set
-        else
+        else if(!value.equals("false")) //if value = false then ignore the attribute
           code.append(" ").append(key).append("=\"").append(value).append("\" ");
+
       }
     }
 
