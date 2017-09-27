@@ -137,16 +137,15 @@ public class HtmlElement {
           code.append(" ").append(key).append(" ");
         else if(!value.equals("false")) //if value = false then ignore the attribute
           code.append(" ").append(key).append("=\"").append(value).append("\" ");
-
       }
     }
 
     // add geometry
     if(geometry.keySet().size() > 0) {
       if(this.hasParent())
-        code.append("style=\"position: relative; ");
+        code.append(" style=\"position: relative; ");
       else
-        code.append("style=\" position: absolute; ");
+        code.append(" style=\"position: absolute; ");
       String top = geometry.get("x");
       if (top.length() > 0)
         code.append("left: ").append(top).append("px; ");
@@ -158,7 +157,7 @@ public class HtmlElement {
         code.append("width: ").append(width).append("px; ");
       String height = geometry.get("height");
       if (height.length() > 0)
-        code.append("height: ").append(height).append("px; ");
+        code.append("height: ").append(height).append("px;");
       code.append("\"");
     }
     return code.toString();

@@ -429,7 +429,6 @@ public class FrontendComponentGenerator extends Generator {
                     for(HtmlElement child : element.getChildren()){
                         Template tpl = createHtmlElementTemplate(child, htmlElementTemplateFile, template);
                         content.append(tpl.toString());
-
                     }
                     elementTemplate.setVariable("$Element_Content$", content.toString());
                 }
