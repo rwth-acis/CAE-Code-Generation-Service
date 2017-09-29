@@ -49,6 +49,7 @@ public class FrontendComponentSynchronization extends FrontendComponentGenerator
     String widget = null;
     String applicationScript = null;
     String htmlElementTemplate = null;
+    String wireframeElementTemplate = null;
     String functionTemplate = null;
     String microserviceCallTemplate = null;
     String iwcResponseTemplate = null;
@@ -84,6 +85,9 @@ public class FrontendComponentSynchronization extends FrontendComponentGenerator
             break;
           case "genericHtmlElement.txt":
             htmlElementTemplate = new String(loader.getBytes(), "UTF-8");
+            break;
+          case "genericWireframeElement.txt":
+            wireframeElementTemplate = new String(loader.getBytes(), "UTF-8");
             break;
           case "genericEvent.txt":
             eventTemplate = new String(loader.getBytes(), "UTF-8");
@@ -179,7 +183,7 @@ public class FrontendComponentSynchronization extends FrontendComponentGenerator
 
 
       // regenerate widget code
-      createWidgetCode(widgetTemplateEngine, widget, htmlElementTemplate, yjsImports,
+      createWidgetCode(widgetTemplateEngine, widget, wireframeElementTemplate, yjsImports,
           gitAdapter.getGitOrganization(), getRepositoryName(frontendComponent), frontendComponent);
 
       traceModel.addFileTraceModel(widgetTemplateEngine.getFileTraceModel());

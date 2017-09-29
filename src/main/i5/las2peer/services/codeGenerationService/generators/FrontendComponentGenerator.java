@@ -73,6 +73,7 @@ public class FrontendComponentGenerator extends Generator {
         String readMe = null;
         BufferedImage logo = null;
         String htmlElementTemplate = null;
+        String wireframeElementTemplate = null;
         String functionTemplate = null;
         String microserviceCallTemplate = null;
         String iwcResponseTemplate = null;
@@ -109,6 +110,9 @@ public class FrontendComponentGenerator extends Generator {
                             break;
                         case "genericHtmlElement.txt":
                             htmlElementTemplate = new String(loader.getBytes(), "UTF-8");
+                            break;
+                        case "genericWireframeElement.txt":
+                            wireframeElementTemplate = new String(loader.getBytes(), "UTF-8");
                             break;
                         case "genericEvent.txt":
                             eventTemplate = new String(loader.getBytes(), "UTF-8");
@@ -190,7 +194,7 @@ public class FrontendComponentGenerator extends Generator {
             TemplateEngine widgetTemplateEngine = new TemplateEngine(strategy, widgetTraceModel);
 
             // add html elements to widget source code
-            createWidgetCode(widgetTemplateEngine, widget, htmlElementTemplate, yjsImports,
+            createWidgetCode(widgetTemplateEngine, widget, wireframeElementTemplate, yjsImports,
                     gitAdapter.getGitOrganization(), repositoryName, frontendComponent);
 
             // add widget file trace model to gloabl trace model
