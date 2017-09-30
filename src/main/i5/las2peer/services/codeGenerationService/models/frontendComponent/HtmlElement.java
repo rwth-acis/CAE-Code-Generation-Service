@@ -128,24 +128,28 @@ public class HtmlElement {
     }
   }
 
-  public String generateCodeForAdditionalValues(){
+  public String generateCodeForAttributes() {
     StringBuilder code = new StringBuilder();
-    for(String key : attributes.keySet()){
+    for (String key : attributes.keySet()) {
       String value = attributes.get(key);
-      if(value.length() > 0) {
-        if(value.equals("true"))
+      if (value.length() > 0) {
+        if (value.equals("true"))
           code.append(" ").append(key).append(" ");
-        else if(!value.equals("false")) //if value = false then ignore the attribute
+        else if (!value.equals("false")) //if value = false then ignore the attribute
           code.append(" ").append(key).append("=\"").append(value).append("\" ");
       }
     }
+    return code.toString();
+  }
 
+  public String generateCodeForGeometry(){
+    StringBuilder code = new StringBuilder();
     // add geometry
     if(geometry.keySet().size() > 0) {
       if(this.hasParent())
-        code.append(" style=\"position: relative; ");
+        code.append("position: relative; ");
       else
-        code.append(" style=\"position: absolute; ");
+        code.append("position: absolute; ");
       String top = geometry.get("x");
       if (top.length() > 0)
         code.append("left: ").append(top).append("px; ");
@@ -158,7 +162,7 @@ public class HtmlElement {
       String height = geometry.get("height");
       if (height.length() > 0)
         code.append("height: ").append(height).append("px;");
-      code.append("\"");
+      //code.append("\"");
     }
     return code.toString();
   }
