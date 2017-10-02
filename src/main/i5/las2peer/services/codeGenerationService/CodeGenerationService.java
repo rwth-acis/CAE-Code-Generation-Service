@@ -219,7 +219,7 @@ public class CodeGenerationService extends RESTService {
 						L2pLogger.logEvent(Event.SERVICE_MESSAGE,
 								"createFromModel: Creating microservice source code now..");
 						MicroserviceGenerator.createSourceCode(microservice, this.templateRepository,
-								(BaseGitHostAdapter) gitAdapter, forcePush);
+								(BaseGitHostAdapter) gitAdapter, forcePush, metadataDoc);
 						L2pLogger.logEvent(Event.SERVICE_MESSAGE, "createFromModel: Created!");
 						return "done";
 
@@ -393,7 +393,7 @@ public class CodeGenerationService extends RESTService {
 
 							MicroserviceSynchronization.synchronizeSourceCode(microservice, oldMicroservice,
 									this.getTracedFiles(MicroserviceGenerator.getRepositoryName(microservice)),
-									(BaseGitHostAdapter) gitAdapter, CodeGenerationService.this);
+									(BaseGitHostAdapter) gitAdapter, CodeGenerationService.this, metadataDoc);
 
 							L2pLogger.logEvent(Event.SERVICE_MESSAGE, "updateRepositoryOfModel: Synchronized!");
 							return "done";

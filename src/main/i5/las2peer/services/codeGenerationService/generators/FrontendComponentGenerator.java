@@ -497,6 +497,8 @@ public class FrontendComponentGenerator extends Generator {
       String iwcResponseTemplateFile, String htmlElementTemplateFile,
       FrontendComponent frontendComponent, String metadataDoc) {
 
+    System.out.println("==========CREATE APPLICATION SCRIPT WITH METADATADOC=============");
+
     ObjectMapper jsonMapper = new ObjectMapper();
 
     // add trace to application script
@@ -509,6 +511,7 @@ public class FrontendComponentGenerator extends Generator {
 
     // now to the functions
     for (Function function : frontendComponent.getFunctions().values()) {
+      System.out.println("[createApplicationScript] Iterate through functions");
       Template functionTemplate = applicationTemplate.createTemplate(
           applicationTemplate.getId() + function.getModelId(), functionTemplateFile);
 
@@ -516,6 +519,66 @@ public class FrontendComponentGenerator extends Generator {
           function.getName(), functionTemplate);
       // add function to application script
       applicationTemplate.appendVariable("$Functions$", functionTemplate);
+
+
+      String jsDocString = "";
+      System.out.println("[createApplicationScript] Process metadata doc for " + function.getName());
+
+      // check for function values in json tree
+      try {
+        JsonNode metadataTree = jsonMapper.readTree(metadataDoc);
+        List<JsonNode> operationNodes = metadataTree.findParents("operationId");
+
+        for (JsonNode operationNode: operationNodes) {
+          System.out.println("[createApplicationScript] Process json node " + operationNode.get("operationId").asText());
+
+          String operationId = operationNode.get("operationId").asText();
+          if (operationId.equals(function.getName())) {
+            System.out.println("[createApplicationScript] Get a match of " + operationId + " and " + function.getName());
+
+            jsDocString += "/**" + System.lineSeparator();
+            
+            // get function name and description
+            jsDocString += "* " + operationId + System.lineSeparator();
+            jsDocString += "* " + operationNode.get("summary").asText() + System.lineSeparator();
+
+            // iterate through params
+            if (operationNode.hasNonNull("parameters")) {
+              JsonNode parameters = operationNode.get("parameters");
+              if (parameters.isArray()) {
+                for (JsonNode parameter : parameters) {
+                  // get name and description and type
+                  String parameterName = parameter.get("name").asText();
+                  String parameterDescription = parameter.get("description").asText();
+                  Boolean parameterRequired = parameter.get("required").asBoolean();
+
+                  String parameterType = "";
+                  if (parameter.get("type") != null) {
+                    parameterType = parameter.get("type").asText();
+                  } else {
+                    parameterType = parameter.get("schema").get("$ref").asText();
+                    parameterType = parameterType.substring(parameterType.lastIndexOf("/")+1);
+                  }
+
+                  // construct comment
+                  if (parameterRequired)
+                    jsDocString += (String.format("* @param {%s} %s - %s", parameterType, parameterName, parameterDescription) + System.lineSeparator());
+                  else
+                    jsDocString += (String.format("* @param {%s} [%s] - %s", parameterType, parameterName, parameterDescription) + System.lineSeparator());
+                }
+              }
+            }
+            
+            jsDocString += "*/" + System.lineSeparator();
+            System.out.println("============JSDOC String");
+            System.out.println(jsDocString);
+            break;
+          } 		
+        }  
+        
+      } catch (IOException ex) {
+        System.out.println(ex);
+      }
 
       // start with (potential) IWC response creation
       for (IWCResponse response : function.getIwcResponses()) {
@@ -540,59 +603,9 @@ public class FrontendComponentGenerator extends Generator {
         HtmlElement element = frontendComponent.getHtmlElements().get(elementId);
         updatedElements.add(element);
       }
-
-      String jsDocString = "";
-
-      // check for function values in json tree
-      try {
-        JsonNode metadataTree = jsonMapper.readTree(metadataDoc);
-        List<JsonNode> operationNodes = metadataTree.findParents("operationId");
-
-        for (JsonNode operationNode: operationNodes) { 		      
-          String operationId = operationNode.get("operationId").asText();
-          if (operationId == function.getName()) {
-            jsDocString += "/**" + System.lineSeparator();
-            
-            // get function name and description
-            jsDocString += "*" + operationId + System.lineSeparator();
-            jsDocString += "*" + operationNode.get("summary").asText() + System.lineSeparator();
-
-            // iterate through params
-            JsonNode parameters = operationNode.get("parameters");
-            if (parameters.isArray()) {
-              for (JsonNode parameter : parameters) {
-                // get name and description and type
-                String parameterName = parameter.get("name").asText();
-                String parameterDescription = parameter.get("description").asText();
-                Boolean parameterRequired = parameter.get("required").asBoolean();
-
-                String parameterType = "";
-                if (parameter.get("type") != null) {
-                  parameterType = parameter.get("type").asText();
-                } else {
-                  parameterType = parameter.get("schema").get("$ref").asText();
-                  parameterType = parameterType.substring(parameterType.lastIndexOf("\\")+1);
-                }
-
-                // construct comment
-                if (parameterRequired)
-                  jsDocString += (String.format("* @param {%s} %s - %s", parameterType, parameterName, parameterDescription) + System.lineSeparator());
-                else
-                  jsDocString += (String.format("* @param {%s} [%s] - %s", parameterType, parameterName, parameterDescription) + System.lineSeparator());
-              }
-            }
-            
-            jsDocString += "*/" + System.lineSeparator(); 
-            break;
-          } 		
-        }  
-        
-      } catch (IOException ex) {
-        System.out.println(ex);
-      }
       
       // put generated jsdoc string
-      functionTemplate.setVariableForce("$Metadata_Doc$", jsDocString);
+      functionTemplate.setVariable("$Metadata_Doc$", jsDocString);
 
       // start creating the actual function
       functionTemplate.setVariable("$Function_Name$", function.getName());
@@ -753,6 +766,8 @@ public class FrontendComponentGenerator extends Generator {
 
       }
 
+      System.out.println("============GET FINAL CONTENT");
+      System.out.println(functionTemplate.getContent());
 
     }
 

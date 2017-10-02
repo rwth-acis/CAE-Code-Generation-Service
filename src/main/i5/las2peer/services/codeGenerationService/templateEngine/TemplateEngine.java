@@ -134,16 +134,19 @@ public class TemplateEngine {
 
   public Template createTemplate(String id, String sourceCode) {
 
+    System.out.println("[Create template] Create template id " + id);
+
     // the strategy determines whether we should reuse a segment for a template or not
     Segment segment = this.strategy.getSegment(id);
     CompositeSegment cSegment = new CompositeSegment(id);
 
-    if (segment instanceof CompositeSegment) {
+    // TODO uncomment, revert back
+    //if (segment instanceof CompositeSegment) {
 
       // "reuse" an existing template, i.e. the segment held by the template is set to an already
       // existing one
-      cSegment = (CompositeSegment) segment;
-    } else {
+      //cSegment = (CompositeSegment) segment;
+    //} else {
       // handle window EOL bug.
       sourceCode = sourceCode.replaceAll("\\r\\n", "\n");
       sourceCode = sourceCode.replaceAll("\\r", "\n");
@@ -152,8 +155,9 @@ public class TemplateEngine {
       JSONObject traces = TemplateEngine.generateTraces(id, sourceCode);
       sourceCode = TemplateEngine.removeUnprotectedSurroundings(sourceCode);
       JSONArray segments = (JSONArray) traces.get("traceSegments");
+
       cSegment.addAllSegments(SegmentFactory.createSegments(segments, sourceCode, 0L));
-    }
+    //}
 
     return new Template(cSegment, this);
   }
@@ -251,6 +255,7 @@ public class TemplateEngine {
       int start = matcher.start();
       int end = matcher.end();
       String segmentName = matcher.group();
+      //System.out.println("[Generate traces] Segment name : " + segmentName);
       Matcher unprotectedBlockMatcher = unprotectedBlockPattern.matcher(segmentName);
 
       String id = matcher.group();

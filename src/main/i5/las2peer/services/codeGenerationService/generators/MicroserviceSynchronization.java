@@ -49,7 +49,7 @@ public class MicroserviceSynchronization extends MicroserviceGenerator {
      */
 
     public static void synchronizeSourceCode(Microservice microservice, Microservice oldMicroservice,
-                                             HashMap<String, JSONObject> files, BaseGitHostAdapter gitAdapter, Service service) throws ModelParseException {
+                                             HashMap<String, JSONObject> files, BaseGitHostAdapter gitAdapter, Service service, String metadataDoc) throws ModelParseException {
 
         // first load the needed templates from the template repository
         System.out.println("[Microservice Synchronization - synchronizeSourceCode] Synchronize source code");
@@ -252,7 +252,7 @@ public class MicroserviceSynchronization extends MicroserviceGenerator {
                     // TODO: Generate metadata information
                     generateNewServiceClass(templateEngine, serviceClass, microservice, repositoryLocation,
                             genericHttpMethod, genericHttpMethodBody, genericApiResponse, genericHttpResponse,
-                            databaseConfig, databaseInstantiation, serviceInvocation);
+                            databaseConfig, databaseInstantiation, serviceInvocation, metadataDoc);
                 } else if (fileName.equals(serviceOldTestFileName)) {
                     oldFileTraceModel.setFileName(serviceTestFileName);
                     generateNewServiceTest(templateEngine, serviceTest, microservice, genericTestCase);

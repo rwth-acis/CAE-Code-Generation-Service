@@ -40,6 +40,12 @@ import i5.las2peer.services.codeGenerationService.templateEngine.TemplateEngine;
 import i5.las2peer.services.codeGenerationService.templateEngine.TemplateStrategy;
 import i5.las2peer.services.codeGenerationService.traces.segments.Segment;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.base.Strings;
+import com.fasterxml.jackson.databind.JsonNode;
+
 /**
  * Generates microservice source code from passed on
  * {@link i5.las2peer.services.codeGenerationService.models.microservice.Microservice} models.
@@ -126,7 +132,8 @@ public class MicroserviceGenerator extends Generator {
      */
 
     public static void createSourceCode(Microservice microservice,
-                                        String templateRepositoryName, BaseGitHostAdapter gitAdapter, boolean forcePush) throws GitHostException {
+                                        String templateRepositoryName, BaseGitHostAdapter gitAdapter, boolean forcePush,
+                                        String metadataDoc) throws GitHostException {
         // variables to be closed in the final block
         // git adapter to create delete git repo
         System.out.println("[Microservice Generator] Create source code with template repository " + templateRepositoryName);
@@ -358,7 +365,7 @@ public class MicroserviceGenerator extends Generator {
 
             generateNewServiceClass(serviceTemplateEngine, serviceClass, microservice, repositoryLocation,
                     genericHttpMethod, genericHttpMethodBody, genericApiResponse, genericHttpResponse,
-                    databaseConfig, databaseInstantiation, serviceInvocation);
+                    databaseConfig, databaseInstantiation, serviceInvocation, metadataDoc);
 
             FileTraceModel serviceTestTraceModel =
                     new FileTraceModel(traceModel, getServiceTestFileName(microservice));
@@ -443,9 +450,9 @@ public class MicroserviceGenerator extends Generator {
     }
 
     public static void createSourceCode(Microservice microservice, String templateRepositoryName,
-                                        BaseGitHostAdapter gitAdapter)
+                                        BaseGitHostAdapter gitAdapter, String metadataDoc)
             throws GitHostException {
-        createSourceCode(microservice, templateRepositoryName, gitAdapter, false);
+        createSourceCode(microservice, templateRepositoryName, gitAdapter, false, metadataDoc);
 
     }
 
@@ -611,7 +618,8 @@ public class MicroserviceGenerator extends Generator {
     protected static void generateNewServiceClass(TemplateEngine templateEngine, String serviceClass,
                                                   Microservice microservice, String repositoryLocation, String genericHttpMethod,
                                                   String genericHttpMethodBody, String genericApiResponse, String genericHttpResponse,
-                                                  String databaseConfig, String databaseInstantiation, String serviceInvocation) {
+                                                  String databaseConfig, String databaseInstantiation, String serviceInvocation,
+                                                  String metadataDoc) {
 
         System.out.println("[Microservice Generator - generateNewServiceClass] Generate new service class for " + serviceClass);
         System.out.println("[Microservice Generator - generateNewServiceClass] Repository name " + repositoryLocation);
@@ -644,6 +652,39 @@ public class MicroserviceGenerator extends Generator {
         // link to license file
         serviceClassTemplate.setVariable("$License_File_Address$",
                 repositoryLocation + "/blob/master/LICENSE.txt");
+
+        // PARSE METADATA DOC
+        ObjectMapper mapper = new ObjectMapper();
+        if (!Strings.isNullOrEmpty(metadataDoc)) {
+            try {
+                JsonNode metadataTree = mapper.readTree(metadataDoc);
+                System.out.println("===Parsed json ");
+                System.out.println(metadataTree);
+                // get info node
+                if (metadataTree.hasNonNull("info")) {
+                    JsonNode infoNode = metadataTree.get("info");
+                    String description = infoNode.get("description").asText();
+                    String version = infoNode.get("version").asText();
+                    String termsOfService = infoNode.get("termsOfService").asText();
+
+                    System.out.println("===Parsed information ");
+                    System.out.println(description);
+                    System.out.println(version);
+                    System.out.println(termsOfService);
+
+                    serviceClassTemplate.setVariable("$Metadata_Version$", version);
+                    serviceClassTemplate.setVariable("$Metadata_Description$", description);
+                    serviceClassTemplate.setVariable("$Metadata_Terms$", termsOfService);
+
+                }
+            } catch (IOException ex) {
+                System.out.println("Exception on parsing user input metadata doc");
+                serviceClassTemplate.setVariable("$Metadata_Version$", "1.0");
+                serviceClassTemplate.setVariable("$Metadata_Description$", "Generated Microservice from CAE");
+                serviceClassTemplate.setVariable("$Metadata_Terms$", "");
+            }
+        }
+
         // resource name
         serviceClassTemplate.setVariable("$Resource_Name$", microservice.getResourceName());
         // create database references only if microservice has database
