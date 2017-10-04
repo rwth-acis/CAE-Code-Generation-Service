@@ -71,7 +71,11 @@ public abstract class Generator {
 
     // prepare a new folder for the new repository
     try {
-      localPath = File.createTempFile(name, "");
+      String localGitPath = ((CodeGenerationService) Context.getCurrent().getService()).getLocalGitPath();
+      if(localGitPath != null && localGitPath.length() > 0)
+        localPath = new File(localGitPath + name);
+      else
+        localPath = File.createTempFile(name, "");
       localPath.delete();
     } catch (IOException e) {
       logger.printStackTrace(e);

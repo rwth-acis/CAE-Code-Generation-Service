@@ -90,6 +90,7 @@ public class CodeGenerationService extends RESTService {
 	
 	//The base URL where generated and deployed widget's files are hosted
 	private String widgetHomeBaseURL;
+	private String localGitPath;
 
 	public CodeGenerationService() throws GitHostException {
 		// read and set properties-file values
@@ -855,6 +856,8 @@ public class CodeGenerationService extends RESTService {
 	public String getWidgetHomeBaseURL() {
 		return widgetHomeBaseURL;
 	}
+
+	public String getLocalGitPath() { return localGitPath; }
 
 	public String getOidcProvider() {
 		return oidcProvider;
