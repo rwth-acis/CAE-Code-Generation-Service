@@ -413,17 +413,18 @@ public class FrontendComponentGenerator extends Generator {
             elementTemplate.setVariable("$Wireframe_Geometry$", wireframeGeometry);
         else
             elementTemplate.setVariable("$Wireframe_Geometry$", "");
-        elementTemplate.setVariable("$Additional_Styles$", " ");
 
 
         switch (element.getType()) {
             case CUSTOM:
+                elementTemplate.setVariable("$Additional_Styles$", " ");
                 elementTemplate.setVariable("$Element_Id$", element.getId());
                 elementTemplate.setVariable("$Element_Content$", " ");
                 elementTemplate.setVariable("$Additional_Values$", " ");
                 elementTemplate.setVariable("$Closing_Element$", "</" + element.getType().toString() + ">");
                 break;
             case br:
+                elementTemplate.setVariable("$Additional_Styles$", " ");
                 elementTemplate.setVariable("$Element_Type$", element.getType().toString());
                 elementTemplate.setVariable("$Element_Id$", element.getId());
                 elementTemplate.setVariable("$Additional_Values$", " ");
@@ -431,10 +432,11 @@ public class FrontendComponentGenerator extends Generator {
                 elementTemplate.setVariable("$Closing_Element$", "");
                 break;
             case button:
+                elementTemplate.setVariable("$Additional_Styles$", " ");
                 elementTemplate.setVariable("$Element_Type$", element.getType().toString());
                 elementTemplate.setVariable("$Element_Id$", element.getId());
                 elementTemplate.setVariable("$Additional_Values$", " ");
-                if (element.getLabel().length() > 0)
+                if (element.getLabel() != null && element.getLabel().length() > 0)
                     elementTemplate.setVariable("$Element_Content$", element.getLabel());
                 else
                     elementTemplate.setVariable("$Element_Content$", " ");
@@ -442,6 +444,7 @@ public class FrontendComponentGenerator extends Generator {
 
                 break;
             case div:
+                elementTemplate.setVariable("$Additional_Styles$", " ");
                 elementTemplate.setVariable("$Element_Type$", element.getType().toString());
                 elementTemplate.setVariable("$Element_Id$", element.getId());
                 elementTemplate.setVariable("$Additional_Values$", " ");
@@ -457,16 +460,15 @@ public class FrontendComponentGenerator extends Generator {
                     elementTemplate.setVariable("$Element_Content$", " ");
                 break;
             case input:
+                elementTemplate.setVariable("$Additional_Styles$", " ");
                 elementTemplate.setVariable("$Element_Type$", element.getType().toString());
                 elementTemplate.setVariable("$Element_Id$", element.getId());
                 elementTemplate.setVariable("$Additional_Values$", " ");
-                if (element.getLabel().length() > 0)
-                    elementTemplate.setVariable("$Element_Content$", element.getLabel());
-                else
-                    elementTemplate.setVariable("$Element_Content$", " ");
+                elementTemplate.setVariable("$Element_Content$", " ");
                 elementTemplate.setVariable("$Closing_Element$", "</" + element.getType().toString() + ">");
                 break;
             case p:
+                elementTemplate.setVariable("$Additional_Styles$", " ");
                 elementTemplate.setVariable("$Element_Type$", element.getType().toString());
                 elementTemplate.setVariable("$Element_Id$", element.getId());
                 elementTemplate.setVariable("$Additional_Values$", " ");
@@ -477,6 +479,7 @@ public class FrontendComponentGenerator extends Generator {
                 elementTemplate.setVariable("$Closing_Element$", "</" + element.getType().toString() + ">");
                 break;
             case table:
+                elementTemplate.setVariable("$Additional_Styles$", " ");
                 elementTemplate.setVariable("$Element_Type$", element.getType().toString());
                 elementTemplate.setVariable("$Element_Id$", element.getId());
                 elementTemplate.setVariable("$Additional_Values$", " ");
@@ -484,6 +487,7 @@ public class FrontendComponentGenerator extends Generator {
                 elementTemplate.setVariable("$Closing_Element$", "</" + element.getType().toString() + ">");
                 break;
             case textarea:
+                elementTemplate.setVariable("$Additional_Styles$", " resize: none; ");
                 elementTemplate.setVariable("$Element_Type$", element.getType().toString());
                 elementTemplate.setVariable("$Element_Id$", element.getId());
                 elementTemplate.setVariable("$Additional_Values$", " ");
@@ -494,6 +498,7 @@ public class FrontendComponentGenerator extends Generator {
                 elementTemplate.setVariable("$Closing_Element$", "</" + element.getType().toString() + ">");
                 break;
             case a:
+                elementTemplate.setVariable("$Additional_Styles$", " ");
                 elementTemplate.setVariable("$Element_Type$", element.getType().toString());
                 elementTemplate.setVariable("$Additional_Values$", " ");
                 elementTemplate.setVariable("$Element_Id$", element.getId());
@@ -504,6 +509,7 @@ public class FrontendComponentGenerator extends Generator {
                 elementTemplate.setVariable("$Closing_Element$", "</" + element.getType().toString() + ">");
                 break;
             case img:
+                elementTemplate.setVariable("$Additional_Styles$", " ");
                 elementTemplate.setVariable("$Element_Type$", element.getType().toString());
                 elementTemplate.setVariable("$Element_Id$", element.getId());
                 elementTemplate.setVariable("$Additional_Values$", " ");
@@ -511,6 +517,7 @@ public class FrontendComponentGenerator extends Generator {
                 elementTemplate.setVariable("$Closing_Element$", "</" + element.getType().toString() + ">");
                 break;
             case audio:
+                elementTemplate.setVariable("$Additional_Styles$", " ");
                 elementTemplate.setVariable("$Element_Type$", element.getType().toString());
                 elementTemplate.setVariable("$Element_Id$", element.getId());
                 elementTemplate.setVariable("$Additional_Values$", " ");
@@ -518,13 +525,15 @@ public class FrontendComponentGenerator extends Generator {
                 elementTemplate.setVariable("$Closing_Element$", "</" + element.getType().toString() + ">");
                 break;
             case video:
+                elementTemplate.setVariable("$Additional_Styles$", " ");
                 elementTemplate.setVariable("$Element_Type$", element.getType().toString());
                 elementTemplate.setVariable("$Element_Id$", element.getId());
                 elementTemplate.setVariable("$Additional_Values$", " ");
                 elementTemplate.setVariable("$Element_Content$", "Your browser does not support the video tag.");
                 elementTemplate.setVariable("$Closing_Element$", "</" + element.getType().toString() + ">");
                 break;
-            case text:
+            case span:
+                elementTemplate.setVariable("$Additional_Styles$", " ");
                 elementTemplate.setVariable("$Element_Type$", element.getType().toString());
                 elementTemplate.setVariable("$Element_Id$", element.getId());
                 elementTemplate.setVariable("$Additional_Values$", " ");
@@ -535,6 +544,7 @@ public class FrontendComponentGenerator extends Generator {
                 elementTemplate.setVariable("$Closing_Element$", "</" + element.getType().toString() + ">");
                 break;
             case iframe:
+                elementTemplate.setVariable("$Additional_Styles$", " ");
                 elementTemplate.setVariable("$Element_Type$", element.getType().toString());
                 elementTemplate.setVariable("$Element_Id$", element.getId());
                 elementTemplate.setVariable("$Additional_Values$", " ");

@@ -21,7 +21,7 @@ public class HtmlElement {
    * 
    */
   public enum ElementType {
-    input, table, br, button, p, div, textarea, CUSTOM, a, img, audio, video, text, iframe
+    input, table, br, button, p, div, textarea, CUSTOM, a, img, audio, video, span, iframe
   }
 
   private String modelId;
@@ -93,8 +93,8 @@ public class HtmlElement {
             case "video":
               this.type = ElementType.video;
               break;
-            case "text":
-              this.type = ElementType.text;
+            case "span":
+              this.type = ElementType.span;
               break;
             case "iframe":
               this.type = ElementType.iframe;
@@ -139,6 +139,9 @@ public class HtmlElement {
           code.append(" ").append(key).append("=\"").append(value).append("\" ");
       }
     }
+
+    if(this.getType().equals(ElementType.input) && this.getLabel() != null)
+      code.append("value=\"").append(this.getLabel()).append("\"");
     return code.toString();
   }
 
@@ -147,7 +150,7 @@ public class HtmlElement {
     // add geometry
     if(geometry.keySet().size() > 0) {
       if(this.hasParent())
-        code.append("position: relative; ");
+        code.append("position: absolute ; ");
       else
         code.append("position: absolute; ");
       String top = geometry.get("x");
