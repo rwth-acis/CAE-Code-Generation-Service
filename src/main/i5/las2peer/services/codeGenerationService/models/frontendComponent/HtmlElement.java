@@ -118,6 +118,8 @@ public class HtmlElement {
             }
             else if(attribute.getSyncMetaId().contains("uiLabel")){
               label = attribute.getValue();
+              if(label == null)
+                label = "";
             }
             else{
               throw new ModelParseException("Unknown HtmlElement attribute: " + attribute.getName());

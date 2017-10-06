@@ -472,7 +472,7 @@ public class FrontendComponentGenerator extends Generator {
                 elementTemplate.setVariable("$Element_Type$", element.getType().toString());
                 elementTemplate.setVariable("$Element_Id$", element.getId());
                 elementTemplate.setVariable("$Additional_Values$", " ");
-                if (element.getLabel().length() > 0)
+                if (element.getLabel() != null && element.getLabel().length() > 0)
                     elementTemplate.setVariable("$Element_Content$", element.getLabel());
                 else
                     elementTemplate.setVariable("$Element_Content$", " ");
@@ -491,7 +491,7 @@ public class FrontendComponentGenerator extends Generator {
                 elementTemplate.setVariable("$Element_Type$", element.getType().toString());
                 elementTemplate.setVariable("$Element_Id$", element.getId());
                 elementTemplate.setVariable("$Additional_Values$", " ");
-                if (element.getLabel().length() > 0)
+                if (element.getLabel() != null && element.getLabel().length() > 0)
                     elementTemplate.setVariable("$Element_Content$", element.getLabel());
                 else
                     elementTemplate.setVariable("$Element_Content$", " ");
@@ -502,7 +502,7 @@ public class FrontendComponentGenerator extends Generator {
                 elementTemplate.setVariable("$Element_Type$", element.getType().toString());
                 elementTemplate.setVariable("$Additional_Values$", " ");
                 elementTemplate.setVariable("$Element_Id$", element.getId());
-                if (element.getLabel().length() > 0)
+                if (element.getLabel() != null && element.getLabel().length() > 0)
                     elementTemplate.setVariable("$Element_Content$", element.getLabel());
                 else
                     elementTemplate.setVariable("$Element_Content$", " ");
@@ -537,7 +537,7 @@ public class FrontendComponentGenerator extends Generator {
                 elementTemplate.setVariable("$Element_Type$", element.getType().toString());
                 elementTemplate.setVariable("$Element_Id$", element.getId());
                 elementTemplate.setVariable("$Additional_Values$", " ");
-                if (element.getLabel().length() > 0)
+                if (element.getLabel() != null && element.getLabel().length() > 0)
                     elementTemplate.setVariable("$Element_Content$", element.getLabel());
                 else
                     elementTemplate.setVariable("$Element_Content$", " ");
