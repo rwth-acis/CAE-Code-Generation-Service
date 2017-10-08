@@ -1,11 +1,9 @@
 package i5.las2peer.services.codeGenerationService.generators;
 
 import java.io.UnsupportedEncodingException;
-import java.util.Base64;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 
+import com.google.common.collect.ImmutableMap;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.ObjectLoader;
 import org.eclipse.jgit.lib.ObjectReader;
@@ -63,6 +61,10 @@ public class FrontendComponentSynchronization extends FrontendComponentGenerator
     String yjsInit = null;
     String guidances = null;
 
+    String polymerLibImport = null;
+    String polymerElementImport = null;
+    String webComponents = null;
+
     TemplateEngine applicationTemplateEngine = null;
     TemplateEngine widgetTemplateEngine = null;
 
@@ -104,6 +106,9 @@ public class FrontendComponentSynchronization extends FrontendComponentGenerator
           case "genericIWCResponse.txt":
             iwcResponseTemplate = new String(loader.getBytes(), "UTF-8");
             break;
+          case "webcomponents-lite.min.js":
+            webComponents = new String(loader.getBytes(), "UTF-8");
+            break;
           case "y.js":
             yjs = new String(loader.getBytes(), "UTF-8");
             break;
@@ -118,6 +123,12 @@ public class FrontendComponentSynchronization extends FrontendComponentGenerator
             break;
           case "y-memory.js":
             yMemory = new String(loader.getBytes(), "UTF-8");
+            break;
+          case "polymer-element-import.txt":
+            polymerElementImport = new String(loader.getBytes(), "UTF-8");
+            break;
+          case "polymer-lib-import.txt":
+            polymerLibImport = new String(loader.getBytes(), "UTF-8");
             break;
           case "yjs-imports.txt":
             yjsImports = new String(loader.getBytes(), "UTF-8");
@@ -180,10 +191,14 @@ public class FrontendComponentSynchronization extends FrontendComponentGenerator
           .addAditionalOldFileTraceModel(widgetTemplateEngine.getFileTraceModel());
       widgetSynchronizationStrategy
           .addAditionalOldFileTraceModel(applicationTemplateEngine.getFileTraceModel());
-
+      //prepare additional import map
+      Map<String, String> imports = ImmutableMap.of(
+              "Yjs", yjsImports,
+              "webComponents", polymerLibImport,
+              "polymerElement", polymerElementImport);
 
       // regenerate widget code
-      createWidgetCode(widgetTemplateEngine, widget, wireframeElementTemplate, yjsImports,
+      createWidgetCode(widgetTemplateEngine, widget, wireframeElementTemplate, imports,
           gitAdapter.getGitOrganization(), getRepositoryName(frontendComponent), frontendComponent);
 
       traceModel.addFileTraceModel(widgetTemplateEngine.getFileTraceModel());

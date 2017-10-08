@@ -29,7 +29,7 @@ public class FrontendComponent {
   private String microserviceAddress;
   private HashMap<String, HtmlElement> htmlElements;
   private HashMap<String, Function> functions;
-
+  private boolean hasPolymerElements = false;
 
   /**
    * 
@@ -119,6 +119,11 @@ public class FrontendComponent {
           break;
         case "HTML Element":
           HtmlElement element = new HtmlElement(node);
+
+          //element is a polymer element
+          if(element.getType().equals(HtmlElement.ElementType.CUSTOM))
+            this.setHasPolymerElements(true);
+
           this.htmlElements.put(node.getId(), element);
           if (tempIds.contains(element.getModelId())) {
             throw new ModelParseException("Duplicate id found: " + element.getModelId());
@@ -444,4 +449,11 @@ public class FrontendComponent {
     this.microserviceAddress = microserviceAddress;
   }
 
+  public boolean hasPolymerElements(){
+    return this.hasPolymerElements;
+  }
+
+  private void setHasPolymerElements(boolean hasPolymerElements){
+    this.hasPolymerElements = hasPolymerElements;
+  }
 }

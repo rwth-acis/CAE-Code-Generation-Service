@@ -2,9 +2,11 @@ package i5.las2peer.services.codeGenerationService.models.frontendComponent;
 
 import java.util.ArrayList;
 
+import com.google.common.collect.ImmutableMap;
 import i5.cae.simpleModel.SimpleEntityAttribute;
 import i5.cae.simpleModel.node.SimpleNode;
 import i5.las2peer.services.codeGenerationService.exception.ModelParseException;
+import java.util.Map;
 import java.util.HashMap;
 
 /**
@@ -21,8 +23,21 @@ public class HtmlElement {
    * 
    */
   public enum ElementType {
-    input, table, br, button, p, div, textarea, CUSTOM, a, img, audio, video, span, iframe
+    input, table, br, button, p, div, textarea, CUSTOM, a, img, audio, video, span, iframe, radio, checkbox, ul, ol, dl
   }
+
+  private static final Map<ElementType, String> codeSample = ImmutableMap.of(
+          ElementType.ul, "  <li>Item 1</li>\n<li>Item 2</li>\n<li>Item 3</li> ",
+          ElementType.ol, "  <li>Item 1</li>\n<li>Item 2</li>\n<li>Item 3</li> ",
+          ElementType.dl, " <dt>Item 1</dt>\n     <dd>- Description of Item 1</dd>\n" +
+                              "<dt>Item 2</dt>\n      <dd>- Description of Item 2</dd>",
+          ElementType.table, "  <tr>\n    <th>Column 1</th>\n    <th>Column 2</th> \n    <th>Column 3</th>\n  </tr>\n" +
+                  "  <tr>\n    <td>Edit me!</td>\n    <td>Edit me!</td> \n    <td>Edit me!</td>\n  </tr>\n" +
+                  "  <tr>\n    <td>Edit me!</td>\n    <td>Edit me!</td> \n    <td>Edit me!</td>\n  </tr>\n" +
+                  "  <tr>\n    <td>Edit me!</td>\n    <td>Edit me!</td> \n    <td>Edit me!</td>\n  </tr>"
+
+  );
+
 
   private String modelId;
   private String id;
@@ -37,7 +52,8 @@ public class HtmlElement {
   private HashMap<String, String> attributes = new HashMap<>();
   private HashMap<String, String> geometry = new HashMap<>();
   private String label;
-
+  private boolean isContentEditable = false;
+  private boolean ignoreSize = false;
   /**
    *
    * HtmlElement constructor. Takes a {@link SimpleNode} and parses it to an HtmlElement.
@@ -61,6 +77,7 @@ public class HtmlElement {
               this.type = ElementType.input;
               break;
             case "table":
+              this.isContentEditable = true;
               this.type = ElementType.table;
               break;
             case "br":
@@ -99,6 +116,26 @@ public class HtmlElement {
             case "iframe":
               this.type = ElementType.iframe;
               break;
+            case "radio":
+              this.ignoreSize = true;
+              this.type = ElementType.radio;
+              break;
+            case "checkbox":
+              this.ignoreSize = true;
+              this.type = ElementType.checkbox;
+              break;
+            case "ol":
+              this.isContentEditable = true;
+              this.type = ElementType.ol;
+              break;
+            case "ul":
+              this.isContentEditable = true;
+              this.type = ElementType.ul;
+              break;
+            case "dl":
+              this.isContentEditable = true;
+              this.type = ElementType.dl;
+              break;
             default:
               throw new ModelParseException("Unknown HtmlElement type: " + attribute.getValue());
           }
@@ -131,6 +168,10 @@ public class HtmlElement {
   }
 
   public String generateCodeForAttributes() {
+    //non attributes for polymer elements
+    if(this.type.equals(ElementType.CUSTOM))
+      return " ";
+
     StringBuilder code = new StringBuilder();
     for (String key : attributes.keySet()) {
       String value = attributes.get(key);
@@ -162,10 +203,10 @@ public class HtmlElement {
       if (left.length() > 0)
         code.append("top: ").append(left).append("px; ");
       String width = geometry.get("width");
-      if (width.length() > 0)
+      if (width.length() > 0 && !this.ignoreSize)
         code.append("width: ").append(width).append("px; ");
       String height = geometry.get("height");
-      if (height.length() > 0)
+      if (height.length() > 0 && !this.ignoreSize)
         code.append("height: ").append(height).append("px;");
       //code.append("\"");
     }
@@ -205,10 +246,6 @@ public class HtmlElement {
     return attributes;
   }
 
-  /*public HashMap<String, String> getGeometry() {
-    return geometry;
-  }*/
-
   public String getLabel() {
     return label;
   }
@@ -243,6 +280,18 @@ public class HtmlElement {
    */
   void addEvent(Event event) {
     this.events.add(event);
+  }
+
+  public boolean isContentEditable(){
+    return this.isContentEditable;
+  }
+
+  public String getCodeSample(){
+    return codeSample.getOrDefault(this.type, " ");
+  }
+
+  public String getAttributeValue(String name){
+    return this.attributes.getOrDefault(name, "");
   }
 
 }

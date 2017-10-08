@@ -1,5 +1,7 @@
 package i5.las2peer.services.codeGenerationService.generators;
 
+import com.google.common.collect.ImmutableMap;
+
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -79,12 +81,15 @@ public class FrontendComponentGenerator extends Generator {
         String iwcResponseTemplate = null;
         String eventTemplate = null;
         String yjsImports = null;
+        String polymerLibImport = null;
+        String polymerElementImport = null;
         String yjs = null;
         String yText = null;
         String yWebsockets = null;
         String yArray = null;
         String yMemory = null;
         String iwc = null;
+        String webComponents = null;
         String yjsInit = null;
         String guidances = null;
 
@@ -135,11 +140,20 @@ public class FrontendComponentGenerator extends Generator {
                         case "yjs-imports.txt":
                             yjsImports = new String(loader.getBytes(), "UTF-8");
                             break;
+                        case "polymer-element-import.txt":
+                            polymerElementImport = new String(loader.getBytes(), "UTF-8");
+                            break;
+                        case "polymer-lib-import.txt":
+                            polymerLibImport = new String(loader.getBytes(), "UTF-8");
+                            break;
                         case "las2peerWidgetLibrary.js":
                             las2peerWidgetLibrary = new String(loader.getBytes(), "UTF-8");
                             las2peerWidgetLibrary = replaceExactMatch(las2peerWidgetLibrary,
                                     "%%oidcProvider%%",
                                     ((CodeGenerationService) Context.getCurrent().getService()).getOidcProvider());
+                            break;
+                        case "webcomponents-lite.min.js":
+                            webComponents = new String(loader.getBytes(), "UTF-8");
                             break;
                         case "iwc.js":
                             iwc = new String(loader.getBytes(), "UTF-8");
@@ -193,8 +207,14 @@ public class FrontendComponentGenerator extends Generator {
             TemplateStrategy strategy = new InitialGenerationStrategy();
             TemplateEngine widgetTemplateEngine = new TemplateEngine(strategy, widgetTraceModel);
 
+            //prepare additional import map
+            Map<String, String> imports = ImmutableMap.of(
+                    "Yjs", yjsImports,
+                    "webComponents", polymerLibImport,
+                    "polymerElement", polymerElementImport);
+
             // add html elements to widget source code
-            createWidgetCode(widgetTemplateEngine, widget, wireframeElementTemplate, yjsImports,
+            createWidgetCode(widgetTemplateEngine, widget, wireframeElementTemplate, imports,
                     gitAdapter.getGitOrganization(), repositoryName, frontendComponent);
 
             // add widget file trace model to gloabl trace model
@@ -253,15 +273,15 @@ public class FrontendComponentGenerator extends Generator {
             // y-is (if needed)
             // if (widgetTemplateEngine.getContent().contains("/js/lib/y.js")) {
             frontendComponentRepository =
+                    createTextFileInRepository(frontendComponentRepository, "js/lib/", "webcomponents-lite.min.js", webComponents);
+            frontendComponentRepository =
                     createTextFileInRepository(frontendComponentRepository, "js/lib/", "y.js", yjs);
             frontendComponentRepository =
                     createTextFileInRepository(frontendComponentRepository, "js/lib/", "y-array.js", yArray);
             frontendComponentRepository =
                     createTextFileInRepository(frontendComponentRepository, "js/lib/", "y-text.js", yText);
-            frontendComponentRepository = createTextFileInRepository(frontendComponentRepository,
-                    "js/lib/", "y-websockets-client.js", yWebsockets);
-            frontendComponentRepository = createTextFileInRepository(frontendComponentRepository,
-                    "js/lib/", "y-memory.js", yMemory);
+            frontendComponentRepository = createTextFileInRepository(frontendComponentRepository,"js/lib/", "y-websockets-client.js", yWebsockets);
+            frontendComponentRepository = createTextFileInRepository(frontendComponentRepository,"js/lib/", "y-memory.js", yMemory);
             // }
             frontendComponentRepository =
                     createTextFileInRepository(frontendComponentRepository, "css/", "style.css", style);
@@ -310,17 +330,18 @@ public class FrontendComponentGenerator extends Generator {
      * @param templateEngine          the template engine used for the code generation
      * @param widgetTemplateFile      the widget template of the widget as a string
      * @param htmlElementTemplateFile the HTML element template as a string
-     * @param importTemplateFile      a text file containing all additional imports to be added
+     * @param importTemplateFiles    a text file containing all additional imports to be added
      * @param gitHubOrganization      the organization name (for correct paths)
      * @param repositoryName          the repository's name (for correct paths)
      * @param frontendComponent       a {@link FrontendComponent}
      */
     static void createWidgetCode(TemplateEngine templateEngine, String widgetTemplateFile,
-                                        String htmlElementTemplateFile, String importTemplateFile, String gitHubOrganization,
+                                        String htmlElementTemplateFile, Map<String,String> importTemplateFiles, String gitHubOrganization,
                                         String repositoryName, FrontendComponent frontendComponent) {
 
-        Template widgetTemplate =
-                templateEngine.createTemplate(frontendComponent.getWidgetModelId(), widgetTemplateFile);
+        boolean wasWebComponentLibAdded = false;
+        ArrayList<String> polymerElementsToAdd = new ArrayList<>();
+        Template widgetTemplate = templateEngine.createTemplate(frontendComponent.getWidgetModelId(), widgetTemplateFile);
         templateEngine.addTemplate(widgetTemplate);
 
         Map<String, HtmlElement> htmlElementsToAdd = new HashMap<String, HtmlElement>();
@@ -328,15 +349,27 @@ public class FrontendComponentGenerator extends Generator {
 
         // add all static elements and check for collaborative elements
         for (HtmlElement element : frontendComponent.getHtmlElements().values()) {
-
             if (element.isStaticElement() && !element.hasParent()) {
                 htmlElementsToAdd.put(element.getId(), element);
             }
             if (element.isCollaborativeElement()) {
                 // currently, only textareas are supported
-                Template importTemplate = templateEngine
-                        .createTemplate(widgetTemplate.getId() + ":addiionalImports", importTemplateFile);
+                Template importTemplate = templateEngine.createTemplate(widgetTemplate.getId() + ":additionalYjsImports", importTemplateFiles.get("Yjs"));
                 widgetTemplate.appendVariableOnce("$Additional_Imports$", importTemplate);
+            }
+            if(element.getType().equals(HtmlElement.ElementType.CUSTOM)){
+                if(!wasWebComponentLibAdded) {
+                    Template webComponentLibTemplate = templateEngine.createTemplate(widgetTemplate.getId() + ":additionalWebComponentImport", importTemplateFiles.get("webComponents"));
+                    widgetTemplate.appendVariableOnce("$Additional_Imports$", webComponentLibTemplate);
+                    wasWebComponentLibAdded = true;
+                }
+                String elementUrl = element.getAttributeValue("link");
+                if(elementUrl != null && elementUrl.length() > 0 && !polymerElementsToAdd.contains(elementUrl)){
+                    polymerElementsToAdd.add(elementUrl);
+                    Template polymerElementImport = templateEngine.createTemplate(widgetTemplate.getId() + ":"+ element.getId() + "AdditionalPolymerElementImport", importTemplateFiles.get("polymerElement"));
+                    polymerElementImport.setVariable("$PolymerElement_URL$", elementUrl);
+                    widgetTemplate.appendVariable("$Additional_Imports$", polymerElementImport);
+                }
             }
         }
 
@@ -398,15 +431,11 @@ public class FrontendComponentGenerator extends Generator {
      */
     private static Template createHtmlElementTemplate(HtmlElement element,
                                                       String htmlElementTemplateFile, Template template) {
+        String wireframeAttributes = "";
+        if(element.isContentEditable())
+            htmlElementTemplateFile = htmlElementTemplateFile.replace("$Element_Content$", "-{$Element_Content$}-");
 
         Template elementTemplate = template.createTemplate(element.getModelId() + ":htmlElement", htmlElementTemplateFile);
-
-        String wireframeAttributes = element.generateCodeForAttributes();
-        //Add data from wireframing
-        if (wireframeAttributes.length() > 0)
-            elementTemplate.setVariable("$Wireframe_Attributes$", wireframeAttributes);
-        else
-            elementTemplate.setVariable("$Wireframe_Attributes$", "");
 
         String wireframeGeometry = element.generateCodeForGeometry();
         if(wireframeGeometry.length() > 0)
@@ -417,13 +446,27 @@ public class FrontendComponentGenerator extends Generator {
 
         switch (element.getType()) {
             case CUSTOM:
+                wireframeAttributes = element.generateCodeForAttributes();
+                if (wireframeAttributes.length() > 0)
+                    elementTemplate.setVariable("$Wireframe_Attributes$", wireframeAttributes);
+                else
+                    elementTemplate.setVariable("$Wireframe_Attributes$", "");
+                String tagName = element.getAttributeValue("name");
+                if(tagName.length() < 1)
+                    tagName = "polymer-name-missing";
                 elementTemplate.setVariable("$Additional_Styles$", " ");
+                elementTemplate.setVariable("$Element_Type$", tagName);
                 elementTemplate.setVariable("$Element_Id$", element.getId());
                 elementTemplate.setVariable("$Element_Content$", " ");
                 elementTemplate.setVariable("$Additional_Values$", " ");
-                elementTemplate.setVariable("$Closing_Element$", "</" + element.getType().toString() + ">");
+                elementTemplate.setVariable("$Closing_Element$", "</" + tagName + ">");
                 break;
             case br:
+                wireframeAttributes = element.generateCodeForAttributes();
+                if (wireframeAttributes.length() > 0)
+                    elementTemplate.setVariable("$Wireframe_Attributes$", wireframeAttributes);
+                else
+                    elementTemplate.setVariable("$Wireframe_Attributes$", "");
                 elementTemplate.setVariable("$Additional_Styles$", " ");
                 elementTemplate.setVariable("$Element_Type$", element.getType().toString());
                 elementTemplate.setVariable("$Element_Id$", element.getId());
@@ -431,19 +474,12 @@ public class FrontendComponentGenerator extends Generator {
                 elementTemplate.setVariable("$Element_Content$", " ");
                 elementTemplate.setVariable("$Closing_Element$", "");
                 break;
-            case button:
-                elementTemplate.setVariable("$Additional_Styles$", " ");
-                elementTemplate.setVariable("$Element_Type$", element.getType().toString());
-                elementTemplate.setVariable("$Element_Id$", element.getId());
-                elementTemplate.setVariable("$Additional_Values$", " ");
-                if (element.getLabel() != null && element.getLabel().length() > 0)
-                    elementTemplate.setVariable("$Element_Content$", element.getLabel());
-                else
-                    elementTemplate.setVariable("$Element_Content$", " ");
-                elementTemplate.setVariable("$Closing_Element$", "</" + element.getType().toString() + ">");
-
-                break;
             case div:
+                wireframeAttributes = element.generateCodeForAttributes();
+                if (wireframeAttributes.length() > 0)
+                    elementTemplate.setVariable("$Wireframe_Attributes$", wireframeAttributes);
+                else
+                    elementTemplate.setVariable("$Wireframe_Attributes$", "");
                 elementTemplate.setVariable("$Additional_Styles$", " ");
                 elementTemplate.setVariable("$Element_Type$", element.getType().toString());
                 elementTemplate.setVariable("$Element_Id$", element.getId());
@@ -459,34 +495,28 @@ public class FrontendComponentGenerator extends Generator {
                 else
                     elementTemplate.setVariable("$Element_Content$", " ");
                 break;
-            case input:
-                elementTemplate.setVariable("$Additional_Styles$", " ");
-                elementTemplate.setVariable("$Element_Type$", element.getType().toString());
-                elementTemplate.setVariable("$Element_Id$", element.getId());
-                elementTemplate.setVariable("$Additional_Values$", " ");
-                elementTemplate.setVariable("$Element_Content$", " ");
-                elementTemplate.setVariable("$Closing_Element$", "</" + element.getType().toString() + ">");
-                break;
-            case p:
-                elementTemplate.setVariable("$Additional_Styles$", " ");
-                elementTemplate.setVariable("$Element_Type$", element.getType().toString());
-                elementTemplate.setVariable("$Element_Id$", element.getId());
-                elementTemplate.setVariable("$Additional_Values$", " ");
-                if (element.getLabel() != null && element.getLabel().length() > 0)
-                    elementTemplate.setVariable("$Element_Content$", element.getLabel());
-                else
-                    elementTemplate.setVariable("$Element_Content$", " ");
-                elementTemplate.setVariable("$Closing_Element$", "</" + element.getType().toString() + ">");
-                break;
+            case ul:
+            case ol:
+            case dl:
             case table:
+                wireframeAttributes = element.generateCodeForAttributes();
+                if (wireframeAttributes.length() > 0)
+                    elementTemplate.setVariable("$Wireframe_Attributes$", wireframeAttributes);
+                else
+                    elementTemplate.setVariable("$Wireframe_Attributes$", "");
                 elementTemplate.setVariable("$Additional_Styles$", " ");
                 elementTemplate.setVariable("$Element_Type$", element.getType().toString());
                 elementTemplate.setVariable("$Element_Id$", element.getId());
                 elementTemplate.setVariable("$Additional_Values$", " ");
-                elementTemplate.setVariable("$Element_Content$", element.getLabel());
+                elementTemplate.setVariable("$Element_Content$", element.getCodeSample());
                 elementTemplate.setVariable("$Closing_Element$", "</" + element.getType().toString() + ">");
                 break;
             case textarea:
+                wireframeAttributes = element.generateCodeForAttributes();
+                if (wireframeAttributes.length() > 0)
+                    elementTemplate.setVariable("$Wireframe_Attributes$", wireframeAttributes);
+                else
+                    elementTemplate.setVariable("$Wireframe_Attributes$", "");
                 elementTemplate.setVariable("$Additional_Styles$", " resize: none; ");
                 elementTemplate.setVariable("$Element_Type$", element.getType().toString());
                 elementTemplate.setVariable("$Element_Id$", element.getId());
@@ -497,53 +527,69 @@ public class FrontendComponentGenerator extends Generator {
                     elementTemplate.setVariable("$Element_Content$", " ");
                 elementTemplate.setVariable("$Closing_Element$", "</" + element.getType().toString() + ">");
                 break;
-            case a:
+            case video:
+            case audio:
+                wireframeAttributes = element.generateCodeForAttributes();
+                if (wireframeAttributes.length() > 0)
+                    elementTemplate.setVariable("$Wireframe_Attributes$", wireframeAttributes);
+                else
+                    elementTemplate.setVariable("$Wireframe_Attributes$", "");
                 elementTemplate.setVariable("$Additional_Styles$", " ");
                 elementTemplate.setVariable("$Element_Type$", element.getType().toString());
-                elementTemplate.setVariable("$Additional_Values$", " ");
                 elementTemplate.setVariable("$Element_Id$", element.getId());
+                elementTemplate.setVariable("$Additional_Values$", " ");
+                elementTemplate.setVariable("$Element_Content$", "Your browser does not support the" + element.getType().toString() + " tag.");
+                elementTemplate.setVariable("$Closing_Element$", "</" + element.getType().toString() + ">");
+                break;
+            case p:
+            case a:
+            case span:
+            case button:
+                wireframeAttributes = element.generateCodeForAttributes();
+                if (wireframeAttributes.length() > 0)
+                    elementTemplate.setVariable("$Wireframe_Attributes$", wireframeAttributes);
+                else
+                    elementTemplate.setVariable("$Wireframe_Attributes$", "");
+                elementTemplate.setVariable("$Additional_Styles$", " ");
+                elementTemplate.setVariable("$Element_Type$", element.getType().toString());
+                elementTemplate.setVariable("$Element_Id$", element.getId());
+                elementTemplate.setVariable("$Additional_Values$", " ");
                 if (element.getLabel() != null && element.getLabel().length() > 0)
                     elementTemplate.setVariable("$Element_Content$", element.getLabel());
                 else
                     elementTemplate.setVariable("$Element_Content$", " ");
                 elementTemplate.setVariable("$Closing_Element$", "</" + element.getType().toString() + ">");
+                break;
+            case radio:
+            case checkbox:
+                elementTemplate.setVariable("$Wireframe_Attributes$", "");
+                elementTemplate.setVariable("$Additional_Styles$", " ");
+                elementTemplate.setVariable("$Element_Type$", "label");
+                elementTemplate.setVariable("$Element_Id$", "");
+                elementTemplate.setVariable("$Additional_Values$", " ");
+                wireframeAttributes = element.generateCodeForAttributes();
+
+                StringBuilder inputTemplate = new StringBuilder();
+                inputTemplate.append("<input").append(wireframeAttributes)
+                        .append(" type=\"").append(element.getType())
+                        .append("\" id=\"").append(element.getId()).append("\" ")
+                        .append("-{$Additional_Values$}-").append(" >")
+                        .append(element.getLabel());
+
+                Template inputElementTemplate = template.createTemplate(element.getModelId() + ":htmlElementSub", inputTemplate.toString());
+                inputElementTemplate.setVariable("$Additional_Values$", " ");
+                elementTemplate.appendVariable("$Element_Content$", inputElementTemplate);
+
+                elementTemplate.setVariable("$Closing_Element$", "</label>");
                 break;
             case img:
-                elementTemplate.setVariable("$Additional_Styles$", " ");
-                elementTemplate.setVariable("$Element_Type$", element.getType().toString());
-                elementTemplate.setVariable("$Element_Id$", element.getId());
-                elementTemplate.setVariable("$Additional_Values$", " ");
-                elementTemplate.setVariable("$Element_Content$", " ");
-                elementTemplate.setVariable("$Closing_Element$", "</" + element.getType().toString() + ">");
-                break;
-            case audio:
-                elementTemplate.setVariable("$Additional_Styles$", " ");
-                elementTemplate.setVariable("$Element_Type$", element.getType().toString());
-                elementTemplate.setVariable("$Element_Id$", element.getId());
-                elementTemplate.setVariable("$Additional_Values$", " ");
-                elementTemplate.setVariable("$Element_Content$", "Your browser does not support the audio tag.");
-                elementTemplate.setVariable("$Closing_Element$", "</" + element.getType().toString() + ">");
-                break;
-            case video:
-                elementTemplate.setVariable("$Additional_Styles$", " ");
-                elementTemplate.setVariable("$Element_Type$", element.getType().toString());
-                elementTemplate.setVariable("$Element_Id$", element.getId());
-                elementTemplate.setVariable("$Additional_Values$", " ");
-                elementTemplate.setVariable("$Element_Content$", "Your browser does not support the video tag.");
-                elementTemplate.setVariable("$Closing_Element$", "</" + element.getType().toString() + ">");
-                break;
-            case span:
-                elementTemplate.setVariable("$Additional_Styles$", " ");
-                elementTemplate.setVariable("$Element_Type$", element.getType().toString());
-                elementTemplate.setVariable("$Element_Id$", element.getId());
-                elementTemplate.setVariable("$Additional_Values$", " ");
-                if (element.getLabel() != null && element.getLabel().length() > 0)
-                    elementTemplate.setVariable("$Element_Content$", element.getLabel());
-                else
-                    elementTemplate.setVariable("$Element_Content$", " ");
-                elementTemplate.setVariable("$Closing_Element$", "</" + element.getType().toString() + ">");
-                break;
             case iframe:
+            case input:
+                wireframeAttributes = element.generateCodeForAttributes();
+                if (wireframeAttributes.length() > 0)
+                    elementTemplate.setVariable("$Wireframe_Attributes$", wireframeAttributes);
+                else
+                    elementTemplate.setVariable("$Wireframe_Attributes$", "");
                 elementTemplate.setVariable("$Additional_Styles$", " ");
                 elementTemplate.setVariable("$Element_Type$", element.getType().toString());
                 elementTemplate.setVariable("$Element_Id$", element.getId());
