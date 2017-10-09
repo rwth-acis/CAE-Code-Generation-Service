@@ -597,6 +597,23 @@ public class FrontendComponentGenerator extends Generator {
                 elementTemplate.setVariable("$Element_Content$", " ");
                 elementTemplate.setVariable("$Closing_Element$", "</" + element.getType().toString() + ">");
                 break;
+            case svg:
+            case canvas:
+                wireframeAttributes = element.generateCodeForAttributes();
+                String size= " height=\"" + element.getGeometryAttributeValue("height") + "\""
+                        + " width=\"" + element.getGeometryAttributeValue("width") + "\"";
+
+                if (wireframeAttributes.length() > 0)
+                    elementTemplate.setVariable("$Wireframe_Attributes$", wireframeAttributes + size);
+                else
+                    elementTemplate.setVariable("$Wireframe_Attributes$", size);
+                elementTemplate.setVariable("$Additional_Styles$", " border:1px solid #000000; ");
+                elementTemplate.setVariable("$Element_Type$", element.getType().toString());
+                elementTemplate.setVariable("$Element_Id$", element.getId());
+                elementTemplate.setVariable("$Additional_Values$", " ");
+                elementTemplate.setVariable("$Element_Content$", element.getCodeSample());
+                elementTemplate.setVariable("$Closing_Element$", "</" + element.getType().toString() + ">");
+                break;
             default:
                 break;
         }

@@ -23,7 +23,7 @@ public class HtmlElement {
    * 
    */
   public enum ElementType {
-    input, table, br, button, p, div, textarea, CUSTOM, a, img, audio, video, span, iframe, radio, checkbox, ul, ol, dl
+    input, table, br, button, p, div, textarea, CUSTOM, a, img, audio, video, span, iframe, radio, checkbox, ul, ol, dl, canvas, svg
   }
 
   private static final Map<ElementType, String> codeSample = ImmutableMap.of(
@@ -34,7 +34,8 @@ public class HtmlElement {
           ElementType.table, "  <tr>\n    <th>Column 1</th>\n    <th>Column 2</th> \n    <th>Column 3</th>\n  </tr>\n" +
                   "  <tr>\n    <td>Edit me!</td>\n    <td>Edit me!</td> \n    <td>Edit me!</td>\n  </tr>\n" +
                   "  <tr>\n    <td>Edit me!</td>\n    <td>Edit me!</td> \n    <td>Edit me!</td>\n  </tr>\n" +
-                  "  <tr>\n    <td>Edit me!</td>\n    <td>Edit me!</td> \n    <td>Edit me!</td>\n  </tr>"
+                  "  <tr>\n    <td>Edit me!</td>\n    <td>Edit me!</td> \n    <td>Edit me!</td>\n  </tr>",
+          ElementType.svg, "  <ellipse cx=\"100\" cy=\"70\" rx=\"85\" ry=\"55\" fill=\"blue\"/>\n  <text fill=\"#ffffff\" font-size=\"45\" font-family=\"Verdana\"\n  x=\"50\" y=\"86\">SVG</text>\nSorry, your browser does not support inline SVG."
 
   );
 
@@ -135,6 +136,15 @@ public class HtmlElement {
             case "dl":
               this.isContentEditable = true;
               this.type = ElementType.dl;
+              break;
+            case "canvas":
+              this.ignoreSize = true;
+              this.type = ElementType.canvas;
+              break;
+            case "svg":
+              this.ignoreSize = true;
+              this.isContentEditable = true;
+              this.type = ElementType.svg;
               break;
             default:
               throw new ModelParseException("Unknown HtmlElement type: " + attribute.getValue());
@@ -294,4 +304,7 @@ public class HtmlElement {
     return this.attributes.getOrDefault(name, "");
   }
 
+  public String getGeometryAttributeValue(String name){
+    return this.geometry.getOrDefault(name, "");
+  }
 }
