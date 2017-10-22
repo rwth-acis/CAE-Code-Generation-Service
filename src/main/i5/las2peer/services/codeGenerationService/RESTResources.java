@@ -8,6 +8,7 @@ import java.net.HttpURLConnection;
 import java.util.Base64;
 import java.util.HashMap;
 import java.util.Objects;
+import java.util.logging.Level;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
@@ -31,8 +32,8 @@ import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 
 import i5.las2peer.api.Context;
-import i5.las2peer.logging.L2pLogger;
-import i5.las2peer.logging.NodeObserver.Event;
+import i5.las2peer.api.ServiceException;
+import i5.las2peer.api.logging.MonitoringEvent;
 import i5.las2peer.services.codeGenerationService.utilities.GitUtility;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;
@@ -74,6 +75,7 @@ public class RESTResources {
 	 *            The name of the repository to push the local changes to
 	 * @return HttpResponse containing the status code of the request or the
 	 *         result of the model violation if it fails
+	 * @throws ServiceException 
 	 */
 
 	@SuppressWarnings("unchecked")
@@ -83,7 +85,7 @@ public class RESTResources {
 	@ApiOperation(value = "Merge and push the commits to the remote repository", notes = "Push the commits to the remote repo.")
 	@ApiResponses(value = { @ApiResponse(code = HttpURLConnection.HTTP_OK, message = "OK"),
 			@ApiResponse(code = HttpURLConnection.HTTP_INTERNAL_ERROR, message = "Internal server error") })
-	public Response pushToRemote(@PathParam("repositoryName") String repositoryName) {
+	public Response pushToRemote(@PathParam("repositoryName") String repositoryName) throws ServiceException {
 		try {
 			// determine which branch to merge in
 			boolean isFrontend = repositoryName.startsWith("frontendComponent-");
@@ -94,7 +96,7 @@ public class RESTResources {
 			result.put("status", "ok");
 			return Response.ok(result.toJSONString()).build();
 		} catch (Exception e) {
-			service.getLogger().printStackTrace(e);
+			service.getLogger().log(Level.FINER, e.getMessage());
 			throw new InternalServerErrorException("Internal Error");
 		}
 	}
@@ -109,6 +111,7 @@ public class RESTResources {
 	 *            A json string containing the content of the file encoded in
 	 *            base64 and its file traces
 	 * @return HttpResponse with the status code of the request
+	 * @throws ServiceException 
 	 */
 
 	@SuppressWarnings("unchecked")
@@ -120,7 +123,7 @@ public class RESTResources {
 	@ApiResponses(value = { @ApiResponse(code = HttpURLConnection.HTTP_OK, message = "OK, file found"),
 			@ApiResponse(code = HttpURLConnection.HTTP_INTERNAL_ERROR, message = "Internal server error"),
 			@ApiResponse(code = HttpURLConnection.HTTP_NOT_FOUND, message = "404, file not found") })
-	public synchronized Response storeAndCommitFle(@PathParam("repositoryName") String repositoryName, String content) {
+	public synchronized Response storeAndCommitFle(@PathParam("repositoryName") String repositoryName, String content) throws ServiceException {
 		try {
 			JSONObject result = new JSONObject();
 
@@ -191,7 +194,7 @@ public class RESTResources {
 			}
 
 		} catch (Exception e) {
-			service.getLogger().printStackTrace(e);
+			service.getLogger().log(Level.FINER, e.getMessage());
 			throw new InternalServerErrorException();
 		}
 	}
@@ -205,6 +208,7 @@ public class RESTResources {
 	 *            The id of the model.
 	 * @return HttpResponse with the status code of the request and the file
 	 *         name and segment id of the model
+	 * @throws ServiceException 
 	 */
 
 	@SuppressWarnings("unchecked")
@@ -216,7 +220,7 @@ public class RESTResources {
 			@ApiResponse(code = HttpURLConnection.HTTP_INTERNAL_ERROR, message = "Internal server error"),
 			@ApiResponse(code = HttpURLConnection.HTTP_NOT_FOUND, message = "404, segment not found") })
 	public Response getSegmentOfModelId(@PathParam("repositoryName") String repositoryName,
-			@PathParam("modelId") String modelId) {
+			@PathParam("modelId") String modelId) throws ServiceException {
 
 		try (Git git = gitUtility.getLocalGit(repositoryName, "development");) {
 
@@ -248,7 +252,7 @@ public class RESTResources {
 		} catch (FileNotFoundException fileNotFoundException) {
 			throw new NotFoundException();
 		} catch (Exception e) {
-			service.getLogger().printStackTrace(e);
+			service.getLogger().log(Level.FINER, e.getMessage());
 			throw new InternalServerErrorException();
 		}
 
@@ -263,6 +267,7 @@ public class RESTResources {
 	 * @return HttpResponse containing the status code of the request and the
 	 *         content of the needed files for the live preview widget encoded
 	 *         in base64 if everything was fine.
+	 * @throws ServiceException 
 	 */
 
 	@SuppressWarnings("unchecked")
@@ -273,7 +278,7 @@ public class RESTResources {
 	@ApiResponses(value = { @ApiResponse(code = HttpURLConnection.HTTP_OK, message = "OK, file found"),
 			@ApiResponse(code = HttpURLConnection.HTTP_INTERNAL_ERROR, message = "Internal server error"),
 			@ApiResponse(code = HttpURLConnection.HTTP_NOT_FOUND, message = "404, file not found") })
-	public Response getLivePreviewFiles(@PathParam("repositoryName") String repositoryName) {
+	public Response getLivePreviewFiles(@PathParam("repositoryName") String repositoryName) throws ServiceException {
 		if (repositoryName.startsWith("frontendComponent")) {
 
 			try (Git git = gitUtility.getLocalGit(repositoryName)) {
@@ -303,7 +308,7 @@ public class RESTResources {
 				service.getLogger().info(repositoryName + " not found");
 				throw new NotFoundException(repositoryName + " not found");
 			} catch (Exception e) {
-				service.getLogger().printStackTrace(e);
+				service.getLogger().log(Level.FINER, e.getMessage());
 				throw new InternalServerErrorException();
 			}
 		} else {
@@ -321,6 +326,7 @@ public class RESTResources {
 	 *            The absolute path of the file
 	 * @return HttpResponse containing the status code of the request and the
 	 *         content of the file encoded in base64 if everything was fine.
+	 * @throws ServiceException 
 	 */
 
 	@SuppressWarnings("unchecked")
@@ -332,7 +338,7 @@ public class RESTResources {
 			@ApiResponse(code = HttpURLConnection.HTTP_INTERNAL_ERROR, message = "Internal server error"),
 			@ApiResponse(code = HttpURLConnection.HTTP_NOT_FOUND, message = "404, file not found") })
 	public Response getFileInRepository(@PathParam("repositoryName") String repositoryName,
-			@QueryParam("file") String fileName) {
+			@QueryParam("file") String fileName) throws ServiceException {
 
 		try (Git git = gitUtility.getLocalGit(repositoryName, "development")) {
 
@@ -352,7 +358,7 @@ public class RESTResources {
 		} catch (FileNotFoundException fileNotFoundException) {
 			throw new NotFoundException();
 		} catch (Exception e) {
-			service.getLogger().printStackTrace(e);
+			service.getLogger().log(Level.FINER, e.getMessage());
 			throw new InternalServerErrorException();
 		}
 
@@ -374,6 +380,7 @@ public class RESTResources {
 	 *            the path of the folder whose files should be listed
 	 * @return HttpResponse containing the files of the given repository as a
 	 *         json string
+	 * @throws ServiceException 
 	 * 
 	 */
 
@@ -386,7 +393,7 @@ public class RESTResources {
 			@ApiResponse(code = HttpURLConnection.HTTP_OK, message = "OK, repository of the model found"),
 			@ApiResponse(code = HttpURLConnection.HTTP_INTERNAL_ERROR, message = "Internal server error") })
 	public Response listFilesInRepository(@PathParam("repoName") String repositoryName,
-			@QueryParam("path") String path) {
+			@QueryParam("path") String path) throws ServiceException {
 
 		if (path == null) {
 			path = "";
@@ -428,8 +435,8 @@ public class RESTResources {
 			}
 
 		} catch (Exception e) {
-			L2pLogger.logEvent(Event.SERVICE_ERROR, "getModelFiles: exception fetching files: " + e);
-			service.getLogger().printStackTrace(e);
+			Context.get().monitorEvent(MonitoringEvent.SERVICE_ERROR, "getModelFiles: exception fetching files: " + e);
+			service.getLogger().log(Level.FINER, e.getMessage());
 			throw new InternalServerErrorException("IO error!");
 		}
 		return Response.ok(jsonResponse.toString().replace("\\", "")).build();

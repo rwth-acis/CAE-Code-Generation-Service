@@ -454,7 +454,7 @@ public class MicroserviceGenerator extends Generator {
     
     // get the port: skip first 6 characters for search (http: / https:)
     try {
-    port = String.valueOf(new URL(microservice.getPath()).getPort());
+    port = String.valueOf(new URL("http://"+microservice.getPath()).getPort());
     } catch (Exception e) {
     	throw new ModelParseException(e.getMessage());
     }
@@ -540,9 +540,9 @@ public class MicroserviceGenerator extends Generator {
         // add mysql dependency only if a database exists
         if (microservice.getDatabase() != null) {
           template.setVariable("$MySQL_Dependencies$",
-              "<dependency org=\"mysql\" name=\"mysql-connector-java\" rev=\"5.1.6\" />\n"
-                  + "    <dependency org=\"org.apache.commons\" name=\"commons-pool2\" rev=\"2.2\" />\n"
-                  + "    <dependency org=\"org.apache.commons\" name=\"commons-dbcp2\" rev=\"2.0\" />");
+              "<dependency org=\"mysql\" name=\"mysql-connector-java\" rev=\"5.1.6\" conf=\"bundle->default\"/>\n"
+                  + "    <dependency org=\"org.apache.commons\" name=\"commons-pool2\" rev=\"2.2\" conf=\"bundle->default\"/>\n"
+                  + "    <dependency org=\"org.apache.commons\" name=\"commons-dbcp2\" rev=\"2.0\" conf=\"bundle->default\"/>");
         } else {
           template.setVariable("$MySQL_Dependencies$", "");
         }

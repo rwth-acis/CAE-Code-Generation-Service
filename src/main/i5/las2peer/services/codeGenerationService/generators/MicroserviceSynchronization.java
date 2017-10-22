@@ -12,9 +12,10 @@ import org.eclipse.jgit.treewalk.TreeWalk;
 import org.eclipse.jgit.treewalk.filter.PathFilter;
 import org.json.simple.JSONObject;
 
+import i5.las2peer.api.Context;
 import i5.las2peer.api.Service;
+import i5.las2peer.api.logging.MonitoringEvent;
 import i5.las2peer.logging.L2pLogger;
-import i5.las2peer.logging.NodeObserver.Event;
 import i5.las2peer.services.codeGenerationService.adapters.BaseGitHostAdapter;
 import i5.las2peer.services.codeGenerationService.exception.ModelParseException;
 import i5.las2peer.services.codeGenerationService.models.microservice.Microservice;
@@ -216,7 +217,7 @@ public class MicroserviceSynchronization extends MicroserviceGenerator {
       byte[] base64decodedBytes = Base64.getDecoder().decode(content);
 
       try {
-        L2pLogger.logEvent(Event.SERVICE_MESSAGE, "Synchronizing " + fileName + " now ...");
+        Context.get().monitorEvent(MonitoringEvent.SERVICE_MESSAGE, "Synchronizing " + fileName + " now ...");
         content = new String(base64decodedBytes, "utf-8");
         JSONObject fileTraces = (JSONObject) fileObject.get("fileTraces");
         FileTraceModel oldFileTraceModel = FileTraceModelFactory
@@ -259,7 +260,7 @@ public class MicroserviceSynchronization extends MicroserviceGenerator {
           generateOtherArtifacts(templateEngine, microservice, gitAdapter.getGitOrganization(), content);
         }
 
-        L2pLogger.logEvent(Event.SERVICE_MESSAGE, "... " + fileName + " synchronized.");
+        Context.get().monitorEvent(MonitoringEvent.SERVICE_MESSAGE, "... " + fileName + " synchronized.");
 
         // finally add the file trace model to the global trace model
         if (templateEngine != null) {

@@ -13,9 +13,12 @@ import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.treewalk.TreeWalk;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
+
 import i5.cae.simpleModel.SimpleModel;
+import i5.las2peer.api.Context;
+import i5.las2peer.api.ManualDeployment;
+import i5.las2peer.api.logging.MonitoringEvent;
 import i5.las2peer.logging.L2pLogger;
-import i5.las2peer.logging.NodeObserver.Event;
 import i5.las2peer.restMapper.RESTService;
 import i5.las2peer.restMapper.annotations.ServicePath;
 import i5.las2peer.services.codeGenerationService.adapters.BaseGitHostAdapter;
@@ -52,6 +55,7 @@ import io.swagger.annotations.SwaggerDefinition;
 @Api
 @SwaggerDefinition(info = @Info(title = "CAE Code Generation Service", version = "0.1", description = "A LAS2peer service used for generating code and managing remote repositories. Part of the CAE.", termsOfService = "none", contact = @Contact(name = "Peter de Lange", url = "https://github.com/PedeLa/", email = "lange@dbis.rwth-aachen.de"), license = @License(name = "BSD", url = "https://github.com/PedeLa/CAE-Model-Persistence-Service//blob/master/LICENSE.txt")))
 @ServicePath("CodeGen")
+@ManualDeployment
 public class CodeGenerationService extends RESTService {
 
 	// Git service properties
@@ -181,7 +185,7 @@ public class CodeGenerationService extends RESTService {
 
 		SimpleModel model = (SimpleModel) serializedModel[0];
 
-		L2pLogger.logEvent(Event.SERVICE_MESSAGE, "createFromModel: Received model with name " + model.getName());
+		Context.get().monitorEvent(MonitoringEvent.SERVICE_MESSAGE, "createFromModel: Received model with name " + model.getName());
 		// TESTING: write as file
 		/*
 		 * try { OutputStream file = new FileOutputStream("testModels/" +
@@ -202,48 +206,48 @@ public class CodeGenerationService extends RESTService {
 					switch (type) {
 					case "microservice":
 						// Create an object representing the microservice model
-						L2pLogger.logEvent(Event.SERVICE_MESSAGE, "createFromModel: Creating microservice model now..");
+						Context.get().monitorEvent(MonitoringEvent.SERVICE_MESSAGE, "createFromModel: Creating microservice model now..");
 						Microservice microservice = new Microservice(model);
 
 						// Generate the code (and repositories) for this model
-						L2pLogger.logEvent(Event.SERVICE_MESSAGE,
+						Context.get().monitorEvent(MonitoringEvent.SERVICE_MESSAGE,
 								"createFromModel: Creating microservice source code now..");
 						MicroserviceGenerator.createSourceCode(microservice, this.templateRepository,
 								(BaseGitHostAdapter) gitAdapter, forcePush);
-						L2pLogger.logEvent(Event.SERVICE_MESSAGE, "createFromModel: Created!");
+						Context.get().monitorEvent(MonitoringEvent.SERVICE_MESSAGE, "createFromModel: Created!");
 						return "done";
 
 					// The same for the two other types
 					case "frontend-component":
-						L2pLogger.logEvent(Event.SERVICE_MESSAGE,
+						Context.get().monitorEvent(MonitoringEvent.SERVICE_MESSAGE,
 								"createFromModel: Creating frontend component model now..");
 						FrontendComponent frontendComponent = new FrontendComponent(model);
-						L2pLogger.logEvent(Event.SERVICE_MESSAGE,
+						Context.get().monitorEvent(MonitoringEvent.SERVICE_MESSAGE,
 								"createFromModel: Creating frontend component source code now..");
 						FrontendComponentGenerator.createSourceCode(frontendComponent, (BaseGitHostAdapter) gitAdapter,
 								forcePush);
-						L2pLogger.logEvent(Event.SERVICE_MESSAGE, "createFromModel: Created!");
+						Context.get().monitorEvent(MonitoringEvent.SERVICE_MESSAGE, "createFromModel: Created!");
 						return "done";
 
 					case "application":
-						L2pLogger.logEvent(Event.SERVICE_MESSAGE, "createFromModel: Creating application model now..");
+						Context.get().monitorEvent(MonitoringEvent.SERVICE_MESSAGE, "createFromModel: Creating application model now..");
 						Application application = new Application(serializedModel);
-						L2pLogger.logEvent(Event.SERVICE_MESSAGE,
+						Context.get().monitorEvent(MonitoringEvent.SERVICE_MESSAGE,
 								"createFromModel: Creating application source code now..");
 						ApplicationGenerator.createSourceCode(application, (BaseGitHostAdapter) gitAdapter);
-						L2pLogger.logEvent(Event.SERVICE_MESSAGE, "createFromModel: Created!");
+						Context.get().monitorEvent(MonitoringEvent.SERVICE_MESSAGE, "createFromModel: Created!");
 						return "done";
 					default:
 						return "Error: Model has to have an attribute 'type' that is either "
 								+ "'microservice', 'frontend-component' or 'application'!";
 					}
 				} catch (ModelParseException e1) {
-					L2pLogger.logEvent(Event.SERVICE_MESSAGE,
+					Context.get().monitorEvent(MonitoringEvent.SERVICE_MESSAGE,
 							"createFromModel: Model parsing exception: " + e1.getMessage());
 					logger.printStackTrace(e1);
 					return "Error: Parsing model failed with " + e1.getMessage();
 				} catch (GitHostException e2) {
-					L2pLogger.logEvent(Event.SERVICE_MESSAGE,
+					Context.get().monitorEvent(MonitoringEvent.SERVICE_MESSAGE,
 							"createFromModel: GitHub access exception: " + e2.getMessage());
 					logger.printStackTrace(e2);
 					return "Error: Generating code failed because of failing GitHub access: " + e2.getMessage();
@@ -274,39 +278,39 @@ public class CodeGenerationService extends RESTService {
 	public String deleteRepositoryOfModel(Serializable... serializedModel) {
 		SimpleModel model = (SimpleModel) serializedModel[0];
 		String modelName = model.getName();
-		L2pLogger.logEvent(Event.SERVICE_MESSAGE, "deleteRepositoryOfModel: Received model with name " + modelName);
+		Context.get().monitorEvent(MonitoringEvent.SERVICE_MESSAGE, "deleteRepositoryOfModel: Received model with name " + modelName);
 		for (int i = 0; i < model.getAttributes().size(); i++) {
 			if (model.getAttributes().get(i).getName().equals("type")) {
 				String type = model.getAttributes().get(i).getValue();
 				try {
 					switch (type) {
 					case "microservice":
-						L2pLogger.logEvent(Event.SERVICE_MESSAGE,
+						Context.get().monitorEvent(MonitoringEvent.SERVICE_MESSAGE,
 								"deleteRepositoryOfModel: Deleting microservice repository now..");
 						modelName = "microservice-" + modelName.replace(" ", "-");
 						Generator.deleteRemoteRepository(modelName, (BaseGitHostAdapter) this.gitAdapter);
-						L2pLogger.logEvent(Event.SERVICE_MESSAGE, "deleteRepositoryOfModel: Deleted!");
+						Context.get().monitorEvent(MonitoringEvent.SERVICE_MESSAGE, "deleteRepositoryOfModel: Deleted!");
 						return "done";
 					case "frontend-component":
-						L2pLogger.logEvent(Event.SERVICE_MESSAGE,
+						Context.get().monitorEvent(MonitoringEvent.SERVICE_MESSAGE,
 								"deleteRepositoryOfModel: Deleting frontend-component repository now..");
 						modelName = "frontendComponent-" + modelName.replace(" ", "-");
 						Generator.deleteRemoteRepository(modelName, (BaseGitHostAdapter) this.gitAdapter);
-						L2pLogger.logEvent(Event.SERVICE_MESSAGE, "deleteRepositoryOfModel: Deleted!");
+						Context.get().monitorEvent(MonitoringEvent.SERVICE_MESSAGE, "deleteRepositoryOfModel: Deleted!");
 						return "done";
 					case "application":
-						L2pLogger.logEvent(Event.SERVICE_MESSAGE,
+						Context.get().monitorEvent(MonitoringEvent.SERVICE_MESSAGE,
 								"deleteRepositoryOfModel: Deleting application repository now..");
 						modelName = "application-" + modelName.replace(" ", "-");
 						Generator.deleteRemoteRepository(modelName, (BaseGitHostAdapter) this.gitAdapter);
-						L2pLogger.logEvent(Event.SERVICE_MESSAGE, "deleteRepositoryOfModel: Deleted!");
+						Context.get().monitorEvent(MonitoringEvent.SERVICE_MESSAGE, "deleteRepositoryOfModel: Deleted!");
 						return "done";
 					default:
 						return "Error: Model has to have an attribute 'type' that is either "
 								+ "'microservice', 'frontend-component' or 'application'!";
 					}
 				} catch (GitHostException e) {
-					L2pLogger.logEvent(Event.SERVICE_MESSAGE,
+					Context.get().monitorEvent(MonitoringEvent.SERVICE_MESSAGE,
 							"deleteRepositoryOfModel: GitHub access exception: " + e.getMessage());
 					logger.printStackTrace(e);
 					return "Error: Deleting repository failed because of failing GitHub access: " + e.getMessage();
@@ -336,14 +340,14 @@ public class CodeGenerationService extends RESTService {
 
 		SimpleModel model = (SimpleModel) serializedModel[0];
 		String modelName = model.getName();
-		L2pLogger.logEvent(Event.SERVICE_MESSAGE, "updateRepositoryOfModel: Received model with name " + modelName);
+		Context.get().monitorEvent(MonitoringEvent.SERVICE_MESSAGE, "updateRepositoryOfModel: Received model with name " + modelName);
 
 		// old model only used for microservice and frontend components
 		SimpleModel oldModel = null;
 
 		if (serializedModel.length > 1) {
 			oldModel = (SimpleModel) serializedModel[1];
-			L2pLogger.logEvent(Event.SERVICE_MESSAGE,
+			Context.get().monitorEvent(MonitoringEvent.SERVICE_MESSAGE,
 					"updateRepositoryOfModel: Received old model with name " + oldModel.getName());
 		}
 
@@ -355,7 +359,7 @@ public class CodeGenerationService extends RESTService {
 				try {
 					switch (type) {
 					case "microservice":
-						L2pLogger.logEvent(Event.SERVICE_MESSAGE,
+						Context.get().monitorEvent(MonitoringEvent.SERVICE_MESSAGE,
 								"updateRepositoryOfModel: Checking microservice model now..");
 						// check first if model can be constructed
 						// (in case of an invalid model, keep the old
@@ -369,16 +373,16 @@ public class CodeGenerationService extends RESTService {
 						if (useModelSynchronization && oldModel != null && MicroserviceSynchronization
 								.existsRemoteRepositoryForModel(microservice, (BaseGitHostAdapter) gitAdapter)) {
 							Microservice oldMicroservice = new Microservice(oldModel);
-							L2pLogger.logEvent(Event.SERVICE_MESSAGE,
+							Context.get().monitorEvent(MonitoringEvent.SERVICE_MESSAGE,
 									"Using model sync: Old model:" + oldModel.getName());
-							L2pLogger.logEvent(Event.SERVICE_MESSAGE,
+							Context.get().monitorEvent(MonitoringEvent.SERVICE_MESSAGE,
 									"updateRepositoryOfModel: Calling synchronizeSourceCode now..");
 
 							MicroserviceSynchronization.synchronizeSourceCode(microservice, oldMicroservice,
 									this.getTracedFiles(MicroserviceGenerator.getRepositoryName(microservice)),
 									(BaseGitHostAdapter) gitAdapter, CodeGenerationService.this);
 
-							L2pLogger.logEvent(Event.SERVICE_MESSAGE, "updateRepositoryOfModel: Synchronized!");
+							Context.get().monitorEvent(MonitoringEvent.SERVICE_MESSAGE, "updateRepositoryOfModel: Synchronized!");
 							return "done";
 
 						} else {
@@ -390,7 +394,7 @@ public class CodeGenerationService extends RESTService {
 
 							} else {
 								if (useModelSynchronization) {
-									L2pLogger.logEvent(Event.SERVICE_MESSAGE, "Using model sync: Deleting local repo");
+									Context.get().monitorEvent(MonitoringEvent.SERVICE_MESSAGE, "Using model sync: Deleting local repo");
 									deleteReturnMessage = this.deleteLocalRepository(
 											MicroserviceGenerator.getRepositoryName(microservice));
 									if (!deleteReturnMessage.equals("done")) {
@@ -402,7 +406,7 @@ public class CodeGenerationService extends RESTService {
 								if (Generator.existsRemoteRepository(
 										MicroserviceGenerator.getRepositoryName(microservice),
 										(BaseGitHostAdapter) gitAdapter)) {
-									L2pLogger.logEvent(Event.SERVICE_MESSAGE,
+									Context.get().monitorEvent(MonitoringEvent.SERVICE_MESSAGE,
 											"Using model sync: Remote exits. Calling delete repo of model");
 									deleteReturnMessage = deleteRepositoryOfModel(serializedModel);
 
@@ -412,7 +416,7 @@ public class CodeGenerationService extends RESTService {
 									}
 								}
 
-								L2pLogger.logEvent(Event.SERVICE_MESSAGE,
+								Context.get().monitorEvent(MonitoringEvent.SERVICE_MESSAGE,
 										"updateRepositoryOfModel: Calling createFromModel now..");
 
 								return createFromModel(serializedModel);
@@ -420,7 +424,7 @@ public class CodeGenerationService extends RESTService {
 						}
 
 					case "frontend-component":
-						L2pLogger.logEvent(Event.SERVICE_MESSAGE,
+						Context.get().monitorEvent(MonitoringEvent.SERVICE_MESSAGE,
 								"updateRepositoryOfModel: Checking frontend-component model now..");
 						// check first if model can be constructed
 						// (in case of an invalid model, keep the old
@@ -435,7 +439,7 @@ public class CodeGenerationService extends RESTService {
 								.existsRemoteRepositoryForModel(frontendComponent, (BaseGitHostAdapter) gitAdapter)) {
 							FrontendComponent oldFrontendComponent = new FrontendComponent(oldModel);
 
-							L2pLogger.logEvent(Event.SERVICE_MESSAGE,
+							Context.get().monitorEvent(MonitoringEvent.SERVICE_MESSAGE,
 									"updateRepositoryOfModel: Calling synchronizeSourceCode now..");
 
 							FrontendComponentSynchronization.synchronizeSourceCode(frontendComponent,
@@ -444,14 +448,14 @@ public class CodeGenerationService extends RESTService {
 											FrontendComponentGenerator.getRepositoryName(frontendComponent)),
 									(BaseGitHostAdapter) gitAdapter, CodeGenerationService.this);
 
-							L2pLogger.logEvent(Event.SERVICE_MESSAGE, "updateRepositoryOfModel: Synchronized!");
+							Context.get().monitorEvent(MonitoringEvent.SERVICE_MESSAGE, "updateRepositoryOfModel: Synchronized!");
 							return "done";
 						} else {
 							if (gitAdapter instanceof GitLabAdapter) {
 								return pseudoUpdateRepositoryOfModel(serializedModel);
 							} else {
 								if (useModelSynchronization) {
-									L2pLogger.logEvent(Event.SERVICE_MESSAGE,
+									Context.get().monitorEvent(MonitoringEvent.SERVICE_MESSAGE,
 											"updateRepositoryOfModel: Calling delete (old) repository method now..");
 									deleteReturnMessage = this.deleteLocalRepository(
 											FrontendComponentGenerator.getRepositoryName(frontendComponent));
@@ -470,7 +474,7 @@ public class CodeGenerationService extends RESTService {
 									}
 								}
 
-								L2pLogger.logEvent(Event.SERVICE_MESSAGE,
+								Context.get().monitorEvent(MonitoringEvent.SERVICE_MESSAGE,
 										"updateRepositoryOfModel: Calling createFromModel now..");
 								return createFromModel(serializedModel);
 							}
@@ -478,20 +482,20 @@ public class CodeGenerationService extends RESTService {
 						}
 
 					case "application":
-						L2pLogger.logEvent(Event.SERVICE_MESSAGE,
+						Context.get().monitorEvent(MonitoringEvent.SERVICE_MESSAGE,
 								"updateRepositoryOfModel: Checking application model now..");
 						// check first if model can be constructed
 						// (in case of an invalid model, keep the old
 						// repository)
 						// new Application(serializedModel);
 						/*
-						 * L2pLogger.logEvent(Event.SERVICE_MESSAGE,
+						 * Context.get().monitorEvent(MonitoringEvent.SERVICE_MESSAGE,
 						 * "updateRepositoryOfModel: Calling delete (old) repository method now.."
 						 * ); deleteReturnMessage =
 						 * deleteRepositoryOfModel(serializedModel); if
 						 * (!deleteReturnMessage.equals("done")) { return
 						 * deleteReturnMessage; // error happened }
-						 * L2pLogger.logEvent(Event.SERVICE_ERROR,
+						 * Context.get().monitorEvent(MonitoringEvent.SERVICE_ERROR,
 						 * "updateRepositoryOfModel: Calling createFromModel now.."
 						 * ); return createFromModel(serializedModel);
 						 */
@@ -502,12 +506,12 @@ public class CodeGenerationService extends RESTService {
 								+ "'microservice', 'frontend-component' or 'application'!";
 					}
 				} catch (ModelParseException e) {
-					L2pLogger.logEvent(Event.SERVICE_ERROR,
+					Context.get().monitorEvent(MonitoringEvent.SERVICE_ERROR,
 							"updateRepositoryOfModel: Model Parsing exception: " + e.getMessage());
 					logger.printStackTrace(e);
 					return "Error: Parsing model failed with " + e.getMessage();
 				} catch (GitHostException e2) {
-					L2pLogger.logEvent(Event.SERVICE_MESSAGE,
+					Context.get().monitorEvent(MonitoringEvent.SERVICE_MESSAGE,
 							"updateRepositoryOfModel: GitHub access exception: " + e2.getMessage());
 					logger.printStackTrace(e2);
 					return "Error: Generating code failed because of failing GitHub access: " + e2.getMessage();
@@ -563,7 +567,7 @@ public class CodeGenerationService extends RESTService {
 	public SimpleModel getCommunicationViewOfApplicationModel(Serializable... serializedModel)
 			throws ModelParseException {
 		SimpleModel model = (SimpleModel) serializedModel[0];
-		L2pLogger.logEvent(Event.SERVICE_MESSAGE,
+		Context.get().monitorEvent(MonitoringEvent.SERVICE_MESSAGE,
 				"getCommunicationViewOfApplicationModel: Received model with name " + model.getName());
 		for (int i = 0; i < model.getAttributes().size(); i++) {
 			if (model.getAttributes().get(i).getName().equals("type")) {
@@ -572,16 +576,16 @@ public class CodeGenerationService extends RESTService {
 					if (!type.equals("application")) {
 						throw new ModelParseException("Model is not an application!");
 					}
-					L2pLogger.logEvent(Event.SERVICE_MESSAGE,
+					Context.get().monitorEvent(MonitoringEvent.SERVICE_MESSAGE,
 							"getCommunicationViewOfApplicationModel: Creating application model now..");
 					Application application = new Application(serializedModel);
-					L2pLogger.logEvent(Event.SERVICE_MESSAGE,
+					Context.get().monitorEvent(MonitoringEvent.SERVICE_MESSAGE,
 							"getCommunicationViewOfApplicationModel: Creating communication view model now..");
 					SimpleModel commViewModel = application.toCommunicationModel();
-					L2pLogger.logEvent(Event.SERVICE_MESSAGE, "getCommunicationViewOfApplicationModel: Created!");
+					Context.get().monitorEvent(MonitoringEvent.SERVICE_MESSAGE, "getCommunicationViewOfApplicationModel: Created!");
 					return commViewModel;
 				} catch (ModelParseException e) {
-					L2pLogger.logEvent(Event.SERVICE_ERROR,
+					Context.get().monitorEvent(MonitoringEvent.SERVICE_ERROR,
 							"getCommunicationViewOfApplicationModel: Model parsing exception: " + e.getMessage());
 					logger.printStackTrace(e);
 					throw e;
@@ -702,7 +706,7 @@ public class CodeGenerationService extends RESTService {
 	 * @return A json array containing feedback about found violations
 	 */
 	public JSONArray checkModel(JSONObject violationRules, HashMap<String, JSONObject> files) {
-		L2pLogger.logEvent(Event.SERVICE_MESSAGE, "starting model violation detection..");
+		Context.get().monitorEvent(MonitoringEvent.SERVICE_MESSAGE, "starting model violation detection..");
 		return ModelViolationDetection.performViolationCheck(files, violationRules);
 	}
 
@@ -758,7 +762,7 @@ public class CodeGenerationService extends RESTService {
 
 		SimpleModel model = (SimpleModel) serializedModel[0];
 
-		L2pLogger.logEvent(Event.SERVICE_MESSAGE,
+		Context.get().monitorEvent(MonitoringEvent.SERVICE_MESSAGE,
 				"deployApplicationModel: Received model with name " + model.getName());
 
 		// find out what type of model we got (microservice, frontend-component
@@ -769,7 +773,7 @@ public class CodeGenerationService extends RESTService {
 				try {
 					switch (type) {
 					case "application":
-						L2pLogger.logEvent(Event.SERVICE_MESSAGE,
+						Context.get().monitorEvent(MonitoringEvent.SERVICE_MESSAGE,
 								"deployApplicationModel: Creating application model now..");
 						Application application = new Application(serializedModel);
 
@@ -780,15 +784,15 @@ public class CodeGenerationService extends RESTService {
 						 * (BaseGitHostAdapter) this.gitAdapter)) {
 						 * Generator.deleteRemoteRepository(repositoryName,
 						 * (BaseGitHostAdapter) this.gitAdapter);
-						 * L2pLogger.logEvent(Event.SERVICE_MESSAGE,
+						 * Context.get().monitorEvent(MonitoringEvent.SERVICE_MESSAGE,
 						 * "deployApplicationModel: Deleted old repository!"); }
 						 */
 
-						L2pLogger.logEvent(Event.SERVICE_MESSAGE,
+						Context.get().monitorEvent(MonitoringEvent.SERVICE_MESSAGE,
 								"deployApplicationModel: Copying repository to deployment repository");
 						ApplicationGenerator.createSourceCode(repositoryName, application,
 								(BaseGitHostAdapter) gitAdapter, true);
-						L2pLogger.logEvent(Event.SERVICE_MESSAGE, "deployApplicationModel: Copied!");
+						Context.get().monitorEvent(MonitoringEvent.SERVICE_MESSAGE, "deployApplicationModel: Copied!");
 						return "done";
 
 					default:
@@ -796,12 +800,12 @@ public class CodeGenerationService extends RESTService {
 								+ "'microservice', 'frontend-component' or 'application'!";
 					}
 				} catch (ModelParseException e1) {
-					L2pLogger.logEvent(Event.SERVICE_MESSAGE,
+					Context.get().monitorEvent(MonitoringEvent.SERVICE_MESSAGE,
 							"createFromModel: Model parsing exception: " + e1.getMessage());
 					logger.printStackTrace(e1);
 					return "Error: Parsing model failed with " + e1.getMessage();
 				} catch (GitHostException e2) {
-					L2pLogger.logEvent(Event.SERVICE_MESSAGE,
+					Context.get().monitorEvent(MonitoringEvent.SERVICE_MESSAGE,
 							"createFromModel: GitHub access exception: " + e2.getMessage());
 					logger.printStackTrace(e2);
 					return "Error: Generating code failed because of failing GitHub access in prepareDeploymentApplicationModel: "
@@ -822,10 +826,6 @@ public class CodeGenerationService extends RESTService {
 
 	public GitProxy getGitProxy() {
 		return gitProxy;
-	}
-
-	public L2pLogger getLogger() {
-		return logger;
 	}
 
 	public boolean isUseModelCheck() {

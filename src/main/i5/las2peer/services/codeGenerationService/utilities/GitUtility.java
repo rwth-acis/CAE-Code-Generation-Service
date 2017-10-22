@@ -10,8 +10,6 @@ import org.eclipse.jgit.api.MergeCommand;
 import org.eclipse.jgit.api.MergeResult;
 import org.eclipse.jgit.api.PushCommand;
 import org.eclipse.jgit.api.errors.GitAPIException;
-import org.eclipse.jgit.api.errors.InvalidRemoteException;
-import org.eclipse.jgit.api.errors.TransportException;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.ObjectLoader;
@@ -27,8 +25,9 @@ import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider;
 import org.eclipse.jgit.treewalk.TreeWalk;
 import org.eclipse.jgit.treewalk.filter.PathFilter;
 
+import i5.las2peer.api.Context;
+import i5.las2peer.api.logging.MonitoringEvent;
 import i5.las2peer.logging.L2pLogger;
-import i5.las2peer.logging.NodeObserver.Event;
 import i5.las2peer.services.codeGenerationService.CodeGenerationService;
 import i5.las2peer.services.codeGenerationService.exception.GitHelperException;
 
@@ -69,7 +68,7 @@ public class GitUtility {
 			File oldFile = new File(getRepositoryPath(repositoryName) + "/" + oldFileName);
 		    File newFile = new File(getRepositoryPath(repositoryName) + "/" + newFileName);
 
-		    L2pLogger.logEvent(Event.SERVICE_MESSAGE,"Renaming file " + oldFileName + " to " + newFileName);
+		    Context.get().monitorEvent(MonitoringEvent.SERVICE_MESSAGE,"Renaming file " + oldFileName + " to " + newFileName);
 
 		    if (newFile.getParentFile() != null) {
 		    	newFile.getParentFile().mkdirs();
@@ -103,7 +102,7 @@ public class GitUtility {
 	public void deleteFile(String repositoryName, String fileName) throws GitHelperException {
 		try (Git git = getLocalGit(repositoryName, "development")) {
 			File file = new File(getRepositoryPath(repositoryName) + "/" + fileName);
-			L2pLogger.logEvent(Event.SERVICE_MESSAGE, "Deleting file " + fileName);
+			Context.get().monitorEvent(MonitoringEvent.SERVICE_MESSAGE, "Deleting file " + fileName);
 			file.delete();
 		    git.rm().addFilepattern(fileName).call();
 		} catch (GitAPIException e) {
@@ -138,11 +137,11 @@ public class GitUtility {
 	    	MergeResult mRes = mCmd.call();
 
 	    	if (mRes.getMergeStatus().isSuccessful()) {
-	    		L2pLogger.logEvent(Event.SERVICE_MESSAGE,"Merged development and master branch successfully");
-	    		L2pLogger.logEvent(Event.SERVICE_MESSAGE, "Now pushing the commits...");
+	    		Context.get().monitorEvent(MonitoringEvent.SERVICE_MESSAGE,"Merged development and master branch successfully");
+	    		Context.get().monitorEvent(MonitoringEvent.SERVICE_MESSAGE, "Now pushing the commits...");
 	    		PushCommand pushCmd = git.push();
 	    		pushCmd.setCredentialsProvider(provider).setForce(true).setPushAll().call();
-	    		L2pLogger.logEvent(Event.SERVICE_MESSAGE, "... commits pushed");
+	    		Context.get().monitorEvent(MonitoringEvent.SERVICE_MESSAGE, "... commits pushed");
 	    	} else {
 	    		logger.warning("Error during merging of development and master branch");
 	    		throw new GitHelperException("Unable to merge master and development branch");
@@ -325,7 +324,7 @@ public class GitUtility {
 	}
 	
 	private Repository createLocalRepository(String repositoryName) throws GitHelperException {
-		L2pLogger.logEvent(Event.SERVICE_MESSAGE, "created new local repository " + repositoryName);
+		Context.get().monitorEvent(MonitoringEvent.SERVICE_MESSAGE, "created new local repository " + repositoryName);
 	    String repositoryAddress = baseURL + gitHostOrganization + "/" + repositoryName + ".git";
 	    Repository repository = null;
 
