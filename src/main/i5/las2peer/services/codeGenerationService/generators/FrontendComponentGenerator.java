@@ -576,7 +576,7 @@ public class FrontendComponentGenerator extends Generator {
                         .append("-{$Additional_Values$}-").append(" >")
                         .append(element.getLabel());
 
-                Template inputElementTemplate = template.createTemplate(element.getModelId() + ":htmlElementSub", inputTemplate.toString());
+                Template inputElementTemplate = template.createTemplate(element.getId() + ":htmlElementSub", inputTemplate.toString());
                 inputElementTemplate.setVariable("$Additional_Values$", " ");
                 elementTemplate.appendVariable("$Element_Content$", inputElementTemplate);
 
