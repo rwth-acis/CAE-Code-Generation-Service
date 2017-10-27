@@ -75,7 +75,7 @@ public class RESTResources {
 	 *            The name of the repository to push the local changes to
 	 * @return HttpResponse containing the status code of the request or the
 	 *         result of the model violation if it fails
-	 * @throws ServiceException 
+	 * @throws ServiceException thrown incase of error in service
 	 */
 
 	@SuppressWarnings("unchecked")
@@ -111,7 +111,7 @@ public class RESTResources {
 	 *            A json string containing the content of the file encoded in
 	 *            base64 and its file traces
 	 * @return HttpResponse with the status code of the request
-	 * @throws ServiceException 
+	 * @throws ServiceException thrown incase of error in service 
 	 */
 
 	@SuppressWarnings("unchecked")
@@ -209,6 +209,7 @@ public class RESTResources {
 	 * @return HttpResponse with the status code of the request and the file
 	 *         name and segment id of the model
 	 * @throws ServiceException 
+	 * 			Thrown if something goes wrong with the Github Service
 	 */
 
 	@SuppressWarnings("unchecked")
@@ -268,6 +269,7 @@ public class RESTResources {
 	 *         content of the needed files for the live preview widget encoded
 	 *         in base64 if everything was fine.
 	 * @throws ServiceException 
+	 * 			Thrown if something goes wrong with the Github Service
 	 */
 
 	@SuppressWarnings("unchecked")
@@ -327,6 +329,7 @@ public class RESTResources {
 	 * @return HttpResponse containing the status code of the request and the
 	 *         content of the file encoded in base64 if everything was fine.
 	 * @throws ServiceException 
+	 * 			Thrown if something goes wrong with the Github Service 
 	 */
 
 	@SuppressWarnings("unchecked")
@@ -380,7 +383,8 @@ public class RESTResources {
 	 *            the path of the folder whose files should be listed
 	 * @return HttpResponse containing the files of the given repository as a
 	 *         json string
-	 * @throws ServiceException 
+	 *@throws ServiceException 
+	 * 			Thrown if something goes wrong with the Github Service 
 	 * 
 	 */
 

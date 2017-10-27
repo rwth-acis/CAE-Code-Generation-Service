@@ -35,8 +35,11 @@ public class GitProxy {
 	 * @param tw
 	 *            The tree walk which current file/folder should be added to the
 	 *            json array
-	 * @param files
+	 * @param fileList
 	 *            The json array the current file/folder should be added
+	 *            
+	 * @param tracedFiles array of files which have been traced
+	 * 
 	 * @param path
 	 *            The path of the current file
 	 */
@@ -70,6 +73,8 @@ public class GitProxy {
 	 *            json array
 	 * @param files
 	 *            The json array the current file/folder should be added
+	 *            
+	 * @param tracedFiles array of files that have been traced
 	 */
 	public void addFile(TreeWalk tw, JSONArray files, JSONArray tracedFiles) {
 		addFiletoFileList(tw, files, tracedFiles, "");
@@ -134,12 +139,14 @@ public class GitProxy {
 	 * @param git
 	 *            The git object of the repository
 	 * @return A JSONObject of the trace model.
-	 * @throws @throws
-	 *             Exception Thrown if something went wrong.
+	 * @throws GitHelperException 
+	 * 			Thrown if something goes wrong.
+	 * @throws ParseException
+	 * 			Thrown if something goes wrong.
 	 */
 
 	@SuppressWarnings("unchecked")
-	public JSONObject getTraceModel(Git git) {
+	public JSONObject getTraceModel(Git git) throws GitHelperException, ParseException{
 		JSONObject result = new JSONObject();
 		JSONArray tracedFiles = new JSONArray();
 		result.put("tracedFiles", tracedFiles);
@@ -151,7 +158,7 @@ public class GitProxy {
 			// if a global trace model is not found, the error should be logged
 			logger.printStackTrace(e);
 		} catch (ParseException e) {
-			// TODO: Handle exception
+			logger.printStackTrace(e);
 		}
 		return result;
 	}

@@ -48,6 +48,9 @@ public class MicroserviceSynchronization extends MicroserviceGenerator {
    * @param microservice The updated microservice model
    * @param oldMicroservice The current/old microservice model
    * @param files The traced files with the current source code
+   * @param gitAdapter adapter for git
+   * @param service name of the service
+   * @throws ModelParseException thrown incase of error in model parsing
    */
 
   public static void synchronizeSourceCode(Microservice microservice, Microservice oldMicroservice,

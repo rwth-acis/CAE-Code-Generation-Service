@@ -60,7 +60,7 @@ public class GitUtility {
 	   * @param repositoryName The name of the repository
 	   * @param newFileName The path of the new file name, relative to the working directory
 	   * @param oldFileName The path of the old file t, relative to the working directory
-	   * @throws GitHelperException
+	   * @throws GitHelperException thrown incase of error in git api
 	 */
 	public void renameFile(String repositoryName,String newFileName, String oldFileName) throws GitHelperException {
 		try{
@@ -98,6 +98,7 @@ public class GitUtility {
 	   * @param repositoryName The name of the repository
 	   * @param fileName The path of the file to be deleted
 	   * @throws GitHelperException 
+	   * 	thrown incase of error in git api
 	   */
 	public void deleteFile(String repositoryName, String fileName) throws GitHelperException {
 		try (Git git = getLocalGit(repositoryName, "development")) {
@@ -116,12 +117,8 @@ public class GitUtility {
 	   * 
 	   * @param repositoryName The name of the repository
 	   * @param masterBranchName The name of the master branch
-	   * @throws GitHelperException 
-	   * @throws {@link InvalidRemoteException} if remote repository is not valid
-	   * @throws {@link TransportException} if a transport layer error occurs during git operations
-	   * @throws {@link GitAPIException}
-	   * @throws {@link IOException}
-	   * @throws {@link GitHelperException}
+	   * @throws GitHelperException thrown incase of error in git api
+	   * 
 	   */
 	public void mergeIntoMasterBranch(String repositoryName,String masterBranchName) throws GitHelperException {
 		Git git = null;
@@ -162,7 +159,7 @@ public class GitUtility {
 	
 	/**
 	 * Checks if a remote repository exists by issuing a {@link LsRemoteCommand}
-	 * @param url
+	 * @param url url of remote repository
 	 * @return A boolean that indicates if the remote exists
 	 */
 	public boolean existsRemoteRepository(String url) {
@@ -183,7 +180,7 @@ public class GitUtility {
 	
 	/**
 	 * Checks if a local repository exists
-	 * @param repositoryName
+	 * @param repositoryName name of the repository
 	 * @return A boolean that indicates if the repository exists
 	 */
 	public boolean existsLocalRepository(String repositoryName) {
@@ -195,9 +192,9 @@ public class GitUtility {
 	
 	/**
 	 * Returns a local {@link Repository}.
-	 * @param repositoryName
+	 * @param repositoryName name of the repository
 	 * @return The repository
-	 * @throws GitHelperException 
+	 * @throws GitHelperException thrown incase of error in git api
 	 */
 	public Repository getLocalRepository(String repositoryName) throws GitHelperException {
 		File localPath;
@@ -230,7 +227,7 @@ public class GitUtility {
 	 * @param repositoryName The name of the repository
 	 * @param branchName The name of the desired branch
 	 * @return The git object
-	 * @throws GitHelperException 
+	 * @throws GitHelperException thrown incase of error in git api
 	 */
 	public Git getLocalGit(String repositoryName, String branchName) throws GitHelperException {
 		Git git = getLocalGit(repositoryName);

@@ -172,6 +172,8 @@ public class CodeGenerationService extends RESTService {
 	 * Creates a new GitHub repository with the source code according to the
 	 * passed on model.
 	 * 
+	 * @param forcePush boolean value
+	 * 
 	 * @param serializedModel
 	 *            a {@link i5.cae.simpleModel.SimpleModel} that contains the
 	 *            model, or in case of an application model also the model

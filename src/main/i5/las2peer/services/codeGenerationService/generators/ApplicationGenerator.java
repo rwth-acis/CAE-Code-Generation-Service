@@ -60,6 +60,8 @@ public class ApplicationGenerator extends Generator {
    * 
    * @param application the application model
    * 
+   * @param gitAdapter adapter for Git
+   * 
    * @throws GitHostException thrown if anything goes wrong during this process. Wraps around all
    *         other exceptions and prints their message.
    * 
@@ -79,16 +81,12 @@ public class ApplicationGenerator extends Generator {
    * 
    * @param repositoryName the repository of the application to use
    * @param application the application model
+   * @param gitAdapter adapter for Git
    * @param forDeploy True, if the source code is intended to use for deployment purpose, e.g. no
    *        gh-pages branch will be used
-   * 
    * @throws GitHostException thrown if anything goes wrong during this process. Wraps around all
    *         other exceptions and prints their message.
- * @throws IOException 
- * @throws CorruptObjectException 
- * @throws IncorrectObjectTypeException 
- * @throws MissingObjectException 
-   * 
+   *    * 
    */
   public static void createSourceCode(String repositoryName, Application application, 
 		  BaseGitHostAdapter gitAdapter, boolean forDeploy) throws GitHostException {

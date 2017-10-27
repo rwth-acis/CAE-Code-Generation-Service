@@ -124,6 +124,7 @@ public class MicroserviceGenerator extends Generator {
    * @param microservice the microservice model
  * @param templateRepositoryName the name of the template repository on GitHub
  * @param gitAdapter The gitAdapter that manages operations on GitHub/GitLab etc.
+ * @param forcePush boolean value t/f
    * @throws GitHostException thrown if anything goes wrong during this process. Wraps around all
    *         other exceptions and prints their message.
    * 
@@ -252,7 +253,7 @@ public class MicroserviceGenerator extends Generator {
 	              generateOtherArtifacts(serviceTemplateEngine, microservice, gitAdapter.getGitOrganization(),
 	                  serviceProperties);
 	              break;
-	            case "i5.las2peer.webConnector.WebConnector.properties":
+	            case "i5.las2peer.connectors.webConnector.WebConnector.properties":
 	              String webConnectorConfig = new String(loader.getBytes(), "UTF-8");
 	              generateOtherArtifacts(Template.createInitialTemplateEngine(traceModel, path),
 	                  microservice, gitAdapter.getGitOrganization(), webConnectorConfig);
@@ -454,7 +455,11 @@ public class MicroserviceGenerator extends Generator {
     
     // get the port: skip first 6 characters for search (http: / https:)
     try {
-    port = String.valueOf(new URL("http://"+microservice.getPath()).getPort());
+    	if(microservice.getPath().contains("http://") || microservice.getPath().contains("https://")) {
+    		port = String.valueOf(new URL(microservice.getPath()).getPort());
+    	}else {
+    		port = String.valueOf(new URL("http://"+microservice.getPath()).getPort());	
+    	}
     } catch (Exception e) {
     	throw new ModelParseException(e.getMessage());
     }
@@ -550,7 +555,7 @@ public class MicroserviceGenerator extends Generator {
       case "i5.las2peer.services.servicePackage.ServiceClass.properties":
 
         break;
-      case "i5.las2peer.webConnector.WebConnector.properties":
+      case "i5.las2peer.connectors.webConnector.WebConnector.properties":
         template = templateEngine.createTemplate(
             microservice.getMicroserviceModelId() + ":webConnectorConfig", templateContent);
         template.setVariable("$HTTP_Port$", port);
