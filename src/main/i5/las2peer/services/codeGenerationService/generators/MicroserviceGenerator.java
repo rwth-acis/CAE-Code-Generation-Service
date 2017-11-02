@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 import java.net.URL;
 import javax.imageio.ImageIO;
+import java.util.HashMap;
 
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.lib.ObjectId;
@@ -630,10 +631,16 @@ public class MicroserviceGenerator extends Generator {
                 microservice.getPath().substring(microservice.getPath().indexOf("/", 8) + 1);
         boolean hasServiceInvocations = false;
 
+        System.out.println("====SERVICE CLASS====");
+        System.out.println(serviceClass);
+
         // create template and add to template engine
         Template serviceClassTemplate =
                 templateEngine.createTemplate(microservice.getMicroserviceModelId(), serviceClass);
         templateEngine.addTemplate(serviceClassTemplate);
+
+        System.out.println("====SERVICE CLASS TEMPLATE====");
+        System.out.println(serviceClassTemplate.getContent());
 
         System.out.println("[Microservice Generator - generateNewServiceClass] Template engine file name " + templateEngine.getFileName());
         System.out.println("[Microservice Generator - generateNewServiceClass] Service class template file name " + serviceClassTemplate.getTemplateFileName());
@@ -655,11 +662,23 @@ public class MicroserviceGenerator extends Generator {
 
         // PARSE METADATA DOC
         ObjectMapper mapper = new ObjectMapper();
+        JsonNode metadataTree = null;
+        JsonNode nodeDetails = null;
+
         if (!Strings.isNullOrEmpty(metadataDoc)) {
             try {
-                JsonNode metadataTree = mapper.readTree(metadataDoc);
+                metadataTree = mapper.readTree(metadataDoc);
                 System.out.println("===Parsed json ");
                 System.out.println(metadataTree);
+                nodeDetails = metadataTree.get("nodes");
+            } catch (IOException ex) {
+                System.out.println("Exception on metadata tree user input metadata doc");
+                ex.printStackTrace();
+            }
+        }
+
+        if (metadataTree != null) {
+            try {
                 // get info node
                 if (metadataTree.hasNonNull("info")) {
                     JsonNode infoNode = metadataTree.get("info");
@@ -677,13 +696,15 @@ public class MicroserviceGenerator extends Generator {
                     serviceClassTemplate.setVariable("$Metadata_Terms$", termsOfService);
 
                 }
-            } catch (IOException ex) {
+            } catch (Exception ex) {
                 System.out.println("Exception on parsing user input metadata doc");
                 serviceClassTemplate.setVariable("$Metadata_Version$", "1.0");
                 serviceClassTemplate.setVariable("$Metadata_Description$", "Generated Microservice from CAE");
                 serviceClassTemplate.setVariable("$Metadata_Terms$", "");
             }
         }
+
+        serviceClassTemplate.setVariable("$MetadataDoc_Method$", "");
 
         // resource name
         serviceClassTemplate.setVariable("$Resource_Name$", microservice.getResourceName());
@@ -729,6 +750,10 @@ public class MicroserviceGenerator extends Generator {
         // generate REST methods and TODO generate metadata informations from swagger json
         for (int httpMethodIndex = 0; httpMethodIndex < httpMethods.length; httpMethodIndex++) {
             HttpMethod currentMethod = httpMethods[httpMethodIndex];
+
+            System.out.println("[Microservice generator HTTP Method] Processing http method " + currentMethod.getName());
+            System.out.println(currentMethod.getMethodType().toString());
+            System.out.println(currentMethod.getPath());
 
             // create new template for the current method
             Template currentMethodTemplate = templateEngine
@@ -843,12 +868,24 @@ public class MicroserviceGenerator extends Generator {
             // payload
             String consumesAnnotation = "";
             String parameterCode = "";
-            for (int httpPayloadIndex = 0; httpPayloadIndex < currentMethod.getHttpPayloads()
-                    .size(); httpPayloadIndex++) {
+            HashMap<String, HttpPayload> httpPayloads = currentMethod.getNodeIdPayloads();
+            int httpPayloadIndex = 0;
+
+            for (HashMap.Entry<String, HttpPayload> entry: httpPayloads.entrySet()) {
 
                 boolean isLast = httpPayloadIndex == currentMethod.getHttpPayloads().size() - 1;
 
-                HttpPayload currentPayload = currentMethod.getHttpPayloads().get(httpPayloadIndex);
+                String payloadNodeId = entry.getKey();
+                String description = "";
+
+                if (nodeDetails != null) {
+                    JsonNode nodeDetail = nodeDetails.get(payloadNodeId); 
+                    if (nodeDetail.hasNonNull("description")) {
+                        description = nodeDetail.get("description").asText();
+                    }
+                }
+                
+                HttpPayload currentPayload = entry.getValue();
                 // add param for JavaDoc
                 // dirty, but works:-)
                 String type = currentPayload.getPayloadType().toString();
@@ -857,10 +894,13 @@ public class MicroserviceGenerator extends Generator {
                 }
 
                 Template paramTemplate = currentMethodTemplate.createTemplate(
-                        currentPayload.getModelId() + ":param", "   * @param $name$ a $type$-{ }-");
+                        currentPayload.getModelId() + ":param", "   * @param $name$ $description$ a $type$");
 
                 paramTemplate.setVariable("$name$", currentPayload.getName());
                 paramTemplate.setVariable("$type$", type);
+                paramTemplate.setVariable("$description$", description);
+
+                // get param description from metadata doc
 
                 if (!isLast) {
                     paramTemplate.removeLastCharacter('\n');
@@ -900,6 +940,8 @@ public class MicroserviceGenerator extends Generator {
                     parameterCode += "@PathParam(\"" + currentPayload.getName() + "\") String "
                             + currentPayload.getName() + ", ";
                 }
+
+                httpPayloadIndex ++;
             }
             // remove last cast placeholder
             currentMethodTemplate.setVariableIfNotSet("$HTTPMethod_Casts$", "");
@@ -981,7 +1023,9 @@ public class MicroserviceGenerator extends Generator {
         }
         // remove last placeholder
         serviceClassTemplate.setVariableIfNotSet("$Service_Methods$", "");
-
+        
+        System.out.println("==============FINISH GENERATING SERVICE TEMPLATE=============");
+        System.out.println(serviceClassTemplate.getContent());
     }
 
 

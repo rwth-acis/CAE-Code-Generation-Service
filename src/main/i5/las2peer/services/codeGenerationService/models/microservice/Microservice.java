@@ -221,6 +221,7 @@ public class Microservice {
         case "HTTP Method to HTTP Payload":
           HttpMethod currentHttpMethod = this.httpMethods.get(currentEdgeSource);
           HttpPayload currentHttpPayload = tempHttpPayloads.get(currentEdgeTarget);
+          String httpPayloadId = currentEdgeTarget;
           System.out.println("[Code Generation] Check method and payloads");
           if(currentHttpMethod != null)
             System.out.println("[Code Generation] " + currentHttpMethod.getName());
@@ -233,6 +234,7 @@ public class Microservice {
             throw new ModelParseException("Wrong HTTP Method to HTTP Payload Edge!");
           }
           currentHttpMethod.addHttpPayload(currentHttpPayload);
+          currentHttpMethod.addNodeIdPayload(httpPayloadId, currentHttpPayload);
           tempHttpPayloads.remove(currentEdgeTarget);
           break;
         // add response to http method and remove from temp responses if edge was validated

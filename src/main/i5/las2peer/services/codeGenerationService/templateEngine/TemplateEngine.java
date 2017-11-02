@@ -137,7 +137,7 @@ public class TemplateEngine {
     System.out.println("[Create template] Create template id " + id);
 
     // the strategy determines whether we should reuse a segment for a template or not
-    Segment segment = this.strategy.getSegment(id);
+    // Segment segment = this.strategy.getSegment(id);
     CompositeSegment cSegment = new CompositeSegment(id);
 
     // TODO uncomment, revert back

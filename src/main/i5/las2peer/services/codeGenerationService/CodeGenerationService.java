@@ -773,8 +773,8 @@ public class CodeGenerationService extends RESTService {
 	 *            The application model to deploy
 	 * @return A status text
 	 */
-
 	public String prepareDeploymentApplicationModel(Serializable... serializedModel) {
+		System.out.println("====PREPARE DEPLOYMENT APPLICATION MODEL======");
 
 		SimpleModel model = (SimpleModel) serializedModel[0];
 
