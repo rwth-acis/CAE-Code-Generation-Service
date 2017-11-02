@@ -30,8 +30,9 @@ import org.junit.Test;
 
 import i5.cae.simpleModel.SimpleModel;
 import i5.las2peer.p2p.LocalNode;
-import i5.las2peer.p2p.ServiceNameVersion;
-import i5.las2peer.security.ServiceAgent;
+import i5.las2peer.p2p.LocalNodeManager;
+import i5.las2peer.api.p2p.ServiceNameVersion;
+import i5.las2peer.security.ServiceAgentImpl;
 import i5.las2peer.services.codeGenerationService.adapters.BaseGitHostAdapter;
 import i5.las2peer.services.codeGenerationService.adapters.GitHostAdapter;
 import i5.las2peer.services.codeGenerationService.adapters.GitHubAdapter;
@@ -64,7 +65,7 @@ public class ModelSynchronizationTest extends Generator {
   private static SimpleModel model3;
   private static SimpleModel updatedModel3;
 
-  private static ServiceAgent testService;
+  private static ServiceAgentImpl testService;
   private static ServiceNameVersion serviceNameVersion;
 
   private static String usedGitHost = null;
@@ -207,14 +208,12 @@ public class ModelSynchronizationTest extends Generator {
     }
 
     // start node
-    node = LocalNode.newNode();
+    node = new LocalNodeManager().newNode();
     node.launch();
 
     serviceNameVersion = new ServiceNameVersion(codeGenerationService, "0.1");
-    testService = ServiceAgent.createServiceAgent(serviceNameVersion, "a pass");
-    testService.unlockPrivateKey("a pass");
-
-    
+    testService = ServiceAgentImpl.createServiceAgent(serviceNameVersion, "a pass");
+    testService.unlock("a pass");
 
     node.registerReceiver(testService);
   }
@@ -231,7 +230,6 @@ public class ModelSynchronizationTest extends Generator {
   public static void shutDownServer() throws Exception {
     node.shutDown();
     node = null;
-    LocalNode.reset();
   }
 
 

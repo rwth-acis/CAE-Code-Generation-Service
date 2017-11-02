@@ -194,6 +194,7 @@ public class GitLabAdapter extends BaseGitHostAdapter{
 	 * the projects of the group.
 	 * @param name The repo to be deleted.
 	 * @throws GitHostException
+	 * 		Throws if something goes wrong with the GitHost
 	 */
 	public void deleteRepo(String name) throws GitHostException {
 		long id = -1;

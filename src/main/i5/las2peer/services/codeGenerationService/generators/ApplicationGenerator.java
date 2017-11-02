@@ -35,8 +35,9 @@ import org.eclipse.jgit.treewalk.filter.PathFilter;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 
+import i5.las2peer.api.Context;
+import i5.las2peer.api.logging.MonitoringEvent;
 import i5.las2peer.logging.L2pLogger;
-import i5.las2peer.logging.NodeObserver.Event;
 import i5.las2peer.services.codeGenerationService.adapters.BaseGitHostAdapter;
 import i5.las2peer.services.codeGenerationService.exception.GitHostException;
 import i5.las2peer.services.codeGenerationService.models.application.Application;
@@ -59,6 +60,8 @@ public class ApplicationGenerator extends Generator {
    * 
    * @param application the application model
    * 
+   * @param gitAdapter adapter for Git
+   * 
    * @throws GitHostException thrown if anything goes wrong during this process. Wraps around all
    *         other exceptions and prints their message.
    * 
@@ -78,16 +81,12 @@ public class ApplicationGenerator extends Generator {
    * 
    * @param repositoryName the repository of the application to use
    * @param application the application model
+   * @param gitAdapter adapter for Git
    * @param forDeploy True, if the source code is intended to use for deployment purpose, e.g. no
    *        gh-pages branch will be used
-   * 
    * @throws GitHostException thrown if anything goes wrong during this process. Wraps around all
    *         other exceptions and prints their message.
- * @throws IOException 
- * @throws CorruptObjectException 
- * @throws IncorrectObjectTypeException 
- * @throws MissingObjectException 
-   * 
+   *    * 
    */
   public static void createSourceCode(String repositoryName, Application application, 
 		  BaseGitHostAdapter gitAdapter, boolean forDeploy) throws GitHostException {
@@ -578,7 +577,7 @@ public class ApplicationGenerator extends Generator {
 
     try {
 
-      L2pLogger.logEvent(Event.SERVICE_MESSAGE, "Starting Jenkin job: " + jobName);
+      Context.get().monitorEvent(MonitoringEvent.SERVICE_MESSAGE, "Starting Jenkin job: " + jobName);
 
       URL url = new URL(jenkinsUrl + "/job/" + jobName + "/build?token=" + jobToken);
       HttpURLConnection connection = (HttpURLConnection) url.openConnection();
@@ -597,7 +596,7 @@ public class ApplicationGenerator extends Generator {
         reader.close();
         throw new Exception(message);
       } else {
-        L2pLogger.logEvent(Event.SERVICE_MESSAGE, "Job started!");
+        Context.get().monitorEvent(MonitoringEvent.SERVICE_MESSAGE, "Job started!");
         URI uri = new URI(connection.getHeaderField("Location"));
         String path = uri.getPath();
         if (path.startsWith("jenkins/") || path.startsWith("/jenkins")) {
