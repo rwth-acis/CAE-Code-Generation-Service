@@ -570,14 +570,16 @@ public class FrontendComponentGenerator extends Generator {
                 wireframeAttributes = element.generateCodeForAttributes();
 
                 StringBuilder inputTemplate = new StringBuilder();
-                inputTemplate.append("<input").append(wireframeAttributes)
+                inputTemplate.append("<input ").append("$Wireframe_Attributes$")
                         .append(" type=\"").append(element.getType())
                         .append("\" id=\"").append(element.getId()).append("\" ")
                         .append("-{$Additional_Values$}-").append(" >")
-                        .append(element.getLabel());
+                        .append("$Element_Content$");
 
                 Template inputElementTemplate = template.createTemplate(element.getId() + ":htmlElementSub", inputTemplate.toString());
+                inputElementTemplate.setVariable("$Wireframe_Attributes$", wireframeAttributes);
                 inputElementTemplate.setVariable("$Additional_Values$", " ");
+                inputElementTemplate.setVariable("$Element_Content$", element.getLabel());
                 elementTemplate.appendVariable("$Element_Content$", inputElementTemplate);
 
                 elementTemplate.setVariable("$Closing_Element$", "</label>");
