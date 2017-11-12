@@ -10,8 +10,6 @@ import org.eclipse.jgit.api.MergeCommand;
 import org.eclipse.jgit.api.MergeResult;
 import org.eclipse.jgit.api.PushCommand;
 import org.eclipse.jgit.api.errors.GitAPIException;
-import org.eclipse.jgit.api.errors.InvalidRemoteException;
-import org.eclipse.jgit.api.errors.TransportException;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.ObjectLoader;
@@ -27,8 +25,9 @@ import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider;
 import org.eclipse.jgit.treewalk.TreeWalk;
 import org.eclipse.jgit.treewalk.filter.PathFilter;
 
+import i5.las2peer.api.Context;
+import i5.las2peer.api.logging.MonitoringEvent;
 import i5.las2peer.logging.L2pLogger;
-import i5.las2peer.logging.NodeObserver.Event;
 import i5.las2peer.services.codeGenerationService.CodeGenerationService;
 import i5.las2peer.services.codeGenerationService.exception.GitHelperException;
 
@@ -61,7 +60,7 @@ public class GitUtility {
 	   * @param repositoryName The name of the repository
 	   * @param newFileName The path of the new file name, relative to the working directory
 	   * @param oldFileName The path of the old file t, relative to the working directory
-	   * @throws GitHelperException
+	   * @throws GitHelperException thrown incase of error in git api
 	 */
 	public void renameFile(String repositoryName,String newFileName, String oldFileName) throws GitHelperException {
 		try{
@@ -69,7 +68,7 @@ public class GitUtility {
 			File oldFile = new File(getRepositoryPath(repositoryName) + "/" + oldFileName);
 		    File newFile = new File(getRepositoryPath(repositoryName) + "/" + newFileName);
 
-		    L2pLogger.logEvent(Event.SERVICE_MESSAGE,"Renaming file " + oldFileName + " to " + newFileName);
+		    Context.get().monitorEvent(MonitoringEvent.SERVICE_MESSAGE,"Renaming file " + oldFileName + " to " + newFileName);
 
 		    if (newFile.getParentFile() != null) {
 		    	newFile.getParentFile().mkdirs();
@@ -99,11 +98,12 @@ public class GitUtility {
 	   * @param repositoryName The name of the repository
 	   * @param fileName The path of the file to be deleted
 	   * @throws GitHelperException 
+	   * 	thrown incase of error in git api
 	   */
 	public void deleteFile(String repositoryName, String fileName) throws GitHelperException {
 		try (Git git = getLocalGit(repositoryName, "development")) {
 			File file = new File(getRepositoryPath(repositoryName) + "/" + fileName);
-			L2pLogger.logEvent(Event.SERVICE_MESSAGE, "Deleting file " + fileName);
+			Context.get().monitorEvent(MonitoringEvent.SERVICE_MESSAGE, "Deleting file " + fileName);
 			file.delete();
 		    git.rm().addFilepattern(fileName).call();
 		} catch (GitAPIException e) {
@@ -117,12 +117,8 @@ public class GitUtility {
 	   * 
 	   * @param repositoryName The name of the repository
 	   * @param masterBranchName The name of the master branch
-	   * @throws GitHelperException 
-	   * @throws {@link InvalidRemoteException} if remote repository is not valid
-	   * @throws {@link TransportException} if a transport layer error occurs during git operations
-	   * @throws {@link GitAPIException}
-	   * @throws {@link IOException}
-	   * @throws {@link GitHelperException}
+	   * @throws GitHelperException thrown incase of error in git api
+	   * 
 	   */
 	public void mergeIntoMasterBranch(String repositoryName,String masterBranchName) throws GitHelperException {
 		Git git = null;
@@ -138,11 +134,11 @@ public class GitUtility {
 	    	MergeResult mRes = mCmd.call();
 
 	    	if (mRes.getMergeStatus().isSuccessful()) {
-	    		L2pLogger.logEvent(Event.SERVICE_MESSAGE,"Merged development and master branch successfully");
-	    		L2pLogger.logEvent(Event.SERVICE_MESSAGE, "Now pushing the commits...");
+	    		Context.get().monitorEvent(MonitoringEvent.SERVICE_MESSAGE,"Merged development and master branch successfully");
+	    		Context.get().monitorEvent(MonitoringEvent.SERVICE_MESSAGE, "Now pushing the commits...");
 	    		PushCommand pushCmd = git.push();
 	    		pushCmd.setCredentialsProvider(provider).setForce(true).setPushAll().call();
-	    		L2pLogger.logEvent(Event.SERVICE_MESSAGE, "... commits pushed");
+	    		Context.get().monitorEvent(MonitoringEvent.SERVICE_MESSAGE, "... commits pushed");
 	    	} else {
 	    		logger.warning("Error during merging of development and master branch");
 	    		throw new GitHelperException("Unable to merge master and development branch");
@@ -163,7 +159,7 @@ public class GitUtility {
 	
 	/**
 	 * Checks if a remote repository exists by issuing a {@link LsRemoteCommand}
-	 * @param url
+	 * @param url url of remote repository
 	 * @return A boolean that indicates if the remote exists
 	 */
 	public boolean existsRemoteRepository(String url) {
@@ -184,7 +180,7 @@ public class GitUtility {
 	
 	/**
 	 * Checks if a local repository exists
-	 * @param repositoryName
+	 * @param repositoryName name of the repository
 	 * @return A boolean that indicates if the repository exists
 	 */
 	public boolean existsLocalRepository(String repositoryName) {
@@ -196,9 +192,9 @@ public class GitUtility {
 	
 	/**
 	 * Returns a local {@link Repository}.
-	 * @param repositoryName
+	 * @param repositoryName name of the repository
 	 * @return The repository
-	 * @throws GitHelperException 
+	 * @throws GitHelperException thrown incase of error in git api
 	 */
 	public Repository getLocalRepository(String repositoryName) throws GitHelperException {
 		File localPath;
@@ -231,7 +227,7 @@ public class GitUtility {
 	 * @param repositoryName The name of the repository
 	 * @param branchName The name of the desired branch
 	 * @return The git object
-	 * @throws GitHelperException 
+	 * @throws GitHelperException thrown incase of error in git api
 	 */
 	public Git getLocalGit(String repositoryName, String branchName) throws GitHelperException {
 		Git git = getLocalGit(repositoryName);
@@ -326,7 +322,7 @@ public class GitUtility {
 	}
 	
 	private Repository createLocalRepository(String repositoryName) throws GitHelperException {
-		L2pLogger.logEvent(Event.SERVICE_MESSAGE, "created new local repository " + repositoryName);
+		Context.get().monitorEvent(MonitoringEvent.SERVICE_MESSAGE, "created new local repository " + repositoryName);
 	    String repositoryAddress = baseURL + gitHostOrganization + "/" + repositoryName + ".git";
 	    Repository repository = null;
 

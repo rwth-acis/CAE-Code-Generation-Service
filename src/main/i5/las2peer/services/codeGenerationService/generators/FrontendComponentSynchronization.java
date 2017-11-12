@@ -13,8 +13,9 @@ import org.eclipse.jgit.treewalk.TreeWalk;
 import org.eclipse.jgit.treewalk.filter.PathFilter;
 import org.json.simple.JSONObject;
 
+import i5.las2peer.api.Context;
+import i5.las2peer.api.logging.MonitoringEvent;
 import i5.las2peer.logging.L2pLogger;
-import i5.las2peer.logging.NodeObserver.Event;
 import i5.las2peer.services.codeGenerationService.CodeGenerationService;
 import i5.las2peer.services.codeGenerationService.adapters.BaseGitHostAdapter;
 import i5.las2peer.services.codeGenerationService.exception.GitHostException;
@@ -172,7 +173,7 @@ public class FrontendComponentSynchronization extends FrontendComponentGenerator
     }
 
     try {
-      L2pLogger.logEvent(Event.SERVICE_MESSAGE, "Synchronizing widget now ...");
+      Context.get().monitorEvent(MonitoringEvent.SERVICE_MESSAGE, "Synchronizing widget now ...");
       applicationSynchronizationStrategy
           .addAditionalOldFileTraceModel(widgetTemplateEngine.getFileTraceModel());
       widgetSynchronizationStrategy
@@ -204,7 +205,7 @@ public class FrontendComponentSynchronization extends FrontendComponentGenerator
 
       traceModel.addFileTraceModel(applicationTemplateEngine.getFileTraceModel());
 
-      L2pLogger.logEvent(Event.SERVICE_MESSAGE, "... widget synchronized.");
+      Context.get().monitorEvent(MonitoringEvent.SERVICE_MESSAGE, "... widget synchronized.");
 
       // commit changes
       List<String[]> fileList = getUpdatedTracedFilesForRepository(traceModel, guidances);

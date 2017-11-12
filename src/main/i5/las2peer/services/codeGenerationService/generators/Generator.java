@@ -161,7 +161,7 @@ public abstract class Generator {
    * content. Repository is used "read-only" here.
    * 
    * @param repositoryName the name of the template repository
-   * 
+   * @param gitAdapter adapter for git
    * @return a {@link org.eclipse.jgit.treewalk.TreeWalk}
    * 
    * @throws GitHostException if anything goes wrong during retrieving the repository's content
@@ -203,7 +203,7 @@ public abstract class Generator {
    * Clones a repository from GitHub to the local machine and returns it.
    * 
    * @param repositoryName the name of the repository
-   * 
+   * @param gitAdapter adapter for Git
    * @return a {@link org.eclipse.jgit.lib.Repository}
    * 
    * @throws GitHostException if anything goes wrong during retrieving the repository's content
@@ -404,7 +404,8 @@ public abstract class Generator {
    * @param repository the {@link org.eclipse.jgit.lib.Repository} to be pushed to GitHub
    * @param localBranchName the name of the branch that should be pushed from
    * @param remoteBranchName the name of the branch that should be pushed to
-   * 
+   * @param gitAdapter adapter for Git
+   * @param forcePush set t/f value
    * @return the {@link org.eclipse.jgit.lib.Repository} that was pushed
    * 
    * @throws GitHostException if anything goes wrong during the push command
@@ -436,7 +437,7 @@ public abstract class Generator {
    * Deletes a repository on GitHub, given by its name.
    * 
    * @param name the name of the repository
-   * 
+   * @param gitAdapter adapter for git
    * @throws GitHostException if deletion was not successful
    * 
    */
@@ -450,6 +451,7 @@ public abstract class Generator {
    * Uses the ls remote git command to determine if the repository exists.
    * 
    * @param name The name of the repository
+   * @param gitAdapter adapter for Git
    * @return True, if the repository exists, otherwise false
    */
 
@@ -539,6 +541,7 @@ public abstract class Generator {
    * 
    * @param fileList A list containing the files that should be updated
    * @param repositoryName The name of the repository
+   * @param service Name of the service
    */
 
   protected static void updateTracedFilesInRepository(List<String[]> fileList,
@@ -633,6 +636,7 @@ public abstract class Generator {
    * Replace an exactly matching placeholder of the form %%something%%, otherwise nothing will be changed
    * @param text The text to replace in
    * @param placeholder The string to replace, format: %%something%%
+   * @param replacement the replacement text
    * @return The string with replacements
    */
   protected static String replaceExactMatch(String text, String placeholder, String replacement) {
