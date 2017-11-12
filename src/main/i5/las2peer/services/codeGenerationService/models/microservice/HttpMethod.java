@@ -33,6 +33,7 @@ public class HttpMethod {
   private ArrayList<HttpPayload> payloads = new ArrayList<HttpPayload>();
   private ArrayList<HttpResponse> responses = new ArrayList<HttpResponse>();
   private HashMap<String, HttpPayload> nodeIdPayloads = new HashMap<String, HttpPayload>();
+  private HashMap<String, HttpResponse> nodeIdResponses = new HashMap<String, HttpResponse>();
 
   /**
    * 
@@ -124,6 +125,10 @@ public class HttpMethod {
     return this.responses;
   }
 
+  public HashMap<String, HttpResponse> getNodeIdResponses() {
+    return this.nodeIdResponses;
+  }
+
 
   public void addInternalCall(InternalCall call) {
     this.internalCalls.add(call);
@@ -140,6 +145,10 @@ public class HttpMethod {
 
   public void addHttpResponse(HttpResponse response) {
     this.responses.add(response);
+  }
+
+  public void addNodeIdResponse(String nodeId, HttpResponse payload) {
+    this.nodeIdResponses.put(nodeId, payload);
   }
 
 

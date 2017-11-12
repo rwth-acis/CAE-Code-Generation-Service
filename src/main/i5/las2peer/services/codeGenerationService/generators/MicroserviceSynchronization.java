@@ -70,7 +70,11 @@ public class MicroserviceSynchronization extends MicroserviceGenerator {
         String genericTable = null;
         String databaseManager = null;
         String guidances = null;
-        String swaggerJson = null;
+
+        // to generate schema file
+        String classes = null;
+        String genericClassBody = null;
+        String genericClassProperty = null;
 
         try (TreeWalk treeWalk =
                      getTemplateRepositoryContent(gitAdapter)) {
@@ -127,8 +131,14 @@ public class MicroserviceSynchronization extends MicroserviceGenerator {
                     case "database.sql":
                         databaseScript = new String(loader.getBytes(), "UTF-8");
                         break;
-                    case "swagger.json":
-                        swaggerJson = new String(loader.getBytes(), "UTF-8");
+                    case "Classes.java":
+                        classes = new String(loader.getBytes(), "UTF-8");
+                        break;
+                    case "genericClassBody.txt":
+                        genericClassBody = new String(loader.getBytes(), "UTF-8");
+                        break;
+                    case "genericClassProperty.txt":
+                        genericClassProperty = new String(loader.getBytes(), "UTF-8");
                         break;
                 }
             }
@@ -146,8 +156,7 @@ public class MicroserviceSynchronization extends MicroserviceGenerator {
         String newDatabaseManagerFileName = "src/main/i5/las2peer/services/"
                 + getPackageName(microservice) + "/database/DatabaseManager.java";
         
-        String newSwaggerFileName = "src/main/i5/las2peer/services/"
-                + getPackageName(microservice) + "/swagger.json";
+        String newClassesFileName = getClassesFileName(microservice);
 
         // old file names
         String serviceOldFileName = getServiceFileName(oldMicroservice);
@@ -157,8 +166,7 @@ public class MicroserviceSynchronization extends MicroserviceGenerator {
         String oldDatabaseManagerFileName = "src/main/i5/las2peer/services/"
                 + getPackageName(oldMicroservice) + "/database/DatabaseManager.java";
         
-        String oldSwaggerFileName = "src/main/i5/las2peer/services/"
-                + getPackageName(oldMicroservice) + "/swagger.json";
+        String oldClassesFileName = getClassesFileName(oldMicroservice);
 
         // if the old service file was renamed, we need to rename it in the local repo
         if (!serviceFileName.equals(serviceOldFileName)) {
@@ -172,10 +180,10 @@ public class MicroserviceSynchronization extends MicroserviceGenerator {
                     serviceOldTestFileName);
         }
 
-        // if the old swagger json file was renamed, we need to rename it in the local repo
-        if (!newSwaggerFileName.equals(oldSwaggerFileName)) {
-            renameFileInRepository(getRepositoryName(oldMicroservice), newSwaggerFileName,
-                    oldSwaggerFileName);
+        // if the old classes file was renamed, we need to rename it in the local repo
+        if (!newClassesFileName.equals(oldClassesFileName)) {
+            renameFileInRepository(getRepositoryName(oldMicroservice), newClassesFileName,
+                    oldClassesFileName);
         }
 
         // if the old service properties file was renamed, we need to rename it in the local repo
@@ -256,6 +264,13 @@ public class MicroserviceSynchronization extends MicroserviceGenerator {
                 } else if (fileName.equals(serviceOldTestFileName)) {
                     oldFileTraceModel.setFileName(serviceTestFileName);
                     generateNewServiceTest(templateEngine, serviceTest, microservice, genericTestCase);
+                } else if (fileName.equals(oldClassesFileName)) {
+                    oldFileTraceModel.setFileName(newClassesFileName);
+                    
+                    String repositoryLocation =
+                            gitAdapter.getBaseURL() + gitAdapter.getGitOrganization() + "/" + getRepositoryName(microservice);
+
+                    generateNewClasses(templateEngine, classes, microservice, repositoryLocation,genericClassBody, genericClassProperty, metadataDoc);
                 } else if (fileName.equals(databaseOldScriptFileName)) {
                     if (microservice.getDatabase() == null) {
                         templateEngine = null;

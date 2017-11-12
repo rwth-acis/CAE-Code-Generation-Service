@@ -6,3 +6,4 @@
 # it tries to connect to a running node (which runs this persistence service)
 #-Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=5432
 java  -cp "lib/*" i5.las2peer.tools.L2pNodeLauncher -p 9012 -b 192.168.178.61:9011 startService\(\'i5.las2peer.services.codeGenerationService.CodeGenerationService@0.1\'\) interactive
+#java  -cp "lib/*" i5.las2peer.tools.L2pNodeLauncher -p 9012 -b 134.61.86.239:9011 startService\(\'i5.las2peer.services.codeGenerationService.CodeGenerationService@0.1\'\) interactive

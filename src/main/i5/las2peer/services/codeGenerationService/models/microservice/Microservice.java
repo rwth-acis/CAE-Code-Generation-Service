@@ -248,7 +248,7 @@ public class Microservice {
         	
           currentHttpMethod = this.httpMethods.get(currentEdgeSource);
           HttpResponse currentHttpResponse = tempHttpResponses.get(currentEdgeTarget);
-          
+          String httpResponseId = currentEdgeTarget;
           System.out.println("[Code Generation] Check HTTP method to HTTP response");
 
           if(currentHttpMethod != null)
@@ -262,6 +262,7 @@ public class Microservice {
             throw new ModelParseException("Wrong HTTP Method to HTTP Response Edge!");
           }
           currentHttpMethod.addHttpResponse(currentHttpResponse);
+          currentHttpMethod.addNodeIdResponse(httpResponseId, currentHttpResponse);
           tempHttpResponses.remove(currentEdgeTarget);
           break;
         default:
