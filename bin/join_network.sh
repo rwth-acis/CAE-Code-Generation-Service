@@ -8,4 +8,4 @@
 
 #java  -cp "lib/*" i5.las2peer.tools.L2pNodeLauncher -p 9012 -b 134.61.69.177:9011 --service-directory service startService\(\'i5.las2peer.services.codeGenerationService.CodeGenerationService@0.1\'\) interactive
 #java  -cp "lib/*" i5.las2peer.tools.L2pNodeLauncher -p 9012 -b 134.61.86.239:9011 --service-directory service startService\(\'i5.las2peer.services.codeGenerationService.CodeGenerationService@0.1\'\) interactive
-java  -cp "lib/*" i5.las2peer.tools.L2pNodeLauncher -p 9012 -b 192.168.178.61:9011 --service-directory service startService\(\'i5.las2peer.services.codeGenerationService.CodeGenerationService@0.1\'\) interactive
+java  -cp "lib/*" i5.las2peer.tools.L2pNodeLauncher -p 9012 -b 192.168.178.26:9011 --service-directory service startService\(\'i5.las2peer.services.codeGenerationService.CodeGenerationService@0.1\'\) interactive

@@ -186,7 +186,7 @@ public class CodeGenerationService extends RESTService {
 	 * 
 	 */
 	public String createFromModel(boolean forcePush, String metadataDoc, Serializable... serializedModel) {
-
+		System.out.println("=========CREATE FROM MODEL=======");
 		SimpleModel model = (SimpleModel) serializedModel[0];
 
 		System.out.println("CREATE FROM MODEL METADATA DOC STRING: ");
@@ -222,6 +222,7 @@ public class CodeGenerationService extends RESTService {
 						// Generate the code (and repositories) for this model
 						Context.get().monitorEvent(MonitoringEvent.SERVICE_MESSAGE,
 								"createFromModel: Creating microservice source code now..");
+						System.out.println("=========CODE GENERATE MICROSERVICE CREATE SOURCE CODE=======");
 						MicroserviceGenerator.createSourceCode(microservice, this.templateRepository,
 								(BaseGitHostAdapter) gitAdapter, forcePush, metadataDoc);
 						Context.get().monitorEvent(MonitoringEvent.SERVICE_MESSAGE, "createFromModel: Created!");

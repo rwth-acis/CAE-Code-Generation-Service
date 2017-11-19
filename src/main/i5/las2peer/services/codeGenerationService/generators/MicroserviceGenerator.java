@@ -157,6 +157,8 @@ public class MicroserviceGenerator extends Generator {
 	    Repository microserviceRepository = null;
 	    TreeWalk treeWalk = null;
 
+        System.out.println("******CREATE SOURCE CODE****");
+
 	    // helper variables
 	    String packageName = microservice.getResourceName().substring(0, 1).toLowerCase()
 	        + microservice.getResourceName().substring(1);
@@ -274,6 +276,8 @@ public class MicroserviceGenerator extends Generator {
 	              break;
 	            case "i5.las2peer.services.servicePackage.ServiceClass.properties":
 	              String serviceProperties = new String(loader.getBytes(), "UTF-8");
+                  System.out.println("GENERATE SOURCE CODE FOR SERVICE CLASS PROPERTIES");
+                  System.out.println(serviceProperties);
 	              TemplateEngine serviceTemplateEngine = Template.createInitialTemplateEngine(
 	                  traceModel, getServicePropertiesFileName(microservice));
 	              generateOtherArtifacts(serviceTemplateEngine, microservice, gitAdapter.getGitOrganization(),
@@ -281,6 +285,8 @@ public class MicroserviceGenerator extends Generator {
 	              break;
 	            case "i5.las2peer.connectors.webConnector.WebConnector.properties":
 	              String webConnectorConfig = new String(loader.getBytes(), "UTF-8");
+                  System.out.println("GENERATE SOURCE CODE FOR WEB CONNECTOR PROPERTIES");
+                  System.out.println(webConnectorConfig);
 	              generateOtherArtifacts(Template.createInitialTemplateEngine(traceModel, path),
 	                  microservice, gitAdapter.getGitOrganization(), webConnectorConfig);
 	              break;
@@ -486,6 +492,7 @@ public class MicroserviceGenerator extends Generator {
   public static void createSourceCode(Microservice microservice, String templateRepositoryName,
       BaseGitHostAdapter gitAdapter, String metadataDoc)
       throws GitHostException {
+      System.out.println("=========CREATE SOURCE CODEs=======");
 	  createSourceCode(microservice, templateRepositoryName, gitAdapter, false, metadataDoc);
     
   }
@@ -493,6 +500,7 @@ public class MicroserviceGenerator extends Generator {
   protected static void generateOtherArtifacts(TemplateEngine templateEngine,
       Microservice microservice, String gitHubOrganization, String templateContent) throws ModelParseException{
 
+    System.out.println("=========GENERATE OTHER ARTIFACTS=======");
     String repositoryName = getRepositoryName(microservice);
     String packageName = getPackageName(microservice);
     String port = "8080";
@@ -517,14 +525,20 @@ public class MicroserviceGenerator extends Generator {
       template = templateEngine.createTemplate(
           microservice.getMicroserviceModelId() + ":servicePropertiesFile", "$Properties$-{\n}-");
 
+      System.out.println("====TEMPLATE GET CONTENT======" + templateEngine.getFileName());
+      System.out.println(template.getContent());
+
       templateEngine.addTrace(microservice.getMicroserviceModelId() + ":servicePropertiesFile",
           "Properties", "Service class properties", template);
 
       if (microservice.getDatabase() == null) {
+        System.out.println("====NO DATABASE HERE======");
         template.setVariableIfNotSet("$Properties$", "");
         // template = templateEngine.createTemplate(
         // microservice.getMicroserviceModelId() + ":emptyServiceProperties", "-{}-");
       } else {
+        System.out.println("====GENERATE DATABASE HERE======");
+        System.out.println(templateContent);
         Template propertiesTemplate = templateEngine.createTemplate(
             microservice.getMicroserviceModelId() + ":serviceProperties", templateContent);
         propertiesTemplate.setVariable("$Database_Address$",
@@ -534,9 +548,15 @@ public class MicroserviceGenerator extends Generator {
             microservice.getDatabase().getLoginName());
         propertiesTemplate.setVariable("$Database_Password$",
             microservice.getDatabase().getLoginPassword());
+         System.out.println("======================");
+          System.out.println(propertiesTemplate.getContent());
         template.appendVariable("$Properties$", propertiesTemplate);
+         System.out.println("======================");
+          System.out.println(template.getContent());
       }
     }
+
+    System.out.println("=======SWITCH FILE NAME===============" + fileName);
 
     switch (fileName) {
       case ".project":
@@ -624,7 +644,12 @@ public class MicroserviceGenerator extends Generator {
         break;
     }
 
+    System.out.println("===TEMPLATE FINAL====");
     if (template != null) {
+        System.out.println("===TEMPLATE NOT NULL====");
+
+    System.out.println(template.getTemplateFileName());
+    System.out.println(template.getContent());
       templateEngine.addTemplate(template);
     }
   }
@@ -810,7 +835,8 @@ public class MicroserviceGenerator extends Generator {
         String schemaName = "";
 
         if (nodeDetails != null) {
-          JsonNode nodeDetail = nodeDetails.get(responseNodeId); 
+          if (nodeDetails.hasNonNull(responseNodeId)) {
+            JsonNode nodeDetail = nodeDetails.get(responseNodeId); 
             if (nodeDetail.hasNonNull("description")) {
                 description = nodeDetail.get("description").asText();
             }
@@ -818,6 +844,7 @@ public class MicroserviceGenerator extends Generator {
             if (nodeDetail.hasNonNull("schema")) {
                 schemaName = nodeDetail.get("schema").asText();
             }
+          }
         }
 
         currentMethodTemplate.setVariable("$Response_Description$", description);
@@ -935,7 +962,8 @@ public class MicroserviceGenerator extends Generator {
         }
 
         if (nodeDetails != null) {
-          JsonNode nodeDetail = nodeDetails.get(payloadNodeId); 
+          if (nodeDetails.hasNonNull(payloadNodeId)) {
+            JsonNode nodeDetail = nodeDetails.get(payloadNodeId); 
             if (nodeDetail.hasNonNull("description")) {
                 description = nodeDetail.get("description").asText();
             }
@@ -944,6 +972,7 @@ public class MicroserviceGenerator extends Generator {
             if (nodeDetail.hasNonNull("schema")) {
                 schemaName = nodeDetail.get("schema").asText();
             }
+          }
         }
 
         Template paramTemplate = currentMethodTemplate.createTemplate(
@@ -971,7 +1000,24 @@ public class MicroserviceGenerator extends Generator {
           
           // if schema is available
           if (schemaName != null && !schemaName.equals("")) {
-            parameterCode += "classes." + schemaName + " " + currentPayload.getName() + ", ";
+            // pass parameter as string and add casting from json
+            //parameterCode += "classes." + schemaName + " " + currentPayload.getName() + ", ";
+            parameterCode += "String " + currentPayload.getName() + ", ";
+
+            Template castTemplate = templateEngine.createTemplate(
+                    currentPayload.getModelId() + ":cast",
+                    "   classes.$Schema_Name$ payload$Payload_Name$Object = new classes().new $Schema_Name$();\n" +
+                    "   try { \n" +
+                    "       payload$Payload_Name$Object.fromJSON($Payload_Name$);\n" +
+                    "   } catch (Exception e) { \n" +
+                    "       e.printStackTrace();\n" +
+                    "       JSONObject result = new JSONObject();\n" + 
+                    "       return Response.status(HttpURLConnection.HTTP_INTERNAL_ERROR).entity(\"Cannot convert json to object\").build();\n" +
+                    "   }");
+            castTemplate.setVariable("$Payload_Name$", currentPayload.getName());
+            castTemplate.setVariable("$Schema_Name$", schemaName);
+            currentMethodTemplate.appendVariable("$HTTPMethod_Casts$", castTemplate);
+
           } else {
             parameterCode += "String " + currentPayload.getName() + ", ";
 
@@ -1178,10 +1224,29 @@ public class MicroserviceGenerator extends Generator {
                         templateEngine.createTemplate(packageName + className + propertyName + propertyType + ":jsonProperty",
                                 "        jo.put(\"$Property_Name$\", this.$Property_Name$); \n");
 
+                    // create template for fromJSON
+                    Template currentFromJsonTemplate =
+                        templateEngine.createTemplate(packageName + className + propertyName + propertyType + ":fromJsonProperty",
+                                "        this.$Property_Name$ = $Property_Cast$; \n");
+
+                    String propertyFromJsonCast = "(String) jsonObject.get(\"" + propertyName + "\")";
+                    switch (propertyType) {
+                        case "int":
+                            propertyFromJsonCast = "((Long) jsonObject.get(\"" + propertyName + "\")).intValue()";
+                            break;
+                        case "boolean":
+                            propertyFromJsonCast = "(1 == ((Long) jsonObject.get(\"" + propertyName + "\")).intValue())";
+                            break;
+                        case "default":
+                            break;
+                    }
+
                     currentPropertyBodyTemplate.setVariable("$Property_Name$", propertyName);
                     currentPropertyBodyTemplate.setVariable("$Property_Type$", propertyType);
 
                     currentJsonTemplate.setVariable("$Property_Name$", propertyName);
+                    currentFromJsonTemplate.setVariable("$Property_Name$", propertyName);
+                    currentFromJsonTemplate.setVariable("$Property_Cast$", propertyFromJsonCast);
 
                     char c[] = propertyName.toCharArray();
                     c[0] = Character.toLowerCase(c[0]);
@@ -1191,6 +1256,7 @@ public class MicroserviceGenerator extends Generator {
                     // add template of current method to service class template
                     currentClassBodyTemplate.appendVariable("$Class_Properties$", currentPropertyBodyTemplate);
                     currentClassBodyTemplate.appendVariable("$Class_ToJson$",  currentJsonTemplate);
+                    currentClassBodyTemplate.appendVariable("$Json_ToClass$",  currentFromJsonTemplate);
                 }
 
                 // remove last placeholder
