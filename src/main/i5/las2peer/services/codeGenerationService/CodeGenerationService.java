@@ -94,6 +94,7 @@ public class CodeGenerationService extends RESTService {
 	
 	//The base URL where generated and deployed widget's files are hosted
 	private String widgetHomeBaseURL;
+	private String localGitPath;
 
 	//private Gson gson = new GsonBuilder().serializeSpecialFloatingPointValues().serializ‌​eNulls().create();  
 
@@ -236,7 +237,7 @@ public class CodeGenerationService extends RESTService {
 						Context.get().monitorEvent(MonitoringEvent.SERVICE_MESSAGE,
 								"createFromModel: Creating frontend component source code now..");
 						FrontendComponentGenerator.createSourceCode(frontendComponent, (BaseGitHostAdapter) gitAdapter,
-								forcePush, metadataDoc);
+								forcePush);
 						Context.get().monitorEvent(MonitoringEvent.SERVICE_MESSAGE, "createFromModel: Created!");
 						return "done";
 
@@ -876,6 +877,8 @@ public class CodeGenerationService extends RESTService {
 	public String getWidgetHomeBaseURL() {
 		return widgetHomeBaseURL;
 	}
+
+	public String getLocalGitPath() { return localGitPath; }
 
 	public String getOidcProvider() {
 		return oidcProvider;
