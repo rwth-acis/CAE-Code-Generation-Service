@@ -17,7 +17,7 @@ import i5.las2peer.services.codeGenerationService.models.microservice.Microservi
  */
 public class Application {
   private String name;
-  private float version;
+  private String version;
   HashMap<String, Microservice> microservices = new HashMap<String, Microservice>();
   HashMap<String, FrontendComponent> frontendComponents = new HashMap<String, FrontendComponent>();
 
@@ -41,7 +41,7 @@ public class Application {
       if (modelComponents[0].getAttributes().get(attributeIndex).getName().equals("version")) {
         try {
           this.setVersion(
-              Float.parseFloat(modelComponents[0].getAttributes().get(attributeIndex).getValue()));
+              modelComponents[0].getAttributes().get(attributeIndex).getValue());
         } catch (NumberFormatException e) {
           throw new ModelParseException("Application version is not a number!");
         }
@@ -84,12 +84,12 @@ public class Application {
   }
 
 
-  public float getVersion() {
+  public String getVersion() {
     return this.version;
   }
 
 
-  public void setVersion(float version) {
+  public void setVersion(String version) {
     this.version = version;
   }
 
