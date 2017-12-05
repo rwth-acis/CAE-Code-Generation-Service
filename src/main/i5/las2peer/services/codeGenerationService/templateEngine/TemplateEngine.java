@@ -137,16 +137,16 @@ public class TemplateEngine {
     System.out.println("[Create template] Create template id " + id);
 
     // the strategy determines whether we should reuse a segment for a template or not
-    // Segment segment = this.strategy.getSegment(id);
+    Segment segment = this.strategy.getSegment(id);
     CompositeSegment cSegment = new CompositeSegment(id);
 
     // TODO uncomment, revert back
-    //if (segment instanceof CompositeSegment) {
+    if (segment instanceof CompositeSegment) {
 
       // "reuse" an existing template, i.e. the segment held by the template is set to an already
       // existing one
-      //cSegment = (CompositeSegment) segment;
-    //} else {
+      cSegment = (CompositeSegment) segment;
+    } else {
       // handle window EOL bug.
       sourceCode = sourceCode.replaceAll("\\r\\n", "\n");
       sourceCode = sourceCode.replaceAll("\\r", "\n");
@@ -157,7 +157,7 @@ public class TemplateEngine {
       JSONArray segments = (JSONArray) traces.get("traceSegments");
 
       cSegment.addAllSegments(SegmentFactory.createSegments(segments, sourceCode, 0L));
-    //}
+    }
 
     return new Template(cSegment, this);
   }
