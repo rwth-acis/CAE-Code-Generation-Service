@@ -42,7 +42,6 @@ public class Microservice {
    * 
    */
   public Microservice(SimpleModel model) throws ModelParseException {
-    System.out.println("[Code Generation] New code generation microservice");
     this.httpMethods = new HashMap<String, HttpMethod>();
 
     // used for checking node to edge dependencies for correctness
@@ -143,8 +142,7 @@ public class Microservice {
     boolean databaseToResourceEdge = false;
 
     ArrayList<SimpleEdge> edges = model.getEdges();
-    System.out.println("[Code Generation] List edges ");
-    edges.forEach((edge) -> System.out.println(edge.getLabelValue()));
+    
     for (int edgeIndex = 0; edgeIndex < edges.size(); edgeIndex++) {
       String currentEdgeSource = edges.get(edgeIndex).getSourceNode();
       String currentEdgeTarget = edges.get(edgeIndex).getTargetNode();
@@ -222,15 +220,7 @@ public class Microservice {
           HttpMethod currentHttpMethod = this.httpMethods.get(currentEdgeSource);
           HttpPayload currentHttpPayload = tempHttpPayloads.get(currentEdgeTarget);
           String httpPayloadId = currentEdgeTarget;
-          System.out.println("[Code Generation] Check method and payloads");
-          if(currentHttpMethod != null)
-            System.out.println("[Code Generation] " + currentHttpMethod.getName());
-          
-          if(currentHttpPayload != null)
-            System.out.println("[Code Generation] " + currentHttpPayload.getName());
-
           if (currentHttpMethod == null || currentHttpPayload == null) {
-            System.out.println("[Code Generation] Current http method is null or current http payload is null");
             throw new ModelParseException("Wrong HTTP Method to HTTP Payload Edge!");
           }
           currentHttpMethod.addHttpPayload(currentHttpPayload);
@@ -249,18 +239,11 @@ public class Microservice {
           currentHttpMethod = this.httpMethods.get(currentEdgeSource);
           HttpResponse currentHttpResponse = tempHttpResponses.get(currentEdgeTarget);
           String httpResponseId = currentEdgeTarget;
-          System.out.println("[Code Generation] Check HTTP method to HTTP response");
-
-          if(currentHttpMethod != null)
-            System.out.println("[Code Generation] " + currentHttpMethod.getName());
-          
-          if(currentHttpResponse != null)
-            System.out.println("[Code Generation] " + currentHttpResponse.getName());
           
           if (currentHttpMethod == null || currentHttpResponse == null) {
-            System.out.println("[Code Generation] empty current http method or http response");
             throw new ModelParseException("Wrong HTTP Method to HTTP Response Edge!");
           }
+
           currentHttpMethod.addHttpResponse(currentHttpResponse);
           currentHttpMethod.addNodeIdResponse(httpResponseId, currentHttpResponse);
           tempHttpResponses.remove(currentEdgeTarget);
@@ -269,18 +252,6 @@ public class Microservice {
           throw new ModelParseException("Unknown microservice edge type: " + currentEdgeType);
       }
     }
-
-    System.out.println("[Code Generation] Check http method to resource counts");
-    System.out.println("[Code Generation] " + httpMethodToResourceEdges);
-    System.out.println("[Code Generation] " + this.httpMethods.size());
-
-    System.out.println("[Code Generation] Check database to resources edges");
-    System.out.println("[Code Generation] " + databaseToResourceEdge);
-    System.out.println("[Code Generation] " + this.database.getName());
-
-    System.out.println("[Code Generation] Check database to tables edges");
-    System.out.println("[Code Generation] " + tableToDatabaseEdges);
-    System.out.println("[Code Generation] " + tempTables.size());
 
     // check for correct edge counts
     if (!(httpMethodToResourceEdges == this.httpMethods.size())) {

@@ -188,10 +188,7 @@ public class CompositeSegment extends Segment {
 
   public void setSegmentContent(String id, String content, boolean integrityCheck) {
     // if this composite segment holds a segment with the given id, set its content
-    //System.out.println("[Composite Segment] Set segment content for " + id);
-
     if (map.containsKey(this.getId() + ":" + id)) {
-      //System.out.println("[Composite Segment] Found segment for " + id);
       Segment segment = map.get(this.getId() + ":" + id);
       if (segment instanceof ContentSegment) {
         ((ContentSegment) segment).setContent(content, integrityCheck);

@@ -187,11 +187,7 @@ public class CodeGenerationService extends RESTService {
 	 * 
 	 */
 	public String createFromModel(boolean forcePush, String metadataDoc, Serializable... serializedModel) {
-		System.out.println("=========CREATE FROM MODEL=======");
 		SimpleModel model = (SimpleModel) serializedModel[0];
-
-		System.out.println("CREATE FROM MODEL METADATA DOC STRING: ");
-		System.out.println(metadataDoc);
 		Context.get().monitorEvent(MonitoringEvent.SERVICE_MESSAGE, "createFromModel: Received model with name " + model.getName());
 
 		// TESTING: write as file
@@ -214,7 +210,6 @@ public class CodeGenerationService extends RESTService {
 				try {
 					switch (type) {
 					case "microservice":
-						System.out.println("[Code Generation] Generating codes for microservice");
 						// Create an object representing the microservice model
 						Context.get().monitorEvent(MonitoringEvent.SERVICE_MESSAGE, "createFromModel: Creating microservice model now..");
 						Microservice microservice = new Microservice(model);
@@ -223,7 +218,6 @@ public class CodeGenerationService extends RESTService {
 						// Generate the code (and repositories) for this model
 						Context.get().monitorEvent(MonitoringEvent.SERVICE_MESSAGE,
 								"createFromModel: Creating microservice source code now..");
-						System.out.println("=========CODE GENERATE MICROSERVICE CREATE SOURCE CODE=======");
 						MicroserviceGenerator.createSourceCode(microservice, this.templateRepository,
 								(BaseGitHostAdapter) gitAdapter, forcePush, metadataDoc);
 						Context.get().monitorEvent(MonitoringEvent.SERVICE_MESSAGE, "createFromModel: Created!");
@@ -270,8 +264,6 @@ public class CodeGenerationService extends RESTService {
 	}
 
 	public String createFromModel(String metadataDoc, Serializable... serializedModel) {
-		System.out.println("CREATE FROM MODEL LINE 266");
-		System.out.println(metadataDoc);
 		return createFromModel(false, "", serializedModel);
 	}
 
@@ -351,11 +343,6 @@ public class CodeGenerationService extends RESTService {
 	 * 
 	 */
 	public String updateRepositoryOfModel(String metadataDoc, Serializable... serializedModel) {
-
-		System.out.println("[Code Generation] Update repository of model");
-
-		System.out.println("UPDATE REPOSITORY OF MODEL");
-
 		SimpleModel model = (SimpleModel) serializedModel[0];
 		String modelName = model.getName();
 		Context.get().monitorEvent(MonitoringEvent.SERVICE_MESSAGE, "updateRepositoryOfModel: Received model with name " + modelName);
@@ -388,7 +375,6 @@ public class CodeGenerationService extends RESTService {
 						// only if an old model and a remote repository exist,
 						// we can synchronize
 						// the model and source code
-						System.out.println("[Code Generation] Check model sync and old model");
 						if (useModelSynchronization && oldModel != null && MicroserviceSynchronization
 								.existsRemoteRepositoryForModel(microservice, (BaseGitHostAdapter) gitAdapter)) {
 							Microservice oldMicroservice = new Microservice(oldModel);
@@ -625,9 +611,6 @@ public class CodeGenerationService extends RESTService {
 		HashMap<String, JSONObject> files = new HashMap<String, JSONObject>();
 		try {
 			files = getAllTracedFiles(repositoryName);
-			for (String key : files.keySet()) {
-				System.out.println("FILES ITERATOR key: " + key);
-			}
 		} catch (Exception e) {
 			logger.printStackTrace(e);
 		}
@@ -780,8 +763,6 @@ public class CodeGenerationService extends RESTService {
 	 * @return A status text
 	 */
 	public String prepareDeploymentApplicationModel(Serializable... serializedModel) {
-		System.out.println("====PREPARE DEPLOYMENT APPLICATION MODEL======");
-
 		SimpleModel model = (SimpleModel) serializedModel[0];
 
 		Context.get().monitorEvent(MonitoringEvent.SERVICE_MESSAGE,

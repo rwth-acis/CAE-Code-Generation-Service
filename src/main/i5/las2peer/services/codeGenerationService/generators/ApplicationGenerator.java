@@ -580,7 +580,6 @@ public class ApplicationGenerator extends Generator {
       Context.get().monitorEvent(MonitoringEvent.SERVICE_MESSAGE, "Starting Jenkin job: " + jobName);
 
       URL url = new URL(jenkinsUrl + "/job/" + jobName + "/build?token=" + jobToken);
-      System.out.println("JENKINS URL ==== " + url.toString());
       HttpURLConnection connection = (HttpURLConnection) url.openConnection();
       connection.setRequestMethod("GET");
       connection.setDoOutput(true);

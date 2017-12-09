@@ -495,8 +495,6 @@ public abstract class Generator {
 
   protected static Repository createTracedFilesInRepository(TraceModel traceModel,
       Repository repository) throws GitHostException {
-
-    System.out.println("[Generator - Create traced files in repository]");
     Map<String, FileTraceModel> fileTraceMap = traceModel.getFilenameToFileTraceModelMap();
 
     for (String fullPath : fileTraceMap.keySet()) {
@@ -566,8 +564,6 @@ public abstract class Generator {
 
   protected static List<String[]> getUpdatedTracedFilesForRepository(TraceModel traceModel,
       String guidances) throws UnsupportedEncodingException {
-
-    System.out.println("[Generator - getUpdatedTracedFilesForRepository]");
     Map<String, FileTraceModel> fileTraceMap = traceModel.getFilenameToFileTraceModelMap();
 
     List<String[]> fileList = new ArrayList<String[]>();

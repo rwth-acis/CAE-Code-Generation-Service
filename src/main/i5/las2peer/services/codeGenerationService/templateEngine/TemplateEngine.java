@@ -133,9 +133,6 @@ public class TemplateEngine {
    */
 
   public Template createTemplate(String id, String sourceCode) {
-
-    System.out.println("[Create template] Create template id " + id);
-
     // the strategy determines whether we should reuse a segment for a template or not
     Segment segment = this.strategy.getSegment(id);
     CompositeSegment cSegment = new CompositeSegment(id);
@@ -255,7 +252,6 @@ public class TemplateEngine {
       int start = matcher.start();
       int end = matcher.end();
       String segmentName = matcher.group();
-      //System.out.println("[Generate traces] Segment name : " + segmentName);
       Matcher unprotectedBlockMatcher = unprotectedBlockPattern.matcher(segmentName);
 
       String id = matcher.group();

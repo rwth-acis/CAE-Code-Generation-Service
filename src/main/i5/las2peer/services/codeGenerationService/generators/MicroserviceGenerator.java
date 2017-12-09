@@ -157,8 +157,6 @@ public class MicroserviceGenerator extends Generator {
 	    Repository microserviceRepository = null;
 	    TreeWalk treeWalk = null;
 
-        System.out.println("******CREATE SOURCE CODE****");
-
 	    // helper variables
 	    String packageName = microservice.getResourceName().substring(0, 1).toLowerCase()
 	        + microservice.getResourceName().substring(1);
@@ -276,8 +274,6 @@ public class MicroserviceGenerator extends Generator {
 	              break;
 	            case "i5.las2peer.services.servicePackage.ServiceClass.properties":
 	              String serviceProperties = new String(loader.getBytes(), "UTF-8");
-                  System.out.println("GENERATE SOURCE CODE FOR SERVICE CLASS PROPERTIES");
-                  System.out.println(serviceProperties);
 	              TemplateEngine serviceTemplateEngine = Template.createInitialTemplateEngine(
 	                  traceModel, getServicePropertiesFileName(microservice));
 	              generateOtherArtifacts(serviceTemplateEngine, microservice, gitAdapter.getGitOrganization(),
@@ -285,8 +281,6 @@ public class MicroserviceGenerator extends Generator {
 	              break;
 	            case "i5.las2peer.connectors.webConnector.WebConnector.properties":
 	              String webConnectorConfig = new String(loader.getBytes(), "UTF-8");
-                  System.out.println("GENERATE SOURCE CODE FOR WEB CONNECTOR PROPERTIES");
-                  System.out.println(webConnectorConfig);
 	              generateOtherArtifacts(Template.createInitialTemplateEngine(traceModel, path),
 	                  microservice, gitAdapter.getGitOrganization(), webConnectorConfig);
 	              break;
@@ -492,15 +486,12 @@ public class MicroserviceGenerator extends Generator {
   public static void createSourceCode(Microservice microservice, String templateRepositoryName,
       BaseGitHostAdapter gitAdapter, String metadataDoc)
       throws GitHostException {
-      System.out.println("=========CREATE SOURCE CODEs=======");
 	  createSourceCode(microservice, templateRepositoryName, gitAdapter, false, metadataDoc);
     
   }
 
   protected static void generateOtherArtifacts(TemplateEngine templateEngine,
       Microservice microservice, String gitHubOrganization, String templateContent) throws ModelParseException{
-
-    System.out.println("=========GENERATE OTHER ARTIFACTS=======");
     String repositoryName = getRepositoryName(microservice);
     String packageName = getPackageName(microservice);
     String port = "8080";
@@ -525,20 +516,14 @@ public class MicroserviceGenerator extends Generator {
       template = templateEngine.createTemplate(
           microservice.getMicroserviceModelId() + ":servicePropertiesFile", "$Properties$-{\n}-");
 
-      System.out.println("====TEMPLATE GET CONTENT======" + templateEngine.getFileName());
-      System.out.println(template.getContent());
-
       templateEngine.addTrace(microservice.getMicroserviceModelId() + ":servicePropertiesFile",
           "Properties", "Service class properties", template);
 
       if (microservice.getDatabase() == null) {
-        System.out.println("====NO DATABASE HERE======");
         template.setVariableIfNotSet("$Properties$", "");
         // template = templateEngine.createTemplate(
         // microservice.getMicroserviceModelId() + ":emptyServiceProperties", "-{}-");
       } else {
-        System.out.println("====GENERATE DATABASE HERE======");
-        System.out.println(templateContent);
         Template propertiesTemplate = templateEngine.createTemplate(
             microservice.getMicroserviceModelId() + ":serviceProperties", templateContent);
         propertiesTemplate.setVariable("$Database_Address$",
@@ -548,15 +533,9 @@ public class MicroserviceGenerator extends Generator {
             microservice.getDatabase().getLoginName());
         propertiesTemplate.setVariable("$Database_Password$",
             microservice.getDatabase().getLoginPassword());
-         System.out.println("======================");
-          System.out.println(propertiesTemplate.getContent());
         template.appendVariable("$Properties$", propertiesTemplate);
-         System.out.println("======================");
-          System.out.println(template.getContent());
       }
     }
-
-    System.out.println("=======SWITCH FILE NAME===============" + fileName);
 
     switch (fileName) {
       case ".project":
@@ -644,12 +623,7 @@ public class MicroserviceGenerator extends Generator {
         break;
     }
 
-    System.out.println("===TEMPLATE FINAL====");
     if (template != null) {
-        System.out.println("===TEMPLATE NOT NULL====");
-
-    System.out.println(template.getTemplateFileName());
-    System.out.println(template.getContent());
       templateEngine.addTemplate(template);
     }
   }
@@ -963,6 +937,10 @@ public class MicroserviceGenerator extends Generator {
 
         if (nodeDetails != null) {
           if (nodeDetails.hasNonNull(payloadNodeId)) {
+
+            System.out.println("[MICROSERVICE GENERATOR] Node details available");
+            System.out.println(nodeDetails);
+
             JsonNode nodeDetail = nodeDetails.get(payloadNodeId); 
             if (nodeDetail.hasNonNull("description")) {
                 description = nodeDetail.get("description").asText();
@@ -999,13 +977,15 @@ public class MicroserviceGenerator extends Generator {
           consumesAnnotation = "MediaType.TEXT_PLAIN";
           
           // if schema is available
+          System.out.println("[MICROSERVICE GENERATOR] Schema name available " + schemaName);
           if (schemaName != null && !schemaName.equals("")) {
+            System.out.println("[MICROSERVICE GENERATOR] Schema name not null " + schemaName);
             // pass parameter as string and add casting from json
             //parameterCode += "classes." + schemaName + " " + currentPayload.getName() + ", ";
             parameterCode += "String " + currentPayload.getName() + ", ";
 
             Template castTemplate = templateEngine.createTemplate(
-                    currentPayload.getModelId() + ":cast",
+                    currentPayload.getModelId() + ":castSchema",
                     "   classes.$Schema_Name$ payload$Payload_Name$Object = new classes().new $Schema_Name$();\n" +
                     "   try { \n" +
                     "       payload$Payload_Name$Object.fromJSON($Payload_Name$);\n" +
@@ -1018,7 +998,14 @@ public class MicroserviceGenerator extends Generator {
             castTemplate.setVariable("$Schema_Name$", schemaName);
             currentMethodTemplate.appendVariable("$HTTPMethod_Casts$", castTemplate);
 
+            System.out.println("[CAST TEMPLATE]");
+            System.out.print(castTemplate.getContent());
+
+            System.out.println("[CURRENT METHOD TEMPLATE]");
+            System.out.print(currentMethodTemplate.getContent());
+
           } else {
+            System.out.println("[MICROSERVICE GENERATOR] Schema null go string " + schemaName);
             parameterCode += "String " + currentPayload.getName() + ", ";
 
             Template castTemplate = templateEngine.createTemplate(
