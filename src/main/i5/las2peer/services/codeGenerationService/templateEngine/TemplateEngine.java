@@ -133,7 +133,6 @@ public class TemplateEngine {
    */
 
   public Template createTemplate(String id, String sourceCode) {
-
     // the strategy determines whether we should reuse a segment for a template or not
     Segment segment = this.strategy.getSegment(id);
     CompositeSegment cSegment = new CompositeSegment(id);
@@ -152,6 +151,7 @@ public class TemplateEngine {
       JSONObject traces = TemplateEngine.generateTraces(id, sourceCode);
       sourceCode = TemplateEngine.removeUnprotectedSurroundings(sourceCode);
       JSONArray segments = (JSONArray) traces.get("traceSegments");
+
       cSegment.addAllSegments(SegmentFactory.createSegments(segments, sourceCode, 0L));
     }
 

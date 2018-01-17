@@ -39,7 +39,8 @@ public class FrontendComponentSynchronization extends FrontendComponentGenerator
       L2pLogger.getInstance(ApplicationGenerator.class.getName());
 
   public static void synchronizeSourceCode(FrontendComponent frontendComponent,
-      FrontendComponent oldFrontendComponent, HashMap<String, JSONObject> files,BaseGitHostAdapter gitAdapter,CodeGenerationService service)
+      FrontendComponent oldFrontendComponent, HashMap<String, JSONObject> files,BaseGitHostAdapter gitAdapter,CodeGenerationService service,
+      String metadataDoc)
       throws GitHostException {
     // first load the needed templates from the template repository
 

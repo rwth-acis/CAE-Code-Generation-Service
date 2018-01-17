@@ -3,6 +3,7 @@ package i5.las2peer.services.codeGenerationService.models.microservice;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Arrays;
 
 import i5.cae.simpleModel.SimpleEntityAttribute;
 import i5.cae.simpleModel.SimpleModel;
@@ -28,7 +29,8 @@ public class Microservice {
   private String developer;
   private Map<String, HttpMethod> httpMethods;
   private Database database;
-  private String version;
+  private float version;
+  private String metadataDocString;
 
   /**
    * 
@@ -142,6 +144,7 @@ public class Microservice {
     boolean databaseToResourceEdge = false;
 
     ArrayList<SimpleEdge> edges = model.getEdges();
+    
     for (int edgeIndex = 0; edgeIndex < edges.size(); edgeIndex++) {
       String currentEdgeSource = edges.get(edgeIndex).getSourceNode();
       String currentEdgeTarget = edges.get(edgeIndex).getTargetNode();
@@ -218,10 +221,12 @@ public class Microservice {
         case "HTTP Method to HTTP Payload":
           HttpMethod currentHttpMethod = this.httpMethods.get(currentEdgeSource);
           HttpPayload currentHttpPayload = tempHttpPayloads.get(currentEdgeTarget);
+          String httpPayloadId = currentEdgeTarget;
           if (currentHttpMethod == null || currentHttpPayload == null) {
             throw new ModelParseException("Wrong HTTP Method to HTTP Payload Edge!");
           }
           currentHttpMethod.addHttpPayload(currentHttpPayload);
+          currentHttpMethod.addNodeIdPayload(httpPayloadId, currentHttpPayload);
           tempHttpPayloads.remove(currentEdgeTarget);
           break;
         // add response to http method and remove from temp responses if edge was validated
@@ -235,11 +240,14 @@ public class Microservice {
         	
           currentHttpMethod = this.httpMethods.get(currentEdgeSource);
           HttpResponse currentHttpResponse = tempHttpResponses.get(currentEdgeTarget);
+          String httpResponseId = currentEdgeTarget;
           
           if (currentHttpMethod == null || currentHttpResponse == null) {
             throw new ModelParseException("Wrong HTTP Method to HTTP Response Edge!");
           }
+
           currentHttpMethod.addHttpResponse(currentHttpResponse);
+          currentHttpMethod.addNodeIdResponse(httpResponseId, currentHttpResponse);
           tempHttpResponses.remove(currentEdgeTarget);
           break;
         default:
@@ -248,10 +256,16 @@ public class Microservice {
     }
 
     // check for correct edge counts
-    if (!(httpMethodToResourceEdges == this.httpMethods.size())
-        || (!databaseToResourceEdge && this.database != null)
-        || !(tableToDatabaseEdges == tempTables.size())) {
-      throw new ModelParseException("Model is not fully connected!");
+    if (!(httpMethodToResourceEdges == this.httpMethods.size())) {
+      throw new ModelParseException("Not enough http method to resource edges with http methods size. Model is not fully connected!");
+    }
+    // check for correct edge counts
+    if (!(tableToDatabaseEdges == tempTables.size())) {
+      throw new ModelParseException("Not enough table to database edges. Model is not fully connected!");
+    }
+    // check database edges
+    if ((!databaseToResourceEdge && this.database != null)) {
+      throw new ModelParseException("No database to resource edge and database is not null. Model is not fully connected!");
     }
     // check if all columns were correctly connected to a table
     if (!tempColumns.isEmpty()) {
@@ -366,5 +380,13 @@ public class Microservice {
   public void setVersion(String version) {
     this.version = version;
   }
+
+  public void setMetadataDocString(String metadataDocString) {
+    this.metadataDocString = metadataDocString;
+  }
+
+  public String getMetadataDocString() {
+    return this.metadataDocString;
+  } 
 
 }
