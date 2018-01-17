@@ -1,6 +1,7 @@
 package i5.las2peer.services.codeGenerationService.models.microservice;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 
 import i5.cae.simpleModel.SimpleEntityAttribute;
 import i5.cae.simpleModel.node.SimpleNode;
@@ -31,6 +32,8 @@ public class HttpMethod {
   private ArrayList<InternalCall> internalCalls = new ArrayList<InternalCall>();
   private ArrayList<HttpPayload> payloads = new ArrayList<HttpPayload>();
   private ArrayList<HttpResponse> responses = new ArrayList<HttpResponse>();
+  private HashMap<String, HttpPayload> nodeIdPayloads = new HashMap<String, HttpPayload>();
+  private HashMap<String, HttpResponse> nodeIdResponses = new HashMap<String, HttpResponse>();
 
   /**
    * 
@@ -113,9 +116,17 @@ public class HttpMethod {
     return this.payloads;
   }
 
+  public HashMap<String, HttpPayload> getNodeIdPayloads() {
+    return this.nodeIdPayloads;
+  }
+
 
   public ArrayList<HttpResponse> getHttpResponses() {
     return this.responses;
+  }
+
+  public HashMap<String, HttpResponse> getNodeIdResponses() {
+    return this.nodeIdResponses;
   }
 
 
@@ -128,9 +139,16 @@ public class HttpMethod {
     this.payloads.add(payload);
   }
 
+  public void addNodeIdPayload(String nodeId, HttpPayload payload) {
+    this.nodeIdPayloads.put(nodeId, payload);
+  }
 
   public void addHttpResponse(HttpResponse response) {
     this.responses.add(response);
+  }
+
+  public void addNodeIdResponse(String nodeId, HttpResponse payload) {
+    this.nodeIdResponses.put(nodeId, payload);
   }
 
 

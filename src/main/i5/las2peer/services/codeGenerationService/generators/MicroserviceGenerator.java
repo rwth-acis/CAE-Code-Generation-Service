@@ -5,6 +5,9 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 import java.net.URL;
 import javax.imageio.ImageIO;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Iterator;
 
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.lib.ObjectId;
@@ -39,6 +42,12 @@ import i5.las2peer.services.codeGenerationService.templateEngine.Template;
 import i5.las2peer.services.codeGenerationService.templateEngine.TemplateEngine;
 import i5.las2peer.services.codeGenerationService.templateEngine.TemplateStrategy;
 import i5.las2peer.services.codeGenerationService.traces.segments.Segment;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.base.Strings;
+import com.fasterxml.jackson.databind.JsonNode;
 
 /**
  * 
@@ -79,6 +88,17 @@ public class MicroserviceGenerator extends Generator {
     return "src/main/i5/las2peer/services/" + getPackageName(microservice) + "/"
         + microservice.getResourceName() + ".java";
   }
+
+    /**
+     * Get the classes file name of a microservice model
+     *
+     * @param microservice A microservice model
+     * @return The file name of the classes
+     */
+
+    protected static String getClassesFileName(Microservice microservice) {
+        return "src/main/i5/las2peer/services/" + getPackageName(microservice) + "/classes.java";
+    }
 
   /**
    * Get the file name of the service properties file
@@ -131,7 +151,8 @@ public class MicroserviceGenerator extends Generator {
    */
   
   public static void createSourceCode(Microservice microservice, 
-		  String templateRepositoryName, BaseGitHostAdapter gitAdapter, boolean forcePush) throws GitHostException {
+		  String templateRepositoryName, BaseGitHostAdapter gitAdapter, boolean forcePush,
+          String metadataDoc) throws GitHostException {
 	// variables to be closed in the final block
 	    Repository microserviceRepository = null;
 	    TreeWalk treeWalk = null;
@@ -162,6 +183,11 @@ public class MicroserviceGenerator extends Generator {
 	    String databaseScript = null;
 	    String genericTable = null;
 	    String guidances = null;
+
+        // to generate schema file
+        String classes = null;
+        String genericClassBody = null;
+        String genericClassProperty = null;
 
 	    try {
 	    	
@@ -312,6 +338,15 @@ public class MicroserviceGenerator extends Generator {
 	            case "genericTable.txt":
 	              genericTable = new String(loader.getBytes(), "UTF-8");
 	              break;
+                case "Classes.java":
+                  classes = new String(loader.getBytes(), "UTF-8");
+                  break;
+                case "genericClassBody.txt":
+                  genericClassBody = new String(loader.getBytes(), "UTF-8");
+                  break;
+                case "genericClassProperty.txt":
+                  genericClassProperty = new String(loader.getBytes(), "UTF-8");
+                  break;
 	          }
 	        }
 	      } catch (Exception e) {
@@ -354,7 +389,17 @@ public class MicroserviceGenerator extends Generator {
 
 	      generateNewServiceClass(serviceTemplateEngine, serviceClass, microservice, repositoryLocation,
 	          genericHttpMethod, genericHttpMethodBody, genericApiResponse, genericHttpResponse,
-	          databaseConfig, databaseInstantiation, serviceInvocation);
+	          databaseConfig, databaseInstantiation, serviceInvocation, metadataDoc);
+
+          // generate classes schema
+          FileTraceModel classesTraceModel =
+              new FileTraceModel(traceModel, getClassesFileName(microservice));
+          traceModel.addFileTraceModel(classesTraceModel);
+
+          TemplateEngine classesTemplateEngine = new TemplateEngine(new InitialGenerationStrategy(), classesTraceModel);
+
+          generateNewClasses(classesTemplateEngine, classes, microservice, repositoryLocation,
+              genericClassBody, genericClassProperty, metadataDoc);
 
 	      FileTraceModel serviceTestTraceModel =
 	          new FileTraceModel(traceModel, getServiceTestFileName(microservice));
@@ -439,15 +484,14 @@ public class MicroserviceGenerator extends Generator {
   }
   
   public static void createSourceCode(Microservice microservice, String templateRepositoryName,
-      BaseGitHostAdapter gitAdapter)
+      BaseGitHostAdapter gitAdapter, String metadataDoc)
       throws GitHostException {
-	  createSourceCode(microservice, templateRepositoryName, gitAdapter, false);
+	  createSourceCode(microservice, templateRepositoryName, gitAdapter, false, metadataDoc);
     
   }
 
   protected static void generateOtherArtifacts(TemplateEngine templateEngine,
       Microservice microservice, String gitHubOrganization, String templateContent) throws ModelParseException{
-
     String repositoryName = getRepositoryName(microservice);
     String packageName = getPackageName(microservice);
     String port = "8080";
@@ -605,7 +649,8 @@ public class MicroserviceGenerator extends Generator {
   protected static void generateNewServiceClass(TemplateEngine templateEngine, String serviceClass,
       Microservice microservice, String repositoryLocation, String genericHttpMethod,
       String genericHttpMethodBody, String genericApiResponse, String genericHttpResponse,
-      String databaseConfig, String databaseInstantiation, String serviceInvocation) {
+      String databaseConfig, String databaseInstantiation, String serviceInvocation,
+      String metadataDoc) {
     // helper variables
     String packageName = microservice.getResourceName().substring(0, 1).toLowerCase()
         + microservice.getResourceName().substring(1);
@@ -632,6 +677,52 @@ public class MicroserviceGenerator extends Generator {
     // link to license file
     serviceClassTemplate.setVariable("$License_File_Address$",
         repositoryLocation + "/blob/master/LICENSE.txt");
+
+    // PARSE METADATA DOC
+    ObjectMapper mapper = new ObjectMapper();
+    JsonNode metadataTree = null;
+    JsonNode nodeDetails = null;
+
+    if (!Strings.isNullOrEmpty(metadataDoc)) {
+        try {
+            metadataTree = mapper.readTree(metadataDoc);
+            System.out.println("===Parsed json ");
+            System.out.println(metadataTree);
+            if (metadataTree.hasNonNull("nodes"))
+                nodeDetails = metadataTree.get("nodes");
+        } catch (IOException ex) {
+            System.out.println("Exception on metadata tree user input metadata doc");
+            ex.printStackTrace();
+        }
+    }
+
+    if (metadataTree != null) {
+        try {
+            // get info node
+            if (metadataTree.hasNonNull("info")) {
+                JsonNode infoNode = metadataTree.get("info");
+                String description = infoNode.get("description").asText();
+                String version = infoNode.get("version").asText();
+                String termsOfService = infoNode.get("termsOfService").asText();
+
+                System.out.println("===Parsed information ");
+                System.out.println(description);
+                System.out.println(version);
+                System.out.println(termsOfService);
+
+                serviceClassTemplate.setVariable("$Metadata_Version$", version);
+                serviceClassTemplate.setVariable("$Metadata_Description$", description);
+                serviceClassTemplate.setVariable("$Metadata_Terms$", termsOfService);
+
+            }
+        } catch (Exception ex) {
+            System.out.println("Exception on parsing user input metadata doc");
+            serviceClassTemplate.setVariable("$Metadata_Version$", "1.0");
+            serviceClassTemplate.setVariable("$Metadata_Description$", "Generated Microservice from CAE");
+            serviceClassTemplate.setVariable("$Metadata_Terms$", "");
+        }
+    }
+    
     // resource name
     serviceClassTemplate.setVariable("$Resource_Name$", microservice.getResourceName());
     // create database references only if microservice has database
@@ -675,6 +766,10 @@ public class MicroserviceGenerator extends Generator {
     for (int httpMethodIndex = 0; httpMethodIndex < httpMethods.length; httpMethodIndex++) {
       HttpMethod currentMethod = httpMethods[httpMethodIndex];
 
+      System.out.println("[Microservice generator HTTP Method] Processing http method " + currentMethod.getName());
+      System.out.println(currentMethod.getMethodType().toString());
+      System.out.println(currentMethod.getPath());
+
       // create new template for the current method
       Template currentMethodTemplate = templateEngine
           .createTemplate(currentMethod.getModelId() + ":httpMethod", genericHttpMethod);
@@ -701,11 +796,34 @@ public class MicroserviceGenerator extends Generator {
 
       // helper variable for storing the produces annotation
       String producesAnnotation = "";
+      // responses
+      HashMap<String, HttpResponse> httpResponses = currentMethod.getNodeIdResponses();
+      int httpResponseIndex = 0;
 
-      for (int httpResponseIndex = 0; httpResponseIndex < currentMethod.getHttpResponses()
-          .size(); httpResponseIndex++) {
+      for (HashMap.Entry<String, HttpResponse> entry: httpResponses.entrySet()) {
+
+        String responseNodeId = entry.getKey();
         boolean isLastResponse = httpResponseIndex == currentMethod.getHttpResponses().size() - 1;
-        HttpResponse currentResponse = currentMethod.getHttpResponses().get(httpResponseIndex);
+
+        String description = "";
+        String schemaName = "";
+
+        if (nodeDetails != null) {
+          if (nodeDetails.hasNonNull(responseNodeId)) {
+            JsonNode nodeDetail = nodeDetails.get(responseNodeId); 
+            if (nodeDetail.hasNonNull("description")) {
+                description = nodeDetail.get("description").asText();
+            }
+
+            if (nodeDetail.hasNonNull("schema")) {
+                schemaName = nodeDetail.get("schema").asText();
+            }
+          }
+        }
+
+        currentMethodTemplate.setVariable("$Response_Description$", description);
+
+        HttpResponse currentResponse = entry.getValue();
         // start with api response code
 
         Template apiResponseTemplate = templateEngine
@@ -723,7 +841,10 @@ public class MicroserviceGenerator extends Generator {
         apiResponseTemplate.setVariable("$HTTPResponse_Code$",
             currentResponse.getReturnStatusCode().toString());
 
-        apiResponseTemplate.setVariable("$HTTPResponse_Name$", currentResponse.getName());
+        if (!description.equals(""))
+            apiResponseTemplate.setVariable("$HTTPResponse_Name$", description);
+        else
+            apiResponseTemplate.setVariable("$HTTPResponse_Name$", currentResponse.getName());
 
         // now to the http responses
         Template httpResponseTemplate =
@@ -763,7 +884,12 @@ public class MicroserviceGenerator extends Generator {
 
           producesAnnotation = "MediaType.APPLICATION_JSON";
 
-          httpResponseTemplate.setVariable("$HTTP_Response_Result_Init$", "new JSONObject()");
+          // if schema is available
+          if (schemaName != null && !schemaName.equals("")) {
+            httpResponseTemplate.setVariable("$HTTP_Response_Result_Init$", "new classes().new " + schemaName + "().toJSON()");
+          } else {
+            httpResponseTemplate.setVariable("$HTTP_Response_Result_Init$", "new JSONObject()");
+          }
 
         }
         // check for custom return type and mark it in produces annotation if found
@@ -774,6 +900,8 @@ public class MicroserviceGenerator extends Generator {
         if (currentResponse.getResultType() == ResultType.String) {
           httpResponseTemplate.setVariable("$HTTP_Response_Result_Init$", "\"Some String\"");
         }
+
+        httpResponseIndex += 1;
       }
       // if no produces annotation is set until here, we set it to text
       if (producesAnnotation.equals("")) {
@@ -788,12 +916,18 @@ public class MicroserviceGenerator extends Generator {
       // payload
       String consumesAnnotation = "";
       String parameterCode = "";
-      for (int httpPayloadIndex = 0; httpPayloadIndex < currentMethod.getHttpPayloads()
-          .size(); httpPayloadIndex++) {
+      HashMap<String, HttpPayload> httpPayloads = currentMethod.getNodeIdPayloads();
+      int httpPayloadIndex = 0;
+
+      for (HashMap.Entry<String, HttpPayload> entry: httpPayloads.entrySet()) {
 
         boolean isLast = httpPayloadIndex == currentMethod.getHttpPayloads().size() - 1;
 
-        HttpPayload currentPayload = currentMethod.getHttpPayloads().get(httpPayloadIndex);
+        String payloadNodeId = entry.getKey();
+        String description = "";
+        String schemaName = "";
+
+        HttpPayload currentPayload = entry.getValue();
         // add param for JavaDoc
         // dirty, but works:-)
         String type = currentPayload.getPayloadType().toString();
@@ -801,11 +935,30 @@ public class MicroserviceGenerator extends Generator {
           type = "String";
         }
 
+        if (nodeDetails != null) {
+          if (nodeDetails.hasNonNull(payloadNodeId)) {
+
+            System.out.println("[MICROSERVICE GENERATOR] Node details available");
+            System.out.println(nodeDetails);
+
+            JsonNode nodeDetail = nodeDetails.get(payloadNodeId); 
+            if (nodeDetail.hasNonNull("description")) {
+                description = nodeDetail.get("description").asText();
+            }
+
+            // get schema name if available
+            if (nodeDetail.hasNonNull("schema")) {
+                schemaName = nodeDetail.get("schema").asText();
+            }
+          }
+        }
+
         Template paramTemplate = currentMethodTemplate.createTemplate(
-            currentPayload.getModelId() + ":param", "   * @param $name$ a $type$-{ }-");
+            currentPayload.getModelId() + ":param", "   * @param $name$ $description$ a $type$");
 
         paramTemplate.setVariable("$name$", currentPayload.getName());
         paramTemplate.setVariable("$type$", type);
+        paramTemplate.setVariable("$description$", description);
 
         if (!isLast) {
           paramTemplate.removeLastCharacter('\n');
@@ -822,13 +975,45 @@ public class MicroserviceGenerator extends Generator {
         	// TODO workaround
           // consumesAnnotation = "MediaType.APPLICATION_JSON";
           consumesAnnotation = "MediaType.TEXT_PLAIN";
-          parameterCode += "String " + currentPayload.getName() + ", ";
+          
+          // if schema is available
+          System.out.println("[MICROSERVICE GENERATOR] Schema name available " + schemaName);
+          if (schemaName != null && !schemaName.equals("")) {
+            System.out.println("[MICROSERVICE GENERATOR] Schema name not null " + schemaName);
+            // pass parameter as string and add casting from json
+            //parameterCode += "classes." + schemaName + " " + currentPayload.getName() + ", ";
+            parameterCode += "String " + currentPayload.getName() + ", ";
 
-          Template castTemplate = templateEngine.createTemplate(
-              currentPayload.getModelId() + ":cast",
-              "    JSONObject $Payload_Name$_JSON = (JSONObject) JSONValue.parse($Payload_Name$);\n");
-          castTemplate.setVariable("$Payload_Name$", currentPayload.getName());
-          currentMethodTemplate.appendVariable("$HTTPMethod_Casts$", castTemplate);
+            Template castTemplate = templateEngine.createTemplate(
+                    currentPayload.getModelId() + ":castSchema",
+                    "   classes.$Schema_Name$ payload$Payload_Name$Object = new classes().new $Schema_Name$();\n" +
+                    "   try { \n" +
+                    "       payload$Payload_Name$Object.fromJSON($Payload_Name$);\n" +
+                    "   } catch (Exception e) { \n" +
+                    "       e.printStackTrace();\n" +
+                    "       JSONObject result = new JSONObject();\n" + 
+                    "       return Response.status(HttpURLConnection.HTTP_INTERNAL_ERROR).entity(\"Cannot convert json to object\").build();\n" +
+                    "   }");
+            castTemplate.setVariable("$Payload_Name$", currentPayload.getName());
+            castTemplate.setVariable("$Schema_Name$", schemaName);
+            currentMethodTemplate.appendVariable("$HTTPMethod_Casts$", castTemplate);
+
+            System.out.println("[CAST TEMPLATE]");
+            System.out.print(castTemplate.getContent());
+
+            System.out.println("[CURRENT METHOD TEMPLATE]");
+            System.out.print(currentMethodTemplate.getContent());
+
+          } else {
+            System.out.println("[MICROSERVICE GENERATOR] Schema null go string " + schemaName);
+            parameterCode += "String " + currentPayload.getName() + ", ";
+
+            Template castTemplate = templateEngine.createTemplate(
+                    currentPayload.getModelId() + ":cast",
+                    "    JSONObject $Payload_Name$_JSON = (JSONObject) JSONValue.parse($Payload_Name$);\n");
+            castTemplate.setVariable("$Payload_Name$", currentPayload.getName());
+            currentMethodTemplate.appendVariable("$HTTPMethod_Casts$", castTemplate);
+          }
 
         }
         // string param
@@ -928,6 +1113,177 @@ public class MicroserviceGenerator extends Generator {
     serviceClassTemplate.setVariableIfNotSet("$Service_Methods$", "");
 
   }
+
+    /**
+     * Generates classes based on schema.
+     *
+     * @param templateEngine        the template engine to use
+     * @param classes               the classes template file
+     * @param microservice          the microservice model
+     * @param repositoryLocation    the location of the service's repository
+     * @param genericClassBody      a generic class body template
+     * @param genericClassProperty  a generic class property template
+     * @param metadataDoc           metadata information that will be used to generate schemas
+     */
+    protected static void generateNewClasses(TemplateEngine templateEngine, String classes,
+                                                    Microservice microservice, String repositoryLocation, 
+                                                    String genericClassBody, String genericClassProperty,
+                                                    String metadataDoc) {
+        
+        System.out.println("[Microservice Generator - generateNewClasses] Generate new service class for " + classes);
+        System.out.println("[Microservice Generator - generateNewClasses] Repository name " + repositoryLocation);
+
+        // helper variables
+        String packageName = microservice.getResourceName().substring(0, 1).toLowerCase()
+                + microservice.getResourceName().substring(1);
+
+        // PARSE METADATA DOC
+        ObjectMapper mapper = new ObjectMapper();
+        JsonNode metadataTree = null;
+        JsonNode nodeDefinitions = null;
+
+        if (!Strings.isNullOrEmpty(metadataDoc)) {
+            try {
+                metadataTree = mapper.readTree(metadataDoc);
+                System.out.println("===Parsed json ");
+                System.out.println(metadataTree);
+                if (metadataTree.hasNonNull("definitions"))
+                    nodeDefinitions = metadataTree.get("definitions");
+            } catch (IOException ex) {
+                System.out.println("Exception on metadata tree user input metadata doc");
+                ex.printStackTrace();
+            }
+        }
+
+        // create template and add to template engine
+        Template classesTemplate =
+                templateEngine.createTemplate(microservice.getMicroserviceModelId(), classes);
+        templateEngine.addTemplate(classesTemplate);
+
+        System.out.println("====CLASSES TEMPLATE====");
+        System.out.println(classesTemplate.getContent());
+
+        System.out.println("[Microservice Generator - generateNewClasses] Template engine file name " + templateEngine.getFileName());
+        System.out.println("[Microservice Generator - generateNewClasses] Classes template file name " + classesTemplate.getTemplateFileName());
+
+        templateEngine.addTrace(microservice.getMicroserviceModelId(), "Definitions schemas",
+                microservice.getResourceName(), classesTemplate);
+
+        // package and import paths
+        classesTemplate.setVariable("$Lower_Resource_Name$", packageName);
+
+        // iterate for every definitions
+        if (nodeDefinitions != null) {
+            System.out.println("[Microservice Generator - generateNewClasses] Iterate through definitions in metadata");
+
+            Iterator<Map.Entry<String, JsonNode>> nodes = nodeDefinitions.fields();
+            while (nodes.hasNext()) {
+                        
+                Map.Entry<String, JsonNode> entry = (Map.Entry<String, JsonNode>) nodes.next();
+                String className = entry.getKey();
+                JsonNode entryValue = entry.getValue();
+
+                // create new template for the current method
+                Template currentClassBodyTemplate = templateEngine
+                        .createTemplate( packageName + className + ":class", "    " + genericClassBody);
+
+                // iterate through properties and data type
+                Iterator<Map.Entry<String, JsonNode>> propertyNodes = entryValue.fields();
+                System.out.println("[Microservice Generator - generateNewClasses] Iterate through properties in class");
+
+                while (propertyNodes.hasNext()) {
+                    Map.Entry<String, JsonNode> propertyEntry = (Map.Entry<String, JsonNode>) propertyNodes.next();
+                    String propertyName = propertyEntry.getKey();
+                    JsonNode propertyValue = propertyEntry.getValue();
+
+                    // get type
+                    String propertyType = propertyValue.get("type").asText();
+                    propertyType = swaggerTypeToJavaType(propertyType, propertyValue, 0);
+
+                    System.out.println("[Microservice Generator - generateNewClasses] Property name " + propertyName + " type " + propertyType);
+
+                    // create new template for the current method
+                    Template currentPropertyBodyTemplate = templateEngine
+                            .createTemplate( packageName + className + propertyName + propertyType + ":classProperty", "\n" + genericClassProperty);
+
+                    // create template for ToJSON
+                    Template currentJsonTemplate =
+                        templateEngine.createTemplate(packageName + className + propertyName + propertyType + ":jsonProperty",
+                                "        jo.put(\"$Property_Name$\", this.$Property_Name$); \n");
+
+                    // create template for fromJSON
+                    Template currentFromJsonTemplate =
+                        templateEngine.createTemplate(packageName + className + propertyName + propertyType + ":fromJsonProperty",
+                                "        this.$Property_Name$ = $Property_Cast$; \n");
+
+                    String propertyFromJsonCast = "(String) jsonObject.get(\"" + propertyName + "\")";
+                    switch (propertyType) {
+                        case "int":
+                            propertyFromJsonCast = "((Long) jsonObject.get(\"" + propertyName + "\")).intValue()";
+                            break;
+                        case "boolean":
+                            propertyFromJsonCast = "(1 == ((Long) jsonObject.get(\"" + propertyName + "\")).intValue())";
+                            break;
+                        case "default":
+                            break;
+                    }
+
+                    currentPropertyBodyTemplate.setVariable("$Property_Name$", propertyName);
+                    currentPropertyBodyTemplate.setVariable("$Property_Type$", propertyType);
+
+                    currentJsonTemplate.setVariable("$Property_Name$", propertyName);
+                    currentFromJsonTemplate.setVariable("$Property_Name$", propertyName);
+                    currentFromJsonTemplate.setVariable("$Property_Cast$", propertyFromJsonCast);
+
+                    char c[] = propertyName.toCharArray();
+                    c[0] = Character.toLowerCase(c[0]);
+                    String propertyNameLowerCase = new String(c);
+                    currentPropertyBodyTemplate.setVariable("$Property_Name_LowerCase$", propertyNameLowerCase);
+
+                    // add template of current method to service class template
+                    currentClassBodyTemplate.appendVariable("$Class_Properties$", currentPropertyBodyTemplate);
+                    currentClassBodyTemplate.appendVariable("$Class_ToJson$",  currentJsonTemplate);
+                    currentClassBodyTemplate.appendVariable("$Json_ToClass$",  currentFromJsonTemplate);
+                }
+
+                // remove last placeholder
+                currentClassBodyTemplate.setVariableIfNotSet("$Class_Properties$", "");
+
+                // replace variables in body
+                currentClassBodyTemplate.setVariable("$Class_Name$", className);
+
+                // add template of current method to service class template
+                classesTemplate.appendVariable("$Classes_Body$", currentClassBodyTemplate);
+            }
+        }
+
+        classesTemplate.setVariableIfNotSet("$Classes_Body$", "");
+    }
+
+    private static String swaggerTypeToJavaType(String swaggerType, JsonNode propertyValue, int depth) {
+        switch (swaggerType.toLowerCase()) {
+            case "string":
+                swaggerType = "String"; break;
+            case "number":
+            case "integer":
+                swaggerType = "int"; break;
+            case "boolean":
+                swaggerType = "boolean"; break;
+            case "array":
+                // get array type
+                if (depth == 0) {
+                    String arrayType = propertyValue.get("items").get("type").asText();
+                    arrayType = swaggerTypeToJavaType(arrayType, propertyValue, depth + 1);
+                    swaggerType = arrayType + "[]";
+                } else {
+                    swaggerType = "String";
+                }
+                break;
+            default:
+                swaggerType = "String";
+        }
+        return swaggerType;
+    }
 
 
   /**
