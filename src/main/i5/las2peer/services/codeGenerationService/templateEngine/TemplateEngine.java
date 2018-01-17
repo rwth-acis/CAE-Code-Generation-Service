@@ -137,7 +137,6 @@ public class TemplateEngine {
     Segment segment = this.strategy.getSegment(id);
     CompositeSegment cSegment = new CompositeSegment(id);
 
-    // TODO uncomment, revert back
     if (segment instanceof CompositeSegment) {
 
       // "reuse" an existing template, i.e. the segment held by the template is set to an already

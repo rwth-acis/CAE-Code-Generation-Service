@@ -96,8 +96,6 @@ public class CodeGenerationService extends RESTService {
 	private String widgetHomeBaseURL;
 	private String localGitPath;
 
-	//private Gson gson = new GsonBuilder().serializeSpecialFloatingPointValues().serializ‌​eNulls().create();  
-
 	public CodeGenerationService() throws GitHostException {
 		// read and set properties-file values
 		setFieldValues();
@@ -203,7 +201,6 @@ public class CodeGenerationService extends RESTService {
 		 * 
 		 * }
 		 */
-		//System.out.println(gson.toJson(model));
 
 		// find out what type of model we got (microservice, frontend-component
 		// or application)
