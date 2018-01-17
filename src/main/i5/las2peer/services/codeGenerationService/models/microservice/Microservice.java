@@ -59,9 +59,11 @@ public class Microservice {
     for (int attributeIndex = 0; attributeIndex < model.getAttributes().size(); attributeIndex++) {
       if (model.getAttributes().get(attributeIndex).getName().equals("version")) {
         try {
-          this.setVersion(Float.parseFloat(model.getAttributes().get(attributeIndex).getValue()));
-        } catch (NumberFormatException e) {
+          this.setVersion(model.getAttributes().get(attributeIndex).getValue());
+        }/* catch (NumberFormatException e) {
           throw new ModelParseException("Microservice version is not a number!");
+        } */ catch(Exception e) {
+        	throw new ModelParseException("Something is wrong with the version number!");
         }
       }
     }
@@ -370,12 +372,12 @@ public class Microservice {
   }
 
 
-  public float getVersion() {
+  public String getVersion() {
     return this.version;
   }
 
 
-  public void setVersion(float version) {
+  public void setVersion(String version) {
     this.version = version;
   }
 

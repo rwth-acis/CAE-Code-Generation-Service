@@ -10,10 +10,10 @@ package i5.las2peer.services.codeGenerationService.models.application.communicat
  */
 public class CommApplicationEnvironment {
   private String label;
-  private float version;
+  private String version;
 
 
-  public CommApplicationEnvironment(String label, float version) {
+  public CommApplicationEnvironment(String label, String version) {
     this.label = label;
     this.version = version;
   }
@@ -24,7 +24,7 @@ public class CommApplicationEnvironment {
   }
 
 
-  public float getVersion() {
+  public String getVersion() {
     return this.version;
   }
 

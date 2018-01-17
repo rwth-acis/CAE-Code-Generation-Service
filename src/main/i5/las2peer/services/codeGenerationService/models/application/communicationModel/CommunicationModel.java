@@ -56,7 +56,7 @@ public class CommunicationModel {
    * @param frontendComponents a map of frontend components
    * 
    */
-  public CommunicationModel(String name, float version, HashMap<String, Microservice> microservices,
+  public CommunicationModel(String name, String version, HashMap<String, Microservice> microservices,
       HashMap<String, FrontendComponent> frontendComponents) {
 
     // initialize maps, list and give random id to application environment object

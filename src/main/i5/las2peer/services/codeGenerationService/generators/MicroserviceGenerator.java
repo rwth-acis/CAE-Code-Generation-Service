@@ -499,7 +499,7 @@ public class MicroserviceGenerator extends Generator {
     
     // get the port: skip first 6 characters for search (http: / https:)
     try {
-    	if(microservice.getPath().contains("http://") || microservice.getPath().contains("https://")) {
+    	if(microservice.getPath().contains("http:") || microservice.getPath().contains("https:")) {
     		port = String.valueOf(new URL(microservice.getPath()).getPort());
     	}else {
     		port = String.valueOf(new URL("http://"+microservice.getPath()).getPort());	
