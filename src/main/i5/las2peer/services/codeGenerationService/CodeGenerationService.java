@@ -185,8 +185,6 @@ public class CodeGenerationService extends RESTService {
 	 * 
 	 */
 	public String createFromModel(boolean forcePush, String metadataDoc, Serializable... serializedModel) {
-		System.out.println("[CREATE FROM MODEL]");
-		System.out.println(metadataDoc);
 		
 		SimpleModel model = (SimpleModel) serializedModel[0];
 		Context.get().monitorEvent(MonitoringEvent.SERVICE_MESSAGE, "createFromModel: Received model with name " + model.getName());
