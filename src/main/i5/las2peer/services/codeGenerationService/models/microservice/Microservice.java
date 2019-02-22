@@ -29,7 +29,7 @@ public class Microservice {
   private String developer;
   private Map<String, HttpMethod> httpMethods;
   private Database database;
-  private float version;
+  private String version;
   private String metadataDocString;
 
   /**
