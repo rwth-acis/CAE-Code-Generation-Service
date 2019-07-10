@@ -1,40 +1,15 @@
 package i5.las2peer.services.codeGenerationService.generators;
 
-import java.awt.image.BufferedImage;
-import java.io.IOException;
-import java.net.URISyntaxException;
-import java.net.URL;
-import javax.imageio.ImageIO;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Iterator;
-
-import org.eclipse.jgit.api.Git;
-import org.eclipse.jgit.lib.ObjectId;
-import org.eclipse.jgit.lib.ObjectLoader;
-import org.eclipse.jgit.lib.ObjectReader;
-import org.eclipse.jgit.lib.PersonIdent;
-import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.lib.StoredConfig;
-import org.eclipse.jgit.transport.RemoteConfig;
-import org.eclipse.jgit.transport.URIish;
-import org.eclipse.jgit.treewalk.TreeWalk;
-import org.eclipse.jgit.treewalk.filter.PathFilter;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.base.Strings;
 import i5.las2peer.logging.L2pLogger;
 import i5.las2peer.services.codeGenerationService.adapters.BaseGitHostAdapter;
 import i5.las2peer.services.codeGenerationService.exception.GitHostException;
 import i5.las2peer.services.codeGenerationService.exception.ModelParseException;
-import i5.las2peer.services.codeGenerationService.models.microservice.Column;
-import i5.las2peer.services.codeGenerationService.models.microservice.Database;
-import i5.las2peer.services.codeGenerationService.models.microservice.HttpMethod;
-import i5.las2peer.services.codeGenerationService.models.microservice.HttpPayload;
+import i5.las2peer.services.codeGenerationService.models.microservice.*;
 import i5.las2peer.services.codeGenerationService.models.microservice.HttpPayload.PayloadType;
-import i5.las2peer.services.codeGenerationService.models.microservice.HttpResponse;
 import i5.las2peer.services.codeGenerationService.models.microservice.HttpResponse.ResultType;
-import i5.las2peer.services.codeGenerationService.models.microservice.InternalCall;
-import i5.las2peer.services.codeGenerationService.models.microservice.InternalCallParam;
-import i5.las2peer.services.codeGenerationService.models.microservice.Microservice;
-import i5.las2peer.services.codeGenerationService.models.microservice.Table;
 import i5.las2peer.services.codeGenerationService.models.traceModel.FileTraceModel;
 import i5.las2peer.services.codeGenerationService.models.traceModel.TraceModel;
 import i5.las2peer.services.codeGenerationService.templateEngine.InitialGenerationStrategy;
@@ -42,12 +17,21 @@ import i5.las2peer.services.codeGenerationService.templateEngine.Template;
 import i5.las2peer.services.codeGenerationService.templateEngine.TemplateEngine;
 import i5.las2peer.services.codeGenerationService.templateEngine.TemplateStrategy;
 import i5.las2peer.services.codeGenerationService.traces.segments.Segment;
+import org.eclipse.jgit.api.Git;
+import org.eclipse.jgit.lib.*;
+import org.eclipse.jgit.transport.RemoteConfig;
+import org.eclipse.jgit.transport.URIish;
+import org.eclipse.jgit.treewalk.TreeWalk;
+import org.eclipse.jgit.treewalk.filter.PathFilter;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonMappingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.base.Strings;
-import com.fasterxml.jackson.databind.JsonNode;
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
+import java.io.IOException;
+import java.net.URISyntaxException;
+import java.net.URL;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
 
 /**
  * 
@@ -184,7 +168,19 @@ public class MicroserviceGenerator extends Generator {
 	    String genericTable = null;
 	    String guidances = null;
 
-        // to generate schema file
+		// monitoring templates
+		String genericCustomMessageDescription = null;
+		String genericCustomMessageLog = null;
+		String genericLogStringPayload = null;
+		String genericLogStringPayloadDescription = null;
+		String genericLogStringResponse = null;
+		String genericLogStringResponseDescription = null;
+		String genericLogTimeDifference = null;
+		String genericLogTimeDifferenceDescription = null;
+		String genericMeasureTime = null;
+		String genericMeasureTimeDifference = null;
+
+		// to generate schema file
         String classes = null;
         String genericClassBody = null;
         String genericClassProperty = null;
@@ -338,15 +334,45 @@ public class MicroserviceGenerator extends Generator {
 	            case "genericTable.txt":
 	              genericTable = new String(loader.getBytes(), "UTF-8");
 	              break;
-                case "Classes.java":
-                  classes = new String(loader.getBytes(), "UTF-8");
-                  break;
-                case "genericClassBody.txt":
-                  genericClassBody = new String(loader.getBytes(), "UTF-8");
-                  break;
-                case "genericClassProperty.txt":
-                  genericClassProperty = new String(loader.getBytes(), "UTF-8");
-                  break;
+							case "Classes.java":
+								classes = new String(loader.getBytes(), "UTF-8");
+								break;
+							case "genericClassBody.txt":
+								genericClassBody = new String(loader.getBytes(), "UTF-8");
+								break;
+							case "genericClassProperty.txt":
+								genericClassProperty = new String(loader.getBytes(), "UTF-8");
+								break;
+							case "genericCustomMessageDescription.txt":
+								genericCustomMessageDescription = new String(loader.getBytes(), "UTF-8");
+								break;
+							case "genericCustomMessageLog.txt":
+								genericCustomMessageLog = new String(loader.getBytes(), "UTF-8");
+								break;
+							case "genericLogStringPayload.txt":
+								genericLogStringPayload = new String(loader.getBytes(), "UTF-8");
+								break;
+							case "genericLogStringPayloadDescription.txt":
+								genericLogStringPayloadDescription = new String(loader.getBytes(), "UTF-8");
+								break;
+							case "genericLogStringResponse.txt":
+								genericLogStringResponse = new String(loader.getBytes(), "UTF-8");
+								break;
+							case "genericLogStringResponseDescription.txt":
+								genericLogStringResponseDescription = new String(loader.getBytes(), "UTF-8");
+								break;
+							case "genericLogTimeDifference.txt":
+								genericLogTimeDifference = new String(loader.getBytes(), "UTF-8");
+								break;
+							case "genericLogTimeDifferenceDescription.txt":
+								genericLogTimeDifferenceDescription = new String(loader.getBytes(), "UTF-8");
+								break;
+							case "genericMeasureTime.txt":
+								genericMeasureTime = new String(loader.getBytes(), "UTF-8");
+								break;
+							case "genericMeasureTimeDifference.txt":
+								genericMeasureTimeDifference = new String(loader.getBytes(), "UTF-8");
+								break;
 	          }
 	        }
 	      } catch (Exception e) {
@@ -389,6 +415,9 @@ public class MicroserviceGenerator extends Generator {
 
 	      generateNewServiceClass(serviceTemplateEngine, serviceClass, microservice, repositoryLocation,
 	          genericHttpMethod, genericHttpMethodBody, genericApiResponse, genericHttpResponse,
+						genericCustomMessageDescription, genericCustomMessageLog, genericLogStringPayload,
+						genericLogStringPayloadDescription, genericLogStringResponse, genericLogStringResponseDescription,
+						genericLogTimeDifference, genericLogTimeDifferenceDescription, genericMeasureTime, genericMeasureTimeDifference,
 	          databaseConfig, databaseInstantiation, serviceInvocation, metadataDoc);
 
           // generate classes schema
@@ -647,16 +676,22 @@ public class MicroserviceGenerator extends Generator {
    * 
    */
   protected static void generateNewServiceClass(TemplateEngine templateEngine, String serviceClass,
-      Microservice microservice, String repositoryLocation, String genericHttpMethod,
-      String genericHttpMethodBody, String genericApiResponse, String genericHttpResponse,
-      String databaseConfig, String databaseInstantiation, String serviceInvocation,
-      String metadataDoc) {
+																								Microservice microservice, String repositoryLocation, String genericHttpMethod,
+																								String genericHttpMethodBody, String genericApiResponse, String genericHttpResponse,
+																								String genericCustomMessageDescription, String genericCustomMessageLog,
+																								String genericLogStringPayload, String genericLogStringPayloadDescription,
+																								String genericLogStringResponse, String genericLogStringResponseDescription,
+																								String genericLogTimeDifference, String genericLogTimeDifferenceDescription,
+																								String genericMeasureTime, String genericMeasureTimeDifference,
+																								String databaseConfig, String databaseInstantiation, String serviceInvocation,
+																								String metadataDoc) {
     // helper variables
     String packageName = microservice.getResourceName().substring(0, 1).toLowerCase()
         + microservice.getResourceName().substring(1);
     String relativeResourcePath =
         microservice.getPath().substring(microservice.getPath().indexOf("/", 8) + 1);
     boolean hasServiceInvocations = false;
+		Map<String, String> customMessageDescriptions = new HashMap<>();
 
     // create template and add to template engine
     Template serviceClassTemplate =
@@ -901,7 +936,10 @@ public class MicroserviceGenerator extends Generator {
           httpResponseTemplate.setVariable("$HTTP_Response_Result_Init$", "\"Some String\"");
         }
 
-        httpResponseIndex += 1;
+				generateResponseLogging(templateEngine, customMessageDescriptions, httpResponseTemplate, microservice, currentMethod, currentResponse, genericCustomMessageLog,
+						genericLogStringResponse, genericLogStringResponseDescription);
+
+				httpResponseIndex += 1;
       }
       // if no produces annotation is set until here, we set it to text
       if (producesAnnotation.equals("")) {
@@ -1031,7 +1069,12 @@ public class MicroserviceGenerator extends Generator {
               + currentPayload.getName() + ", ";
         }
       }
-      // remove last cast placeholder
+
+			// log content of each payload to MobSOS if configured
+			generatePayloadLogging(templateEngine, customMessageDescriptions, currentMethodTemplate, microservice, currentMethod, genericCustomMessageLog,
+					genericLogStringPayload, genericLogStringPayloadDescription);
+
+			// remove last cast placeholder
       currentMethodTemplate.setVariableIfNotSet("$HTTPMethod_Casts$", "");
 
       // remove last comma from parameter code (of parameters were inserted before)
@@ -1093,7 +1136,12 @@ public class MicroserviceGenerator extends Generator {
       // replace last invocation placeholder
       currentMethodBodyTemplate.setVariableIfNotSet("$Invocations$", "");
 
-      currentMethodTemplate.setVariable("$HTTPMethod_Body$",
+			// log the processing time of all invocations to MobSOS if configured
+			generateTimeLogging(templateEngine, customMessageDescriptions, currentMethodBodyTemplate, microservice,
+					currentMethod, genericCustomMessageLog, genericMeasureTime, genericMeasureTimeDifference,
+					genericLogTimeDifference, genericLogTimeDifferenceDescription);
+
+			currentMethodTemplate.setVariable("$HTTPMethod_Body$",
           currentMethodBodyTemplate.getContent());
 
       // add a trace to the segment
@@ -1112,9 +1160,172 @@ public class MicroserviceGenerator extends Generator {
     // remove last placeholder
     serviceClassTemplate.setVariableIfNotSet("$Service_Methods$", "");
 
-  }
+		// add unconnected MobSOSLogs to descriptions
+		addUnconnectedMobSOSLogs(microservice, customMessageDescriptions);
 
-    /**
+		// add custom message descriptions for logging
+		generateCustomMessageDescriptions(templateEngine, customMessageDescriptions, serviceClassTemplate, genericCustomMessageDescription);
+	}
+
+	private static String generateLoggingCall(TemplateEngine templateEngine, String genericCustomMessageLog, MobSOSLog mobSOSLog, String customMessageContent) {
+		Template loggingCallTemplate = templateEngine.createTemplate(mobSOSLog.getModelId() + ":logMesssage", genericCustomMessageLog);
+		loggingCallTemplate.setVariable("$CUSTOM_MESSAGE_ID$", String.valueOf(mobSOSLog.getCustomMessageID()));
+		loggingCallTemplate.setVariable("$CUSTOM_MESSAGE_CONTENT$", customMessageContent);
+		loggingCallTemplate.setVariable("$Include_Acting_Agent$", Boolean.toString(mobSOSLog.isIncludeActingAgent()));
+		return loggingCallTemplate.getContent();
+	}
+
+	private static void generateResponseLogging(TemplateEngine templateEngine, Map<String, String> customMessageDescriptions,
+																							Template httpResponseTemplate, Microservice microservice,
+																							HttpMethod httpMethod, HttpResponse response,
+																							String genericCustomMessageLog, String genericLogStringResponse,
+																							String genericLogStringResponseDescription) {
+		MobSOSLog mobSOSLog = response.getMobSOSLog();
+		String logResponseCode;
+		if (mobSOSLog == null) {
+			logResponseCode = "";
+		} else {
+			Template logResponseTemplate = templateEngine.createTemplate(mobSOSLog.getModelId() + ":logResponse", genericLogStringResponse);
+			String responseLogVariable = "responseLogObj";
+			logResponseTemplate.setVariable("$Response_Json_Name$", responseLogVariable);
+			logResponseTemplate.setVariable("$Response_Code$", "\"" + response.getReturnStatusCode().getCode() + "\"");
+			logResponseTemplate.setVariable("$Http_Method_Name$", "\"" + httpMethod.getMethodType().name() + "\"");
+			logResponseTemplate.setVariable("$Resource_Method_Name$", "\"" + microservice.getResourceName() + "\"");
+			logResponseTemplate.setVariable(
+					"$Log_Call$",
+					generateLoggingCall(templateEngine, genericCustomMessageLog, mobSOSLog, responseLogVariable + ".toJSONString()")
+			);
+			switch (response.getResultType()) {
+				case String:
+				case CUSTOM:
+					logResponseTemplate.setVariable("$Response_Variable_Name$", response.getResultName());
+					break;
+				case JSONObject:
+					logResponseTemplate.setVariable("$Response_Variable_Name$", response.getResultName() + ".toJSONString()");
+					break;
+				default:
+					throw new IllegalStateException("Unexpected value: " + response.getResultType());
+			}
+			logResponseCode = logResponseTemplate.getContent();
+
+			// add description for the getCustomMessageDescriptions method
+			Template messageDescriptionTemplate = templateEngine.createTemplate(mobSOSLog.getModelId() + ":logResponseDescription", genericLogStringResponseDescription);
+			messageDescriptionTemplate.setVariable("$Method_Name$", httpMethod.getName());
+			messageDescriptionTemplate.setVariable("$Method_Type$", httpMethod.getMethodType().name());
+			messageDescriptionTemplate.setVariable("$Message_ID$", String.valueOf(mobSOSLog.getCustomMessageID()));
+			customMessageDescriptions.put("SERVICE_CUSTOM_MESSAGE_" + mobSOSLog.getCustomMessageID(), messageDescriptionTemplate.getContent());
+		}
+		httpResponseTemplate.setVariable("$Log_Response$", logResponseCode);
+	}
+
+	private static void generatePayloadLogging(TemplateEngine templateEngine, Map<String, String> customMessageDescriptions,
+																						 Template httpMethodTemplate, Microservice microservice, HttpMethod httpMethod,
+																						 String genericCustomMessageLog, String genericLogStringPayload,
+																						 String genericLogStringPayloadDescription) {
+		StringBuilder logPayloadCode = new StringBuilder();
+		for (HttpPayload payload : httpMethod.getNodeIdPayloads().values()) {
+			MobSOSLog mobSOSLog = payload.getMobSOSLog();
+			if (mobSOSLog != null) {
+				Template logPayloadTemplate = templateEngine.createTemplate(mobSOSLog.getModelId() + ":logPayload", genericLogStringPayload);
+				String payloadJsonVariable = payload.getName() + "LogObj";
+				logPayloadTemplate.setVariable("$Payload_Json_Name$", payloadJsonVariable);
+				logPayloadTemplate.setVariable("$Payload_Variable_Name$", payload.getName());
+				logPayloadTemplate.setVariable("$Http_Method_Name$", "\"" + httpMethod.getMethodType().name() + "\"");
+				logPayloadTemplate.setVariable("$Resource_Method_Name$", "\"" + microservice.getResourceName() + "\"");
+				logPayloadTemplate.setVariable(
+						"$Log_Call$",
+						generateLoggingCall(templateEngine, genericCustomMessageLog, mobSOSLog, payloadJsonVariable + ".toJSONString()")
+				);
+				logPayloadCode.append(logPayloadTemplate.getContent()).append("\n");
+
+				// add description for the getCustomMessageDescriptions method
+				Template messageDescriptionTemplate = templateEngine.createTemplate(mobSOSLog.getModelId() + ":logPayloadDescription", genericLogStringPayloadDescription);
+				messageDescriptionTemplate.setVariable("$Method_Name$", httpMethod.getName());
+				messageDescriptionTemplate.setVariable("$Method_Type$", httpMethod.getMethodType().name());
+				messageDescriptionTemplate.setVariable("$PAYLOAD_NAME$", payload.getName());
+				messageDescriptionTemplate.setVariable("$Message_ID$", String.valueOf(mobSOSLog.getCustomMessageID()));
+				customMessageDescriptions.put("SERVICE_CUSTOM_MESSAGE_" + mobSOSLog.getCustomMessageID(), messageDescriptionTemplate.getContent());
+			}
+		}
+		httpMethodTemplate.setVariable("$Log_Payloads$", logPayloadCode.toString());
+	}
+
+	private static void generateTimeLogging(TemplateEngine templateEngine, Map<String, String> customMessageDescriptions,
+																					Template methodBodyTemplate, Microservice microservice, HttpMethod httpMethod,
+																					String genericCustomMessageLog, String genericMeasureTime,
+																					String genericMeasureTimeDifference, String genericLogTimeDifference,
+																					String genericLogTimeDifferenceDescription) {
+		MobSOSLog mobSOSLog = httpMethod.getMobSOSLog();
+		if (mobSOSLog == null) {
+			methodBodyTemplate.setVariable("$Measure_Start_Time$", "");
+			methodBodyTemplate.setVariable("$Measure_Finish_Time$", "");
+			methodBodyTemplate.setVariable("$Measure_Delta_Time$", "");
+			methodBodyTemplate.setVariable("$Log_Time_Difference$", "");
+		} else {
+			// init templates
+			Template measureStartTimeTemplate = templateEngine.createTemplate(mobSOSLog.getModelId() + ":measureStartTime", genericMeasureTime);
+			Template measureFinishTimeTemplate = templateEngine.createTemplate(mobSOSLog.getModelId() + ":measureFinishTime", genericMeasureTime);
+			Template measureTimeDifferenceTemplate = templateEngine.createTemplate(mobSOSLog.getModelId() + ":measureTimeDifference", genericMeasureTimeDifference);
+			Template logTimeDifferenceTemplate = templateEngine.createTemplate(mobSOSLog.getModelId() + ":logTimeDifference", genericLogTimeDifference);
+
+			// variable names
+			String startTimeVariable = "processingStart";
+			String finishTimeVariable = "processingFinished";
+			String differenceVariable = "processingDuration";
+			String differenceJsonVariable = differenceVariable + "Obj";
+
+			// set template variables
+			measureStartTimeTemplate.setVariable("$Time_Variable_Name$", startTimeVariable);
+			measureFinishTimeTemplate.setVariable("$Time_Variable_Name$", finishTimeVariable);
+			measureTimeDifferenceTemplate.setVariable("$Time_Delta_Variable_Name$", differenceVariable);
+			measureTimeDifferenceTemplate.setVariable("$Start_Time_Variable_Name$", startTimeVariable);
+			measureTimeDifferenceTemplate.setVariable("$Stop_Time_Variable_Name$", finishTimeVariable);
+			logTimeDifferenceTemplate.setVariable("$Time_Delta_Json_Name$", differenceJsonVariable);
+			logTimeDifferenceTemplate.setVariable("$Time_Delta_Variable_Name$", differenceVariable);
+			logTimeDifferenceTemplate.setVariable("$Http_Method_Name$", "\"" + httpMethod.getMethodType().name() + "\"");
+			logTimeDifferenceTemplate.setVariable("$Resource_Method_Name$", "\"" + microservice.getResourceName() + "\"");
+			logTimeDifferenceTemplate.setVariable(
+					"$Log_Call$",
+					generateLoggingCall(templateEngine, genericCustomMessageLog, mobSOSLog, differenceJsonVariable + ".toJSONString()")
+			);
+
+			String indent = "    ";
+			// insert results into body template
+			methodBodyTemplate.setVariable("$Measure_Start_Time$", indent + measureStartTimeTemplate.getContent());
+			methodBodyTemplate.setVariable("$Measure_Finish_Time$", indent + measureFinishTimeTemplate.getContent());
+			methodBodyTemplate.setVariable("$Measure_Delta_Time$", indent + measureTimeDifferenceTemplate.getContent());
+			methodBodyTemplate.setVariable("$Log_Time_Difference$", logTimeDifferenceTemplate.getContent());
+
+			// add description for the getCustomMessageDescriptions method
+			Template messageDescriptionTemplate = templateEngine.createTemplate(mobSOSLog.getModelId() + ":logTimeDescription", genericLogTimeDifferenceDescription);
+			messageDescriptionTemplate.setVariable("$Method_Name$", httpMethod.getName());
+			messageDescriptionTemplate.setVariable("$Method_Type$", httpMethod.getMethodType().name());
+			messageDescriptionTemplate.setVariable("$Message_ID$", String.valueOf(mobSOSLog.getCustomMessageID()));
+			customMessageDescriptions.put("SERVICE_CUSTOM_MESSAGE_" + mobSOSLog.getCustomMessageID(), messageDescriptionTemplate.getContent());
+		}
+	}
+
+	private static void generateCustomMessageDescriptions(TemplateEngine templateEngine, Map<String, String> customMessageDescriptions, Template serviceClassTemplate, String genericCustomMessageDescription) {
+		StringBuilder customMessageDescriptionCode = new StringBuilder();
+		for (Map.Entry<String, String> entry : customMessageDescriptions.entrySet()) {
+			Template customMessageDescriptionTemplate = templateEngine.createTemplate(entry.getKey() + ":customMessageDescription", genericCustomMessageDescription);
+			customMessageDescriptionTemplate.setVariable("$CUSTOM_MESSAGE_ID$", "\"" + entry.getKey() + "\"");
+			customMessageDescriptionTemplate.setVariable("$CUSTOM_MESSAGE_DESCRIPTION$", entry.getValue());
+			customMessageDescriptionCode.append(customMessageDescriptionTemplate.getContent());
+		}
+		serviceClassTemplate.setVariable("$Custom_Message_Descripions$", customMessageDescriptionCode.toString());
+	}
+
+	private static void addUnconnectedMobSOSLogs(Microservice microservice, Map<String, String> customMessageDescriptions) {
+		for (MobSOSLog mobSOSLog : microservice.getMobSOSLogs().values()) {
+			String customMessageID = "SERVICE_CUSTOM_MESSAGE_" + mobSOSLog.getCustomMessageID();
+			if (!customMessageDescriptions.containsKey(customMessageID)) {
+				customMessageDescriptions.put(customMessageID, mobSOSLog.getDescriptionMarkdown());
+			}
+		}
+	}
+
+	/**
      * Generates classes based on schema.
      *
      * @param templateEngine        the template engine to use
