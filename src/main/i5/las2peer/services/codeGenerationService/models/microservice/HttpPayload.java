@@ -23,6 +23,7 @@ public class HttpPayload {
   private String modelId;
   private String name;
   private PayloadType payloadType;
+  private MobSOSLog mobSOSLog;
 
   /**
    * 
@@ -80,6 +81,14 @@ public class HttpPayload {
 
   public PayloadType getPayloadType() {
     return payloadType;
+  }
+
+  public MobSOSLog getMobSOSLog() {
+    return mobSOSLog;
+  }
+
+  public void setMobSOSLog(MobSOSLog mobSOSLog) {
+    this.mobSOSLog = mobSOSLog;
   }
 
 }
