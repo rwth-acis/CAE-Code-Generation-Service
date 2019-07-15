@@ -1320,7 +1320,7 @@ public class MicroserviceGenerator extends Generator {
 		for (MobSOSLog mobSOSLog : microservice.getMobSOSLogs().values()) {
 			String customMessageID = "SERVICE_CUSTOM_MESSAGE_" + mobSOSLog.getCustomMessageID();
 			if (!customMessageDescriptions.containsKey(customMessageID)) {
-				customMessageDescriptions.put(customMessageID, mobSOSLog.getDescriptionMarkdown());
+				customMessageDescriptions.put(customMessageID, "\"" + mobSOSLog.getDescriptionMarkdown() + "\"");
 			}
 		}
 	}
