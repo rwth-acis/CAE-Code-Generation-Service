@@ -283,7 +283,7 @@ public class RESTResources {
 	public Response getLivePreviewFiles(@PathParam("repositoryName") String repositoryName) throws ServiceException {
 		if (repositoryName.startsWith("frontendComponent")) {
 
-			try (Git git = gitUtility.getLocalGit(repositoryName)) {
+			try (Git git = gitUtility.getLocalGit(repositoryName, "development")) {
 				if (git.getRepository().getBranch().equals("development")) {
 
 					JSONObject result = new JSONObject();
