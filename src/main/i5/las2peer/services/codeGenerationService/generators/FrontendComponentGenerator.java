@@ -645,7 +645,7 @@ public class FrontendComponentGenerator extends Generator {
                 "ApplicationScript", "ApplicationScript", applicationTemplate.getSegment());
 
         // first the endpoint
-        applicationTemplate.setVariable("$Microservice_Endpoint_Url$",
+        applicationTemplate.setVariable("$Microservice_Endpoint$",
                 frontendComponent.getMicroserviceAddress());
 
         // now to the functions
