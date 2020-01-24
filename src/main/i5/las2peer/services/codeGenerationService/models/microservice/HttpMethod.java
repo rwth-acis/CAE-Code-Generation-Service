@@ -34,6 +34,7 @@ public class HttpMethod {
   private ArrayList<HttpResponse> responses = new ArrayList<HttpResponse>();
   private HashMap<String, HttpPayload> nodeIdPayloads = new HashMap<String, HttpPayload>();
   private HashMap<String, HttpResponse> nodeIdResponses = new HashMap<String, HttpResponse>();
+  private MobSOSLog mobSOSLog;
 
   /**
    * 
@@ -198,4 +199,11 @@ public class HttpMethod {
     // TODO check more?
   }
 
+  public MobSOSLog getMobSOSLog() {
+    return mobSOSLog;
+  }
+
+  public void setMobSOSLog(MobSOSLog mobSOSLog) {
+    this.mobSOSLog = mobSOSLog;
+  }
 }

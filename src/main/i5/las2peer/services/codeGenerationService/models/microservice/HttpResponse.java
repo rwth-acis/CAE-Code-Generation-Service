@@ -46,6 +46,7 @@ public class HttpResponse {
   private String resultName;
   private ReturnStatusCode returnStatusCode;
   private ResultType resultType;
+  private MobSOSLog mobSOSLog;
 
   /**
    * 
@@ -146,4 +147,11 @@ public class HttpResponse {
     return resultType;
   }
 
+  public MobSOSLog getMobSOSLog() {
+    return mobSOSLog;
+  }
+
+  public void setMobSOSLog(MobSOSLog mobSOSLog) {
+    this.mobSOSLog = mobSOSLog;
+  }
 }

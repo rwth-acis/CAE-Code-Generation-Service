@@ -1,15 +1,13 @@
 package i5.las2peer.services.codeGenerationService.models.microservice;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Arrays;
-
 import i5.cae.simpleModel.SimpleEntityAttribute;
 import i5.cae.simpleModel.SimpleModel;
 import i5.cae.simpleModel.edge.SimpleEdge;
 import i5.cae.simpleModel.node.SimpleNode;
 import i5.las2peer.services.codeGenerationService.exception.ModelParseException;
+
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * 
@@ -28,6 +26,7 @@ public class Microservice {
   private String path;
   private String developer;
   private Map<String, HttpMethod> httpMethods;
+  private Map<String, MobSOSLog> mobSOSLogs;
   private Database database;
   private String version;
   private String metadataDocString;
@@ -43,6 +42,7 @@ public class Microservice {
    */
   public Microservice(SimpleModel model) throws ModelParseException {
     this.httpMethods = new HashMap<String, HttpMethod>();
+    this.mobSOSLogs = new HashMap<String, MobSOSLog>();
 
     // used for checking node to edge dependencies for correctness
     Map<String, Table> tempTables = new HashMap<String, Table>();
@@ -130,6 +130,9 @@ public class Microservice {
         case "Service Call Parameter":
           tempInternalCallParameters.put(node.getId(), new InternalCallParam(node));
           break;
+        case "MobSOS Log":
+          mobSOSLogs.put(node.getId(), new MobSOSLog(node));
+          break;
         default:
           throw new ModelParseException("Unknown node type: " + node.getType());
       }
@@ -142,6 +145,15 @@ public class Microservice {
     int httpMethodToResourceEdges = 0;
     int tableToDatabaseEdges = 0;
     boolean databaseToResourceEdge = false;
+
+    // we assume in the beginning, that all nodes lack required edges
+    // as we process every edge we remove nodes that fulfill the requirements
+    // all sets below should be empty after we processed all edges
+    Set<String> internalCallParametersWithoutInternalCall = new HashSet<>(tempInternalCallParameters.keySet());
+    Set<String> columnsWithoutTable = new HashSet<>(tempColumns.keySet());
+    Set<String> httpPayloadsWithoutMethod = new HashSet<>(tempHttpPayloads.keySet());
+    Set<String> httpResponsesWithoutMethod = new HashSet<>(tempHttpResponses.keySet());
+    Set<String> internalCallsWithoutMethod = new HashSet<>(tempInternalCalls.keySet());
 
     ArrayList<SimpleEdge> edges = model.getEdges();
     
@@ -157,7 +169,7 @@ public class Microservice {
             // Add parameter to internal call
             tempInternalCalls.get(currentEdgeSource)
                 .addInternalCallParam(tempInternalCallParameters.get(currentEdgeTarget));
-            tempInternalCallParameters.remove(currentEdgeTarget);
+            internalCallParametersWithoutInternalCall.remove(currentEdgeTarget);
             // check if the internal call parameter is (at least) in temp list and internal call
             // itself was already added to http method
           } else if (tempInternalCallParameters.containsKey(currentEdgeTarget)) {
@@ -165,7 +177,7 @@ public class Microservice {
               for (InternalCall call : method.getInternalCalls()) {
                 if (call.getModelId().equals(currentEdgeSource)) {
                   call.addInternalCallParam(tempInternalCallParameters.get(currentEdgeTarget));
-                  tempInternalCallParameters.remove(currentEdgeTarget);
+                  internalCallParametersWithoutInternalCall.remove(currentEdgeTarget);
                   break;
                 }
               }
@@ -179,7 +191,7 @@ public class Microservice {
               && tempInternalCalls.containsKey(currentEdgeTarget)) {
             this.httpMethods.get(currentEdgeSource)
                 .addInternalCall(tempInternalCalls.get(currentEdgeTarget));
-            tempInternalCalls.remove(currentEdgeTarget);
+            internalCallsWithoutMethod.remove(currentEdgeTarget);
           }
           break;
         case "RESTful Resource to HTTP Method":
@@ -214,7 +226,7 @@ public class Microservice {
             throw new ModelParseException("Wrong Table to Column edge!");
           }
           currentTable.addColumn(currentColumn);
-          tempColumns.remove(currentEdgeTarget);
+          columnsWithoutTable.remove(currentEdgeTarget);
           break;
         // add payload to http method and remove from temp payloads if edge was validated
         // successfully
@@ -227,13 +239,13 @@ public class Microservice {
           }
           currentHttpMethod.addHttpPayload(currentHttpPayload);
           currentHttpMethod.addNodeIdPayload(httpPayloadId, currentHttpPayload);
-          tempHttpPayloads.remove(currentEdgeTarget);
+          httpPayloadsWithoutMethod.remove(currentEdgeTarget);
           break;
         // add response to http method and remove from temp responses if edge was validated
         // successfully
         case "HTTP Method to HTTP Response":
         
-        	if(tempHttpResponses.isEmpty()) {
+        	if(httpResponsesWithoutMethod.isEmpty()) {
         		throw new ModelParseException("There are no HTTP Responses left, an edge might be duplicated! From: " +
         				this.httpMethods.get(currentEdgeSource).getName());
         	}
@@ -248,7 +260,22 @@ public class Microservice {
 
           currentHttpMethod.addHttpResponse(currentHttpResponse);
           currentHttpMethod.addNodeIdResponse(httpResponseId, currentHttpResponse);
-          tempHttpResponses.remove(currentEdgeTarget);
+          httpResponsesWithoutMethod.remove(currentEdgeTarget);
+          break;
+        case "HTTP Response to MobSOS Log":
+          currentHttpResponse = tempHttpResponses.get(currentEdgeSource);
+          MobSOSLog currentMobSOSLog = this.mobSOSLogs.get(currentEdgeTarget);
+          currentHttpResponse.setMobSOSLog(currentMobSOSLog);
+          break;
+        case "HTTP Method to MobSOS Log":
+          currentHttpMethod = this.httpMethods.get(currentEdgeSource);
+          currentMobSOSLog = this.mobSOSLogs.get(currentEdgeTarget);
+          currentHttpMethod.setMobSOSLog(currentMobSOSLog);
+          break;
+        case "HTTP Payload to MobSOS Log":
+          currentHttpPayload = tempHttpPayloads.get(currentEdgeSource);
+          currentMobSOSLog = this.mobSOSLogs.get(currentEdgeTarget);
+          currentHttpPayload.setMobSOSLog(currentMobSOSLog);
           break;
         default:
           throw new ModelParseException("Unknown microservice edge type: " + currentEdgeType);
@@ -268,23 +295,23 @@ public class Microservice {
       throw new ModelParseException("No database to resource edge and database is not null. Model is not fully connected!");
     }
     // check if all columns were correctly connected to a table
-    if (!tempColumns.isEmpty()) {
+    if (!columnsWithoutTable.isEmpty()) {
       throw new ModelParseException("All columns must be connected to a table!");
     }
     // check if all payloads were correctly connected to an http method
-    if (!tempHttpPayloads.isEmpty()) {
+    if (!httpPayloadsWithoutMethod.isEmpty()) {
       throw new ModelParseException("All http payloads must be connected to an http method!");
     }
     // check, if all responses were correctly connected to an http method
-    if (!tempHttpResponses.isEmpty()) {
+    if (!httpResponsesWithoutMethod.isEmpty()) {
       throw new ModelParseException("All http responses must be connected to an http method!");
     }
     // check, if all internal call parameters were correctly connected to an internal call
-    if (!tempInternalCallParameters.isEmpty()) {
+    if (!internalCallParametersWithoutInternalCall.isEmpty()) {
       throw new ModelParseException("All call parameters must be connected to an internal call!");
     }
     // check, if all internal calls were correctly connected to an http method
-    if (!tempInternalCalls.isEmpty()) {
+    if (!internalCallsWithoutMethod.isEmpty()) {
       throw new ModelParseException("All internal calls must be connected to an http method!");
     }
     // give the http methods the signal that they can check their payloads and responses
@@ -351,6 +378,13 @@ public class Microservice {
     this.httpMethods = httpMethods;
   }
 
+  public Map<String, MobSOSLog> getMobSOSLogs() {
+    return mobSOSLogs;
+  }
+
+  public void setMobSOSLogs(Map<String, MobSOSLog> mobSOSLogs) {
+    this.mobSOSLogs = mobSOSLogs;
+  }
 
   public Database getDatabase() {
     return this.database;

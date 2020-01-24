@@ -1,17 +1,5 @@
 package i5.las2peer.services.codeGenerationService.generators;
 
-import java.io.UnsupportedEncodingException;
-import java.util.Base64;
-import java.util.HashMap;
-import java.util.Iterator;
-
-import org.eclipse.jgit.lib.ObjectId;
-import org.eclipse.jgit.lib.ObjectLoader;
-import org.eclipse.jgit.lib.ObjectReader;
-import org.eclipse.jgit.treewalk.TreeWalk;
-import org.eclipse.jgit.treewalk.filter.PathFilter;
-import org.json.simple.JSONObject;
-
 import i5.las2peer.api.Context;
 import i5.las2peer.api.Service;
 import i5.las2peer.api.logging.MonitoringEvent;
@@ -22,11 +10,18 @@ import i5.las2peer.services.codeGenerationService.models.microservice.Microservi
 import i5.las2peer.services.codeGenerationService.models.traceModel.FileTraceModel;
 import i5.las2peer.services.codeGenerationService.models.traceModel.FileTraceModelFactory;
 import i5.las2peer.services.codeGenerationService.models.traceModel.TraceModel;
-import i5.las2peer.services.codeGenerationService.templateEngine.InitialGenerationStrategy;
-import i5.las2peer.services.codeGenerationService.templateEngine.SynchronizationStrategy;
-import i5.las2peer.services.codeGenerationService.templateEngine.Template;
-import i5.las2peer.services.codeGenerationService.templateEngine.TemplateEngine;
-import i5.las2peer.services.codeGenerationService.templateEngine.TemplateStrategy;
+import i5.las2peer.services.codeGenerationService.templateEngine.*;
+import org.eclipse.jgit.lib.ObjectId;
+import org.eclipse.jgit.lib.ObjectLoader;
+import org.eclipse.jgit.lib.ObjectReader;
+import org.eclipse.jgit.treewalk.TreeWalk;
+import org.eclipse.jgit.treewalk.filter.PathFilter;
+import org.json.simple.JSONObject;
+
+import java.io.UnsupportedEncodingException;
+import java.util.Base64;
+import java.util.HashMap;
+import java.util.Iterator;
 
 /**
  * 
@@ -75,6 +70,18 @@ public class MicroserviceSynchronization extends MicroserviceGenerator {
     String genericTable = null;
     String databaseManager = null;
     String guidances = null;
+
+    // monitoring templates
+    String genericCustomMessageDescription = null;
+    String genericCustomMessageLog = null;
+    String genericLogStringPayload = null;
+    String genericLogStringPayloadDescription = null;
+    String genericLogStringResponse = null;
+    String genericLogStringResponseDescription = null;
+    String genericLogTimeDifference = null;
+    String genericLogTimeDifferenceDescription = null;
+    String genericMeasureTime = null;
+    String genericMeasureTimeDifference = null;
 
     // to generate schema file
     String classes = null;
@@ -143,6 +150,36 @@ public class MicroserviceSynchronization extends MicroserviceGenerator {
             break;
           case "genericClassProperty.txt":
             genericClassProperty = new String(loader.getBytes(), "UTF-8");
+            break;
+          case "genericCustomMessageDescription.txt":
+            genericCustomMessageDescription = new String(loader.getBytes(), "UTF-8");
+            break;
+          case "genericCustomMessageLog.txt":
+            genericCustomMessageLog = new String(loader.getBytes(), "UTF-8");
+            break;
+          case "genericLogStringPayload.txt":
+            genericLogStringPayload = new String(loader.getBytes(), "UTF-8");
+            break;
+          case "genericLogStringPayloadDescription.txt":
+            genericLogStringPayloadDescription = new String(loader.getBytes(), "UTF-8");
+            break;
+          case "genericLogStringResponse.txt":
+            genericLogStringResponse = new String(loader.getBytes(), "UTF-8");
+            break;
+          case "genericLogStringResponseDescription.txt":
+            genericLogStringResponseDescription = new String(loader.getBytes(), "UTF-8");
+            break;
+          case "genericLogTimeDifference.txt":
+            genericLogTimeDifference = new String(loader.getBytes(), "UTF-8");
+            break;
+          case "genericLogTimeDifferenceDescription.txt":
+            genericLogTimeDifferenceDescription = new String(loader.getBytes(), "UTF-8");
+            break;
+          case "genericMeasureTime.txt":
+            genericMeasureTime = new String(loader.getBytes(), "UTF-8");
+            break;
+          case "genericMeasureTimeDifference.txt":
+            genericMeasureTimeDifference = new String(loader.getBytes(), "UTF-8");
             break;
         }
       }
@@ -260,6 +297,9 @@ public class MicroserviceSynchronization extends MicroserviceGenerator {
 
           generateNewServiceClass(templateEngine, serviceClass, microservice, repositoryLocation,
               genericHttpMethod, genericHttpMethodBody, genericApiResponse, genericHttpResponse,
+              genericCustomMessageDescription, genericCustomMessageLog, genericLogStringPayload,
+              genericLogStringPayloadDescription, genericLogStringResponse, genericLogStringResponseDescription,
+              genericLogTimeDifference, genericLogTimeDifferenceDescription, genericMeasureTime, genericMeasureTimeDifference,
               databaseConfig, databaseInstantiation, serviceInvocation, metadataDoc);
         } else if (fileName.equals(serviceOldTestFileName)) {
           oldFileTraceModel.setFileName(serviceTestFileName);

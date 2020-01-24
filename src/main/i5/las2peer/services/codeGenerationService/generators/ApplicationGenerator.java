@@ -376,7 +376,7 @@ public class ApplicationGenerator extends Generator {
                   FrontendComponent frontendComponent =
                       application.getFrontendComponents().get(frontendComponentName);
                   applicationScript = applicationScript.replace(
-                      frontendComponent.getMicroserviceAddress(), "$STEEN_URL$:$STEEN_PORT$");
+                      "$Microservice_Url$", "$STEEN_URL$:$STEEN_PORT$");
                 }
 
                 applicationRepository = createTextFileInRepository(applicationRepository,
