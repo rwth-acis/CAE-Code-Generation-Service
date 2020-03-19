@@ -257,7 +257,7 @@ public class ModelSynchronizationTest extends Generator {
 
       for (String fileName : tracedFiles.keySet()) {
         // we are only testing the synchronization of an widget
-        if (fileName.equals("widget.xml")) {
+        if (fileName.equals("index.html")) {
           continue;
         }
 
@@ -265,7 +265,7 @@ public class ModelSynchronizationTest extends Generator {
       }
 
       FileTraceModel oldFileTraceModel =
-          createFileTraceModel(tracedFiles, "widget.xml", traceModel);
+          createFileTraceModel(tracedFiles, "index.html", traceModel);
       traceModel.addFileTraceModel(oldFileTraceModel);
 
       UnprotectedSegment oldHtmlElementContent = (UnprotectedSegment) oldFileTraceModel
@@ -300,7 +300,7 @@ public class ModelSynchronizationTest extends Generator {
       tracedFiles = getAllTracedFiles("frontendComponent", model1);
 
       FileTraceModel fileTraceModel =
-          createFileTraceModel(tracedFiles, "widget.xml", new TraceModel());
+          createFileTraceModel(tracedFiles, "index.html", new TraceModel());
 
       UnprotectedSegment htmlElementContent = (UnprotectedSegment) fileTraceModel
           .getRecursiveSegment("d843d5d05463aae9ba656743:htmlElement:$Element_Content$");
@@ -395,13 +395,13 @@ public class ModelSynchronizationTest extends Generator {
           (String) node.invoke(testService, serviceNameVersion, "createFromModel", parameters);
       assertEquals("done", returnMessage);
 
-      String traces = getContent("./testFiles/ModelSynchronization/TestCase3/widget.xml.traces");
+      String traces = getContent("./testFiles/ModelSynchronization/TestCase3/index.html.traces");
       JSONParser parser = new JSONParser();
       JSONObject tracesJson = (JSONObject) parser.parse(traces);
-      String widget = getContent("./testFiles/ModelSynchronization/TestCase3/widget.xml");
+      String widget = getContent("./testFiles/ModelSynchronization/TestCase3/index.html");
 
       FileTraceModel oldFileTraceModel =
-          createFileTraceModel(widget, "widget.xml", tracesJson, new TraceModel());
+          createFileTraceModel(widget, "index.html", tracesJson, new TraceModel());
       CompositeSegment oldMainContentSegment = (CompositeSegment) oldFileTraceModel
           .getRecursiveSegment("57209a05b1734235f7bdbe5d:$Main_Content$");
       List<String> oldOrder = oldMainContentSegment.getChildrenList();
@@ -409,9 +409,9 @@ public class ModelSynchronizationTest extends Generator {
       // commit reordered html elements
 
       List<String[]> fileList = new ArrayList<String[]>();
-      fileList.add(new String[] {"traces/widget.xml.traces",
+      fileList.add(new String[] {"traces/index.html.traces",
           Base64.getEncoder().encodeToString(traces.getBytes("utf-8"))});
-      fileList.add(new String[] {"widget.xml",
+      fileList.add(new String[] {"index.html",
           Base64.getEncoder().encodeToString(widget.getBytes("utf-8"))});
 
       returnMessage = commitFilesRaw(repositoryName, fileList);
@@ -431,7 +431,7 @@ public class ModelSynchronizationTest extends Generator {
       HashMap<String, JSONObject> tracedFiles = getAllTracedFiles("frontendComponent", model1);
       TraceModel traceModel = new TraceModel();
 
-      FileTraceModel fileTraceModel = createFileTraceModel(tracedFiles, "widget.xml", traceModel);
+      FileTraceModel fileTraceModel = createFileTraceModel(tracedFiles, "index.html", traceModel);
       CompositeSegment mainContentSegment = (CompositeSegment) fileTraceModel
           .getRecursiveSegment("57209a05b1734235f7bdbe5d:$Main_Content$");
       List<String> newOrder = mainContentSegment.getChildrenList();

@@ -289,7 +289,7 @@ public class RESTResources {
 					JSONObject result = new JSONObject();
 					JSONArray fileList = new JSONArray();
 
-					String[] neededFileNames = { "widget.xml", "js/applicationScript.js" };
+					String[] neededFileNames = { "index.html", "js/applicationScript.js" };
 
 					for (String fileName : neededFileNames) {
 						String content = gitUtility.getFileContent(git.getRepository(), fileName);

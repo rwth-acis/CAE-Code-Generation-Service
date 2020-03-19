@@ -109,7 +109,7 @@ public class FrontendComponentGenerator extends Generator {
                     ObjectLoader loader = reader.open(objectId);
 
                     switch (treeWalk.getNameString()) {
-                        case "widget.xml":
+                        case "index.html":
                             widget = new String(loader.getBytes(), "UTF-8");
                             break;
                         case "genericHtmlElement.txt":
@@ -202,7 +202,7 @@ public class FrontendComponentGenerator extends Generator {
             // the global traceModel
             TraceModel traceModel = new TraceModel();
 
-            FileTraceModel widgetTraceModel = new FileTraceModel(traceModel, "widget.xml");
+            FileTraceModel widgetTraceModel = new FileTraceModel(traceModel, "index.html");
             TemplateStrategy strategy = new InitialGenerationStrategy();
             TemplateEngine widgetTemplateEngine = new TemplateEngine(strategy, widgetTraceModel);
 
@@ -254,9 +254,9 @@ public class FrontendComponentGenerator extends Generator {
                             traceModel.toJSONObject().toJSONString().replace("\\", ""));
 
             frontendComponentRepository = createTextFileInRepository(frontendComponentRepository, "",
-                    "widget.xml", widgetTemplateEngine.getContent());
+                    "index.html", widgetTemplateEngine.getContent());
             frontendComponentRepository = createTextFileInRepository(frontendComponentRepository,
-                    "traces/", "widget.xml.traces", widgetTemplateEngine.toJSONObject().toJSONString());
+                    "traces/", "index.html.traces", widgetTemplateEngine.toJSONObject().toJSONString());
 
             frontendComponentRepository = createTextFileInRepository(frontendComponentRepository, "js/",
                     "applicationScript.js", applicationScriptTemplateEngine.getContent());
@@ -324,7 +324,7 @@ public class FrontendComponentGenerator extends Generator {
 
 
     /**
-     * Creates the "widget.xml" code according to a passed frontend component model.
+     * Creates the "index.html" code according to a passed frontend component model.
      *
      * @param templateEngine          the template engine used for the code generation
      * @param widgetTemplateFile      the widget template of the widget as a string
@@ -402,15 +402,7 @@ public class FrontendComponentGenerator extends Generator {
                     elementTemplate);
         }
 
-
-        // widget meta-data and path replacements
-        //TODO: Urls hardcoded!!!
         widgetTemplate.setVariable("$Widget_Title$", frontendComponent.getWidgetName());
-        widgetTemplate.setVariable("$Widget_Description$", frontendComponent.getWidgetDescription());
-        widgetTemplate.setVariable("$Widget_Developer_Name$", frontendComponent.getWidgetDeveloperName());
-        widgetTemplate.setVariable("$Widget_Developer_Mail$", frontendComponent.getWidgetDeveloperMail());
-        widgetTemplate.setVariable("$Widget_Width$", frontendComponent.getWidgetWidth() + "");
-        widgetTemplate.setVariable("$Widget_Height$", frontendComponent.getWidgetHeight() + "");
 
         //String widgetHome = "http://" + gitHubOrganization + ".github.io/" + repositoryName;
         //String widgetHome = "http://cloud10.dbis.rwth-aachen.de:8088/"+repositoryName;
