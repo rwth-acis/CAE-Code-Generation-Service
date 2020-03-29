@@ -84,7 +84,7 @@ public class FrontendComponentSynchronization extends FrontendComponentGenerator
         ObjectLoader loader = reader.open(objectId);
 
         switch (treeWalk.getNameString()) {
-          case "widget.xml":
+          case "index.html":
             widget = new String(loader.getBytes(), "UTF-8");
             break;
           case "genericHtmlElement.txt":
@@ -168,7 +168,7 @@ public class FrontendComponentSynchronization extends FrontendComponentGenerator
             .createFileTraceModelFromJSON(content, fileTraces, traceModel, fileName);
 
         switch (fileName) {
-          case "widget.xml":
+          case "index.html":
             widgetSynchronizationStrategy = new SynchronizationOrderedStrategy(oldFileTraceModel);
             widgetTemplateEngine =
                 new TemplateEngine(widgetSynchronizationStrategy, oldFileTraceModel);

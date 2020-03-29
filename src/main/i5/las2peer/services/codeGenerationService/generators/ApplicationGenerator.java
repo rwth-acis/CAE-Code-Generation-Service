@@ -362,12 +362,12 @@ public class ApplicationGenerator extends Generator {
                 applicationRepository = createTextFileInRepository(applicationRepository,
                     frontendComponentRepositoryName + "/", "README.md", frontendReadme);
                 break;
-              case "widget.xml":
+              case "index.html":
                 String widget = new String(loader.getBytes(), "UTF-8");
                 widget = widget.replace(oldWidgetHome, newWidgetHome);
 
                 applicationRepository = createTextFileInRepository(applicationRepository,
-                    frontendComponentRepositoryName + "/", "widget.xml", widget);
+                    frontendComponentRepositoryName + "/", "index.html", widget);
                 break;
               case "applicationScript.js":
                 String applicationScript = new String(loader.getBytes(), "UTF-8");
