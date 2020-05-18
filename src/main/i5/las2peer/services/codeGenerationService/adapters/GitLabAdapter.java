@@ -208,7 +208,7 @@ public class GitLabAdapter extends BaseGitHostAdapter{
 		}
 		
 		if (id != -1) {
-			// example: http://ginkgo.informatik.rwth-aachen.de:4080/api/v3/projects/2
+			// example: http://ginkgo.informatik.rwth-aachen.de:4080/api/v4/projects/2
 			deleteResource(baseURL + "api/v4/" + "projects/" + id);
 		}
 		
