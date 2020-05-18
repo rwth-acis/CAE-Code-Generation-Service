@@ -232,7 +232,6 @@ public class GitLabAdapter extends BaseGitHostAdapter{
 		obj.put("name", name);
 		obj.put("description", description);
 		obj.put("namespace_id", id);
-		obj.put("visibility", "public");
 		createResource(baseURL + "api/v4/" + "projects", obj);
 	}
 	
