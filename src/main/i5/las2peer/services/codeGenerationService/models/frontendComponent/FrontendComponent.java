@@ -17,6 +17,7 @@ import i5.las2peer.services.codeGenerationService.exception.ModelParseException;
  * 
  */
 public class FrontendComponent {
+  private String versionedModelId;
   private String widgetModelId;
   private String name;
   private String widgetName;
@@ -65,6 +66,9 @@ public class FrontendComponent {
         } catch (NumberFormatException e) {
           throw new ModelParseException("FrontendComponent version is not a number!");
         }
+      }
+      if(model.getAttributes().get(attributeIndex).getName().equals("versionedModelId")) {
+    	this.versionedModelId = model.getAttributes().get(attributeIndex).getValue();
       }
     }
     // go through the nodes and create objects
@@ -329,6 +333,9 @@ public class FrontendComponent {
     }
   }
 
+  public String getVersionedModelId() {
+	return versionedModelId;
+  }
 
   public String getWidgetModelId() {
     return widgetModelId;

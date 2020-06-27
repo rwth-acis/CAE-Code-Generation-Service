@@ -50,7 +50,7 @@ public class FrontendComponentGenerator extends Generator {
 
 
     public static String getRepositoryName(FrontendComponent frontendComponent) {
-        return "frontendComponent-" + frontendComponent.getName().replace(" ", "-");
+        return "frontendComponent-" + frontendComponent.getVersionedModelId();
     }
 
     /**

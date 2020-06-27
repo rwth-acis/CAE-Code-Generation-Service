@@ -19,6 +19,7 @@ public class Microservice {
 
   // TODO: create sanity checks for variable content of all entries (non-empty values for example..)
 
+  private String versionedModelId;
   // id of resource node in SyncMeta, needed for model correctness checking
   private String microserviceModelId;
   private String name; // name of complete service "construct"
@@ -65,6 +66,9 @@ public class Microservice {
         } */ catch(Exception e) {
         	throw new ModelParseException("Something is wrong with the version number!");
         }
+      }
+      if(model.getAttributes().get(attributeIndex).getName().equals("versionedModelId")) {
+      	this.versionedModelId = model.getAttributes().get(attributeIndex).getValue();
       }
     }
 
@@ -347,7 +351,10 @@ public class Microservice {
   public void setName(String name) {
     this.name = name;
   }
-
+  
+  public String getVersionedModelId() {
+	return versionedModelId;
+  }
 
   public String getPath() {
     return this.path;

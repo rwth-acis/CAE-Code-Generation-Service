@@ -46,7 +46,7 @@ public class MicroserviceGenerator extends Generator {
 
 
   protected static String getDatabaseScriptFileName(Microservice microservice) {
-    return "db/" + microservice.getName().replace(" ", "_") + "_create_tables.sql";
+    return "db/" + microservice.getVersionedModelId().replace(" ", "_") + "_create_tables.sql";
   }
 
   /**
@@ -117,7 +117,7 @@ public class MicroserviceGenerator extends Generator {
    */
 
   public static String getRepositoryName(Microservice microservice) {
-    String repositoryName = "microservice-" + microservice.getName().replace(" ", "-");
+    String repositoryName = "microservice-" + microservice.getVersionedModelId();
     return repositoryName;
   }
 
