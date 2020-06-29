@@ -34,6 +34,7 @@ import org.json.simple.parser.JSONParser;
 import i5.las2peer.api.Context;
 import i5.las2peer.api.ServiceException;
 import i5.las2peer.api.logging.MonitoringEvent;
+import i5.las2peer.services.codeGenerationService.exception.GitHelperException;
 import i5.las2peer.services.codeGenerationService.utilities.GitUtility;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;
@@ -306,10 +307,17 @@ public class RESTResources {
 				} else {
 					throw new ServiceUnavailableException(repositoryName + " currently unavailable");
 				}
+			} catch (GitHelperException e) {
+				File repo = GitUtility.getRepositoryPath(repositoryName);
+				// repo might got cloned, but is empty
+				// so delete it
+				deleteFolder(repo);
+				throw new InternalServerErrorException();
 			} catch (FileNotFoundException e) {
 				service.getLogger().info(repositoryName + " not found");
 				throw new NotFoundException(repositoryName + " not found");
 			} catch (Exception e) {
+				e.printStackTrace();
 				service.getLogger().log(Level.FINER, e.getMessage());
 				throw new InternalServerErrorException();
 			}
@@ -317,6 +325,21 @@ public class RESTResources {
 			throw new NotAcceptableException("Only frontend components are supported");
 		}
 
+	}
+	
+	public static void deleteFolder(File folder) {
+		// get all files in folder
+	    File[] files = folder.listFiles();
+	    if(files != null) {
+	        for(File file : files) {
+	            if(file.isDirectory()) {
+	                deleteFolder(file);
+	            } else {
+	                file.delete();
+	            }
+	        }
+	    }
+	    folder.delete();
 	}
 
 	/**

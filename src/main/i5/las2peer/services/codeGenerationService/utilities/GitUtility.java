@@ -333,6 +333,19 @@ public class GitUtility {
 	    	Git result = Git.cloneRepository().setURI(repositoryAddress).setCredentialsProvider(provider)
 	    			.setDirectory(getRepositoryPath(repositoryName)).setBranch(masterBranchName).call();
 	        repository = result.getRepository();
+	        
+	        // get the files of the folder which is used by the local repository
+	        String[] files = repository.getDirectory().getParentFile().list();
+	        // if there is only one file/folder, then it is the .git folder
+	        // if there is only the .git folder, then there are not other files and this means,
+	        // that the repository was cloned at a point, where the remote repository already got created but
+	        // no code has been pushed yet
+	        // thus, we delete the local repository again, so that it gets cloned later again when the code got 
+	        // pushed maybe
+	        if(files.length == 1) {
+	        	// delete locally
+                throw new GitHelperException("Cloned remote repo, but the remote repo was empty. Deleted local repo again.");
+	        }
 	    	} catch (GitAPIException e) {
 				throw new GitHelperException("Error using jGit: " + e.getMessage());
 			}
@@ -349,7 +362,7 @@ public class GitUtility {
 	 * @param repositoryName The name of the repository
 	 * @return A file pointing to the path of the repository
 	 */
-	private static File getRepositoryPath(String repositoryName) {
+	public static File getRepositoryPath(String repositoryName) {
 		return new File(repositoryName);
 	}
 	
