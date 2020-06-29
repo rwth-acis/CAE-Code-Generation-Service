@@ -348,7 +348,7 @@ public class FrontendComponent {
 
 
   public String getName() {
-    return this.name;
+    return this.versionedModelId;
   }
 
 
