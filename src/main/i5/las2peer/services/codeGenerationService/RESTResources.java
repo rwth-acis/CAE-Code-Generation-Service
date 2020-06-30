@@ -461,6 +461,12 @@ public class RESTResources {
 				}
 			}
 
+		} catch (GitHelperException e) {
+			File repo = GitUtility.getRepositoryPath(repositoryName);
+			// repo might got cloned, but is empty
+			// so delete it
+			deleteFolder(repo);
+			throw new InternalServerErrorException(e.getMessage());
 		} catch (Exception e) {
 			Context.get().monitorEvent(MonitoringEvent.SERVICE_ERROR, "getModelFiles: exception fetching files: " + e);
 			service.getLogger().log(Level.FINER, e.getMessage());
