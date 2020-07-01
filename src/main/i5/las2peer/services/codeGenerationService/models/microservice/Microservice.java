@@ -344,7 +344,7 @@ public class Microservice {
 
 
   public String getName() {
-    return this.name;
+    return this.versionedModelId;
   }
 
 
