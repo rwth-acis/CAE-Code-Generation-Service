@@ -25,6 +25,7 @@ import i5.las2peer.services.codeGenerationService.adapters.BaseGitHostAdapter;
 import i5.las2peer.services.codeGenerationService.adapters.GitHostAdapter;
 import i5.las2peer.services.codeGenerationService.adapters.GitHubAdapter;
 import i5.las2peer.services.codeGenerationService.adapters.GitLabAdapter;
+import i5.las2peer.services.codeGenerationService.exception.GitHelperException;
 import i5.las2peer.services.codeGenerationService.exception.GitHostException;
 import i5.las2peer.services.codeGenerationService.exception.ModelParseException;
 import i5.las2peer.services.codeGenerationService.generators.ApplicationGenerator;
@@ -383,7 +384,7 @@ public class CodeGenerationService extends RESTService {
 
 							MicroserviceSynchronization.synchronizeSourceCode(microservice, oldMicroservice,
 									this.getTracedFiles(MicroserviceGenerator.getRepositoryName(microservice)),
-									(BaseGitHostAdapter) gitAdapter, CodeGenerationService.this, metadataDoc);
+									(BaseGitHostAdapter) gitAdapter, CodeGenerationService.this, metadataDoc, gitUtility);
 
 							Context.get().monitorEvent(MonitoringEvent.SERVICE_MESSAGE, "updateRepositoryOfModel: Synchronized!");
 							return "done";
@@ -449,7 +450,7 @@ public class CodeGenerationService extends RESTService {
 									oldFrontendComponent,
 									this.getTracedFiles(
 											FrontendComponentGenerator.getRepositoryName(frontendComponent)),
-									(BaseGitHostAdapter) gitAdapter, CodeGenerationService.this, metadataDoc);
+									(BaseGitHostAdapter) gitAdapter, CodeGenerationService.this, metadataDoc, gitUtility);
 
 							Context.get().monitorEvent(MonitoringEvent.SERVICE_MESSAGE, "updateRepositoryOfModel: Synchronized!");
 							return "done";
@@ -518,6 +519,11 @@ public class CodeGenerationService extends RESTService {
 							"updateRepositoryOfModel: GitHub access exception: " + e2.getMessage());
 					logger.printStackTrace(e2);
 					return "Error: Generating code failed because of failing GitHub access: " + e2.getMessage();
+				} catch (GitHelperException e) {
+					Context.get().monitorEvent(MonitoringEvent.SERVICE_ERROR,
+							"updateRepositoryOfModel: GitHelperException: " + e.getMessage());
+					logger.printStackTrace(e);
+					return "Error: Pushing failed " + e.getMessage();
 				}
 			}
 		}
