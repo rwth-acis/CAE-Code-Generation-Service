@@ -49,12 +49,15 @@ public class MicroserviceSynchronization extends MicroserviceGenerator {
    * @param gitAdapter adapter for git
    * @param service name of the service
    * @param metadataDoc metadata string from swagger
+   * @param gitUtility GitUtility used for pushing.
+   * @param commitMessage Message that should be used for the commit.
    * @throws ModelParseException thrown incase of error in model parsing
  * @throws GitHelperException 
    */
 
   public static void synchronizeSourceCode(Microservice microservice, Microservice oldMicroservice,
-      HashMap<String, JSONObject> files, BaseGitHostAdapter gitAdapter, Service service, String metadataDoc, GitUtility gitUtility) throws ModelParseException, GitHelperException {
+      HashMap<String, JSONObject> files, BaseGitHostAdapter gitAdapter, Service service, String metadataDoc,
+      GitUtility gitUtility, String commitMessage) throws ModelParseException, GitHelperException {
 
     // first load the needed templates from the template repository
 
@@ -352,7 +355,7 @@ public class MicroserviceSynchronization extends MicroserviceGenerator {
     try {
       // commit changes
       updateTracedFilesInRepository(getUpdatedTracedFilesForRepository(traceModel, guidances),
-          getRepositoryName(microservice), service);
+          getRepositoryName(microservice), service, commitMessage);
       
       // merge development and master and push to master
    	  String masterBranchName = "master";

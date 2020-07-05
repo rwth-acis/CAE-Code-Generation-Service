@@ -547,8 +547,8 @@ public abstract class Generator {
    */
 
   protected static void updateTracedFilesInRepository(List<String[]> fileList,
-      String repositoryName, Service service) {
-    commitMultipleFilesRaw(repositoryName, "Code regeneration/Model synchronization",
+      String repositoryName, Service service, String commitMessage) {
+    commitMultipleFilesRaw(repositoryName, commitMessage,
         fileList.toArray(new String[][] {}));
   }
 

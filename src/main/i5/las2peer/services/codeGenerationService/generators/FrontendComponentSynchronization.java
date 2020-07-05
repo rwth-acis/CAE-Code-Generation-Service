@@ -42,7 +42,7 @@ public class FrontendComponentSynchronization extends FrontendComponentGenerator
 
   public static void synchronizeSourceCode(FrontendComponent frontendComponent,
       FrontendComponent oldFrontendComponent, HashMap<String, JSONObject> files,BaseGitHostAdapter gitAdapter,CodeGenerationService service,
-      String metadataDoc, GitUtility gitUtility)
+      String metadataDoc, GitUtility gitUtility, String commitMessage)
       throws GitHostException, GitHelperException {
     // first load the needed templates from the template repository
 
@@ -245,7 +245,7 @@ public class FrontendComponentSynchronization extends FrontendComponentGenerator
       }
 
 
-      updateTracedFilesInRepository(fileList, getRepositoryName(frontendComponent), service);
+      updateTracedFilesInRepository(fileList, getRepositoryName(frontendComponent), service, commitMessage);
       
       // merge development and master and push to gh-pages
    	  String masterBranchName = "gh-pages";

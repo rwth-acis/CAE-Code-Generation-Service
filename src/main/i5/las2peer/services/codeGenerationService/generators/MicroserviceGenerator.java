@@ -135,7 +135,7 @@ public class MicroserviceGenerator extends Generator {
    */
   
   public static void createSourceCode(Microservice microservice, 
-		  String templateRepositoryName, BaseGitHostAdapter gitAdapter, boolean forcePush,
+		  String templateRepositoryName, BaseGitHostAdapter gitAdapter, String commitMessage, boolean forcePush,
           String metadataDoc) throws GitHostException {
 	// variables to be closed in the final block
 	    Repository microserviceRepository = null;
@@ -486,7 +486,7 @@ public class MicroserviceGenerator extends Generator {
 	      // commit files
 	      try {
 	        Git.wrap(microserviceRepository).commit()
-	            .setMessage("Generated microservice version " + microservice.getVersion())
+	            .setMessage(commitMessage)
 	            .setCommitter(caeUser).call();
 	      } catch (Exception e) {
 	        logger.printStackTrace(e);
@@ -513,9 +513,9 @@ public class MicroserviceGenerator extends Generator {
   }
   
   public static void createSourceCode(Microservice microservice, String templateRepositoryName,
-      BaseGitHostAdapter gitAdapter, String metadataDoc)
+      BaseGitHostAdapter gitAdapter, String commitMessage, String metadataDoc)
       throws GitHostException {
-	  createSourceCode(microservice, templateRepositoryName, gitAdapter, false, metadataDoc);
+	  createSourceCode(microservice, templateRepositoryName, gitAdapter, commitMessage, false, metadataDoc);
     
   }
 

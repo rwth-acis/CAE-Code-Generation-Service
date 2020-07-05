@@ -60,7 +60,8 @@ public class FrontendComponentGenerator extends Generator {
      * @throws GitHostException thrown if anything goes wrong during this process. Wraps around all
      *                          other exceptions and prints their message.
      */
-    public static void createSourceCode(FrontendComponent frontendComponent, BaseGitHostAdapter gitAdapter, boolean forcePush) throws GitHostException {
+    public static void createSourceCode(FrontendComponent frontendComponent, BaseGitHostAdapter gitAdapter,
+    		String commitMessage, boolean forcePush) throws GitHostException {
         // variables to be closed in the final block
         Repository frontendComponentRepository = null;
         TreeWalk treeWalk = null;
@@ -294,7 +295,7 @@ public class FrontendComponentGenerator extends Generator {
             // commit files
             try {
                 Git.wrap(frontendComponentRepository).commit()
-                        .setMessage("Generated frontend component " + frontendComponent.getVersion())
+                        .setMessage(commitMessage)
                         .setCommitter(caeUser).call();
             } catch (Exception e) {
                 logger.printStackTrace(e);
@@ -318,8 +319,8 @@ public class FrontendComponentGenerator extends Generator {
         }
     }
 
-    public static void createSourceCode(FrontendComponent frontendComponent, BaseGitHostAdapter gitAdapter) throws GitHostException {
-        createSourceCode(frontendComponent, gitAdapter, false);
+    public static void createSourceCode(FrontendComponent frontendComponent, BaseGitHostAdapter gitAdapter, String commitMessage) throws GitHostException {
+        createSourceCode(frontendComponent, gitAdapter, commitMessage, false);
     }
 
 
