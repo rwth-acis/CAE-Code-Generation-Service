@@ -71,6 +71,13 @@ public class Microservice {
       	this.versionedModelId = model.getAttributes().get(attributeIndex).getValue();
       }
     }
+    
+    // set default value if version is null
+    // TODO: this is only needed because otherwise the microservice cannot be started, because 
+    // therefore a version number is needed
+    if(this.version == null) {
+    	this.version = "0.1.0";
+    }
 
     // go through the nodes and create objects
     ArrayList<SimpleNode> nodes = model.getNodes();
