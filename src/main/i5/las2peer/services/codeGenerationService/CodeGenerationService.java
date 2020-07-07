@@ -239,7 +239,7 @@ public class CodeGenerationService extends RESTService {
 						Application application = new Application(serializedModel);
 						Context.get().monitorEvent(MonitoringEvent.SERVICE_MESSAGE,
 								"createFromModel: Creating application source code now..");
-						ApplicationGenerator.createSourceCode(application, (BaseGitHostAdapter) gitAdapter);
+						ApplicationGenerator.createSourceCode(application, (BaseGitHostAdapter) gitAdapter, commitMessage);
 						Context.get().monitorEvent(MonitoringEvent.SERVICE_MESSAGE, "createFromModel: Created!");
 						return "done";
 					default:
@@ -802,7 +802,7 @@ public class CodeGenerationService extends RESTService {
 						Context.get().monitorEvent(MonitoringEvent.SERVICE_MESSAGE,
 								"deployApplicationModel: Copying repository to deployment repository");
 						ApplicationGenerator.createSourceCode(repositoryName, application,
-								(BaseGitHostAdapter) gitAdapter, true);
+								(BaseGitHostAdapter) gitAdapter, "Initialized repository for deployment", true);
 						Context.get().monitorEvent(MonitoringEvent.SERVICE_MESSAGE, "deployApplicationModel: Copied!");
 						return "done";
 

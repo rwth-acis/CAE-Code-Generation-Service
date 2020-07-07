@@ -62,17 +62,19 @@ public class ApplicationGenerator extends Generator {
    * 
    * @param gitAdapter adapter for Git
    * 
+   * @param commitMessage Message used as the commit message.
+   * 
    * @throws GitHostException thrown if anything goes wrong during this process. Wraps around all
    *         other exceptions and prints their message.
    * 
    */
-  public static void createSourceCode(Application application, BaseGitHostAdapter gitAdapter)
+  public static void createSourceCode(Application application, BaseGitHostAdapter gitAdapter, String commitMessage)
       throws GitHostException {
 	  if (gitAdapter == null) {
 		throw new GitHostException("Adapter is null!");
 	  }
     String repositoryName = "application-" + application.getName().replace(" ", "-");
-    createSourceCode(repositoryName, application, gitAdapter, false);
+    createSourceCode(repositoryName, application, gitAdapter, commitMessage, false);
   }
 
   /**
@@ -82,6 +84,7 @@ public class ApplicationGenerator extends Generator {
    * @param repositoryName the repository of the application to use
    * @param application the application model
    * @param gitAdapter adapter for Git
+   * @param commitMessage Message used as the commit message.
    * @param forDeploy True, if the source code is intended to use for deployment purpose, e.g. no
    *        gh-pages branch will be used
    * @throws GitHostException thrown if anything goes wrong during this process. Wraps around all
@@ -89,13 +92,14 @@ public class ApplicationGenerator extends Generator {
    *    * 
    */
   public static void createSourceCode(String repositoryName, Application application, 
-		  BaseGitHostAdapter gitAdapter, boolean forDeploy) throws GitHostException {
-	  if (gitAdapter == null) {
-			throw new GitHostException("Adapter is null!");
-	  }
-	  if (repositoryName == null || repositoryName.equals("")) {
-		  throw new GitHostException("Repository is not set!");
-	  }
+		  BaseGitHostAdapter gitAdapter, String commitMessage, boolean forDeploy) throws GitHostException {
+	if (gitAdapter == null) {
+	    throw new GitHostException("Adapter is null!");
+	}
+	if (repositoryName == null || repositoryName.equals("")) {
+		throw new GitHostException("Repository is not set!");
+	}
+	
     // variables to be closed in the final block
     Repository applicationRepository = null;
     TreeWalk treeWalk = null;
@@ -211,8 +215,7 @@ public class ApplicationGenerator extends Generator {
         applicationRepository =
             createImageFileInRepository(applicationRepository, "img/", "logo.png", logo);
         Git.wrap(applicationRepository).commit()
-            .setMessage(
-                "Initialized repository for application with version " + application.getVersion())
+            .setMessage(commitMessage)
             .setCommitter(caeUser).call();
       } catch (Exception e) {
         logger.printStackTrace(e);
