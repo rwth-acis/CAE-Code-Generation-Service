@@ -529,12 +529,13 @@ public abstract class Generator {
    * @param commitMessage A commit message
    * @param files An array containing the file names and file contents
    */
-  private static void commitMultipleFilesRaw(String repositoryName, String commitMessage,
+  private static String commitMultipleFilesRaw(String repositoryName, String commitMessage,
       String[][] files) {
     try {
-    	((CodeGenerationService) Context.getCurrent().getService()).storeAndCommitFilesRaw(repositoryName, commitMessage, files);
+    	return ((CodeGenerationService) Context.getCurrent().getService()).storeAndCommitFilesRaw(repositoryName, commitMessage, files);
     } catch (Exception e) {
       logger.printStackTrace(e);
+      return "";
     }
   }
 
@@ -546,9 +547,9 @@ public abstract class Generator {
    * @param service Name of the service
    */
 
-  protected static void updateTracedFilesInRepository(List<String[]> fileList,
+  protected static String updateTracedFilesInRepository(List<String[]> fileList,
       String repositoryName, Service service, String commitMessage) {
-    commitMultipleFilesRaw(repositoryName, commitMessage,
+    return commitMultipleFilesRaw(repositoryName, commitMessage,
         fileList.toArray(new String[][] {}));
   }
 

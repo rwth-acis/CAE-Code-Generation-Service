@@ -129,12 +129,13 @@ public class MicroserviceGenerator extends Generator {
  * @param templateRepositoryName the name of the template repository on GitHub
  * @param gitAdapter The gitAdapter that manages operations on GitHub/GitLab etc.
  * @param forcePush boolean value t/f
+ * @return Commit sha identifier
    * @throws GitHostException thrown if anything goes wrong during this process. Wraps around all
    *         other exceptions and prints their message.
    * 
    */
   
-  public static void createSourceCode(Microservice microservice, 
+  public static String createSourceCode(Microservice microservice, 
 		  String templateRepositoryName, BaseGitHostAdapter gitAdapter, String commitMessage, boolean forcePush,
           String metadataDoc) throws GitHostException {
 	// variables to be closed in the final block
@@ -484,10 +485,13 @@ public class MicroserviceGenerator extends Generator {
 	      createTracedFilesInRepository(traceModel, microserviceRepository);
 
 	      // commit files
+	      String commitSha = "";
 	      try {
 	        Git.wrap(microserviceRepository).commit()
 	            .setMessage(commitMessage)
 	            .setCommitter(caeUser).call();
+	        Ref head = microserviceRepository.getAllRefs().get("HEAD");
+            commitSha = head.getObjectId().getName();
 	      } catch (Exception e) {
 	        logger.printStackTrace(e);
 	        throw new GitHostException(e.getMessage());
@@ -500,6 +504,8 @@ public class MicroserviceGenerator extends Generator {
 	        logger.printStackTrace(e);
 	        throw new GitHostException(e.getMessage());
 	      }
+	      
+	      return commitSha;
 
 	      // close all open resources
 	    } catch (GitHostException e) {

@@ -15,6 +15,7 @@ import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.ObjectLoader;
 import org.eclipse.jgit.lib.ObjectReader;
 import org.eclipse.jgit.lib.PersonIdent;
+import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.treewalk.TreeWalk;
 import org.eclipse.jgit.treewalk.filter.PathFilter;
@@ -57,10 +58,11 @@ public class FrontendComponentGenerator extends Generator {
      * Creates source code from a CAE frontend component model and pushes it to GitHub.
      *
      * @param frontendComponent the frontend component model
+     * @return Commit sha identifier
      * @throws GitHostException thrown if anything goes wrong during this process. Wraps around all
      *                          other exceptions and prints their message.
      */
-    public static void createSourceCode(FrontendComponent frontendComponent, BaseGitHostAdapter gitAdapter,
+    public static String createSourceCode(FrontendComponent frontendComponent, BaseGitHostAdapter gitAdapter,
     		String commitMessage, boolean forcePush) throws GitHostException {
         // variables to be closed in the final block
         Repository frontendComponentRepository = null;
@@ -293,10 +295,14 @@ public class FrontendComponentGenerator extends Generator {
                     "traces/", "guidances.json", guidances);
 
             // commit files
+            String commitSha = "";
             try {
                 Git.wrap(frontendComponentRepository).commit()
                         .setMessage(commitMessage)
                         .setCommitter(caeUser).call();
+                
+                Ref head = frontendComponentRepository.getAllRefs().get("HEAD");
+                commitSha = head.getObjectId().getName();
             } catch (Exception e) {
                 logger.printStackTrace(e);
                 throw new GitHostException(e.getMessage());
@@ -309,6 +315,7 @@ public class FrontendComponentGenerator extends Generator {
                 logger.printStackTrace(e);
                 throw new GitHostException(e.getMessage());
             }
+            return commitSha;
 
             // close all open resources
         } finally {

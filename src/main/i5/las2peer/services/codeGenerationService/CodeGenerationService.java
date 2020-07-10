@@ -10,6 +10,7 @@ import java.util.Objects;
 
 import org.apache.commons.io.FileUtils;
 import org.eclipse.jgit.api.Git;
+import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.treewalk.TreeWalk;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
@@ -207,6 +208,7 @@ public class CodeGenerationService extends RESTService {
 			if (model.getAttributes().get(i).getName().equals("type")) {
 				String type = model.getAttributes().get(i).getValue();
 				try {
+					String commitSha;
 					switch (type) {
 					case "microservice":
 						// Create an object representing the microservice model
@@ -217,10 +219,10 @@ public class CodeGenerationService extends RESTService {
 						// Generate the code (and repositories) for this model
 						Context.get().monitorEvent(MonitoringEvent.SERVICE_MESSAGE,
 								"createFromModel: Creating microservice source code now..");
-						MicroserviceGenerator.createSourceCode(microservice, this.templateRepository,
+						commitSha = MicroserviceGenerator.createSourceCode(microservice, this.templateRepository,
 								(BaseGitHostAdapter) gitAdapter, commitMessage, forcePush, metadataDoc);
 						Context.get().monitorEvent(MonitoringEvent.SERVICE_MESSAGE, "createFromModel: Created!");
-						return "done";
+						return "done:" + commitSha;
 
 					// The same for the two other types
 					case "frontend-component":
@@ -229,10 +231,10 @@ public class CodeGenerationService extends RESTService {
 						FrontendComponent frontendComponent = new FrontendComponent(model);
 						Context.get().monitorEvent(MonitoringEvent.SERVICE_MESSAGE,
 								"createFromModel: Creating frontend component source code now..");
-						FrontendComponentGenerator.createSourceCode(frontendComponent, (BaseGitHostAdapter) gitAdapter,
+						commitSha = FrontendComponentGenerator.createSourceCode(frontendComponent, (BaseGitHostAdapter) gitAdapter,
 								commitMessage, forcePush);
 						Context.get().monitorEvent(MonitoringEvent.SERVICE_MESSAGE, "createFromModel: Created!");
-						return "done";
+						return "done:" + commitSha;
 
 					case "application":
 						Context.get().monitorEvent(MonitoringEvent.SERVICE_MESSAGE, "createFromModel: Creating application model now..");
@@ -384,13 +386,13 @@ public class CodeGenerationService extends RESTService {
 							Context.get().monitorEvent(MonitoringEvent.SERVICE_MESSAGE,
 									"updateRepositoryOfModel: Calling synchronizeSourceCode now..");
 
-							MicroserviceSynchronization.synchronizeSourceCode(microservice, oldMicroservice,
+							String commitSha = MicroserviceSynchronization.synchronizeSourceCode(microservice, oldMicroservice,
 									this.getTracedFiles(MicroserviceGenerator.getRepositoryName(microservice)),
 									(BaseGitHostAdapter) gitAdapter, CodeGenerationService.this, metadataDoc, 
 									gitUtility, commitMessage);
 
 							Context.get().monitorEvent(MonitoringEvent.SERVICE_MESSAGE, "updateRepositoryOfModel: Synchronized!");
-							return "done";
+							return "done:" + commitSha;
 
 						} else {
 
@@ -449,7 +451,7 @@ public class CodeGenerationService extends RESTService {
 							Context.get().monitorEvent(MonitoringEvent.SERVICE_MESSAGE,
 									"updateRepositoryOfModel: Calling synchronizeSourceCode now..");
 
-							FrontendComponentSynchronization.synchronizeSourceCode(frontendComponent,
+							String commitSha = FrontendComponentSynchronization.synchronizeSourceCode(frontendComponent,
 									oldFrontendComponent,
 									this.getTracedFiles(
 											FrontendComponentGenerator.getRepositoryName(frontendComponent)),
@@ -457,7 +459,7 @@ public class CodeGenerationService extends RESTService {
 									gitUtility, commitMessage);
 
 							Context.get().monitorEvent(MonitoringEvent.SERVICE_MESSAGE, "updateRepositoryOfModel: Synchronized!");
-							return "done";
+							return "done:" + commitSha;
 						} else {
 							if (gitAdapter instanceof GitLabAdapter) {
 								return pseudoUpdateRepositoryOfModel(commitMessage, metadataDoc, serializedModel);
@@ -700,13 +702,14 @@ public class CodeGenerationService extends RESTService {
 			}
 
 			git.commit().setAuthor(this.gitUser, this.gitUserMail).setMessage(commitMessage).call();
-
+			
+			 Ref head = git.getRepository().getAllRefs().get("HEAD");
+             String commitSha = head.getObjectId().getName();
+             return commitSha;
 		} catch (Exception e) {
 			logger.printStackTrace(e);
 			return e.getMessage();
 		}
-
-		return "done";
 	}
 
 	/**
