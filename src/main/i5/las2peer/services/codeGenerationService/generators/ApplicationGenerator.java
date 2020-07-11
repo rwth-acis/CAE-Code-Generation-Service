@@ -24,6 +24,7 @@ import org.eclipse.jgit.lib.ObjectReader;
 import org.eclipse.jgit.lib.PersonIdent;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.StoredConfig;
+import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevTree;
 import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.transport.CredentialsProvider;
@@ -63,18 +64,20 @@ public class ApplicationGenerator extends Generator {
    * @param gitAdapter adapter for Git
    * 
    * @param commitMessage Message used as the commit message.
+   * @param versionTag String which should be used as the tag when commiting. May be null.
    * 
    * @throws GitHostException thrown if anything goes wrong during this process. Wraps around all
    *         other exceptions and prints their message.
    * 
    */
-  public static void createSourceCode(Application application, BaseGitHostAdapter gitAdapter, String commitMessage)
+  public static void createSourceCode(Application application, BaseGitHostAdapter gitAdapter, String commitMessage,
+		  String versionTag)
       throws GitHostException {
 	  if (gitAdapter == null) {
 		throw new GitHostException("Adapter is null!");
 	  }
     String repositoryName = "application-" + application.getName().replace(" ", "-");
-    createSourceCode(repositoryName, application, gitAdapter, commitMessage, false);
+    createSourceCode(repositoryName, application, gitAdapter, commitMessage, versionTag, false);
   }
 
   /**
@@ -85,6 +88,7 @@ public class ApplicationGenerator extends Generator {
    * @param application the application model
    * @param gitAdapter adapter for Git
    * @param commitMessage Message used as the commit message.
+   * @param versionTag String which should be used as the tag when commiting. May be null.
    * @param forDeploy True, if the source code is intended to use for deployment purpose, e.g. no
    *        gh-pages branch will be used
    * @throws GitHostException thrown if anything goes wrong during this process. Wraps around all
@@ -92,7 +96,7 @@ public class ApplicationGenerator extends Generator {
    *    * 
    */
   public static void createSourceCode(String repositoryName, Application application, 
-		  BaseGitHostAdapter gitAdapter, String commitMessage, boolean forDeploy) throws GitHostException {
+		  BaseGitHostAdapter gitAdapter, String commitMessage, String versionTag, boolean forDeploy) throws GitHostException {
 	if (gitAdapter == null) {
 	    throw new GitHostException("Adapter is null!");
 	}
@@ -214,9 +218,13 @@ public class ApplicationGenerator extends Generator {
             createTextFileInRepository(applicationRepository, "", "README.md", readMe);
         applicationRepository =
             createImageFileInRepository(applicationRepository, "img/", "logo.png", logo);
-        Git.wrap(applicationRepository).commit()
+        RevCommit commit = Git.wrap(applicationRepository).commit()
             .setMessage(commitMessage)
             .setCommitter(caeUser).call();
+        
+        if(versionTag != null) {
+        	Git.wrap(applicationRepository).tag().setObjectId(commit).setName(versionTag).call();	
+        }
       } catch (Exception e) {
         logger.printStackTrace(e);
         throw new GitHostException(e.getMessage());
@@ -315,7 +323,7 @@ public class ApplicationGenerator extends Generator {
       if (!forDeploy) {
         // push (local) repository content to GitHub repository "master" branch
         try {
-          pushToRemoteRepository(applicationRepository, gitAdapter, true);
+          pushToRemoteRepository(applicationRepository, gitAdapter, versionTag, true);
         } catch (Exception e) {
           logger.printStackTrace(e);
           throw new GitHostException(e.getMessage());
@@ -450,7 +458,7 @@ public class ApplicationGenerator extends Generator {
         // push (local) repository content to repository "gh-pages" branch
         try {
           pushToRemoteRepository(applicationRepository, "gh-pages",
-              "gh-pages", gitAdapter, true);
+              "gh-pages", gitAdapter, versionTag, true);
         } catch (Exception e) {
           logger.printStackTrace(e);
           throw new GitHostException(e.getMessage());
@@ -458,7 +466,7 @@ public class ApplicationGenerator extends Generator {
       } else {
         // push (local) repository content to repository "master" branch
         try {
-          pushToRemoteRepository(applicationRepository, gitAdapter, true);
+          pushToRemoteRepository(applicationRepository, gitAdapter, versionTag, true);
         } catch (Exception e) {
           logger.printStackTrace(e);
           throw new GitHostException(e.getMessage());

@@ -42,7 +42,7 @@ public class FrontendComponentSynchronization extends FrontendComponentGenerator
 
   public static String synchronizeSourceCode(FrontendComponent frontendComponent,
       FrontendComponent oldFrontendComponent, HashMap<String, JSONObject> files,BaseGitHostAdapter gitAdapter,CodeGenerationService service,
-      String metadataDoc, GitUtility gitUtility, String commitMessage)
+      String metadataDoc, GitUtility gitUtility, String commitMessage, String versionTag)
       throws GitHostException, GitHelperException {
     // first load the needed templates from the template repository
 
@@ -245,11 +245,12 @@ public class FrontendComponentSynchronization extends FrontendComponentGenerator
       }
 
 
-      String commitSha = updateTracedFilesInRepository(fileList, getRepositoryName(frontendComponent), service, commitMessage);
+      String commitSha = updateTracedFilesInRepository(fileList, getRepositoryName(frontendComponent), service,
+    		  commitMessage, versionTag);
       
       // merge development and master and push to gh-pages
    	  String masterBranchName = "gh-pages";
-   	  gitUtility.mergeIntoMasterBranch(getRepositoryName(frontendComponent), masterBranchName);
+   	  gitUtility.mergeIntoMasterBranch(getRepositoryName(frontendComponent), masterBranchName, versionTag);
    	  
    	  return commitSha;
     } catch (UnsupportedEncodingException e) {

@@ -87,12 +87,14 @@ public class RESTResources {
 	@ApiResponses(value = { @ApiResponse(code = HttpURLConnection.HTTP_OK, message = "OK"),
 			@ApiResponse(code = HttpURLConnection.HTTP_INTERNAL_ERROR, message = "Internal server error") })
 	public Response pushToRemote(@PathParam("repositoryName") String repositoryName) throws ServiceException {
+		Context.get().monitorEvent(MonitoringEvent.SERVICE_MESSAGE, "push: trying to push repository with name: " + repositoryName);
+		
 		try {
 			// determine which branch to merge in
 			boolean isFrontend = repositoryName.startsWith("frontendComponent-");
 			String masterBranchName = isFrontend ? "gh-pages" : "master";
 
-			gitUtility.mergeIntoMasterBranch(repositoryName, masterBranchName);
+			gitUtility.mergeIntoMasterBranch(repositoryName, masterBranchName, null);
 			JSONObject result = new JSONObject();
 			result.put("status", "ok");
 			return Response.ok(result.toJSONString()).build();

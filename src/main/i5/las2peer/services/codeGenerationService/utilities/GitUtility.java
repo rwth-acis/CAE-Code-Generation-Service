@@ -21,6 +21,7 @@ import org.eclipse.jgit.revwalk.RevTree;
 import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
 import org.eclipse.jgit.transport.CredentialsProvider;
+import org.eclipse.jgit.transport.RefSpec;
 import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider;
 import org.eclipse.jgit.treewalk.TreeWalk;
 import org.eclipse.jgit.treewalk.filter.PathFilter;
@@ -117,10 +118,11 @@ public class GitUtility {
 	   * 
 	   * @param repositoryName The name of the repository
 	   * @param masterBranchName The name of the master branch
+	   * @param versionTag String which should be used as the tag when commiting. May be null.
 	   * @throws GitHelperException thrown incase of error in git api
 	   * 
 	   */
-	public void mergeIntoMasterBranch(String repositoryName,String masterBranchName) throws GitHelperException {
+	public void mergeIntoMasterBranch(String repositoryName,String masterBranchName, String versionTag) throws GitHelperException {
 		Git git = null;
 
 	    try {
@@ -132,16 +134,22 @@ public class GitUtility {
 	    	mCmd.include(HEAD);
 	    	mCmd.setStrategy(MergeStrategy.THEIRS);
 	    	MergeResult mRes = mCmd.call();
-
+	    	
 	    	if (mRes.getMergeStatus().isSuccessful()) {
-	    		Context.get().monitorEvent(MonitoringEvent.SERVICE_MESSAGE,"Merged development and master branch successfully");
+	    		Context.get().monitorEvent(MonitoringEvent.SERVICE_MESSAGE, "Merged development and " + masterBranchName + " branch successfully");
 	    		Context.get().monitorEvent(MonitoringEvent.SERVICE_MESSAGE, "Now pushing the commits...");
 	    		PushCommand pushCmd = git.push();
 	    		pushCmd.setCredentialsProvider(provider).setForce(true).setPushAll().call();
+	    		
+	    		if(versionTag != null) {
+	    			RefSpec specTags = new RefSpec("refs/tags/" + versionTag + ":refs/tags/" + versionTag);
+	    			git.push().setCredentialsProvider(provider).setForce(true).setPushTags().setRefSpecs(specTags).call();
+	    		}
+	    		
 	    		Context.get().monitorEvent(MonitoringEvent.SERVICE_MESSAGE, "... commits pushed");
 	    	} else {
-	    		logger.warning("Error during merging of development and master branch");
-	    		throw new GitHelperException("Unable to merge master and development branch");
+	    		logger.warning("Error during merging of development and " + masterBranchName + " branch");
+	    		throw new GitHelperException("Unable to merge " + masterBranchName + " and development branch");
 	    	}
 	    }catch(GitAPIException e) {
 	    	throw new GitHelperException("Error using jGit: " + e.getMessage());

@@ -51,6 +51,7 @@ public class MicroserviceSynchronization extends MicroserviceGenerator {
    * @param metadataDoc metadata string from swagger
    * @param gitUtility GitUtility used for pushing.
    * @param commitMessage Message that should be used for the commit.
+   * @param versionTag String which should be used as the tag when commiting. May be null.
    * @return Commit sha identifier.
    * @throws ModelParseException thrown incase of error in model parsing
  * @throws GitHelperException 
@@ -58,7 +59,7 @@ public class MicroserviceSynchronization extends MicroserviceGenerator {
 
   public static String synchronizeSourceCode(Microservice microservice, Microservice oldMicroservice,
       HashMap<String, JSONObject> files, BaseGitHostAdapter gitAdapter, Service service, String metadataDoc,
-      GitUtility gitUtility, String commitMessage) throws ModelParseException, GitHelperException {
+      GitUtility gitUtility, String commitMessage, String versionTag) throws ModelParseException, GitHelperException {
 
     // first load the needed templates from the template repository
 
@@ -356,11 +357,11 @@ public class MicroserviceSynchronization extends MicroserviceGenerator {
     try {
       // commit changes
       String commitSha = updateTracedFilesInRepository(getUpdatedTracedFilesForRepository(traceModel, guidances),
-          getRepositoryName(microservice), service, commitMessage);
+          getRepositoryName(microservice), service, commitMessage, versionTag);
       
       // merge development and master and push to master
    	  String masterBranchName = "master";
-   	  gitUtility.mergeIntoMasterBranch(getRepositoryName(microservice), masterBranchName);
+   	  gitUtility.mergeIntoMasterBranch(getRepositoryName(microservice), masterBranchName, versionTag);
    	  
    	  return commitSha;
     } catch (UnsupportedEncodingException e) {

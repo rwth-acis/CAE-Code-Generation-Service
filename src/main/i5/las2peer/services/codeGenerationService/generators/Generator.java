@@ -391,12 +391,13 @@ public abstract class Generator {
    * @throws GitHostException if anything goes wrong during the push command
    * 
    */
-  public static Repository pushToRemoteRepository(Repository repository, BaseGitHostAdapter gitAdapter) throws GitHostException {
-    return pushToRemoteRepository(repository, "master", "master", gitAdapter, false);
+  public static Repository pushToRemoteRepository(Repository repository, BaseGitHostAdapter gitAdapter, String versionTag) throws GitHostException {
+    return pushToRemoteRepository(repository, "master", "master", gitAdapter, versionTag, false);
   }
   
-  public static Repository pushToRemoteRepository(Repository repository, BaseGitHostAdapter gitAdapter, boolean forcePush) throws GitHostException {
-	  return pushToRemoteRepository(repository, "master", "master", gitAdapter, forcePush);
+  public static Repository pushToRemoteRepository(Repository repository, BaseGitHostAdapter gitAdapter, String versionTag,
+		  boolean forcePush) throws GitHostException {
+	  return pushToRemoteRepository(repository, "master", "master", gitAdapter, versionTag, forcePush);
   }
 
 
@@ -409,6 +410,7 @@ public abstract class Generator {
    * @param localBranchName the name of the branch that should be pushed from
    * @param remoteBranchName the name of the branch that should be pushed to
    * @param gitAdapter adapter for Git
+   * @param versionTag String which should be used as the tag when commiting. May be null.
    * @param forcePush set t/f value
    * @return the {@link org.eclipse.jgit.lib.Repository} that was pushed
    * 
@@ -416,17 +418,32 @@ public abstract class Generator {
    * 
    */
   public static Repository pushToRemoteRepository(Repository repository, String localBranchName, 
-		  String remoteBranchName, BaseGitHostAdapter gitAdapter, boolean forcePush)
+		  String remoteBranchName, BaseGitHostAdapter gitAdapter, String versionTag, boolean forcePush)
       throws GitHostException {
     CredentialsProvider credentialsProvider =
         new UsernamePasswordCredentialsProvider(gitAdapter.getGitUser(), gitAdapter.getGitPassword());
     try {
     	RefSpec spec = new RefSpec("refs/heads/" + localBranchName + ":refs/heads/" + remoteBranchName);
+    	RefSpec specTags = new RefSpec("refs/tags/" + versionTag + ":refs/tags/" + versionTag);
     	if(forcePush){
-    		Git.wrap(repository).push().setForce(true).setRemote("Remote").setCredentialsProvider(credentialsProvider).setRefSpecs(spec).call();
+    		if(versionTag != null) {
+    			// push version tag and code
+    		    Git.wrap(repository).push().setForce(true).setRemote("Remote").setPushTags().setCredentialsProvider(credentialsProvider)
+    		        .setRefSpecs(spec, specTags).call();
+    		} else {
+    		    // only push code
+    			Git.wrap(repository).push().setPushTags().setForce(true).setRemote("Remote").setCredentialsProvider(credentialsProvider).setRefSpecs(spec).call();
+    		}
     	} else {
     		// the "setRemote" parameter name is defined in the generateNewRepository method
-    		Git.wrap(repository).push().setRemote("Remote").setCredentialsProvider(credentialsProvider).setRefSpecs(spec).call();
+    		if(versionTag != null) {
+    			// push version tag and code
+    		    Git.wrap(repository).push().setRemote("Remote").setPushTags().setCredentialsProvider(credentialsProvider)
+    		        .setRefSpecs(spec, specTags).call();
+    		} else {
+    			// only push code
+    			Git.wrap(repository).push().setRemote("Remote").setCredentialsProvider(credentialsProvider).setRefSpecs(spec).call();
+    		}
     	}
     } catch (Exception e) {
       logger.printStackTrace(e);
@@ -527,12 +544,14 @@ public abstract class Generator {
    * 
    * @param repositoryName The name of the repository
    * @param commitMessage A commit message
+   * @param versionTag String which should be used as the tag when commiting. May be null.
    * @param files An array containing the file names and file contents
    */
-  private static String commitMultipleFilesRaw(String repositoryName, String commitMessage,
+  private static String commitMultipleFilesRaw(String repositoryName, String commitMessage, String versionTag,
       String[][] files) {
     try {
-    	return ((CodeGenerationService) Context.getCurrent().getService()).storeAndCommitFilesRaw(repositoryName, commitMessage, files);
+    	return ((CodeGenerationService) Context.getCurrent().getService()).storeAndCommitFilesRaw(repositoryName, 
+    			commitMessage, versionTag, files);
     } catch (Exception e) {
       logger.printStackTrace(e);
       return "";
@@ -544,12 +563,13 @@ public abstract class Generator {
    * 
    * @param fileList A list containing the files that should be updated
    * @param repositoryName The name of the repository
+   * @param versionTag String which should be used as the tag when commiting. May be null.
    * @param service Name of the service
    */
 
   protected static String updateTracedFilesInRepository(List<String[]> fileList,
-      String repositoryName, Service service, String commitMessage) {
-    return commitMultipleFilesRaw(repositoryName, commitMessage,
+      String repositoryName, Service service, String commitMessage, String versionTag) {
+    return commitMultipleFilesRaw(repositoryName, commitMessage, versionTag,
         fileList.toArray(new String[][] {}));
   }
 

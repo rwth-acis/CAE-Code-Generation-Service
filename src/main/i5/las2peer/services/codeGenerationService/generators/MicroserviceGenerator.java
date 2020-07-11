@@ -19,6 +19,7 @@ import i5.las2peer.services.codeGenerationService.templateEngine.TemplateStrateg
 import i5.las2peer.services.codeGenerationService.traces.segments.Segment;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.lib.*;
+import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.transport.RemoteConfig;
 import org.eclipse.jgit.transport.URIish;
 import org.eclipse.jgit.treewalk.TreeWalk;
@@ -129,6 +130,7 @@ public class MicroserviceGenerator extends Generator {
  * @param templateRepositoryName the name of the template repository on GitHub
  * @param gitAdapter The gitAdapter that manages operations on GitHub/GitLab etc.
  * @param forcePush boolean value t/f
+ * @param versionTag String which should be used as the tag when commiting. May be null.
  * @return Commit sha identifier
    * @throws GitHostException thrown if anything goes wrong during this process. Wraps around all
    *         other exceptions and prints their message.
@@ -136,8 +138,8 @@ public class MicroserviceGenerator extends Generator {
    */
   
   public static String createSourceCode(Microservice microservice, 
-		  String templateRepositoryName, BaseGitHostAdapter gitAdapter, String commitMessage, boolean forcePush,
-          String metadataDoc) throws GitHostException {
+		  String templateRepositoryName, BaseGitHostAdapter gitAdapter, String commitMessage, String versionTag,
+		  boolean forcePush, String metadataDoc) throws GitHostException {
 	// variables to be closed in the final block
 	    Repository microserviceRepository = null;
 	    TreeWalk treeWalk = null;
@@ -487,11 +489,15 @@ public class MicroserviceGenerator extends Generator {
 	      // commit files
 	      String commitSha = "";
 	      try {
-	        Git.wrap(microserviceRepository).commit()
+	        RevCommit commit = Git.wrap(microserviceRepository).commit()
 	            .setMessage(commitMessage)
 	            .setCommitter(caeUser).call();
 	        Ref head = microserviceRepository.getAllRefs().get("HEAD");
             commitSha = head.getObjectId().getName();
+            
+            if(versionTag != null) {
+            	Git.wrap(microserviceRepository).tag().setObjectId(commit).setName(versionTag).call();	
+            }
 	      } catch (Exception e) {
 	        logger.printStackTrace(e);
 	        throw new GitHostException(e.getMessage());
@@ -499,7 +505,7 @@ public class MicroserviceGenerator extends Generator {
 
 	      // push (local) repository content to GitHub repository
 	      try {
-	        pushToRemoteRepository(microserviceRepository, gitAdapter, forcePush);
+	        pushToRemoteRepository(microserviceRepository, gitAdapter, versionTag, forcePush);
 	      } catch (Exception e) {
 	        logger.printStackTrace(e);
 	        throw new GitHostException(e.getMessage());
@@ -519,9 +525,9 @@ public class MicroserviceGenerator extends Generator {
   }
   
   public static void createSourceCode(Microservice microservice, String templateRepositoryName,
-      BaseGitHostAdapter gitAdapter, String commitMessage, String metadataDoc)
+      BaseGitHostAdapter gitAdapter, String commitMessage, String versionTag, String metadataDoc)
       throws GitHostException {
-	  createSourceCode(microservice, templateRepositoryName, gitAdapter, commitMessage, false, metadataDoc);
+	  createSourceCode(microservice, templateRepositoryName, gitAdapter, commitMessage, versionTag, false, metadataDoc);
     
   }
 
