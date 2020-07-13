@@ -25,6 +25,8 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
 import org.eclipse.jgit.api.Git;
+import org.eclipse.jgit.lib.Ref;
+import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.treewalk.TreeWalk;
 import org.eclipse.jgit.treewalk.filter.PathFilter;
 import org.json.simple.JSONArray;
@@ -127,6 +129,8 @@ public class RESTResources {
 			@ApiResponse(code = HttpURLConnection.HTTP_INTERNAL_ERROR, message = "Internal server error"),
 			@ApiResponse(code = HttpURLConnection.HTTP_NOT_FOUND, message = "404, file not found") })
 	public synchronized Response storeAndCommitFle(@PathParam("repositoryName") String repositoryName, String content) throws ServiceException {
+		Context.get().monitorEvent(MonitoringEvent.SERVICE_MESSAGE, "PUT {repositoryName}/file called with respositoryName: " + repositoryName);
+		
 		try {
 			JSONObject result = new JSONObject();
 
@@ -135,6 +139,7 @@ public class RESTResources {
 			String filePath = contentObject.get("filename").toString();
 			String fileContent = contentObject.get("content").toString();
 			String commitMessage = contentObject.get("commitMessage").toString();
+			int versionedModelId = Integer.parseInt(contentObject.get("versionedModelId").toString());
 			JSONObject traces = (JSONObject) contentObject.get("traces");
 
 			byte[] base64decodedBytes = Base64.getDecoder().decode(fileContent);
@@ -184,9 +189,18 @@ public class RESTResources {
 					fW = new FileWriter(traceFile, false);
 					fW.write(traces.toJSONString());
 					fW.close();
-
 					git.add().addFilepattern(filePath).addFilepattern(gitProxy.getTraceFileName(filePath)).call();
-					git.commit().setAuthor(gitUser, gitUserMail).setMessage(commitMessage).call();
+					RevCommit commit = git.commit().setAuthor(gitUser, gitUserMail).setMessage(commitMessage).call();
+					String commitSha = commit.getId().getName();
+					
+					// call Model Persistence Service to store the code commit
+					String response = (String) Context.getCurrent().invoke(
+							"i5.las2peer.services.modelPersistenceService.ModelPersistenceService@0.1", "addCodeCommitToVersionedModel",
+							new Serializable[]{commitSha, commitMessage, versionedModelId});
+					
+					if(response.equals("error")) {
+						throw new InternalServerErrorException();
+					}
 
 					result.put("status", "OK, file stored and commited");
 					return Response.ok(result.toJSONString()).build();
@@ -198,7 +212,7 @@ public class RESTResources {
 
 		} catch (Exception e) {
 			service.getLogger().log(Level.FINER, e.getMessage());
-			throw new InternalServerErrorException();
+			throw new InternalServerErrorException(e.getMessage());
 		}
 	}
 
