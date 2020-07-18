@@ -40,12 +40,7 @@ public class Application {
     for (int attributeIndex = 0; attributeIndex < modelComponents[0].getAttributes()
         .size(); attributeIndex++) {
       if (modelComponents[0].getAttributes().get(attributeIndex).getName().equals("version")) {
-        try {
-          this.setVersion(
-              modelComponents[0].getAttributes().get(attributeIndex).getValue());
-        } catch (NumberFormatException e) {
-          throw new ModelParseException("Application version is not a number!");
-        }
+          this.setVersion(modelComponents[0].getAttributes().get(attributeIndex).getValue());
       }
       if(modelComponents[0].getAttributes().get(attributeIndex).getName().equals("versionedModelId")) {
     	  this.versionedModelId = modelComponents[0].getAttributes().get(attributeIndex).getValue();
