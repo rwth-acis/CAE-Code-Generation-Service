@@ -243,7 +243,8 @@ public class ApplicationGenerator extends Generator {
       // fetch microservice repository contents and add them
       for (String microserviceName : application.getMicroservices().keySet()) {
         String microserviceRepositoryName = "microservice-" + microserviceName.replace(" ", "-");
-        treeWalk = getRepositoryContent(microserviceRepositoryName, gitAdapter);
+        String selectedCommitSha = application.getMicroservices().get(microserviceName).getSelectedCommitSha();
+        treeWalk = getRepositoryContent(microserviceRepositoryName, gitAdapter, selectedCommitSha);
         reader = treeWalk.getObjectReader();
         try {
           while (treeWalk.next()) {
@@ -342,7 +343,8 @@ public class ApplicationGenerator extends Generator {
       for (String frontendComponentName : application.getFrontendComponents().keySet()) {
         String frontendComponentRepositoryName =
             "frontendComponent-" + frontendComponentName.replace(" ", "-");
-        treeWalk = getRepositoryContent(frontendComponentRepositoryName, gitAdapter);
+        String selectedCommitSha = application.getFrontendComponents().get(frontendComponentName).getSelectedCommitSha();
+        treeWalk = getRepositoryContent(frontendComponentRepositoryName, gitAdapter, selectedCommitSha);
         reader = treeWalk.getObjectReader();
         try {
           while (treeWalk.next()) {

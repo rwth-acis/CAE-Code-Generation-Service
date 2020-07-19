@@ -30,6 +30,7 @@ public class Microservice {
   private Map<String, MobSOSLog> mobSOSLogs;
   private Database database;
   private String version;
+  private String selectedCommitSha;
   private String metadataDocString;
 
   /**
@@ -69,6 +70,9 @@ public class Microservice {
       }
       if(model.getAttributes().get(attributeIndex).getName().equals("versionedModelId")) {
       	this.versionedModelId = model.getAttributes().get(attributeIndex).getValue();
+      }
+      if(model.getAttributes().get(attributeIndex).getName().equals("commitSha")) {
+        this.selectedCommitSha = model.getAttributes().get(attributeIndex).getValue();
       }
     }
     
@@ -427,6 +431,10 @@ public class Microservice {
 
   public void setVersion(String version) {
     this.version = version;
+  }
+  
+  public String getSelectedCommitSha() {
+	return this.selectedCommitSha;
   }
 
   public void setMetadataDocString(String metadataDocString) {

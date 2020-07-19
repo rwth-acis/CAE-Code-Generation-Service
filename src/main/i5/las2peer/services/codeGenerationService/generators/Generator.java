@@ -166,28 +166,24 @@ public abstract class Generator {
    * 
    * @param repositoryName the name of the template repository
    * @param gitAdapter adapter for git
+   * @param selectedCommitSha The sha identifier of the commit where the content of the repository should be received from.
    * @return a {@link org.eclipse.jgit.treewalk.TreeWalk}
    * 
    * @throws GitHostException if anything goes wrong during retrieving the repository's content
    * 
    */
-  public static TreeWalk getRepositoryContent(String repositoryName, BaseGitHostAdapter gitAdapter)
+  public static TreeWalk getRepositoryContent(String repositoryName, BaseGitHostAdapter gitAdapter, String selectedCommitSha)
       throws GitHostException {
     Repository repository = getRemoteRepository(repositoryName, gitAdapter);
     // get the content of the repository
     RevWalk revWalk = null;
     TreeWalk treeWalk = null;
-    String resolveString = Constants.HEAD;
-
-    if (repositoryName.startsWith("frontendComponent")) {
-      resolveString = "refs/remotes/origin/gh-pages";
-    }
 
     try {
-      ObjectId lastCommitId = repository.resolve(resolveString);
       treeWalk = new TreeWalk(repository);
       revWalk = new RevWalk(repository);
-      RevTree tree = revWalk.parseCommit(lastCommitId).getTree();
+      ObjectId id = ObjectId.fromString(selectedCommitSha);
+      RevTree tree = revWalk.parseCommit(id).getTree();
       treeWalk.addTree(tree);
       treeWalk.setRecursive(true);
     } catch (Exception e) {
