@@ -193,6 +193,7 @@ public class ApplicationGenerator extends Generator {
       // master branch, which is needed to create a "gh-pages" branch afterwards
       String readMe = null;
       BufferedImage logo = null;
+      String getExtDependencies = null;
       treeWalk = getTemplateRepositoryContent(gitAdapter);
       treeWalk.setFilter(PathFilter.create("application/"));
       ObjectReader reader = treeWalk.getObjectReader();
@@ -211,6 +212,21 @@ public class ApplicationGenerator extends Generator {
             case "logo_application.png":
               logo = ImageIO.read(loader.openStream());
               break;
+            case "get_ext_dependencies.sh":
+              getExtDependencies = new String(loader.getBytes(), "UTF-8");
+              
+              // add git clone commands for every external dependency
+              for(String key : application.getExternalDependencies().keySet()) {
+            	  getExtDependencies += System.lineSeparator();
+            	  String tag = application.getExternalDependencies().get(key);
+            	  if(tag.equals("Latest")) {
+            		  getExtDependencies += "git clone " + key;
+            	  } else {
+            		  getExtDependencies += "git clone -b "+ tag + " " + key;  
+            	  }
+              }
+              
+              break;
           }
         }
         // add the two files to the repository and commit them
@@ -218,6 +234,10 @@ public class ApplicationGenerator extends Generator {
             createTextFileInRepository(applicationRepository, "", "README.md", readMe);
         applicationRepository =
             createImageFileInRepository(applicationRepository, "img/", "logo.png", logo);
+        
+        applicationRepository = createTextFileInRepository(applicationRepository, "", "get_ext_dependencies.sh", getExtDependencies);
+        
+        
         RevCommit commit = Git.wrap(applicationRepository).commit()
             .setMessage(commitMessage)
             .setCommitter(caeUser).call();
