@@ -789,11 +789,12 @@ public class CodeGenerationService extends RESTService {
 	 * Prepare a deployment of an application model, i.e. the model is copied to
 	 * a temp repository which is used later during the deployment
 	 * 
-	 * @param serializedModel
-	 *            The application model to deploy
+	 * @param serializedModel The application model to deploy
+	 * @param externalDependencies Map containing GitHub URLs and version tags of external dependencies.
+	 *            
 	 * @return A status text
 	 */
-	public String prepareDeploymentApplicationModel(ArrayList<SimpleModel> serializedModel) {
+	public String prepareDeploymentApplicationModel(ArrayList<SimpleModel> serializedModel, HashMap<String, String> externalDependencies) {
 		SimpleModel model = serializedModel.get(0);
 
 		Context.get().monitorEvent(MonitoringEvent.SERVICE_MESSAGE,
@@ -809,7 +810,7 @@ public class CodeGenerationService extends RESTService {
 					case "application":
 						Context.get().monitorEvent(MonitoringEvent.SERVICE_MESSAGE,
 								"deployApplicationModel: Creating application model now..");
-						Application application = new Application(serializedModel, new HashMap<String,String>());
+						Application application = new Application(serializedModel, externalDependencies);
 
 						String repositoryName = deploymentRepo;
 

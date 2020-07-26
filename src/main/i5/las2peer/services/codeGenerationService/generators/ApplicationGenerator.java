@@ -217,7 +217,10 @@ public class ApplicationGenerator extends Generator {
               
               // add git clone commands for every external dependency
               for(String key : application.getExternalDependencies().keySet()) {
+            	  // go to new line
             	  getExtDependencies += System.lineSeparator();
+            	  
+            	  // clone external dependency repository into the extra folder
             	  String tag = application.getExternalDependencies().get(key);
             	  if(tag.equals("Latest")) {
             		  getExtDependencies += "git clone " + key;
