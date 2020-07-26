@@ -76,7 +76,7 @@ public class ApplicationGenerator extends Generator {
 	  if (gitAdapter == null) {
 		throw new GitHostException("Adapter is null!");
 	  }
-    String repositoryName = "application-" + application.getName().replace(" ", "-");
+    String repositoryName = "application-" + application.getVersionedModelId().replace(" ", "-");
     createSourceCode(repositoryName, application, gitAdapter, commitMessage, versionTag, false);
   }
 

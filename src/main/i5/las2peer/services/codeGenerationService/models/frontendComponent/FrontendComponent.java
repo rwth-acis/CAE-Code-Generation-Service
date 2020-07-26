@@ -74,6 +74,9 @@ public class FrontendComponent {
       if(model.getAttributes().get(attributeIndex).getName().equals("commitSha")) {
     	this.selectedCommitSha = model.getAttributes().get(attributeIndex).getValue();
       }
+      if(model.getAttributes().get(attributeIndex).getName().equals("componentName")) {
+    	this.name = model.getAttributes().get(attributeIndex).getValue();
+      }
     }
     // go through the nodes and create objects
     ArrayList<SimpleNode> nodes = model.getNodes();
@@ -337,10 +340,6 @@ public class FrontendComponent {
     }
   }
 
-  public String getVersionedModelId() {
-	return versionedModelId;
-  }
-
   public String getWidgetModelId() {
     return widgetModelId;
   }
@@ -351,8 +350,12 @@ public class FrontendComponent {
   }
 
 
-  public String getName() {
+  public String getVersionedModelId() {
     return this.versionedModelId;
+  }
+  
+  public String getName() {
+	return this.name;
   }
 
 

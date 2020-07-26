@@ -47,6 +47,9 @@ public class Application {
       if(modelComponents.get(0).getAttributes().get(attributeIndex).getName().equals("versionedModelId")) {
     	  this.versionedModelId = modelComponents.get(0).getAttributes().get(attributeIndex).getValue();
       }
+      if(modelComponents.get(0).getAttributes().get(attributeIndex).getName().equals("componentName")) {
+    	  this.name = modelComponents.get(0).getAttributes().get(attributeIndex).getValue();
+      }
     }
 
     // now construct models for all components (starting with the first component, first entry of
@@ -95,11 +98,16 @@ public class Application {
   }
 
 
-  public String getName() {
+  public String getVersionedModelId() {
     return this.versionedModelId;
   }
 
+  
+  public String getName() {
+	return this.name;  
+  }
 
+  
   public void setName(String name) {
     this.name = name;
   }

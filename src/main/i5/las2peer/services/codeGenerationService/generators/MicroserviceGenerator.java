@@ -594,7 +594,7 @@ public class MicroserviceGenerator extends Generator {
       case "build.xml":
         template = templateEngine
             .createTemplate(microservice.getMicroserviceModelId() + ":buildFile", templateContent);
-        template.setVariable("$Microservice_Name$", microservice.getName());
+        template.setVariable("$Microservice_Name$", microservice.getVersionedModelId());
         break;
       case "start_network.bat":
         template = templateEngine.createTemplate(
@@ -714,7 +714,7 @@ public class MicroserviceGenerator extends Generator {
         microservice.getResourceName(), serviceClassTemplate);
 
     // service name for documentation
-    serviceClassTemplate.setVariable("$Microservice_Name$", microservice.getName());
+    serviceClassTemplate.setVariable("$Microservice_Name$", microservice.getVersionedModelId());
     // relative resource path (resource base path)
     serviceClassTemplate.setVariable("$Relative_Resource_Path$", relativeResourcePath);
     // version
@@ -1530,10 +1530,10 @@ public class MicroserviceGenerator extends Generator {
     // general replacements
 
     serviceTestTemplate.setVariable("$Resource_Name$", microservice.getResourceName());
-    serviceTestTemplate.setVariable("$Microservice_Name$", microservice.getName());
+    serviceTestTemplate.setVariable("$Microservice_Name$", microservice.getVersionedModelId());
 
     serviceTest = serviceTest.replace("$Resource_Name$", microservice.getResourceName());
-    serviceTest = serviceTest.replace("$Microservice_Name$", microservice.getName());
+    serviceTest = serviceTest.replace("$Microservice_Name$", microservice.getVersionedModelId());
     // get the resource address: (skip first /)
     String relativeResourcePath =
         microservice.getPath().substring(microservice.getPath().indexOf("/", 8) + 1);
@@ -1702,7 +1702,7 @@ public class MicroserviceGenerator extends Generator {
 
       currentTableTemplate.setVariableIfNotSet("$Column$", "");
     }
-    databaseTemplate.setVariable("$Service_Name$", microservice.getName());
+    databaseTemplate.setVariable("$Service_Name$", microservice.getVersionedModelId());
     databaseTemplate.setVariable("$Database_Schema$", database.getSchema());
     // remove last placeholder
     databaseTemplate.setVariableIfNotSet("$Database_Table$", "");

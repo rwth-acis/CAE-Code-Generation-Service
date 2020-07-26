@@ -74,6 +74,9 @@ public class Microservice {
       if(model.getAttributes().get(attributeIndex).getName().equals("commitSha")) {
         this.selectedCommitSha = model.getAttributes().get(attributeIndex).getValue();
       }
+      if(model.getAttributes().get(attributeIndex).getName().equals("componentName")) {
+    	this.name = model.getAttributes().get(attributeIndex).getValue();
+      }
     }
     
     // set default value if version is null
@@ -354,7 +357,7 @@ public class Microservice {
   }
 
 
-  public String getName() {
+  public String getVersionedModelId() {
     return this.versionedModelId;
   }
 
@@ -363,8 +366,8 @@ public class Microservice {
     this.name = name;
   }
   
-  public String getVersionedModelId() {
-	return versionedModelId;
+  public String getName() {
+	return this.name;
   }
 
   public String getPath() {

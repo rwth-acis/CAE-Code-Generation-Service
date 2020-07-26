@@ -100,6 +100,7 @@ public class FrontendComponentGenerator extends Generator {
         try {
             PersonIdent caeUser = new PersonIdent(gitAdapter.getGitUser(), gitAdapter.getGitUserMail());
             String repositoryName = getRepositoryName(frontendComponent);
+            String componentName = frontendComponent.getName();
             frontendComponentRepository = generateNewRepository(repositoryName, gitAdapter);
 
 
@@ -192,7 +193,7 @@ public class FrontendComponentGenerator extends Generator {
                         case "README.md":
                             readMe = new String(loader.getBytes(), "UTF-8");
                             readMe = readMe.replace("$Repository_Name$", repositoryName);
-                            readMe = readMe.replace("$Widget_Name$", frontendComponent.getName());
+                            readMe = readMe.replace("$Widget_Name$", componentName);
                             readMe = readMe.replace("$Organization_Name$", gitAdapter.getGitOrganization());
                             break;
                         case "logo_frontend.png":
