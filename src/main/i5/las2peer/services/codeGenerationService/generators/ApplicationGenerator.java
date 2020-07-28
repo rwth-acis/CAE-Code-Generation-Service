@@ -8,6 +8,7 @@ import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.util.HashMap;
 
 import javax.imageio.ImageIO;
 
@@ -215,19 +216,57 @@ public class ApplicationGenerator extends Generator {
             case "get_ext_dependencies.sh":
               getExtDependencies = new String(loader.getBytes(), "UTF-8");
               
-              // add git clone commands for every external dependency
-              for(String key : application.getExternalDependencies().keySet()) {
-            	  // go to new line
-            	  getExtDependencies += System.lineSeparator();
-            	  
+              // split external dependencies by their type
+              HashMap<String, String> extDependencies = application.getExternalDependencies();
+              HashMap<String, String> frontendDependencies = new HashMap<>();
+              HashMap<String, String> microserviceDependencies = new HashMap<>();
+              for(String key : extDependencies.keySet()) {
+            	  if(key.startsWith("frontend:")) {
+            		  frontendDependencies.put(key.split("frontend:")[1], extDependencies.get(key));
+            	  } else if(key.startsWith("microservice:")) {
+            		  microserviceDependencies.put(key.split("microservice:")[1], extDependencies.get(key));
+            	  }
+              }
+              
+              // create folder for frontend external dependencies
+              getExtDependencies += System.lineSeparator() + "mkdir frontend && cd frontend" + System.lineSeparator();
+              
+              // add git clone commands for every frontend external dependency
+              for(String key : frontendDependencies.keySet()) {
             	  // clone external dependency repository into the extra folder
-            	  String tag = application.getExternalDependencies().get(key);
+            	  String tag = frontendDependencies.get(key);
             	  if(tag.equals("Latest")) {
             		  getExtDependencies += "git clone " + key;
             	  } else {
             		  getExtDependencies += "git clone -b "+ tag + " " + key;  
             	  }
+            	  
+               	  // go to new line
+            	  getExtDependencies += System.lineSeparator();
               }
+              
+              // go back to /dependencies
+              getExtDependencies += "cd .." + System.lineSeparator();
+              
+              // create folder for microservice external dependencies
+              getExtDependencies += "mkdir microservices && cd microservices" + System.lineSeparator();
+              
+              // add git clone commands for every microservice external dependency
+              for(String key : microserviceDependencies.keySet()) {
+            	  // clone external dependency repository into the extra folder
+            	  String tag = microserviceDependencies.get(key);
+            	  if(tag.equals("Latest")) {
+            		  getExtDependencies += "git clone " + key;
+            	  } else {
+            		  getExtDependencies += "git clone -b "+ tag + " " + key;  
+            	  }
+            	  
+               	  // go to new line
+            	  getExtDependencies += System.lineSeparator();
+              }
+              
+              // go back to /dependencies
+              getExtDependencies += "cd .." + System.lineSeparator();
               
               break;
           }
