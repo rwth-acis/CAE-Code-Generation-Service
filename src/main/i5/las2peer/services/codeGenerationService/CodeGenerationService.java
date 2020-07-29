@@ -862,6 +862,10 @@ public class CodeGenerationService extends RESTService {
 	public GitProxy getGitProxy() {
 		return gitProxy;
 	}
+	
+	public GitHostAdapter getGitAdapter() {
+		return this.gitAdapter;
+	}
 
 	public boolean isUseModelCheck() {
 		return useModelCheck;
