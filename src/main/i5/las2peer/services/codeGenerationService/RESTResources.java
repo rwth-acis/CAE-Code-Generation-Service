@@ -95,6 +95,9 @@ public class RESTResources {
 	@ApiResponses(value = {@ApiResponse(code = HttpURLConnection.HTTP_OK, message = "OK"),
 			               @ApiResponse(code = HttpURLConnection.HTTP_INTERNAL_ERROR, message = "Internal server error")})
 	public Response addTag(@PathParam("repositoryName") String repositoryName, String jsonInput) {
+		Context.get().monitorEvent(MonitoringEvent.SERVICE_MESSAGE, "tags: trying to add tag to repository with name: " + repositoryName);
+		
+		
 		JSONObject json = (JSONObject) JSONValue.parse(jsonInput);
 		String versionTag = (String) json.get("tag");
 		String commitSha = (String) json.get("commitSha");
