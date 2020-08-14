@@ -274,9 +274,9 @@ public class RESTResources {
 					RevCommit commit = git.commit().setAuthor(gitUser, gitUserMail).setMessage(commitMessage).call();
 					String commitSha = commit.getId().getName();
 					
-					// call Model Persistence Service to store the code commit
+					// call Model Persistence Service to store the auto commit
 					String response = (String) Context.getCurrent().invoke(
-							"i5.las2peer.services.modelPersistenceService.ModelPersistenceService@0.1", "addCodeCommitToVersionedModel",
+							"i5.las2peer.services.modelPersistenceService.ModelPersistenceService@0.1", "addAutoCommitToVersionedModel",
 							new Serializable[]{commitSha, commitMessage, versionedModelId});
 					
 					if(response.equals("error")) {
