@@ -5,12 +5,15 @@ import i5.las2peer.api.Service;
 import i5.las2peer.api.logging.MonitoringEvent;
 import i5.las2peer.logging.L2pLogger;
 import i5.las2peer.services.codeGenerationService.adapters.BaseGitHostAdapter;
+import i5.las2peer.services.codeGenerationService.exception.GitHelperException;
 import i5.las2peer.services.codeGenerationService.exception.ModelParseException;
 import i5.las2peer.services.codeGenerationService.models.microservice.Microservice;
 import i5.las2peer.services.codeGenerationService.models.traceModel.FileTraceModel;
 import i5.las2peer.services.codeGenerationService.models.traceModel.FileTraceModelFactory;
 import i5.las2peer.services.codeGenerationService.models.traceModel.TraceModel;
 import i5.las2peer.services.codeGenerationService.templateEngine.*;
+import i5.las2peer.services.codeGenerationService.utilities.GitUtility;
+
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.ObjectLoader;
 import org.eclipse.jgit.lib.ObjectReader;
@@ -46,11 +49,17 @@ public class MicroserviceSynchronization extends MicroserviceGenerator {
    * @param gitAdapter adapter for git
    * @param service name of the service
    * @param metadataDoc metadata string from swagger
+   * @param gitUtility GitUtility used for pushing.
+   * @param commitMessage Message that should be used for the commit.
+   * @param versionTag String which should be used as the tag when commiting. May be null.
+   * @return Commit sha identifier.
    * @throws ModelParseException thrown incase of error in model parsing
+ * @throws GitHelperException 
    */
 
-  public static void synchronizeSourceCode(Microservice microservice, Microservice oldMicroservice,
-      HashMap<String, JSONObject> files, BaseGitHostAdapter gitAdapter, Service service, String metadataDoc) throws ModelParseException {
+  public static String synchronizeSourceCode(Microservice microservice, Microservice oldMicroservice,
+      HashMap<String, JSONObject> files, BaseGitHostAdapter gitAdapter, Service service, String metadataDoc,
+      GitUtility gitUtility, String commitMessage, String versionTag) throws ModelParseException, GitHelperException {
 
     // first load the needed templates from the template repository
 
@@ -347,10 +356,17 @@ public class MicroserviceSynchronization extends MicroserviceGenerator {
 
     try {
       // commit changes
-      updateTracedFilesInRepository(getUpdatedTracedFilesForRepository(traceModel, guidances),
-          getRepositoryName(microservice), service);
+      String commitSha = updateTracedFilesInRepository(getUpdatedTracedFilesForRepository(traceModel, guidances),
+          getRepositoryName(microservice), service, commitMessage, versionTag);
+      
+      // merge development and master and push to master
+   	  String masterBranchName = "master";
+   	  gitUtility.mergeIntoMasterBranch(getRepositoryName(microservice), masterBranchName, versionTag);
+   	  
+   	  return commitSha;
     } catch (UnsupportedEncodingException e) {
       logger.printStackTrace(e);
+      return "";
     }
 
   }

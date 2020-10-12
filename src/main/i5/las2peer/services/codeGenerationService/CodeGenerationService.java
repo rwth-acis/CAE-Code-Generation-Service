@@ -4,12 +4,15 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Base64;
 import java.util.HashMap;
 import java.util.Objects;
 
 import org.apache.commons.io.FileUtils;
 import org.eclipse.jgit.api.Git;
+import org.eclipse.jgit.lib.Ref;
+import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.treewalk.TreeWalk;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
@@ -25,6 +28,7 @@ import i5.las2peer.services.codeGenerationService.adapters.BaseGitHostAdapter;
 import i5.las2peer.services.codeGenerationService.adapters.GitHostAdapter;
 import i5.las2peer.services.codeGenerationService.adapters.GitHubAdapter;
 import i5.las2peer.services.codeGenerationService.adapters.GitLabAdapter;
+import i5.las2peer.services.codeGenerationService.exception.GitHelperException;
 import i5.las2peer.services.codeGenerationService.exception.GitHostException;
 import i5.las2peer.services.codeGenerationService.exception.ModelParseException;
 import i5.las2peer.services.codeGenerationService.generators.ApplicationGenerator;
@@ -151,7 +155,7 @@ public class CodeGenerationService extends RESTService {
 
 		// Create git adapter matching the usedGitHost
 		if (Objects.equals(usedGitHost, "GitHub")) {
-			gitAdapter = new GitHubAdapter(gitUser, gitPassword, gitOrganization, templateRepository, gitUserMail);
+			gitAdapter = new GitHubAdapter(gitUser, gitPassword, token, gitOrganization, templateRepository, gitUserMail);
 		} else if (Objects.equals(usedGitHost, "GitLab")) {
 			gitAdapter = new GitLabAdapter(baseURL, token, gitUser, gitPassword, gitOrganization, templateRepository,
 					gitUserMail);
@@ -174,7 +178,8 @@ public class CodeGenerationService extends RESTService {
 	 * passed on model.
 	 * 
 	 * @param forcePush boolean value
-	 * 
+	 * @param commitMessage Message that should be used for the commit.
+	 * @param versionTag String which should be used as the tag when commiting. May be null.
 	 * @param serializedModel
 	 *            a {@link i5.cae.simpleModel.SimpleModel} that contains the
 	 *            model, or in case of an application model also the model
@@ -184,9 +189,10 @@ public class CodeGenerationService extends RESTService {
 	 *         error, the error message
 	 * 
 	 */
-	public String createFromModel(boolean forcePush, String metadataDoc, Serializable... serializedModel) {
+	public String createFromModel(boolean forcePush, String commitMessage, String versionTag, String metadataDoc,
+			ArrayList<SimpleModel> serializedModel, HashMap<String, String> externalDependencies) {
 		
-		SimpleModel model = (SimpleModel) serializedModel[0];
+		SimpleModel model = (SimpleModel) serializedModel.get(0);
 		Context.get().monitorEvent(MonitoringEvent.SERVICE_MESSAGE, "createFromModel: Received model with name " + model.getName());
 
 		// TESTING: write as file
@@ -206,6 +212,7 @@ public class CodeGenerationService extends RESTService {
 			if (model.getAttributes().get(i).getName().equals("type")) {
 				String type = model.getAttributes().get(i).getValue();
 				try {
+					String commitSha;
 					switch (type) {
 					case "microservice":
 						// Create an object representing the microservice model
@@ -216,10 +223,10 @@ public class CodeGenerationService extends RESTService {
 						// Generate the code (and repositories) for this model
 						Context.get().monitorEvent(MonitoringEvent.SERVICE_MESSAGE,
 								"createFromModel: Creating microservice source code now..");
-						MicroserviceGenerator.createSourceCode(microservice, this.templateRepository,
-								(BaseGitHostAdapter) gitAdapter, forcePush, metadataDoc);
+						commitSha = MicroserviceGenerator.createSourceCode(microservice, this.templateRepository,
+								(BaseGitHostAdapter) gitAdapter, commitMessage, versionTag, forcePush, metadataDoc);
 						Context.get().monitorEvent(MonitoringEvent.SERVICE_MESSAGE, "createFromModel: Created!");
-						return "done";
+						return "done:" + commitSha;
 
 					// The same for the two other types
 					case "frontend-component":
@@ -228,17 +235,18 @@ public class CodeGenerationService extends RESTService {
 						FrontendComponent frontendComponent = new FrontendComponent(model);
 						Context.get().monitorEvent(MonitoringEvent.SERVICE_MESSAGE,
 								"createFromModel: Creating frontend component source code now..");
-						FrontendComponentGenerator.createSourceCode(frontendComponent, (BaseGitHostAdapter) gitAdapter,
-								forcePush);
+						commitSha = FrontendComponentGenerator.createSourceCode(frontendComponent, (BaseGitHostAdapter) gitAdapter,
+								commitMessage, versionTag, forcePush);
 						Context.get().monitorEvent(MonitoringEvent.SERVICE_MESSAGE, "createFromModel: Created!");
-						return "done";
+						return "done:" + commitSha;
 
 					case "application":
 						Context.get().monitorEvent(MonitoringEvent.SERVICE_MESSAGE, "createFromModel: Creating application model now..");
-						Application application = new Application(serializedModel);
+						Application application = new Application(serializedModel, externalDependencies);
 						Context.get().monitorEvent(MonitoringEvent.SERVICE_MESSAGE,
 								"createFromModel: Creating application source code now..");
-						ApplicationGenerator.createSourceCode(application, (BaseGitHostAdapter) gitAdapter);
+						ApplicationGenerator.createSourceCode(application, (BaseGitHostAdapter) gitAdapter, commitMessage,
+								versionTag);
 						Context.get().monitorEvent(MonitoringEvent.SERVICE_MESSAGE, "createFromModel: Created!");
 						return "done";
 					default:
@@ -261,8 +269,10 @@ public class CodeGenerationService extends RESTService {
 		return "Model has no attribute 'type'!";
 	}
 
-	public String createFromModel(String metadataDoc, Serializable... serializedModel) {
-		return createFromModel(false, "", serializedModel);
+	public String createFromModel(String commitMessage, String versionTag, String metadataDoc, ArrayList<SimpleModel> serializedModel,
+			HashMap<String, String> externalDependencies) {
+		if(versionTag.equals("")) versionTag = null;
+		return createFromModel(false, commitMessage, versionTag, "", serializedModel, externalDependencies);
 	}
 
 	/**
@@ -279,8 +289,8 @@ public class CodeGenerationService extends RESTService {
 	 *         error, the error message
 	 * 
 	 */
-	public String deleteRepositoryOfModel(Serializable... serializedModel) {
-		SimpleModel model = (SimpleModel) serializedModel[0];
+	public String deleteRepositoryOfModel(ArrayList<SimpleModel> serializedModel) {
+		SimpleModel model = (SimpleModel) serializedModel.get(0);
 		String modelName = model.getName();
 		Context.get().monitorEvent(MonitoringEvent.SERVICE_MESSAGE, "deleteRepositoryOfModel: Received model with name " + modelName);
 		for (int i = 0; i < model.getAttributes().size(); i++) {
@@ -331,6 +341,9 @@ public class CodeGenerationService extends RESTService {
 	 * but just deletes the old repository and replaces it with the contents of
 	 * the new model.
 	 * 
+	 * @param commitMessage Commit message that should be used.
+	 * @param versionTag String which should be used as the tag when commiting. May be null.
+	 * @param metadataDoc
 	 * @param serializedModel
 	 *            a {@link i5.cae.simpleModel.SimpleModel} that contains the
 	 *            model, or in case of an application model also the model
@@ -340,16 +353,19 @@ public class CodeGenerationService extends RESTService {
 	 *         error, the error message
 	 * 
 	 */
-	public String updateRepositoryOfModel(String metadataDoc, Serializable... serializedModel) {
-		SimpleModel model = (SimpleModel) serializedModel[0];
+	public String updateRepositoryOfModel(String commitMessage, String versionTag, String metadataDoc, 
+			ArrayList<SimpleModel> serializedModel, HashMap<String, String> externalDependencies) {
+		SimpleModel model = (SimpleModel) serializedModel.get(0);
 		String modelName = model.getName();
 		Context.get().monitorEvent(MonitoringEvent.SERVICE_MESSAGE, "updateRepositoryOfModel: Received model with name " + modelName);
 
+		if(versionTag.equals("")) versionTag = null;
+		
 		// old model only used for microservice and frontend components
 		SimpleModel oldModel = null;
 
-		if (serializedModel.length > 1) {
-			oldModel = (SimpleModel) serializedModel[1];
+		if (serializedModel.size() > 1) {
+			oldModel = (SimpleModel) serializedModel.get(1);
 			Context.get().monitorEvent(MonitoringEvent.SERVICE_MESSAGE,
 					"updateRepositoryOfModel: Received old model with name " + oldModel.getName());
 		}
@@ -381,19 +397,21 @@ public class CodeGenerationService extends RESTService {
 							Context.get().monitorEvent(MonitoringEvent.SERVICE_MESSAGE,
 									"updateRepositoryOfModel: Calling synchronizeSourceCode now..");
 
-							MicroserviceSynchronization.synchronizeSourceCode(microservice, oldMicroservice,
+							String commitSha = MicroserviceSynchronization.synchronizeSourceCode(microservice, oldMicroservice,
 									this.getTracedFiles(MicroserviceGenerator.getRepositoryName(microservice)),
-									(BaseGitHostAdapter) gitAdapter, CodeGenerationService.this, metadataDoc);
+									(BaseGitHostAdapter) gitAdapter, CodeGenerationService.this, metadataDoc, 
+									gitUtility, commitMessage, versionTag);
 
 							Context.get().monitorEvent(MonitoringEvent.SERVICE_MESSAGE, "updateRepositoryOfModel: Synchronized!");
-							return "done";
+							return "done:" + commitSha;
 
 						} else {
 
 							if (gitAdapter instanceof GitLabAdapter) {
 								// Use pseudo-update to circumvent gitlab
 								// deletion/creation problem
-								return pseudoUpdateRepositoryOfModel(metadataDoc, serializedModel);
+								return pseudoUpdateRepositoryOfModel(commitMessage, versionTag, metadataDoc, 
+										serializedModel, externalDependencies);
 
 							} else {
 								if (useModelSynchronization) {
@@ -422,7 +440,7 @@ public class CodeGenerationService extends RESTService {
 								Context.get().monitorEvent(MonitoringEvent.SERVICE_MESSAGE,
 										"updateRepositoryOfModel: Calling createFromModel now..");
 
-								return createFromModel(metadataDoc, serializedModel);
+								return createFromModel(commitMessage, versionTag, metadataDoc, serializedModel, externalDependencies);
 							}
 						}
 
@@ -445,17 +463,19 @@ public class CodeGenerationService extends RESTService {
 							Context.get().monitorEvent(MonitoringEvent.SERVICE_MESSAGE,
 									"updateRepositoryOfModel: Calling synchronizeSourceCode now..");
 
-							FrontendComponentSynchronization.synchronizeSourceCode(frontendComponent,
+							String commitSha = FrontendComponentSynchronization.synchronizeSourceCode(frontendComponent,
 									oldFrontendComponent,
 									this.getTracedFiles(
 											FrontendComponentGenerator.getRepositoryName(frontendComponent)),
-									(BaseGitHostAdapter) gitAdapter, CodeGenerationService.this, metadataDoc);
+									(BaseGitHostAdapter) gitAdapter, CodeGenerationService.this, metadataDoc, 
+									gitUtility, commitMessage, versionTag);
 
 							Context.get().monitorEvent(MonitoringEvent.SERVICE_MESSAGE, "updateRepositoryOfModel: Synchronized!");
-							return "done";
+							return "done:" + commitSha;
 						} else {
 							if (gitAdapter instanceof GitLabAdapter) {
-								return pseudoUpdateRepositoryOfModel(metadataDoc, serializedModel);
+								return pseudoUpdateRepositoryOfModel(commitMessage, versionTag, metadataDoc, 
+										serializedModel, externalDependencies);
 							} else {
 								if (useModelSynchronization) {
 									Context.get().monitorEvent(MonitoringEvent.SERVICE_MESSAGE,
@@ -479,7 +499,7 @@ public class CodeGenerationService extends RESTService {
 
 								Context.get().monitorEvent(MonitoringEvent.SERVICE_MESSAGE,
 										"updateRepositoryOfModel: Calling createFromModel now..");
-								return createFromModel(metadataDoc, serializedModel);
+								return createFromModel(commitMessage, versionTag, metadataDoc, serializedModel, externalDependencies);
 							}
 
 						}
@@ -502,7 +522,7 @@ public class CodeGenerationService extends RESTService {
 						 * "updateRepositoryOfModel: Calling createFromModel now.."
 						 * ); return createFromModel(serializedModel);
 						 */
-						return pseudoUpdateRepositoryOfModel("", serializedModel);
+						return pseudoUpdateRepositoryOfModel(commitMessage, versionTag, "", serializedModel, externalDependencies);
 
 					default:
 						return "Error: Model has to have an attribute 'type' that is either "
@@ -518,17 +538,23 @@ public class CodeGenerationService extends RESTService {
 							"updateRepositoryOfModel: GitHub access exception: " + e2.getMessage());
 					logger.printStackTrace(e2);
 					return "Error: Generating code failed because of failing GitHub access: " + e2.getMessage();
+				} catch (GitHelperException e) {
+					Context.get().monitorEvent(MonitoringEvent.SERVICE_ERROR,
+							"updateRepositoryOfModel: GitHelperException: " + e.getMessage());
+					logger.printStackTrace(e);
+					return "Error: Pushing failed " + e.getMessage();
 				}
 			}
 		}
 		return "Model has no attribute 'type'!";
 	}
 
-	public String pseudoUpdateRepositoryOfModel(String metadataDoc, Serializable... serializedModel) {
-		SimpleModel model = (SimpleModel) serializedModel[0];
+	public String pseudoUpdateRepositoryOfModel(String commitMessage, String versionTag, String metadataDoc,
+			ArrayList<SimpleModel> serializedModel, HashMap<String, String> externalDependencies) {
+		SimpleModel model = serializedModel.get(0);
 		model.getName();
 		// force push
-		return createFromModel(true, metadataDoc, serializedModel);
+		return createFromModel(true, commitMessage, versionTag, metadataDoc, serializedModel, externalDependencies);
 	}
 
 	/**
@@ -567,9 +593,9 @@ public class CodeGenerationService extends RESTService {
 	 *             if the passed model cannot be parsed to an application
 	 * 
 	 */
-	public SimpleModel getCommunicationViewOfApplicationModel(Serializable... serializedModel)
+	public SimpleModel getCommunicationViewOfApplicationModel(ArrayList<SimpleModel> serializedModel)
 			throws ModelParseException {
-		SimpleModel model = (SimpleModel) serializedModel[0];
+		SimpleModel model = serializedModel.get(0);
 		Context.get().monitorEvent(MonitoringEvent.SERVICE_MESSAGE,
 				"getCommunicationViewOfApplicationModel: Received model with name " + model.getName());
 		for (int i = 0; i < model.getAttributes().size(); i++) {
@@ -581,7 +607,7 @@ public class CodeGenerationService extends RESTService {
 					}
 					Context.get().monitorEvent(MonitoringEvent.SERVICE_MESSAGE,
 							"getCommunicationViewOfApplicationModel: Creating application model now..");
-					Application application = new Application(serializedModel);
+					Application application = new Application(serializedModel, new HashMap<String, String>());
 					Context.get().monitorEvent(MonitoringEvent.SERVICE_MESSAGE,
 							"getCommunicationViewOfApplicationModel: Creating communication view model now..");
 					SimpleModel commViewModel = application.toCommunicationModel();
@@ -659,12 +685,14 @@ public class CodeGenerationService extends RESTService {
 	 *            The name of the repository
 	 * @param commitMessage
 	 *            The commit message to use
+	 * 
+	 * @param versionTag String which should be used as the tag when commiting. May be null.
 	 * @param files
 	 *            The file list containing the files to commit
 	 * @return A status string
 	 */
 
-	public String storeAndCommitFilesRaw(String repositoryName, String commitMessage, String[][] files) {
+	public String storeAndCommitFilesRaw(String repositoryName, String commitMessage, String versionTag, String[][] files) {
 
 		try (Git git = gitUtility.getLocalGit(repositoryName, "development");) {
 			for (String[] fileData : files) {
@@ -689,14 +717,19 @@ public class CodeGenerationService extends RESTService {
 
 			}
 
-			git.commit().setAuthor(this.gitUser, this.gitUserMail).setMessage(commitMessage).call();
-
+			RevCommit commit = git.commit().setAuthor(this.gitUser, this.gitUserMail).setMessage(commitMessage).call();
+			
+			if(versionTag != null) {
+				git.tag().setObjectId(commit).setName(versionTag).call();	
+			}
+			
+			Ref head = git.getRepository().getAllRefs().get("HEAD");
+            String commitSha = head.getObjectId().getName();
+            return commitSha;
 		} catch (Exception e) {
 			logger.printStackTrace(e);
 			return e.getMessage();
 		}
-
-		return "done";
 	}
 
 	/**
@@ -756,12 +789,13 @@ public class CodeGenerationService extends RESTService {
 	 * Prepare a deployment of an application model, i.e. the model is copied to
 	 * a temp repository which is used later during the deployment
 	 * 
-	 * @param serializedModel
-	 *            The application model to deploy
+	 * @param serializedModel The application model to deploy
+	 * @param externalDependencies Map containing GitHub URLs and version tags of external dependencies.
+	 *            
 	 * @return A status text
 	 */
-	public String prepareDeploymentApplicationModel(Serializable... serializedModel) {
-		SimpleModel model = (SimpleModel) serializedModel[0];
+	public String prepareDeploymentApplicationModel(ArrayList<SimpleModel> serializedModel, HashMap<String, String> externalDependencies) {
+		SimpleModel model = serializedModel.get(0);
 
 		Context.get().monitorEvent(MonitoringEvent.SERVICE_MESSAGE,
 				"deployApplicationModel: Received model with name " + model.getName());
@@ -776,7 +810,7 @@ public class CodeGenerationService extends RESTService {
 					case "application":
 						Context.get().monitorEvent(MonitoringEvent.SERVICE_MESSAGE,
 								"deployApplicationModel: Creating application model now..");
-						Application application = new Application(serializedModel);
+						Application application = new Application(serializedModel, externalDependencies);
 
 						String repositoryName = deploymentRepo;
 
@@ -792,7 +826,7 @@ public class CodeGenerationService extends RESTService {
 						Context.get().monitorEvent(MonitoringEvent.SERVICE_MESSAGE,
 								"deployApplicationModel: Copying repository to deployment repository");
 						ApplicationGenerator.createSourceCode(repositoryName, application,
-								(BaseGitHostAdapter) gitAdapter, true);
+								(BaseGitHostAdapter) gitAdapter, "Initialized repository for deployment", null, true); // null = do not use version tag
 						Context.get().monitorEvent(MonitoringEvent.SERVICE_MESSAGE, "deployApplicationModel: Copied!");
 						return "done";
 
@@ -827,6 +861,10 @@ public class CodeGenerationService extends RESTService {
 
 	public GitProxy getGitProxy() {
 		return gitProxy;
+	}
+	
+	public GitHostAdapter getGitAdapter() {
+		return this.gitAdapter;
 	}
 
 	public boolean isUseModelCheck() {

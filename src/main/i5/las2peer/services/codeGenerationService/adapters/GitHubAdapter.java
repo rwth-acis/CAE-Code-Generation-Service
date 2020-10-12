@@ -20,14 +20,14 @@ import i5.las2peer.services.codeGenerationService.exception.GitHostException;
 public class GitHubAdapter extends BaseGitHostAdapter {
 	//TODO: Exception handling
 	
-	private GitHubAdapter(String gitUser, String gitPassword, String gitOrganization, String templateRepository,
-			String gitUserMail, String baseURL) throws GitHostException {
-		super(gitUser, gitPassword, gitOrganization, templateRepository, gitUserMail, baseURL);
+	private GitHubAdapter(String gitUser, String gitPassword, String personalAccessToken, String gitOrganization,
+			String templateRepository, String gitUserMail, String baseURL) throws GitHostException {
+		super(gitUser, gitPassword, personalAccessToken, gitOrganization, templateRepository, gitUserMail, baseURL);
 	}
 
-	public GitHubAdapter(String gitUser, String gitPassword, String gitOrganization, String templateRepository, 
-			String gitUserMail) throws GitHostException {
-		this(gitUser,gitPassword,gitOrganization,templateRepository,gitUserMail,"https://github.com/");
+	public GitHubAdapter(String gitUser, String gitPassword, String personalAccessToken, String gitOrganization,
+			String templateRepository, String gitUserMail) throws GitHostException {
+		this(gitUser, gitPassword, personalAccessToken, gitOrganization, templateRepository, gitUserMail, "https://github.com/");
 	}
 
 	/**
@@ -44,7 +44,7 @@ public class GitHubAdapter extends BaseGitHostAdapter {
 	  jsonObject.put("description", description);
 	  String body = JSONObject.toJSONString(jsonObject);
 	
-	  String authString = this.gitUser + ":" + this.gitPassword;
+	  String authString = this.getToken();
 	  
 	  byte[] authEncBytes = Base64.getEncoder().encode(authString.getBytes());
 	  String authStringEnc;
@@ -95,7 +95,7 @@ public class GitHubAdapter extends BaseGitHostAdapter {
 	 */
 	@Override
 	public void deleteRepo(String name) throws GitHostException {
-		String authString = this.gitUser + ":" + this.gitPassword;
+		String authString = this.getToken();
 		byte[] authEncBytes = Base64.getEncoder().encode(authString.getBytes());
 		String authStringEnc = new String(authEncBytes);
 		try {

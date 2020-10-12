@@ -15,6 +15,7 @@ import javax.ws.rs.GET;
 import javax.ws.rs.InternalServerErrorException;
 import javax.ws.rs.NotAcceptableException;
 import javax.ws.rs.NotFoundException;
+import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
@@ -25,15 +26,29 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
 import org.eclipse.jgit.api.Git;
+import org.eclipse.jgit.lib.Constants;
+import org.eclipse.jgit.lib.ObjectId;
+import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.lib.StoredConfig;
+import org.eclipse.jgit.revwalk.RevCommit;
+import org.eclipse.jgit.revwalk.RevWalk;
+import org.eclipse.jgit.transport.CredentialsProvider;
+import org.eclipse.jgit.transport.RefSpec;
+import org.eclipse.jgit.transport.RemoteConfig;
+import org.eclipse.jgit.transport.URIish;
+import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider;
 import org.eclipse.jgit.treewalk.TreeWalk;
 import org.eclipse.jgit.treewalk.filter.PathFilter;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
+import org.json.simple.JSONValue;
 import org.json.simple.parser.JSONParser;
 
 import i5.las2peer.api.Context;
 import i5.las2peer.api.ServiceException;
 import i5.las2peer.api.logging.MonitoringEvent;
+import i5.las2peer.services.codeGenerationService.adapters.BaseGitHostAdapter;
+import i5.las2peer.services.codeGenerationService.exception.GitHelperException;
 import i5.las2peer.services.codeGenerationService.utilities.GitUtility;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;
@@ -66,6 +81,75 @@ public class RESTResources {
 	 * REST endpoints (github proxy functionality)
 	 * -------------------------------------------
 	 */
+	
+	/**
+	 * Tags the commit with the given sha identifier with the given tag and pushes the new tag.
+	 * @param repositoryName Name of the repository, where a commit should be tagged.
+	 * @param jsonInput JSON object containing the "tag" and "commitSha".
+	 * @return
+	 */
+	@POST
+	@Path("{repositoryName}/tags")
+	@Consumes(MediaType.APPLICATION_JSON)
+	@ApiOperation(value = "Pushes the given tag to the given commit.")
+	@ApiResponses(value = {@ApiResponse(code = HttpURLConnection.HTTP_OK, message = "OK"),
+			               @ApiResponse(code = HttpURLConnection.HTTP_INTERNAL_ERROR, message = "Internal server error")})
+	public Response addTag(@PathParam("repositoryName") String repositoryName, String jsonInput) {
+		Context.get().monitorEvent(MonitoringEvent.SERVICE_MESSAGE, "tags: trying to add tag to repository with name: " + repositoryName);
+		
+		
+		JSONObject json = (JSONObject) JSONValue.parse(jsonInput);
+		String versionTag = (String) json.get("tag");
+		String commitSha = (String) json.get("commitSha");
+		int versionedModelId = ((Long) json.get("versionedModelId")).intValue();
+		
+		Repository repository = null;
+		RevWalk revWalk = null;
+		
+		String masterBranch = repositoryName.startsWith("frontend") ? "gh-pages" : "master";
+		
+		try (Git git = gitUtility.getLocalGit(repositoryName, masterBranch)) {
+			RefSpec specTags = new RefSpec("refs/tags/" + versionTag + ":refs/tags/" + versionTag);
+			
+			// use gitAdapter from service
+			BaseGitHostAdapter gitAdapter = (BaseGitHostAdapter) service.getGitAdapter();
+			
+			repository = git.getRepository();
+			
+			CredentialsProvider credentialsProvider =
+			        new UsernamePasswordCredentialsProvider(gitAdapter.getGitUser(), gitAdapter.getGitPassword());
+			
+			// get the commit by the given commit sha identifier
+			ObjectId commitId = repository.resolve(commitSha);
+			revWalk = new RevWalk(repository);
+		    RevCommit commit = revWalk.parseCommit(commitId);
+		    
+		    StoredConfig config = git.getRepository().getConfig();
+		    RemoteConfig remoteConfig = new RemoteConfig(config, "Remote");
+		    remoteConfig.addURI(new URIish(gitAdapter.getBaseURL() + gitAdapter.getGitOrganization() + "/" + repositoryName + ".git"));
+	        remoteConfig.update(config);
+			
+	        // set tag
+			Git.wrap(repository).tag().setObjectId(commit).setName(versionTag).call();
+			// push tag
+			Git.wrap(repository).push().setForce(true).setRemote("Remote").setPushTags().setCredentialsProvider(credentialsProvider)
+	        .setRefSpecs(specTags).call();
+			
+			// also store commit into database
+			String response = (String) Context.getCurrent().invoke(
+					"i5.las2peer.services.modelPersistenceService.ModelPersistenceService@0.1", "addTagToCommit",
+					new Serializable[]{commitSha, versionedModelId, versionTag});
+			
+			if(response.equals("done")) return Response.ok().build();
+			else return Response.serverError().build();
+		} catch (Exception e) {
+			e.printStackTrace();
+			return Response.serverError().entity(e.getMessage()).build();
+		} finally {
+		    if(repository != null) repository.close();
+		    if(revWalk != null) revWalk.close();
+		}
+	}
 
 	/**
 	 * Merges the development branch of the given repository with the
@@ -86,12 +170,14 @@ public class RESTResources {
 	@ApiResponses(value = { @ApiResponse(code = HttpURLConnection.HTTP_OK, message = "OK"),
 			@ApiResponse(code = HttpURLConnection.HTTP_INTERNAL_ERROR, message = "Internal server error") })
 	public Response pushToRemote(@PathParam("repositoryName") String repositoryName) throws ServiceException {
+		Context.get().monitorEvent(MonitoringEvent.SERVICE_MESSAGE, "push: trying to push repository with name: " + repositoryName);
+		
 		try {
 			// determine which branch to merge in
 			boolean isFrontend = repositoryName.startsWith("frontendComponent-");
 			String masterBranchName = isFrontend ? "gh-pages" : "master";
 
-			gitUtility.mergeIntoMasterBranch(repositoryName, masterBranchName);
+			gitUtility.mergeIntoMasterBranch(repositoryName, masterBranchName, null);
 			JSONObject result = new JSONObject();
 			result.put("status", "ok");
 			return Response.ok(result.toJSONString()).build();
@@ -124,6 +210,8 @@ public class RESTResources {
 			@ApiResponse(code = HttpURLConnection.HTTP_INTERNAL_ERROR, message = "Internal server error"),
 			@ApiResponse(code = HttpURLConnection.HTTP_NOT_FOUND, message = "404, file not found") })
 	public synchronized Response storeAndCommitFle(@PathParam("repositoryName") String repositoryName, String content) throws ServiceException {
+		Context.get().monitorEvent(MonitoringEvent.SERVICE_MESSAGE, "PUT {repositoryName}/file called with respositoryName: " + repositoryName);
+		
 		try {
 			JSONObject result = new JSONObject();
 
@@ -132,6 +220,7 @@ public class RESTResources {
 			String filePath = contentObject.get("filename").toString();
 			String fileContent = contentObject.get("content").toString();
 			String commitMessage = contentObject.get("commitMessage").toString();
+			int versionedModelId = Integer.parseInt(contentObject.get("versionedModelId").toString());
 			JSONObject traces = (JSONObject) contentObject.get("traces");
 
 			byte[] base64decodedBytes = Base64.getDecoder().decode(fileContent);
@@ -181,9 +270,18 @@ public class RESTResources {
 					fW = new FileWriter(traceFile, false);
 					fW.write(traces.toJSONString());
 					fW.close();
-
 					git.add().addFilepattern(filePath).addFilepattern(gitProxy.getTraceFileName(filePath)).call();
-					git.commit().setAuthor(gitUser, gitUserMail).setMessage(commitMessage).call();
+					RevCommit commit = git.commit().setAuthor(gitUser, gitUserMail).setMessage(commitMessage).call();
+					String commitSha = commit.getId().getName();
+					
+					// call Model Persistence Service to store the auto commit
+					String response = (String) Context.getCurrent().invoke(
+							"i5.las2peer.services.modelPersistenceService.ModelPersistenceService@0.1", "addAutoCommitToVersionedModel",
+							new Serializable[]{commitSha, commitMessage, versionedModelId});
+					
+					if(response.equals("error")) {
+						throw new InternalServerErrorException();
+					}
 
 					result.put("status", "OK, file stored and commited");
 					return Response.ok(result.toJSONString()).build();
@@ -195,7 +293,7 @@ public class RESTResources {
 
 		} catch (Exception e) {
 			service.getLogger().log(Level.FINER, e.getMessage());
-			throw new InternalServerErrorException();
+			throw new InternalServerErrorException(e.getMessage());
 		}
 	}
 
@@ -306,10 +404,17 @@ public class RESTResources {
 				} else {
 					throw new ServiceUnavailableException(repositoryName + " currently unavailable");
 				}
+			} catch (GitHelperException e) {
+				File repo = GitUtility.getRepositoryPath(repositoryName);
+				// repo might got cloned, but is empty
+				// so delete it
+				deleteFolder(repo);
+				throw new InternalServerErrorException();
 			} catch (FileNotFoundException e) {
 				service.getLogger().info(repositoryName + " not found");
 				throw new NotFoundException(repositoryName + " not found");
 			} catch (Exception e) {
+				e.printStackTrace();
 				service.getLogger().log(Level.FINER, e.getMessage());
 				throw new InternalServerErrorException();
 			}
@@ -317,6 +422,21 @@ public class RESTResources {
 			throw new NotAcceptableException("Only frontend components are supported");
 		}
 
+	}
+	
+	public static void deleteFolder(File folder) {
+		// get all files in folder
+	    File[] files = folder.listFiles();
+	    if(files != null) {
+	        for(File file : files) {
+	            if(file.isDirectory()) {
+	                deleteFolder(file);
+	            } else {
+	                file.delete();
+	            }
+	        }
+	    }
+	    folder.delete();
 	}
 
 	/**
@@ -438,6 +558,12 @@ public class RESTResources {
 				}
 			}
 
+		} catch (GitHelperException e) {
+			File repo = GitUtility.getRepositoryPath(repositoryName);
+			// repo might got cloned, but is empty
+			// so delete it
+			deleteFolder(repo);
+			throw new InternalServerErrorException(e.getMessage());
 		} catch (Exception e) {
 			Context.get().monitorEvent(MonitoringEvent.SERVICE_ERROR, "getModelFiles: exception fetching files: " + e);
 			service.getLogger().log(Level.FINER, e.getMessage());

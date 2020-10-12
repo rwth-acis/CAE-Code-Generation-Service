@@ -63,6 +63,8 @@ The las2peer port is fixed at *9011*.
 | WIDGET_HOME_BASE_URL | http://role:8086/ |
 | OIDC_PROVIDER | https://api.learning-layers.eu/o/oauth2 |
 
+The TOKEN should be a personal access token of a GitHub user account which has access to create new repositories in the git organization used to host the components created with the CAE.
+
 ### Other Variables
 
 | Variable | Default | Description |

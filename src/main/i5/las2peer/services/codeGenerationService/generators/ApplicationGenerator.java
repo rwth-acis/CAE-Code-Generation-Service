@@ -8,6 +8,7 @@ import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.util.HashMap;
 
 import javax.imageio.ImageIO;
 
@@ -24,6 +25,7 @@ import org.eclipse.jgit.lib.ObjectReader;
 import org.eclipse.jgit.lib.PersonIdent;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.StoredConfig;
+import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevTree;
 import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.transport.CredentialsProvider;
@@ -62,17 +64,21 @@ public class ApplicationGenerator extends Generator {
    * 
    * @param gitAdapter adapter for Git
    * 
+   * @param commitMessage Message used as the commit message.
+   * @param versionTag String which should be used as the tag when commiting. May be null.
+   * 
    * @throws GitHostException thrown if anything goes wrong during this process. Wraps around all
    *         other exceptions and prints their message.
    * 
    */
-  public static void createSourceCode(Application application, BaseGitHostAdapter gitAdapter)
+  public static void createSourceCode(Application application, BaseGitHostAdapter gitAdapter, String commitMessage,
+		  String versionTag)
       throws GitHostException {
 	  if (gitAdapter == null) {
 		throw new GitHostException("Adapter is null!");
 	  }
-    String repositoryName = "application-" + application.getName().replace(" ", "-");
-    createSourceCode(repositoryName, application, gitAdapter, false);
+    String repositoryName = "application-" + application.getVersionedModelId().replace(" ", "-");
+    createSourceCode(repositoryName, application, gitAdapter, commitMessage, versionTag, false);
   }
 
   /**
@@ -82,6 +88,8 @@ public class ApplicationGenerator extends Generator {
    * @param repositoryName the repository of the application to use
    * @param application the application model
    * @param gitAdapter adapter for Git
+   * @param commitMessage Message used as the commit message.
+   * @param versionTag String which should be used as the tag when commiting. May be null.
    * @param forDeploy True, if the source code is intended to use for deployment purpose, e.g. no
    *        gh-pages branch will be used
    * @throws GitHostException thrown if anything goes wrong during this process. Wraps around all
@@ -89,13 +97,14 @@ public class ApplicationGenerator extends Generator {
    *    * 
    */
   public static void createSourceCode(String repositoryName, Application application, 
-		  BaseGitHostAdapter gitAdapter, boolean forDeploy) throws GitHostException {
-	  if (gitAdapter == null) {
-			throw new GitHostException("Adapter is null!");
-	  }
-	  if (repositoryName == null || repositoryName.equals("")) {
-		  throw new GitHostException("Repository is not set!");
-	  }
+		  BaseGitHostAdapter gitAdapter, String commitMessage, String versionTag, boolean forDeploy) throws GitHostException {
+	if (gitAdapter == null) {
+	    throw new GitHostException("Adapter is null!");
+	}
+	if (repositoryName == null || repositoryName.equals("")) {
+		throw new GitHostException("Repository is not set!");
+	}
+	
     // variables to be closed in the final block
     Repository applicationRepository = null;
     TreeWalk treeWalk = null;
@@ -185,6 +194,7 @@ public class ApplicationGenerator extends Generator {
       // master branch, which is needed to create a "gh-pages" branch afterwards
       String readMe = null;
       BufferedImage logo = null;
+      String getExtDependencies = null;
       treeWalk = getTemplateRepositoryContent(gitAdapter);
       treeWalk.setFilter(PathFilter.create("application/"));
       ObjectReader reader = treeWalk.getObjectReader();
@@ -203,6 +213,62 @@ public class ApplicationGenerator extends Generator {
             case "logo_application.png":
               logo = ImageIO.read(loader.openStream());
               break;
+            case "get_ext_dependencies.sh":
+              getExtDependencies = new String(loader.getBytes(), "UTF-8");
+              
+              // split external dependencies by their type
+              HashMap<String, String> extDependencies = application.getExternalDependencies();
+              HashMap<String, String> frontendDependencies = new HashMap<>();
+              HashMap<String, String> microserviceDependencies = new HashMap<>();
+              for(String key : extDependencies.keySet()) {
+            	  if(key.startsWith("frontend:")) {
+            		  frontendDependencies.put(key.split("frontend:")[1], extDependencies.get(key));
+            	  } else if(key.startsWith("microservice:")) {
+            		  microserviceDependencies.put(key.split("microservice:")[1], extDependencies.get(key));
+            	  }
+              }
+              
+              // create folder for frontend external dependencies
+              getExtDependencies += System.lineSeparator() + "mkdir frontend && cd frontend" + System.lineSeparator();
+              
+              // add git clone commands for every frontend external dependency
+              for(String key : frontendDependencies.keySet()) {
+            	  // clone external dependency repository into the extra folder
+            	  String tag = frontendDependencies.get(key);
+            	  if(tag.equals("Latest")) {
+            		  getExtDependencies += "git clone " + key;
+            	  } else {
+            		  getExtDependencies += "git clone -b "+ tag + " " + key;  
+            	  }
+            	  
+               	  // go to new line
+            	  getExtDependencies += System.lineSeparator();
+              }
+              
+              // go back to /dependencies
+              getExtDependencies += "cd .." + System.lineSeparator();
+              
+              // create folder for microservice external dependencies
+              getExtDependencies += "mkdir microservices && cd microservices" + System.lineSeparator();
+              
+              // add git clone commands for every microservice external dependency
+              for(String key : microserviceDependencies.keySet()) {
+            	  // clone external dependency repository into the extra folder
+            	  String tag = microserviceDependencies.get(key);
+            	  if(tag.equals("Latest")) {
+            		  getExtDependencies += "git clone " + key;
+            	  } else {
+            		  getExtDependencies += "git clone -b "+ tag + " " + key;  
+            	  }
+            	  
+               	  // go to new line
+            	  getExtDependencies += System.lineSeparator();
+              }
+              
+              // go back to /dependencies
+              getExtDependencies += "cd .." + System.lineSeparator();
+              
+              break;
           }
         }
         // add the two files to the repository and commit them
@@ -210,10 +276,17 @@ public class ApplicationGenerator extends Generator {
             createTextFileInRepository(applicationRepository, "", "README.md", readMe);
         applicationRepository =
             createImageFileInRepository(applicationRepository, "img/", "logo.png", logo);
-        Git.wrap(applicationRepository).commit()
-            .setMessage(
-                "Initialized repository for application with version " + application.getVersion())
+        
+        applicationRepository = createTextFileInRepository(applicationRepository, "", "get_ext_dependencies.sh", getExtDependencies);
+        
+        
+        RevCommit commit = Git.wrap(applicationRepository).commit()
+            .setMessage(commitMessage)
             .setCommitter(caeUser).call();
+        
+        if(versionTag != null) {
+        	Git.wrap(applicationRepository).tag().setObjectId(commit).setName(versionTag).call();	
+        }
       } catch (Exception e) {
         logger.printStackTrace(e);
         throw new GitHostException(e.getMessage());
@@ -232,7 +305,8 @@ public class ApplicationGenerator extends Generator {
       // fetch microservice repository contents and add them
       for (String microserviceName : application.getMicroservices().keySet()) {
         String microserviceRepositoryName = "microservice-" + microserviceName.replace(" ", "-");
-        treeWalk = getRepositoryContent(microserviceRepositoryName, gitAdapter);
+        String selectedCommitSha = application.getMicroservices().get(microserviceName).getSelectedCommitSha();
+        treeWalk = getRepositoryContent(microserviceRepositoryName, gitAdapter, selectedCommitSha);
         reader = treeWalk.getObjectReader();
         try {
           while (treeWalk.next()) {
@@ -312,7 +386,7 @@ public class ApplicationGenerator extends Generator {
       if (!forDeploy) {
         // push (local) repository content to GitHub repository "master" branch
         try {
-          pushToRemoteRepository(applicationRepository, gitAdapter, true);
+          pushToRemoteRepository(applicationRepository, gitAdapter, versionTag, true);
         } catch (Exception e) {
           logger.printStackTrace(e);
           throw new GitHostException(e.getMessage());
@@ -331,7 +405,8 @@ public class ApplicationGenerator extends Generator {
       for (String frontendComponentName : application.getFrontendComponents().keySet()) {
         String frontendComponentRepositoryName =
             "frontendComponent-" + frontendComponentName.replace(" ", "-");
-        treeWalk = getRepositoryContent(frontendComponentRepositoryName, gitAdapter);
+        String selectedCommitSha = application.getFrontendComponents().get(frontendComponentName).getSelectedCommitSha();
+        treeWalk = getRepositoryContent(frontendComponentRepositoryName, gitAdapter, selectedCommitSha);
         reader = treeWalk.getObjectReader();
         try {
           while (treeWalk.next()) {
@@ -447,7 +522,7 @@ public class ApplicationGenerator extends Generator {
         // push (local) repository content to repository "gh-pages" branch
         try {
           pushToRemoteRepository(applicationRepository, "gh-pages",
-              "gh-pages", gitAdapter, true);
+              "gh-pages", gitAdapter, versionTag, true);
         } catch (Exception e) {
           logger.printStackTrace(e);
           throw new GitHostException(e.getMessage());
@@ -455,7 +530,7 @@ public class ApplicationGenerator extends Generator {
       } else {
         // push (local) repository content to repository "master" branch
         try {
-          pushToRemoteRepository(applicationRepository, gitAdapter, true);
+          pushToRemoteRepository(applicationRepository, gitAdapter, versionTag, true);
         } catch (Exception e) {
           logger.printStackTrace(e);
           throw new GitHostException(e.getMessage());

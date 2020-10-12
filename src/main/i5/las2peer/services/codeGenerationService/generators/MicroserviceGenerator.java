@@ -19,6 +19,7 @@ import i5.las2peer.services.codeGenerationService.templateEngine.TemplateStrateg
 import i5.las2peer.services.codeGenerationService.traces.segments.Segment;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.lib.*;
+import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.transport.RemoteConfig;
 import org.eclipse.jgit.transport.URIish;
 import org.eclipse.jgit.treewalk.TreeWalk;
@@ -46,7 +47,7 @@ public class MicroserviceGenerator extends Generator {
 
 
   protected static String getDatabaseScriptFileName(Microservice microservice) {
-    return "db/" + microservice.getName().replace(" ", "_") + "_create_tables.sql";
+    return "db/" + microservice.getVersionedModelId().replace(" ", "_") + "_create_tables.sql";
   }
 
   /**
@@ -117,7 +118,7 @@ public class MicroserviceGenerator extends Generator {
    */
 
   public static String getRepositoryName(Microservice microservice) {
-    String repositoryName = "microservice-" + microservice.getName().replace(" ", "-");
+    String repositoryName = "microservice-" + microservice.getVersionedModelId();
     return repositoryName;
   }
 
@@ -129,14 +130,16 @@ public class MicroserviceGenerator extends Generator {
  * @param templateRepositoryName the name of the template repository on GitHub
  * @param gitAdapter The gitAdapter that manages operations on GitHub/GitLab etc.
  * @param forcePush boolean value t/f
+ * @param versionTag String which should be used as the tag when commiting. May be null.
+ * @return Commit sha identifier
    * @throws GitHostException thrown if anything goes wrong during this process. Wraps around all
    *         other exceptions and prints their message.
    * 
    */
   
-  public static void createSourceCode(Microservice microservice, 
-		  String templateRepositoryName, BaseGitHostAdapter gitAdapter, boolean forcePush,
-          String metadataDoc) throws GitHostException {
+  public static String createSourceCode(Microservice microservice, 
+		  String templateRepositoryName, BaseGitHostAdapter gitAdapter, String commitMessage, String versionTag,
+		  boolean forcePush, String metadataDoc) throws GitHostException {
 	// variables to be closed in the final block
 	    Repository microserviceRepository = null;
 	    TreeWalk treeWalk = null;
@@ -484,10 +487,17 @@ public class MicroserviceGenerator extends Generator {
 	      createTracedFilesInRepository(traceModel, microserviceRepository);
 
 	      // commit files
+	      String commitSha = "";
 	      try {
-	        Git.wrap(microserviceRepository).commit()
-	            .setMessage("Generated microservice version " + microservice.getVersion())
+	        RevCommit commit = Git.wrap(microserviceRepository).commit()
+	            .setMessage(commitMessage)
 	            .setCommitter(caeUser).call();
+	        Ref head = microserviceRepository.getAllRefs().get("HEAD");
+            commitSha = head.getObjectId().getName();
+            
+            if(versionTag != null) {
+            	Git.wrap(microserviceRepository).tag().setObjectId(commit).setName(versionTag).call();	
+            }
 	      } catch (Exception e) {
 	        logger.printStackTrace(e);
 	        throw new GitHostException(e.getMessage());
@@ -495,11 +505,13 @@ public class MicroserviceGenerator extends Generator {
 
 	      // push (local) repository content to GitHub repository
 	      try {
-	        pushToRemoteRepository(microserviceRepository, gitAdapter, forcePush);
+	        pushToRemoteRepository(microserviceRepository, gitAdapter, versionTag, forcePush);
 	      } catch (Exception e) {
 	        logger.printStackTrace(e);
 	        throw new GitHostException(e.getMessage());
 	      }
+	      
+	      return commitSha;
 
 	      // close all open resources
 	    } catch (GitHostException e) {
@@ -513,9 +525,9 @@ public class MicroserviceGenerator extends Generator {
   }
   
   public static void createSourceCode(Microservice microservice, String templateRepositoryName,
-      BaseGitHostAdapter gitAdapter, String metadataDoc)
+      BaseGitHostAdapter gitAdapter, String commitMessage, String versionTag, String metadataDoc)
       throws GitHostException {
-	  createSourceCode(microservice, templateRepositoryName, gitAdapter, false, metadataDoc);
+	  createSourceCode(microservice, templateRepositoryName, gitAdapter, commitMessage, versionTag, false, metadataDoc);
     
   }
 
@@ -582,7 +594,7 @@ public class MicroserviceGenerator extends Generator {
       case "build.xml":
         template = templateEngine
             .createTemplate(microservice.getMicroserviceModelId() + ":buildFile", templateContent);
-        template.setVariable("$Microservice_Name$", microservice.getName());
+        template.setVariable("$Microservice_Name$", microservice.getVersionedModelId());
         break;
       case "start_network.bat":
         template = templateEngine.createTemplate(
@@ -702,7 +714,7 @@ public class MicroserviceGenerator extends Generator {
         microservice.getResourceName(), serviceClassTemplate);
 
     // service name for documentation
-    serviceClassTemplate.setVariable("$Microservice_Name$", microservice.getName());
+    serviceClassTemplate.setVariable("$Microservice_Name$", microservice.getVersionedModelId());
     // relative resource path (resource base path)
     serviceClassTemplate.setVariable("$Relative_Resource_Path$", relativeResourcePath);
     // version
@@ -1518,10 +1530,10 @@ public class MicroserviceGenerator extends Generator {
     // general replacements
 
     serviceTestTemplate.setVariable("$Resource_Name$", microservice.getResourceName());
-    serviceTestTemplate.setVariable("$Microservice_Name$", microservice.getName());
+    serviceTestTemplate.setVariable("$Microservice_Name$", microservice.getVersionedModelId());
 
     serviceTest = serviceTest.replace("$Resource_Name$", microservice.getResourceName());
-    serviceTest = serviceTest.replace("$Microservice_Name$", microservice.getName());
+    serviceTest = serviceTest.replace("$Microservice_Name$", microservice.getVersionedModelId());
     // get the resource address: (skip first /)
     String relativeResourcePath =
         microservice.getPath().substring(microservice.getPath().indexOf("/", 8) + 1);
@@ -1690,7 +1702,7 @@ public class MicroserviceGenerator extends Generator {
 
       currentTableTemplate.setVariableIfNotSet("$Column$", "");
     }
-    databaseTemplate.setVariable("$Service_Name$", microservice.getName());
+    databaseTemplate.setVariable("$Service_Name$", microservice.getVersionedModelId());
     databaseTemplate.setVariable("$Database_Schema$", database.getSchema());
     // remove last placeholder
     databaseTemplate.setVariableIfNotSet("$Database_Table$", "");

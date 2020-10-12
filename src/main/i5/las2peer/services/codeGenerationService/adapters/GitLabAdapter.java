@@ -22,14 +22,10 @@ import i5.las2peer.services.codeGenerationService.exception.GitHostException;
  */
 public class GitLabAdapter extends BaseGitHostAdapter{
 	//TODO: Exception handling
-
-	private String token;
 		
-	public GitLabAdapter(String baseURL, String token, String gitUser, String gitPassword, String gitOrganization, 
+	public GitLabAdapter(String baseURL, String token, String gitUser, String gitPassword, String gitOrganization,
 			String templateRepository, String gitUserMail) throws GitHostException {
-		super(gitUser, gitPassword, gitOrganization, templateRepository, gitUserMail, baseURL);
-		this.token = token;
-
+		super(gitUser, gitPassword, token, gitOrganization, templateRepository, gitUserMail, baseURL);
 	}
 	
 	/**
