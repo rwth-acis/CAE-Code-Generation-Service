@@ -19,6 +19,7 @@ public class Microservice {
 
   // TODO: create sanity checks for variable content of all entries (non-empty values for example..)
 
+  private String versionedModelId;
   // id of resource node in SyncMeta, needed for model correctness checking
   private String microserviceModelId;
   private String name; // name of complete service "construct"
@@ -29,6 +30,7 @@ public class Microservice {
   private Map<String, MobSOSLog> mobSOSLogs;
   private Database database;
   private String version;
+  private String selectedCommitSha;
   private String metadataDocString;
 
   /**
@@ -66,6 +68,22 @@ public class Microservice {
         	throw new ModelParseException("Something is wrong with the version number!");
         }
       }
+      if(model.getAttributes().get(attributeIndex).getName().equals("versionedModelId")) {
+      	this.versionedModelId = model.getAttributes().get(attributeIndex).getValue();
+      }
+      if(model.getAttributes().get(attributeIndex).getName().equals("commitSha")) {
+        this.selectedCommitSha = model.getAttributes().get(attributeIndex).getValue();
+      }
+      if(model.getAttributes().get(attributeIndex).getName().equals("componentName")) {
+    	this.name = model.getAttributes().get(attributeIndex).getValue();
+      }
+    }
+    
+    // set default value if version is null
+    // TODO: this is only needed because otherwise the microservice cannot be started, because 
+    // therefore a version number is needed
+    if(this.version == null) {
+    	this.version = "0.1.0";
     }
 
     // go through the nodes and create objects
@@ -339,15 +357,18 @@ public class Microservice {
   }
 
 
-  public String getName() {
-    return this.name;
+  public String getVersionedModelId() {
+    return this.versionedModelId;
   }
 
 
   public void setName(String name) {
     this.name = name;
   }
-
+  
+  public String getName() {
+	return this.name;
+  }
 
   public String getPath() {
     return this.path;
@@ -413,6 +434,10 @@ public class Microservice {
 
   public void setVersion(String version) {
     this.version = version;
+  }
+  
+  public String getSelectedCommitSha() {
+	return this.selectedCommitSha;
   }
 
   public void setMetadataDocString(String metadataDocString) {

@@ -15,7 +15,9 @@ import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.ObjectLoader;
 import org.eclipse.jgit.lib.ObjectReader;
 import org.eclipse.jgit.lib.PersonIdent;
+import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.treewalk.TreeWalk;
 import org.eclipse.jgit.treewalk.filter.PathFilter;
 
@@ -50,17 +52,20 @@ public class FrontendComponentGenerator extends Generator {
 
 
     public static String getRepositoryName(FrontendComponent frontendComponent) {
-        return "frontendComponent-" + frontendComponent.getName().replace(" ", "-");
+        return "frontendComponent-" + frontendComponent.getVersionedModelId();
     }
 
     /**
      * Creates source code from a CAE frontend component model and pushes it to GitHub.
      *
      * @param frontendComponent the frontend component model
+     * @param versionTag String which should be used as the tag when commiting. May be null.
+     * @return Commit sha identifier
      * @throws GitHostException thrown if anything goes wrong during this process. Wraps around all
      *                          other exceptions and prints their message.
      */
-    public static void createSourceCode(FrontendComponent frontendComponent, BaseGitHostAdapter gitAdapter, boolean forcePush) throws GitHostException {
+    public static String createSourceCode(FrontendComponent frontendComponent, BaseGitHostAdapter gitAdapter,
+    		String commitMessage, String versionTag, boolean forcePush) throws GitHostException {
         // variables to be closed in the final block
         Repository frontendComponentRepository = null;
         TreeWalk treeWalk = null;
@@ -95,6 +100,7 @@ public class FrontendComponentGenerator extends Generator {
         try {
             PersonIdent caeUser = new PersonIdent(gitAdapter.getGitUser(), gitAdapter.getGitUserMail());
             String repositoryName = getRepositoryName(frontendComponent);
+            String componentName = frontendComponent.getName();
             frontendComponentRepository = generateNewRepository(repositoryName, gitAdapter);
 
 
@@ -187,7 +193,7 @@ public class FrontendComponentGenerator extends Generator {
                         case "README.md":
                             readMe = new String(loader.getBytes(), "UTF-8");
                             readMe = readMe.replace("$Repository_Name$", repositoryName);
-                            readMe = readMe.replace("$Widget_Name$", frontendComponent.getName());
+                            readMe = readMe.replace("$Widget_Name$", componentName);
                             readMe = readMe.replace("$Organization_Name$", gitAdapter.getGitOrganization());
                             break;
                         case "logo_frontend.png":
@@ -292,10 +298,18 @@ public class FrontendComponentGenerator extends Generator {
                     "traces/", "guidances.json", guidances);
 
             // commit files
+            String commitSha = "";
             try {
-                Git.wrap(frontendComponentRepository).commit()
-                        .setMessage("Generated frontend component " + frontendComponent.getVersion())
+                RevCommit commit = Git.wrap(frontendComponentRepository).commit()
+                        .setMessage(commitMessage)
                         .setCommitter(caeUser).call();
+                
+                Ref head = frontendComponentRepository.getAllRefs().get("HEAD");
+                commitSha = head.getObjectId().getName();
+                
+                if(versionTag != null) {
+                	Git.wrap(frontendComponentRepository).tag().setObjectId(commit).setName(versionTag).call();	
+                }
             } catch (Exception e) {
                 logger.printStackTrace(e);
                 throw new GitHostException(e.getMessage());
@@ -303,11 +317,12 @@ public class FrontendComponentGenerator extends Generator {
 
             // push (local) repository content to GitHub repository "gh-pages" branch
             try {
-                pushToRemoteRepository(frontendComponentRepository, "master", "gh-pages", gitAdapter, forcePush);
+                pushToRemoteRepository(frontendComponentRepository, "master", "gh-pages", gitAdapter, versionTag, forcePush);
             } catch (Exception e) {
                 logger.printStackTrace(e);
                 throw new GitHostException(e.getMessage());
             }
+            return commitSha;
 
             // close all open resources
         } finally {
@@ -318,8 +333,9 @@ public class FrontendComponentGenerator extends Generator {
         }
     }
 
-    public static void createSourceCode(FrontendComponent frontendComponent, BaseGitHostAdapter gitAdapter) throws GitHostException {
-        createSourceCode(frontendComponent, gitAdapter, false);
+    public static void createSourceCode(FrontendComponent frontendComponent, BaseGitHostAdapter gitAdapter, String commitMessage,
+    		String versionTag) throws GitHostException {
+        createSourceCode(frontendComponent, gitAdapter, commitMessage, versionTag, false);
     }
 
 

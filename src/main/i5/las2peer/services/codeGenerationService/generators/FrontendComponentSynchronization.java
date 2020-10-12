@@ -16,6 +16,7 @@ import i5.las2peer.api.logging.MonitoringEvent;
 import i5.las2peer.logging.L2pLogger;
 import i5.las2peer.services.codeGenerationService.CodeGenerationService;
 import i5.las2peer.services.codeGenerationService.adapters.BaseGitHostAdapter;
+import i5.las2peer.services.codeGenerationService.exception.GitHelperException;
 import i5.las2peer.services.codeGenerationService.exception.GitHostException;
 import i5.las2peer.services.codeGenerationService.models.frontendComponent.FrontendComponent;
 import i5.las2peer.services.codeGenerationService.models.traceModel.FileTraceModel;
@@ -25,6 +26,7 @@ import i5.las2peer.services.codeGenerationService.templateEngine.Synchronization
 import i5.las2peer.services.codeGenerationService.templateEngine.SynchronizationStrategy;
 import i5.las2peer.services.codeGenerationService.templateEngine.Template;
 import i5.las2peer.services.codeGenerationService.templateEngine.TemplateEngine;
+import i5.las2peer.services.codeGenerationService.utilities.GitUtility;
 
 /**
  * 
@@ -38,10 +40,10 @@ public class FrontendComponentSynchronization extends FrontendComponentGenerator
   private static final L2pLogger logger =
       L2pLogger.getInstance(ApplicationGenerator.class.getName());
 
-  public static void synchronizeSourceCode(FrontendComponent frontendComponent,
+  public static String synchronizeSourceCode(FrontendComponent frontendComponent,
       FrontendComponent oldFrontendComponent, HashMap<String, JSONObject> files,BaseGitHostAdapter gitAdapter,CodeGenerationService service,
-      String metadataDoc)
-      throws GitHostException {
+      String metadataDoc, GitUtility gitUtility, String commitMessage, String versionTag)
+      throws GitHostException, GitHelperException {
     // first load the needed templates from the template repository
 
     // helper variables
@@ -243,10 +245,17 @@ public class FrontendComponentSynchronization extends FrontendComponentGenerator
       }
 
 
-      updateTracedFilesInRepository(fileList, getRepositoryName(frontendComponent), service);
-
+      String commitSha = updateTracedFilesInRepository(fileList, getRepositoryName(frontendComponent), service,
+    		  commitMessage, versionTag);
+      
+      // merge development and master and push to gh-pages
+   	  String masterBranchName = "gh-pages";
+   	  gitUtility.mergeIntoMasterBranch(getRepositoryName(frontendComponent), masterBranchName, versionTag);
+   	  
+   	  return commitSha;
     } catch (UnsupportedEncodingException e) {
       logger.printStackTrace(e);
+      return "";
     }
   }
 

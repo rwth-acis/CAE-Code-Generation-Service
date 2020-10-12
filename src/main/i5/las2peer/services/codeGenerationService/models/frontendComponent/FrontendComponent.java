@@ -17,10 +17,12 @@ import i5.las2peer.services.codeGenerationService.exception.ModelParseException;
  * 
  */
 public class FrontendComponent {
+  private String versionedModelId;
   private String widgetModelId;
   private String name;
   private String widgetName;
   private String version;
+  private String selectedCommitSha;
   private String widgetDescription;
   private String widgetDeveloperName;
   private String widgetDeveloperMail;
@@ -65,6 +67,15 @@ public class FrontendComponent {
         } catch (NumberFormatException e) {
           throw new ModelParseException("FrontendComponent version is not a number!");
         }
+      }
+      if(model.getAttributes().get(attributeIndex).getName().equals("versionedModelId")) {
+    	this.versionedModelId = model.getAttributes().get(attributeIndex).getValue();
+      }
+      if(model.getAttributes().get(attributeIndex).getName().equals("commitSha")) {
+    	this.selectedCommitSha = model.getAttributes().get(attributeIndex).getValue();
+      }
+      if(model.getAttributes().get(attributeIndex).getName().equals("componentName")) {
+    	this.name = model.getAttributes().get(attributeIndex).getValue();
       }
     }
     // go through the nodes and create objects
@@ -329,7 +340,6 @@ public class FrontendComponent {
     }
   }
 
-
   public String getWidgetModelId() {
     return widgetModelId;
   }
@@ -340,8 +350,12 @@ public class FrontendComponent {
   }
 
 
+  public String getVersionedModelId() {
+    return this.versionedModelId;
+  }
+  
   public String getName() {
-    return this.name;
+	return this.name;
   }
 
 
@@ -369,6 +383,9 @@ public class FrontendComponent {
     this.version = version;
   }
 
+  public String getSelectedCommitSha() {
+	return this.selectedCommitSha;
+  }
 
   public String getWidgetDescription() {
     return widgetDescription;
