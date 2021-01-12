@@ -755,7 +755,7 @@ public class CodeGenerationService extends RESTService {
 	 * @return The path of the queue item of the started job
 	 */
 
-	public String startJenkinsJob(String jobAlias) {
+	public String startJenkinsJob(String jobAlias, String body) {
 		String jobName = null;
 		switch (jobAlias) {
 		case "Build":
@@ -768,7 +768,7 @@ public class CodeGenerationService extends RESTService {
 			return "Error: Unknown job alias given!";
 		}
 
-		return ApplicationGenerator.deployApplication(jenkinsUrl, jenkinsJobToken, jobName);
+		return ApplicationGenerator.deployApplication(jenkinsUrl, jenkinsJobToken, jobName, body);
 	}
 
 	/**

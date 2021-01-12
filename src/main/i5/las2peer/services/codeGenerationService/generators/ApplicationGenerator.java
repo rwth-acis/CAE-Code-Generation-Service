@@ -648,13 +648,13 @@ public class ApplicationGenerator extends Generator {
    * @return The path of the queue item of the started job
    */
 
-  public static String deployApplication(String jenkinsUrl, String jobToken, String jobName) {
+  public static String deployApplication(String jenkinsUrl, String jobToken, String jobName, String body) {
 
     try {
 
       Context.get().monitorEvent(MonitoringEvent.SERVICE_MESSAGE, "Starting Jenkin job: " + jobName);
 
-      URL url = new URL(jenkinsUrl + "/job/" + jobName + "/build?token=" + jobToken);
+      URL url = new URL(jenkinsUrl + "/job/" + jobName + "/buildWithParameters?token=" + jobToken + "&NAME=" + body);
       HttpURLConnection connection = (HttpURLConnection) url.openConnection();
       connection.setRequestMethod("GET");
       connection.setDoOutput(true);
