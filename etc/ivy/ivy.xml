@@ -11,7 +11,7 @@
 	<dependencies>
 		<!-- las2peer core -->
         <dependency org="i5" name="las2peer-bundle" rev="${core.version}" changing="true" conf="platform->*" />
-		<dependency org="junit" name="junit" rev="4.12" conf="platform->*" />
+		<dependency org="junit" name="junit" rev="4.13.1" conf="platform->*" />
 		<dependency org="i5" name="cae-simple-model-representation" rev="0.3" conf="bundle->default" />
 		<dependency org="org.eclipse.jgit" name="org.eclipse.jgit" rev="4.0.1.201506240215-r" conf="bundle->default" />
 		<dependency org="org.slf4j" name="slf4j-nop" rev="1.7.12" conf="bundle->default" />
