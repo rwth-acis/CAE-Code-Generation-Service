@@ -15,11 +15,11 @@ jobs:
       id: extract_branch
     - name: Build the Docker image
       run: | 
-        docker build -t registry.tech4comp.dbis.rwth-aachen.de/rwthacis/cae-code-generation-serice:${{ steps.extract_branch.outputs.branch }} .
+        docker build -t registry.tech4comp.dbis.rwth-aachen.de/rwthacis/cae-code-generation-service:${{ steps.extract_branch.outputs.branch }} .
     - name: Push to registry
       env:
         DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}  
         DOCKER_PW: ${{ secrets.DOCKER_PW }}
       run: |
         docker login -u $DOCKER_USERNAME -p $DOCKER_PW registry.tech4comp.dbis.rwth-aachen.de
-        docker push registry.tech4comp.dbis.rwth-aachen.de/rwthacis/cae-code-generation-serice:${{ steps.extract_branch.outputs.branch }}
+        docker push registry.tech4comp.dbis.rwth-aachen.de/rwthacis/cae-code-generation-service:${{ steps.extract_branch.outputs.branch }}
