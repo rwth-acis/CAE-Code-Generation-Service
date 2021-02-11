@@ -196,7 +196,7 @@ public class ModelSynchronizationTest extends Generator {
       
       
       if (Objects.equals(usedGitHost, "GitHub")) {
-      	gitAdapter = new GitHubAdapter(gitUser, gitPassword, gitOrganization, templateRepository, gitUserMail);
+      	gitAdapter = new GitHubAdapter(gitUser, gitPassword, token, gitOrganization, templateRepository, gitUserMail);
       } else if (Objects.equals(usedGitHost, "GitLab")) {
     	gitAdapter = new GitLabAdapter(baseURL, token, gitUser, gitPassword, gitOrganization, templateRepository, gitUserMail);
       } else {
