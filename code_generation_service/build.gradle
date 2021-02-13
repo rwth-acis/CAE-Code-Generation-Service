@@ -42,6 +42,19 @@ configurations {
     testCompile.extendsFrom compileOnly
 }
 
+jar {
+    manifest {
+        attributes "Main-Class": "${project.property('service.name')}.${project.property('service.class')}"
+        attributes "Library-Version": "${project.property('core.version')}"
+        attributes "Library-SymbolicName": "${project.property('service.name')}"
+    }
+
+    from { (configurations.runtimeClasspath).collect { it.isDirectory() ? it : zipTree(it) } } {
+        // Exclude signatures to be able to natively bundle mqtt
+        exclude 'META-INF/*.RSA', 'META-INF/*.SF', 'META-INF/*.DSA'
+    }
+}
+
 application {
     // Define the main class for the application.
     mainClass = "${project.property('service.name')}.${project.property('service.class')}"
@@ -74,7 +87,7 @@ task copyJar(type: Copy) {
 }
 
 task copyToLib(type: Copy) {
-    from configurations.compileOnly
+    from configurations.compileClasspath
     into "$rootDir/lib"
 }
 
@@ -103,11 +116,11 @@ pause
 
 build.dependsOn "startscripts"
 
-def startup = "$rootDir\\etc\\startup"
-def userAgent1Path = "${startup}\\agent-user-${project.property('las2peer_user1.name')}.xml"
-def userAgent2Path = "${startup}\\agent-user-${project.property('las2peer_user2.name')}.xml"
-def userAgent3Path = "${startup}\\agent-user-${project.property('las2peer_user3.name')}.xml"
-def passphrasesPath = "${startup}\\passphrases.txt"
+def startup = "$rootDir/etc/startup"
+def userAgent1Path = "${startup}/agent-user-${project.property('las2peer_user1.name')}.xml"
+def userAgent2Path = "${startup}/agent-user-${project.property('las2peer_user2.name')}.xml"
+def userAgent3Path = "${startup}/agent-user-${project.property('las2peer_user3.name')}.xml"
+def passphrasesPath = "${startup}/passphrases.txt"
 
 task generateUserAgent1 {
     dependsOn "jar"
