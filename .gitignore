@@ -1,8 +1,9 @@
-/export
+/code_generation_service/export
 /tmp
 /node-storage
 /startup
 /log
+/code_generation_service/log
 /lib
 etc/ivy/ivy.jar
 /service
@@ -11,6 +12,16 @@ etc/ivy/ivy.jar
 /.idea
 restMapping.xml
 /out
-/output/
+/code_generation_service/output/
 /.DS_Store
 /.settings/
+.classpath
+.project
+.settings
+.vscode
+
+# Ignore Gradle project-specific cache directory
+.gradle
+
+# Ignore Gradle build output directory
+build
