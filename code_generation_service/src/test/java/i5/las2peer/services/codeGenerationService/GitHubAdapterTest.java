@@ -61,7 +61,7 @@ public class GitHubAdapterTest {
 	public void createRepoTest() {
 		GitHostAdapter gitAdapter = null;
 		try{
-			gitAdapter =  new GitHubAdapter(gitUser, gitPassword, gitOrganization, templateRepository, gitUserMail);
+			gitAdapter =  new GitHubAdapter(gitUser, gitPassword, token, gitOrganization, templateRepository, gitUserMail);
 			gitAdapter.createRepo("Testrepo", "testdescription");
 		} catch (GitHostException e) {
 			e.printStackTrace();
@@ -113,7 +113,7 @@ public class GitHubAdapterTest {
 	public void deleteRepoTest() {
 		GitHostAdapter gitAdapter = null;
 		try {
-			gitAdapter = new GitHubAdapter(gitUser, gitPassword, gitOrganization, templateRepository, gitUserMail);
+			gitAdapter = new GitHubAdapter(gitUser, gitPassword, token, gitOrganization, templateRepository, gitUserMail);
 		} catch (GitHostException e) {
 			e.printStackTrace();
 			fail();
