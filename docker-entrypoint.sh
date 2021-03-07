@@ -77,20 +77,6 @@ if [ -n "$LAS2PEER_CONFIG_ENDPOINT" ]; then
     fi
 fi
 
-# wait for any bootstrap host to be available
-# if [[ ! -z "${BOOTSTRAP}" ]]; then
-#     echo "Waiting for any bootstrap host to become available..."
-#     for host_port in ${BOOTSTRAP//,/ }; do
-#         arr_host_port=(${host_port//:/ })
-#         host=${arr_host_port[0]}
-#         port=${arr_host_port[1]}
-#         if { </dev/tcp/${host}/${port}; } 2>/dev/null; then
-#             echo "${host_port} is available. Continuing..."
-#             break
-#         fi
-#     done
-# fi
-
 if [ -n "$LAS2PEER_BOOTSTRAP" ]; then
     if waitForEndpoint $(host ${LAS2PEER_BOOTSTRAP}) $(port ${LAS2PEER_BOOTSTRAP}) 600; then
         echo Las2peer bootstrap available, continuing.
@@ -99,12 +85,6 @@ if [ -n "$LAS2PEER_BOOTSTRAP" ]; then
         exit 3
     fi
 fi
-# # prevent glob expansion in lib/*
-# set -f
-# LAUNCH_COMMAND='java -cp lib/* i5.las2peer.tools.L2pNodeLauncher -s service -p '"${LAS2PEER_PORT} ${SERVICE_EXTRA_ARGS}"
-# if [[ ! -z "${BOOTSTRAP}" ]]; then
-#     LAUNCH_COMMAND="${LAUNCH_COMMAND} -b ${BOOTSTRAP}"
-# fi
 
 # it's realistic for different nodes to use different accounts (i.e., to have
 # different node operators). this function echos the N-th mnemonic if the
@@ -123,19 +103,6 @@ function selectMnemonic {
 #prepare pastry properties
 echo external_address = $(curl -s https://ipinfo.io/ip):${LAS2PEER_PORT} > etc/pastry.properties
 
-# # start the service within a las2peer node
-# if [[ -z "${@}" ]]
-# then
-#     if [ -n "$LAS2PEER_ETH_HOST" ]; then
-#         exec ${LAUNCH_COMMAND} --node-id-seed $NODE_ID_SEED --observer --ethereum-mnemonic "$(selectMnemonic)" uploadStartupDirectory startService\("'""${SERVICE}""'", "'""${SERVICE_PASSPHRASE}""'"\) startWebConnector "node=getNodeAsEthereumNode()" "registry=node.getRegistryClient()" "n=getNodeAsEthereumNode()" "r=n.getRegistryClient()" 
-#     else
-#         exec ${LAUNCH_COMMAND} --node-id-seed $NODE_ID_SEED --observer uploadStartupDirectory startService\("'""${SERVICE}""'", "'""${SERVICE_PASSPHRASE}""'"\) startWebConnector
-#     fi
-# else
-#   exec ${LAUNCH_COMMAND} ${@}
-# fi
-
-
 echo Starting las2peer node ...
 if [ -n "$LAS2PEER_ETH_HOST" ]; then
     echo ... using ethereum boot procedure: 
@@ -147,6 +114,7 @@ if [ -n "$LAS2PEER_ETH_HOST" ]; then
         --node-id-seed $NODE_ID_SEED \
         --ethereum-mnemonic "$(selectMnemonic)" \
         $(echo $ADDITIONAL_LAUNCHER_ARGS) \
+        startService\("'""${SERVICE}""'", "'""${SERVICE_PASSPHRASE}""'"\) \
         startWebConnector \
         "node=getNodeAsEthereumNode()" "registry=node.getRegistryClient()" "n=getNodeAsEthereumNode()" "r=n.getRegistryClient()" \
         $(echo $ADDITIONAL_PROMPT_CMDS) \
@@ -154,12 +122,13 @@ if [ -n "$LAS2PEER_ETH_HOST" ]; then
 else
     echo ... using non-ethereum boot procedure:
     java $(echo $ADDITIONAL_JAVA_ARGS) \
-        -cp "core/src/main/resources/:core/export/jars/*:restmapper/export/jars/*:webconnector/export/jars/*:core/lib/*:restmapper/lib/*:webconnector/lib/*" i5.las2peer.tools.L2pNodeLauncher \
+        -cp "lib/*" i5.las2peer.tools.L2pNodeLauncher \
         --service-directory service \
         --port $LAS2PEER_PORT \
         $([ -n "$LAS2PEER_BOOTSTRAP" ] && echo "--bootstrap $LAS2PEER_BOOTSTRAP") \
         --node-id-seed $NODE_ID_SEED \
         $(echo $ADDITIONAL_LAUNCHER_ARGS) \
+        startService\("'""${SERVICE}""'", "'""${SERVICE_PASSPHRASE}""'"\) \
         startWebConnector \
         $(echo $ADDITIONAL_PROMPT_CMDS) \
         interactive
