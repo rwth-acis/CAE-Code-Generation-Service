@@ -765,7 +765,7 @@ public class CodeGenerationService extends RESTService {
 			jobName = dockerJobName;
 			break;
 		default:
-			return "Error: Unknown job alias given!";
+			return ApplicationGenerator.deployApplication(jenkinsUrl, jenkinsJobToken, jobAlias, body);
 		}
 
 		return ApplicationGenerator.deployApplication(jenkinsUrl, jenkinsJobToken, jobName, body);
