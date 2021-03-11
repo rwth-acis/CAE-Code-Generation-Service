@@ -112,6 +112,7 @@ if [ -n "$LAS2PEER_ETH_HOST" ]; then
         --port $LAS2PEER_PORT \
         $([ -n "$LAS2PEER_BOOTSTRAP" ] && echo "--bootstrap $LAS2PEER_BOOTSTRAP") \
         --node-id-seed $NODE_ID_SEED \
+        --observer \
         --ethereum-mnemonic "$(selectMnemonic)" \
         $(echo $ADDITIONAL_LAUNCHER_ARGS) \
         startService\("'""${SERVICE}""'", "'""${SERVICE_PASSPHRASE}""'"\) \

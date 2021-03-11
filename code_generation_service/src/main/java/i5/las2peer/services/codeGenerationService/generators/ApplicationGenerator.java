@@ -586,7 +586,7 @@ public class ApplicationGenerator extends Generator {
         }
         return path;
       } else {
-        return null;
+        return "pending";
       }
     }
 
@@ -606,8 +606,12 @@ public class ApplicationGenerator extends Generator {
     try {
       String buildPath = getBuildPath(queueItem, jenkinsUrl);
       if (buildPath == null) {
+        return "Done";
+      } 
+      else if(buildPath.equals("pending")){
         return "Pending";
-      } else {
+      }
+      else {
 
         URL url = new URL(jenkinsUrl + buildPath + "consoleText");
         HttpURLConnection connection = (HttpURLConnection) url.openConnection();
