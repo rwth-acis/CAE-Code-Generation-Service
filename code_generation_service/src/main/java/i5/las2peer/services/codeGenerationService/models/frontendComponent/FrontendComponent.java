@@ -11,10 +11,10 @@ import i5.cae.simpleModel.node.SimpleNode;
 import i5.las2peer.services.codeGenerationService.exception.ModelParseException;
 
 /**
- * 
+ *
  * FrontendComponent data class. Currently, edges are only used for creating simple 1 to 1
  * dependencies between objects, without any attributes added to them.
- * 
+ *
  */
 public class FrontendComponent {
   private String versionedModelId;
@@ -29,26 +29,29 @@ public class FrontendComponent {
   private int widgetWidth;
   private int widgetHeight;
   private String microserviceAddress;
+  private HashMap<String, ViewComponent> viewComponents;
   private HashMap<String, HtmlElement> htmlElements;
   private HashMap<String, Function> functions;
   private boolean hasPolymerElements = false;
 
   /**
-   * 
+   *
    * Creates a new frontend component.
-   * 
+   *
    * @param model a {@link i5.cae.simpleModel.SimpleModel} containing the frontend component
-   * 
+   *
    * @throws ModelParseException if something goes wrong during parsing
-   * 
+   *
    */
   public FrontendComponent(SimpleModel model) throws ModelParseException {
+    this.viewComponents = new HashMap<String, ViewComponent>();
     this.htmlElements = new HashMap<String, HtmlElement>();
     this.functions = new HashMap<String, Function>();
 
     // some helper fields to check model for correctness
     // used to find (possible) duplicate (HTML) ids and report them
     ArrayList<String> tempIds = new ArrayList<String>();
+    ArrayList<String> tempViewComponents = new ArrayList<String>();
     // used to first parse all nodes and later add them to their corresponding "parent objects"
     HashMap<String, Event> tempEvents = new HashMap<String, Event>();
     HashMap<String, InputParameter> tempParameters = new HashMap<String, InputParameter>();
@@ -141,6 +144,15 @@ public class FrontendComponent {
           }
           tempIds.add(element.getModelId());
           break;
+        case "View Component":
+          ViewComponent viewComponent = new ViewComponent(node);
+
+          this.viewComponents.put(node.getId(), viewComponent);
+          if (tempViewComponents.contains(viewComponent.getModelId())) {
+            throw new ModelParseException("Duplicate id found: " + viewComponent.getModelId());
+          }
+          tempViewComponents.add(viewComponent.getModelId());
+          break;
         case "Event":
           Event event = new Event(node);
           tempEvents.put(node.getId(), event);
@@ -173,6 +185,7 @@ public class FrontendComponent {
     // edges
     ArrayList<SimpleEdge> edges = model.getEdges();
     // helper variables to check for correct edges
+    int viewComponentCount = this.viewComponents.size();
     int htmlElementCount = this.htmlElements.size();
     int functionCount = this.functions.size();
     for (int edgeIndex = 0; edgeIndex < edges.size(); edgeIndex++) {
@@ -180,6 +193,20 @@ public class FrontendComponent {
       String currentEdgeTarget = edges.get(edgeIndex).getTargetNode();
       String currentEdgeType = edges.get(edgeIndex).getType();
       switch (currentEdgeType) {
+        case "Widget to View Component":
+          if (!this.widgetModelId.equals(currentEdgeSource)
+              || !this.viewComponents.containsKey(currentEdgeTarget)) {
+            throw new ModelParseException("Wrong Widget to View Component edge!");
+          }
+          viewComponentCount--;
+          break;
+        case "View Component to HTML":
+          if (!this.viewComponents.containsKey(currentEdgeSource)
+              || !this.htmlElements.containsKey(currentEdgeTarget)) {
+            throw new ModelParseException("Wrong View Component to HTML Element edge!");
+          }
+          htmlElementCount--;
+          break;
         case "Widget to HTML Element":
           if (!this.widgetModelId.equals(currentEdgeSource)
               || !this.htmlElements.containsKey(currentEdgeTarget)) {
@@ -328,7 +355,7 @@ public class FrontendComponent {
     // only one widget allowed (checked previously), no multiple edges between two objects in
     // SyncMeta -> element count must be zero now if all elements are connected to the widget
     // also, all temp lists should be empty by now
-    if (htmlElementCount != 0 || functionCount != 0 || !tempEvents.isEmpty()
+    if (htmlElementCount != 0 || viewComponentCount != 0 || functionCount != 0 || !tempEvents.isEmpty()
         || !tempParameters.isEmpty() || !tempIwcResponses.isEmpty() || !tempIwcCalls.isEmpty()
         || !tempMicroserviceCalls.isEmpty()) {
       throw new ModelParseException("Model not fully connected!");
@@ -353,7 +380,7 @@ public class FrontendComponent {
   public String getVersionedModelId() {
     return this.versionedModelId;
   }
-  
+
   public String getName() {
 	return this.name;
   }
@@ -434,6 +461,16 @@ public class FrontendComponent {
 
   public void setWidgetHeight(int widgetHeight) {
     this.widgetHeight = widgetHeight;
+  }
+
+
+  public Map<String, ViewComponent> getViewComponents() {
+    return this.viewComponents;
+  }
+
+
+  public void setViewComponents(HashMap<String, ViewComponent> viewComponents) {
+    this.viewComponents = viewComponents;
   }
 
 

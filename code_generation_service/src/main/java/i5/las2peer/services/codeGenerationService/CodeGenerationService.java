@@ -49,12 +49,12 @@ import io.swagger.annotations.License;
 import io.swagger.annotations.SwaggerDefinition;
 
 /**
- * 
+ *
  * CAE Code Generation Service
- * 
+ *
  * A LAS2peer service used for generating code from send models. Part of the
  * CAE.
- * 
+ *
  */
 @Api
 @SwaggerDefinition(info = @Info(title = "CAE Code Generation Service", version = "0.1", description = "A LAS2peer service used for generating code and managing remote repositories. Part of the CAE.", termsOfService = "none", contact = @Contact(name = "Peter de Lange", url = "https://github.com/PedeLa/", email = "lange@dbis.rwth-aachen.de"), license = @License(name = "BSD", url = "https://github.com/PedeLa/CAE-Model-Persistence-Service//blob/master/LICENSE.txt")))
@@ -76,7 +76,7 @@ public class CodeGenerationService extends RESTService {
 	private String token;
 
 	private String oidcProvider;
-	
+
 	// The git service adapter object
 	private GitHostAdapter gitAdapter;
 
@@ -95,7 +95,7 @@ public class CodeGenerationService extends RESTService {
 
 	boolean useModelSynchronization;
 	private final L2pLogger logger = L2pLogger.getInstance(CodeGenerationService.class.getName());
-	
+
 	//The base URL where generated and deployed widget's files are hosted
 	private String widgetHomeBaseURL;
 	private String localGitPath;
@@ -173,25 +173,27 @@ public class CodeGenerationService extends RESTService {
 	}
 
 	/**
-	 * 
+	 *
 	 * Creates a new GitHub repository with the source code according to the
 	 * passed on model.
-	 * 
+	 *
 	 * @param forcePush boolean value
 	 * @param commitMessage Message that should be used for the commit.
 	 * @param versionTag String which should be used as the tag when commiting. May be null.
+	 * @param metadataDoc metadata Doc
 	 * @param serializedModel
 	 *            a {@link i5.cae.simpleModel.SimpleModel} that contains the
 	 *            model, or in case of an application model also the model
 	 *            components as additional models
-	 * 
+	 * @param externalDependencies external Dependencies
+	 *
 	 * @return a string containing either the message "done" or, in case of an
 	 *         error, the error message
-	 * 
+	 *
 	 */
 	public String createFromModel(boolean forcePush, String commitMessage, String versionTag, String metadataDoc,
 			ArrayList<SimpleModel> serializedModel, HashMap<String, String> externalDependencies) {
-		
+
 		SimpleModel model = (SimpleModel) serializedModel.get(0);
 		Context.get().monitorEvent(MonitoringEvent.SERVICE_MESSAGE, "createFromModel: Received model with name " + model.getName());
 
@@ -202,7 +204,7 @@ public class CodeGenerationService extends RESTService {
 		 * BufferedOutputStream(file); ObjectOutput output = new
 		 * ObjectOutputStream(buffer); output.writeObject(model);
 		 * output.close(); } catch (IOException ex) {
-		 * 
+		 *
 		 * }
 		 */
 
@@ -276,18 +278,18 @@ public class CodeGenerationService extends RESTService {
 	}
 
 	/**
-	 * 
+	 *
 	 * Deletes a model's repository from GitHub. Please note, that in this case,
 	 * it is not checked for correctness of the model, only the name and type
 	 * are extracted and then the repository gets deleted according to it.
-	 * 
+	 *
 	 * @param serializedModel
 	 *            a {@link i5.cae.simpleModel.SimpleModel} that contains the
 	 *            model
-	 * 
+	 *
 	 * @return a string containing either the message "done" or, in case of an
 	 *         error, the error message
-	 * 
+	 *
 	 */
 	public String deleteRepositoryOfModel(ArrayList<SimpleModel> serializedModel) {
 		SimpleModel model = (SimpleModel) serializedModel.get(0);
@@ -335,12 +337,12 @@ public class CodeGenerationService extends RESTService {
 	}
 
 	/**
-	 * 
+	 *
 	 * "Updates" an already existing repository with the new given model. Please
 	 * note that the current implementation does not really perform an update,
 	 * but just deletes the old repository and replaces it with the contents of
 	 * the new model.
-	 * 
+	 *
 	 * @param commitMessage Commit message that should be used.
 	 * @param versionTag String which should be used as the tag when commiting. May be null.
 	 * @param metadataDoc
@@ -348,19 +350,19 @@ public class CodeGenerationService extends RESTService {
 	 *            a {@link i5.cae.simpleModel.SimpleModel} that contains the
 	 *            model, or in case of an application model also the model
 	 *            components as additional models
-	 * 
+	 *
 	 * @return a string containing either the message "done" or, in case of an
 	 *         error, the error message
-	 * 
+	 *
 	 */
-	public String updateRepositoryOfModel(String commitMessage, String versionTag, String metadataDoc, 
+	public String updateRepositoryOfModel(String commitMessage, String versionTag, String metadataDoc,
 			ArrayList<SimpleModel> serializedModel, HashMap<String, String> externalDependencies) {
 		SimpleModel model = (SimpleModel) serializedModel.get(0);
 		String modelName = model.getName();
 		Context.get().monitorEvent(MonitoringEvent.SERVICE_MESSAGE, "updateRepositoryOfModel: Received model with name " + modelName);
 
 		if(versionTag.equals("")) versionTag = null;
-		
+
 		// old model only used for microservice and frontend components
 		SimpleModel oldModel = null;
 
@@ -399,7 +401,7 @@ public class CodeGenerationService extends RESTService {
 
 							String commitSha = MicroserviceSynchronization.synchronizeSourceCode(microservice, oldMicroservice,
 									this.getTracedFiles(MicroserviceGenerator.getRepositoryName(microservice)),
-									(BaseGitHostAdapter) gitAdapter, CodeGenerationService.this, metadataDoc, 
+									(BaseGitHostAdapter) gitAdapter, CodeGenerationService.this, metadataDoc,
 									gitUtility, commitMessage, versionTag);
 
 							Context.get().monitorEvent(MonitoringEvent.SERVICE_MESSAGE, "updateRepositoryOfModel: Synchronized!");
@@ -410,7 +412,7 @@ public class CodeGenerationService extends RESTService {
 							if (gitAdapter instanceof GitLabAdapter) {
 								// Use pseudo-update to circumvent gitlab
 								// deletion/creation problem
-								return pseudoUpdateRepositoryOfModel(commitMessage, versionTag, metadataDoc, 
+								return pseudoUpdateRepositoryOfModel(commitMessage, versionTag, metadataDoc,
 										serializedModel, externalDependencies);
 
 							} else {
@@ -467,14 +469,14 @@ public class CodeGenerationService extends RESTService {
 									oldFrontendComponent,
 									this.getTracedFiles(
 											FrontendComponentGenerator.getRepositoryName(frontendComponent)),
-									(BaseGitHostAdapter) gitAdapter, CodeGenerationService.this, metadataDoc, 
+									(BaseGitHostAdapter) gitAdapter, CodeGenerationService.this, metadataDoc,
 									gitUtility, commitMessage, versionTag);
 
 							Context.get().monitorEvent(MonitoringEvent.SERVICE_MESSAGE, "updateRepositoryOfModel: Synchronized!");
 							return "done:" + commitSha;
 						} else {
 							if (gitAdapter instanceof GitLabAdapter) {
-								return pseudoUpdateRepositoryOfModel(commitMessage, versionTag, metadataDoc, 
+								return pseudoUpdateRepositoryOfModel(commitMessage, versionTag, metadataDoc,
 										serializedModel, externalDependencies);
 							} else {
 								if (useModelSynchronization) {
@@ -559,7 +561,7 @@ public class CodeGenerationService extends RESTService {
 
 	/**
 	 * Deletes a local repository
-	 * 
+	 *
 	 * @param repositoryName
 	 *            The name of the repository to be deleted
 	 * @return a status string
@@ -577,21 +579,21 @@ public class CodeGenerationService extends RESTService {
 	}
 
 	/**
-	 * 
+	 *
 	 * Creates an
 	 * {@link i5.las2peer.services.codeGenerationService.models.application.communicationModel.CommunicationModel}
 	 * from a passed {@link i5.cae.simpleModel.SimpleModel} containing an
 	 * application.
-	 * 
+	 *
 	 * @param serializedModel
 	 *            the application model
-	 * 
+	 *
 	 * @return a {@link i5.cae.simpleModel.SimpleModel} containing the
 	 *         communication model
-	 * 
+	 *
 	 * @throws ModelParseException
 	 *             if the passed model cannot be parsed to an application
-	 * 
+	 *
 	 */
 	public SimpleModel getCommunicationViewOfApplicationModel(ArrayList<SimpleModel> serializedModel)
 			throws ModelParseException {
@@ -626,7 +628,7 @@ public class CodeGenerationService extends RESTService {
 
 	/**
 	 * Fetch all traced files of a repository
-	 * 
+	 *
 	 * @param repositoryName
 	 *            The name of the repository
 	 * @return a map containing all traced files
@@ -643,7 +645,7 @@ public class CodeGenerationService extends RESTService {
 
 	/**
 	 * Get a list containing all traced files of a given repository
-	 * 
+	 *
 	 * @param repositoryName
 	 *            The name of the repository
 	 * @return A list of all traced files
@@ -680,12 +682,12 @@ public class CodeGenerationService extends RESTService {
 
 	/**
 	 * Store the content of the files encoded in based64 to a repository
-	 * 
+	 *
 	 * @param repositoryName
 	 *            The name of the repository
 	 * @param commitMessage
 	 *            The commit message to use
-	 * 
+	 *
 	 * @param versionTag String which should be used as the tag when commiting. May be null.
 	 * @param files
 	 *            The file list containing the files to commit
@@ -718,11 +720,11 @@ public class CodeGenerationService extends RESTService {
 			}
 
 			RevCommit commit = git.commit().setAuthor(this.gitUser, this.gitUserMail).setMessage(commitMessage).call();
-			
+
 			if(versionTag != null) {
-				git.tag().setObjectId(commit).setName(versionTag).call();	
+				git.tag().setObjectId(commit).setName(versionTag).call();
 			}
-			
+
 			Ref head = git.getRepository().getAllRefs().get("HEAD");
             String commitSha = head.getObjectId().getName();
             return commitSha;
@@ -734,7 +736,7 @@ public class CodeGenerationService extends RESTService {
 
 	/**
 	 * Performs a model violation check against the given files
-	 * 
+	 *
 	 * @param violationRules
 	 *            A json object containing the violation rules
 	 * @param files
@@ -748,7 +750,7 @@ public class CodeGenerationService extends RESTService {
 
 	/**
 	 * Start a build job for the deployment of an application.
-	 * 
+	 *
 	 * @param jobAlias
 	 *            The job name/alias of the job to start, either "Build" or
 	 *            "Docker"
@@ -773,7 +775,7 @@ public class CodeGenerationService extends RESTService {
 
 	/**
 	 * Get the deployment status of the last build from Jenkins
-	 * 
+	 *
 	 * @param queueItem
 	 *            The queue item path returned by the remote api of Jenkins
 	 *            after a build has been started. Needed to get the status of
@@ -788,10 +790,10 @@ public class CodeGenerationService extends RESTService {
 	/**
 	 * Prepare a deployment of an application model, i.e. the model is copied to
 	 * a temp repository which is used later during the deployment
-	 * 
+	 *
 	 * @param serializedModel The application model to deploy
 	 * @param externalDependencies Map containing GitHub URLs and version tags of external dependencies.
-	 *            
+	 *
 	 * @return A status text
 	 */
 	public String prepareDeploymentApplicationModel(ArrayList<SimpleModel> serializedModel, HashMap<String, String> externalDependencies) {
@@ -862,7 +864,7 @@ public class CodeGenerationService extends RESTService {
 	public GitProxy getGitProxy() {
 		return gitProxy;
 	}
-	
+
 	public GitHostAdapter getGitAdapter() {
 		return this.gitAdapter;
 	}
@@ -882,7 +884,7 @@ public class CodeGenerationService extends RESTService {
 	public String getUsedGitHost() {
 		return usedGitHost;
 	}
-	
+
 	public boolean usingGitHub() {
 		if (Objects.equals(usedGitHost, "GitHub")) {
 			return true;
@@ -890,7 +892,7 @@ public class CodeGenerationService extends RESTService {
 			return false;
 		}
 	}
-	
+
 	public String getWidgetHomeBaseURL() {
 		return widgetHomeBaseURL;
 	}
@@ -900,7 +902,7 @@ public class CodeGenerationService extends RESTService {
 	public String getOidcProvider() {
 		return oidcProvider;
 	}
-	
-	
-	
+
+
+
 }

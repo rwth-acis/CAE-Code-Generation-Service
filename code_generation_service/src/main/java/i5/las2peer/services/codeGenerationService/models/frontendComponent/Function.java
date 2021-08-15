@@ -8,7 +8,7 @@ import i5.las2peer.services.codeGenerationService.exception.ModelParseException;
 
 
 /**
- * 
+ *
  * Function data class. Represents a function, which is part of a frontend component model.
  *
  */
@@ -18,6 +18,8 @@ public class Function {
   private String modelId;
   private String name;
   private String returnParameter;
+  private ArrayList<String> viewComponentUpdates;
+  private ArrayList<String> viewComponentCreations;
   private ArrayList<String> htmlElementUpdates;
   private ArrayList<String> htmlElementCreations;
   private ArrayList<InputParameter> inputParameters;
@@ -28,14 +30,16 @@ public class Function {
   /**
    *
    * Event constructor. Takes a {@link SimpleNode} and parses it to a Function.
-   * 
+   *
    * @param node the node representing the Function
-   * 
+   *
    * @throws ModelParseException if some error comes up during parsing the node
-   * 
+   *
    */
   public Function(SimpleNode node) throws ModelParseException {
     // initialize lists
+    this.viewComponentUpdates = new ArrayList<String>();
+    this.viewComponentCreations = new ArrayList<String>();
     this.htmlElementUpdates = new ArrayList<String>();
     this.htmlElementCreations = new ArrayList<String>();
     this.inputParameters = new ArrayList<InputParameter>();
@@ -75,6 +79,16 @@ public class Function {
   }
 
 
+  public ArrayList<String> getViewComponentUpdates() {
+    return this.viewComponentUpdates;
+  }
+
+
+  public ArrayList<String> getViewComponentCreations() {
+    return this.viewComponentCreations;
+  }
+
+
   public ArrayList<String> getHtmlElementUpdates() {
     return this.htmlElementUpdates;
   }
@@ -106,11 +120,35 @@ public class Function {
 
 
   /**
-   * 
+   *
+   * Adds an ViewComponent id to the update list.
+   *
+   * @param viewComponentId the id of the ViewComponent
+   *
+   */
+  public void addViewComponentUpdates(String viewComponentId) {
+    this.viewComponentUpdates.add(viewComponentId);
+  }
+
+
+  /**
+   *
+   * Adds an viewComponentId id to the creations list.
+   *
+   * @param viewComponentId the id of the viewComponent
+   *
+   */
+  public void addViewComponentCreations(String viewComponentId) {
+    this.viewComponentCreations.add(viewComponentId);
+  }
+
+
+  /**
+   *
    * Adds an HtmlElement id to the update list.
-   * 
+   *
    * @param htmlElementId the id of the HtmlElement
-   * 
+   *
    */
   public void addHtmlElementUpdates(String htmlElementId) {
     this.htmlElementUpdates.add(htmlElementId);
@@ -118,11 +156,11 @@ public class Function {
 
 
   /**
-   * 
+   *
    * Adds an HtmlElement id to the creations list.
-   * 
+   *
    * @param htmlElementId the id of the HtmlElement
-   * 
+   *
    */
   public void addHtmlElementCreations(String htmlElementId) {
     this.htmlElementCreations.add(htmlElementId);
@@ -130,11 +168,11 @@ public class Function {
 
 
   /**
-   * 
+   *
    * Adds an {@link InputParameter} to the input parameter list.
-   * 
+   *
    * @param parameter an {@link InputParameter}
-   * 
+   *
    */
   public void addInputParameter(InputParameter parameter) {
     this.inputParameters.add(parameter);
@@ -142,11 +180,11 @@ public class Function {
 
 
   /**
-   * 
+   *
    * Adds an {@link IWCCall} to the IWCCall list.
-   * 
+   *
    * @param call an {@link IWCCall}
-   * 
+   *
    */
   public void addIwcCall(IWCCall call) {
     this.iwcCalls.add(call);
@@ -154,11 +192,11 @@ public class Function {
 
 
   /**
-   * 
+   *
    * Adds an {@link IWCResponse} to the IWCResponse list.
-   * 
+   *
    * @param response an {@link IWCResponse}
-   * 
+   *
    */
   public void addIwcResponse(IWCResponse response) {
     this.iwcResponses.add(response);
@@ -166,11 +204,11 @@ public class Function {
 
 
   /**
-   * 
+   *
    * Adds an {@link MicroserviceCall} to the MicroserviceCall list.
-   * 
+   *
    * @param call an {@link MicroserviceCall}
-   * 
+   *
    */
   public void addMicroserviceCall(MicroserviceCall call) {
     this.microserviceCalls.add(call);
@@ -178,12 +216,12 @@ public class Function {
 
 
   /**
-   * 
+   *
    * Checks the (complete) function for (semantical) correctness. Should be called after all
    * microservice calls, IWC events and input parameters are added to the function.
-   * 
+   *
    * @throws ModelParseException if the function is not (semantical) correct
-   * 
+   *
    */
   public void checkCorrectness() throws ModelParseException {
     if (!this.iwcResponses.isEmpty()) {

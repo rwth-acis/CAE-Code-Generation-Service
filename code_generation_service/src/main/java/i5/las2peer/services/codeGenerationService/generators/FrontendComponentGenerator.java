@@ -29,6 +29,7 @@ import i5.las2peer.services.codeGenerationService.exception.GitHostException;
 import i5.las2peer.services.codeGenerationService.models.frontendComponent.Event;
 import i5.las2peer.services.codeGenerationService.models.frontendComponent.FrontendComponent;
 import i5.las2peer.services.codeGenerationService.models.frontendComponent.Function;
+import i5.las2peer.services.codeGenerationService.models.frontendComponent.ViewComponent;
 import i5.las2peer.services.codeGenerationService.models.frontendComponent.HtmlElement;
 import i5.las2peer.services.codeGenerationService.models.frontendComponent.IWCCall;
 import i5.las2peer.services.codeGenerationService.models.frontendComponent.IWCResponse;
@@ -303,12 +304,12 @@ public class FrontendComponentGenerator extends Generator {
                 RevCommit commit = Git.wrap(frontendComponentRepository).commit()
                         .setMessage(commitMessage)
                         .setCommitter(caeUser).call();
-                
+
                 Ref head = frontendComponentRepository.getAllRefs().get("HEAD");
                 commitSha = head.getObjectId().getName();
-                
+
                 if(versionTag != null) {
-                	Git.wrap(frontendComponentRepository).tag().setObjectId(commit).setName(versionTag).call();	
+                	Git.wrap(frontendComponentRepository).tag().setObjectId(commit).setName(versionTag).call();
                 }
             } catch (Exception e) {
                 logger.printStackTrace(e);
@@ -359,8 +360,20 @@ public class FrontendComponentGenerator extends Generator {
         Template widgetTemplate = templateEngine.createTemplate(frontendComponent.getWidgetModelId(), widgetTemplateFile);
         templateEngine.addTemplate(widgetTemplate);
 
+        Map<String, ViewComponent> viewComponentsToAdd = new HashMap<String, ViewComponent>();
         Map<String, HtmlElement> htmlElementsToAdd = new HashMap<String, HtmlElement>();
 
+        // add all static elements and check for collaborative elements
+        for (ViewComponent element : frontendComponent.getViewComponents().values()) {
+            if (element.isStaticElement() && !element.hasParent()) {
+                viewComponentsToAdd.put(element.getId(), element);
+            }
+            if (element.isCollaborativeElement()) {
+                // currently, only textareas are supported
+                Template importTemplate = templateEngine.createTemplate(widgetTemplate.getId() + ":additionalYjsImports", importTemplateFiles.get("Yjs"));
+                widgetTemplate.appendVariableOnce("$Additional_Imports$", importTemplate);
+            }
+        }
 
         // add all static elements and check for collaborative elements
         for (HtmlElement element : frontendComponent.getHtmlElements().values()) {
@@ -406,6 +419,18 @@ public class FrontendComponentGenerator extends Generator {
         }
         // now we got all elements that are there from the start on, so add them to the widget code
 
+        for (ViewComponent element : viewComponentsToAdd.values()) {
+            Template indent = templateEngine
+                    .createTemplate(widgetTemplate.getId() + ":indent:" + element.getModelId(), "\n   ");
+            widgetTemplate.appendVariable("$Main_Content$", indent);
+            Template elementTemplate =
+                    createViewComponentTemplate(element, htmlElementTemplateFile, widgetTemplate);
+
+            widgetTemplate.appendVariable("$Main_Content$", elementTemplate);
+            templateEngine.addTrace(element.getModelId(), "HTML Element", element.getId(),
+                    elementTemplate);
+        }
+
         for (HtmlElement element : htmlElementsToAdd.values()) {
             Template indent = templateEngine
                     .createTemplate(widgetTemplate.getId() + ":indent:" + element.getModelId(), "\n   ");
@@ -428,6 +453,70 @@ public class FrontendComponentGenerator extends Generator {
         widgetTemplate.setVariableIfNotSet("$Additional_Imports$", "");
     }
 
+    /**
+     * Creates a template for an View Component.
+     *
+     * @param element                 the element
+     * @param htmlElementTemplateFile a template containing the code for an HTML element
+     * @param template                The template instance in which the html element should be added
+     */
+    private static Template createViewComponentTemplate(ViewComponent element,
+                                                      String htmlElementTemplateFile, Template template) {
+        String wireframeAttributes = "";
+        if(element.isContentEditable())
+            htmlElementTemplateFile = htmlElementTemplateFile.replace("$Element_Content$", "-{$Element_Content$}-");
+
+        Template elementTemplate = template.createTemplate(element.getModelId() + ":htmlElement", htmlElementTemplateFile);
+
+        String wireframeGeometry = element.generateCodeForGeometry();
+        if(wireframeGeometry.length() > 0)
+            elementTemplate.setVariable("$Wireframe_Geometry$", wireframeGeometry);
+        else
+            elementTemplate.setVariable("$Wireframe_Geometry$", "");
+
+
+        switch (element.getType()) {
+            case div:
+                wireframeAttributes = element.generateCodeForAttributes();
+                if (wireframeAttributes.length() > 0)
+                    elementTemplate.setVariable("$Wireframe_Attributes$", wireframeAttributes);
+                else
+                    elementTemplate.setVariable("$Wireframe_Attributes$", "");
+                elementTemplate.setVariable("$Additional_Styles$", " ");
+                elementTemplate.setVariable("$Element_Type$", element.getType().toString());
+                elementTemplate.setVariable("$Element_Id$", element.getId());
+                elementTemplate.setVariable("$Additional_Values$", " ");
+                elementTemplate.setVariable("$Closing_Element$", "</" + element.getType().toString() + ">");
+
+                if(element.hasChildren()){
+                    for(ViewComponent child : element.getChildren()){
+                        Template tpl = createViewComponentTemplate(child, htmlElementTemplateFile, template);
+                        elementTemplate.appendVariable("$Element_Content$", tpl);
+                    }
+                }
+                else
+                    elementTemplate.setVariable("$Element_Content$", " ");
+                break;
+            case table:
+                wireframeAttributes = element.generateCodeForAttributes();
+                if (wireframeAttributes.length() > 0)
+                    elementTemplate.setVariable("$Wireframe_Attributes$", wireframeAttributes);
+                else
+                    elementTemplate.setVariable("$Wireframe_Attributes$", "");
+                elementTemplate.setVariable("$Additional_Styles$", " ");
+                elementTemplate.setVariable("$Element_Type$", element.getType().toString());
+                elementTemplate.setVariable("$Element_Id$", element.getId());
+                elementTemplate.setVariable("$Additional_Values$", " ");
+                elementTemplate.setVariable("$Element_Content$", element.getCodeSample());
+                elementTemplate.setVariable("$Closing_Element$", "</" + element.getType().toString() + ">");
+                break;
+            default:
+                break;
+        }
+
+
+        return elementTemplate;
+    }
 
     /**
      * Creates a template for an HTML element.
@@ -681,6 +770,13 @@ public class FrontendComponentGenerator extends Generator {
                         "IWC Response[" + response.getIntentAction() + "]", iwcResponseTemplate);
             }
 
+            List<ViewComponent> updatedComponents = new ArrayList<ViewComponent>();
+
+            // element updates
+            for (String elementId : function.getViewComponentUpdates()) {
+                ViewComponent element = frontendComponent.getViewComponents().get(elementId);
+                updatedComponents.add(element);
+            }
 
             List<HtmlElement> updatedElements = new ArrayList<HtmlElement>();
 
@@ -775,6 +871,25 @@ public class FrontendComponentGenerator extends Generator {
 
                 microserviceCallFile.setVariable("$Method_Path$", microserviceCall.getPath());
 
+                for (ViewComponent element : updatedComponents) {
+                    String updateElementTemplate =
+                            "\n-{    //Also update the html element?\n    //}-$(\"#$Element_Id$\").html(-{\"Updated Element\"}-);";
+                    // success callback
+                    Template updatedElement = applicationTemplate.createTemplate(functionTemplate.getId()
+                                    + ":" + microserviceCall.getModelId() + ":update:" + element.getModelId(),
+                            updateElementTemplate);
+                    updatedElement.setVariable("$Element_Id$", element.getId());
+                    // error callback
+                    Template updatedElementError = applicationTemplate.createTemplate(functionTemplate.getId()
+                                    + ":" + microserviceCall.getModelId() + ":updateError:" + element.getModelId(),
+                            updateElementTemplate);
+                    updatedElementError.setVariable("$Element_Id$", element.getId());
+
+                    microserviceCallFile.appendVariable("$HTML_Elements_Updates$", updatedElement);
+                    microserviceCallFile.appendVariable("$HTML_Elements_Updates_Errors$",
+                            updatedElementError);
+                }
+
                 for (HtmlElement element : updatedElements) {
                     String updateElementTemplate =
                             "\n-{    //Also update the html element?\n    //}-$(\"#$Element_Id$\").html(-{\"Updated Element\"}-);";
@@ -800,6 +915,35 @@ public class FrontendComponentGenerator extends Generator {
                 functionTemplate.appendVariable("$Function_Body$", microserviceCallFile);
                 applicationTemplate.getTemplateEngine().addTrace(microserviceCall.getModelId(),
                         "MicroserviceCall", microserviceCallFile);
+            }
+
+            // element creations
+            for (String elementId : function.getViewComponentCreations()) {
+                ViewComponent element = frontendComponent.getViewComponents().get(elementId);
+
+                Template elementTemplate =
+                        createViewComponentTemplate(element, htmlElementTemplateFile, functionTemplate);
+
+                Template createdElementTemplate = applicationTemplate.createTemplate(
+                        functionTemplate.getId() + ":create:" + element.getModelId(),
+                        "   $( \".container\" ).append(\"$Html$\");\n");
+
+                createdElementTemplate.appendVariable("$Html$", elementTemplate);
+                functionTemplate.appendVariable("$Function_Body$", createdElementTemplate);
+
+                applicationTemplate.getTemplateEngine().addTrace(element.getModelId(), "HTML Element",
+                        element.getId(), elementTemplate);
+            }
+
+            // element updates
+            for (String elementId : function.getViewComponentUpdates()) {
+                ViewComponent element = frontendComponent.getViewComponents().get(elementId);
+
+                Template updatedElement = applicationTemplate.createTemplate(
+                        functionTemplate.getId() + ":update:" + element.getModelId(),
+                        "\n-{  }-$(\"#$Element_Id$\").html(-{\"Updated Element\"}-);");
+                updatedElement.setVariable("$Element_Id$", element.getId());
+                functionTemplate.appendVariable("$Function_Body$", updatedElement);
             }
 
             // element creations
@@ -882,6 +1026,21 @@ public class FrontendComponentGenerator extends Generator {
         String variableInit = "$Variable_Init$";
         String shareElement = "$Share_Element$";
 
+        for (ViewComponent element : frontendComponent.getViewComponents().values()) {
+            if (element.isCollaborativeElement()) {
+                if (!foundCollaborativeElement) {
+                    applicationScriptTemplate.appendVariable("$Yjs_Code$", yjsInitTemplate);
+                    foundCollaborativeElement = true;
+                }
+
+                variableInit = variableInit.replace("$Variable_Init$",
+                        "    " + element.getId() + ":\'Text\'" + ",\n$Variable_Init$");
+                shareElement = shareElement.replace("$Share_Element$", "  y.share." + element.getId()
+                        + ".bind(document.getElementById('" + element.getId() + "'))" + "\n$Share_Element$");
+
+            }
+        }
+
         for (HtmlElement element : frontendComponent.getHtmlElements().values()) {
             if (element.isCollaborativeElement()) {
                 if (!foundCollaborativeElement) {
@@ -923,6 +1082,61 @@ public class FrontendComponentGenerator extends Generator {
     public static void addEventsToApplicationScript(Template applicationScriptTemplate,
                                                     TemplateEngine templateEngine, String eventTemplateFile,
                                                     FrontendComponent frontendComponent) {
+
+
+        for (ViewComponent element : frontendComponent.getViewComponents().values()) {
+            for (Event event : element.getEvents()) {
+                Template eventTemplate = templateEngine
+                        .createTemplate(element.getModelId() + ":" + event.getModelId(), eventTemplateFile);
+                eventTemplate.setVariable("$Html_Element_Id$", element.getId());
+
+                applicationScriptTemplate.appendVariable("$Events$", eventTemplate);
+
+                eventTemplate.getTemplateEngine().addTrace(event.getModelId(), "Event",
+                        eventTemplate.getSegment());
+
+                eventTemplate.setVariable("$Event_Type$", event.getEventCause().toString());
+
+                Function function = frontendComponent.getFunctions().get(event.getCalledFunctionId());
+
+                eventTemplate.setVariable("$Function_Name$", function.getName());
+
+                String arguments = "$Function_Parameter$";
+                boolean firstParameter = true;
+
+                for (InputParameter parameter : function.getInputParameters()) {
+
+                    Template inputParameter = templateEngine.createTemplate(
+                            eventTemplate.getId() + ":input:param:" + parameter.getModelId(),
+                            "    var $Parameter_Name$ = null;");
+
+                    inputParameter.setVariable("$Parameter_Name$", parameter.getName());
+
+                    if (firstParameter) {
+                        firstParameter = false;
+                    } else {
+                        eventTemplate.insertBreakLine(parameter.getModelId(), "$Parameter_Init$");
+                    }
+
+                    eventTemplate.appendVariable("$Parameter_Init$", inputParameter);
+                    arguments = arguments.replace("$Function_Parameter$",
+                            parameter.getName() + ", $Function_Parameter$");
+                }
+
+                if (!firstParameter) {
+                    eventTemplate.insertBreakLine("additional", "$Parameter_Init$");
+                }
+
+
+                // remove last parameter placeholder
+                arguments = arguments.replace(", $Function_Parameter$", "");
+                // special case: no parameter
+                arguments = arguments.replace("$Function_Parameter$", "");
+                eventTemplate.setVariable("$Function_Parameter$", arguments);
+
+                eventTemplate.setVariableIfNotSet("$Parameter_Init$", "");
+            }
+        }
 
         for (HtmlElement element : frontendComponent.getHtmlElements().values()) {
             for (Event event : element.getEvents()) {
