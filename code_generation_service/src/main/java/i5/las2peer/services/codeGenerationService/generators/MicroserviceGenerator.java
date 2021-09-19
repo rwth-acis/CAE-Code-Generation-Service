@@ -190,7 +190,7 @@ public class MicroserviceGenerator extends Generator {
 
 	    try {
 	    	
-	      PersonIdent caeUser = new PersonIdent(gitAdapter.getGitUser(), gitAdapter.getGitPassword());
+	      PersonIdent caeUser = new PersonIdent(gitAdapter.getGitUser(), gitAdapter.getGitUserMail());
 	      String repositoryName = getRepositoryName(microservice);
 	      TraceModel traceModel = new TraceModel();
 	      
