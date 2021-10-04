@@ -40,6 +40,7 @@ public class ViewComponent {
   private boolean staticElement;
   private boolean collaborativeElement;
   private ArrayList<Event> events = new ArrayList<>();
+  private ArrayList<DataBinding> dataBindings = new ArrayList<>();
   private ViewComponent parent = null;
   private ArrayList<ViewComponent> children = new ArrayList<>();
 
@@ -172,6 +173,11 @@ public class ViewComponent {
   }
 
 
+  public ArrayList<DataBinding> getDataBindings() {
+    return this.dataBindings;
+  }
+
+
   public boolean isCollaborativeElement() {
     return collaborativeElement;
   }
@@ -214,6 +220,17 @@ public class ViewComponent {
    */
   void addEvent(Event event) {
     this.events.add(event);
+  }
+
+  /**
+   *
+   * Adds an {@link DataBinding} to the HtmlElement.
+   *
+   * @param DataBinding an {@link DataBinding}
+   *
+   */
+  void addDataBinding(DataBinding dataBinding) {
+    this.dataBindings.add(dataBinding);
   }
 
   public boolean isContentEditable(){

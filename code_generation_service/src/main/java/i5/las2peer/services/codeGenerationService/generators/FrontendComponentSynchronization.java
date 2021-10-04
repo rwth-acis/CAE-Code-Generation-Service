@@ -29,11 +29,11 @@ import i5.las2peer.services.codeGenerationService.templateEngine.TemplateEngine;
 import i5.las2peer.services.codeGenerationService.utilities.GitUtility;
 
 /**
- * 
+ *
  * Synchronizes the source code of a
  * {@link i5.las2peer.services.codeGenerationService.models.frontendComponent.FrontendComponent}
  * with an updated version of that component
- * 
+ *
  */
 public class FrontendComponentSynchronization extends FrontendComponentGenerator {
 
@@ -54,6 +54,7 @@ public class FrontendComponentSynchronization extends FrontendComponentGenerator
     String wireframeElementTemplate = null;
     String functionTemplate = null;
     String microserviceCallTemplate = null;
+    String dataBindingTemplate = null;
     String iwcResponseTemplate = null;
     String eventTemplate = null;
     String yjs = null;
@@ -107,6 +108,9 @@ public class FrontendComponentSynchronization extends FrontendComponentGenerator
           case "genericMicroserviceCall.txt":
             microserviceCallTemplate = new String(loader.getBytes(), "UTF-8");
             break;
+          case "genericDataBinding.txt":
+              dataBindingTemplate = new String(loader.getBytes(), "UTF-8");
+              break;
           case "genericIWCResponse.txt":
             iwcResponseTemplate = new String(loader.getBytes(), "UTF-8");
             break;
@@ -214,7 +218,7 @@ public class FrontendComponentSynchronization extends FrontendComponentGenerator
       applicationTemplateEngine.addTemplate(applicationTemplate);
 
       createApplicationScript(applicationTemplate, functionTemplate, microserviceCallTemplate,
-          iwcResponseTemplate, htmlElementTemplate, frontendComponent);
+          dataBindingTemplate, iwcResponseTemplate, htmlElementTemplate, frontendComponent);
 
       // add events to elements
       addEventsToApplicationScript(applicationTemplate, applicationTemplateEngine, eventTemplate,
@@ -247,11 +251,11 @@ public class FrontendComponentSynchronization extends FrontendComponentGenerator
 
       String commitSha = updateTracedFilesInRepository(fileList, getRepositoryName(frontendComponent), service,
     		  commitMessage, versionTag);
-      
+
       // merge development and master and push to gh-pages
    	  String masterBranchName = "gh-pages";
    	  gitUtility.mergeIntoMasterBranch(getRepositoryName(frontendComponent), masterBranchName, versionTag);
-   	  
+
    	  return commitSha;
     } catch (UnsupportedEncodingException e) {
       logger.printStackTrace(e);

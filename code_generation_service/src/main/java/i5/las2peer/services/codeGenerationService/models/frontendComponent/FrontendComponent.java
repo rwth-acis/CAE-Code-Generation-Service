@@ -59,6 +59,8 @@ public class FrontendComponent {
     HashMap<String, IWCCall> tempIwcCalls = new HashMap<String, IWCCall>();
     HashMap<String, MicroserviceCall> tempMicroserviceCalls =
         new HashMap<String, MicroserviceCall>();
+    HashMap<String, DataBinding> tempDataBindings =
+        new HashMap<String, DataBinding>();
 
     this.name = model.getName();
 
@@ -177,6 +179,10 @@ public class FrontendComponent {
           MicroserviceCall microserviceCall = new MicroserviceCall(node);
           tempMicroserviceCalls.put(node.getId(), microserviceCall);
           break;
+        case "DataBinding":
+          DataBinding dataBinding = new DataBinding(node);
+          tempDataBindings.put(node.getId(), dataBinding);
+          break;
         default:
           throw new ModelParseException("Unknown node type: " + node.getType());
       }
@@ -206,6 +212,14 @@ public class FrontendComponent {
             throw new ModelParseException("Wrong View Component to HTML Element edge!");
           }
           htmlElementCount--;
+          break;
+        case "View Component to Event":
+          if (!this.viewComponents.containsKey(currentEdgeSource)
+              || !tempEvents.containsKey(currentEdgeTarget)) {
+            throw new ModelParseException("Wrong View Component to Event edge!");
+          }
+          this.viewComponents.get(currentEdgeSource).addEvent(tempEvents.get(currentEdgeTarget));
+          tempEvents.remove(currentEdgeTarget);
           break;
         case "Widget to HTML Element":
           if (!this.widgetModelId.equals(currentEdgeSource)
@@ -297,7 +311,7 @@ public class FrontendComponent {
           tempIwcCalls.remove(currentEdgeTarget);
           break;
         case "Event to Function Call":
-
+          System.out.println("Event to Function Call" + functionCount);
           // check if function exists
           if (!this.functions.containsKey(currentEdgeTarget)) {
             throw new ModelParseException("Wrong Event to Function Call!");
@@ -309,6 +323,14 @@ public class FrontendComponent {
           } else {
             boolean found = false;
             // now we need to check already parsed events..
+            for (ViewComponent element : this.viewComponents.values()) {
+              for (Event event : element.getEvents()) {
+                if (event.getModelId().equals(currentEdgeSource)) {
+                  event.setCalledFunctionId(currentEdgeTarget);
+                  found = true;
+                }
+              }
+            }
             for (HtmlElement element : this.htmlElements.values()) {
               for (Event event : element.getEvents()) {
                 if (event.getModelId().equals(currentEdgeSource)) {
@@ -321,6 +343,8 @@ public class FrontendComponent {
               throw new ModelParseException("Wrong Event to Function Call!");
             }
           }
+          functionCount--;
+          System.out.println("Event to Function Call end" + functionCount);
           break;
         case "Function To Microservice Call":
           if (!this.functions.containsKey(currentEdgeSource)
@@ -330,6 +354,15 @@ public class FrontendComponent {
           this.functions.get(currentEdgeSource)
               .addMicroserviceCall(tempMicroserviceCalls.get(currentEdgeTarget));
           tempMicroserviceCalls.remove(currentEdgeTarget);
+          break;
+        case "View Component to DataBinding":
+          if (!this.viewComponents.containsKey(currentEdgeSource)
+              || !tempDataBindings.containsKey(currentEdgeTarget)) {
+            throw new ModelParseException("Wrong View Component to DataBinding edge!");
+          }
+          this.viewComponents.get(currentEdgeSource)
+              .addDataBinding(tempDataBindings.get(currentEdgeTarget));
+          tempDataBindings.remove(currentEdgeTarget);
           break;
         case "Widget to Function":
           if (!this.widgetModelId.equals(currentEdgeSource)
@@ -357,8 +390,12 @@ public class FrontendComponent {
     // also, all temp lists should be empty by now
     if (htmlElementCount != 0 || viewComponentCount != 0 || functionCount != 0 || !tempEvents.isEmpty()
         || !tempParameters.isEmpty() || !tempIwcResponses.isEmpty() || !tempIwcCalls.isEmpty()
-        || !tempMicroserviceCalls.isEmpty()) {
-      throw new ModelParseException("Model not fully connected!");
+        || !tempMicroserviceCalls.isEmpty() || !tempDataBindings.isEmpty()) {
+          String str = "";
+          if(viewComponentCount != 0)  str += "viewComponentCount" + viewComponentCount;
+          if(functionCount != 0)  str += "functionCount" + functionCount;
+          if(!tempEvents.isEmpty())  str += "tempEvents" + tempEvents.size();
+      throw new ModelParseException("Model not fully connected!" + str);
     }
     // check functions (now complete with all IWC events, microservice calls and input parameters)
     // for semantical correctness

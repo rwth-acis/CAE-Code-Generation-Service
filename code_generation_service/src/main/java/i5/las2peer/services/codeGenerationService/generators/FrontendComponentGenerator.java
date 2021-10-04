@@ -35,6 +35,7 @@ import i5.las2peer.services.codeGenerationService.models.frontendComponent.IWCCa
 import i5.las2peer.services.codeGenerationService.models.frontendComponent.IWCResponse;
 import i5.las2peer.services.codeGenerationService.models.frontendComponent.InputParameter;
 import i5.las2peer.services.codeGenerationService.models.frontendComponent.MicroserviceCall;
+import i5.las2peer.services.codeGenerationService.models.frontendComponent.DataBinding;
 import i5.las2peer.services.codeGenerationService.models.traceModel.FileTraceModel;
 import i5.las2peer.services.codeGenerationService.models.traceModel.TraceModel;
 import i5.las2peer.services.codeGenerationService.templateEngine.InitialGenerationStrategy;
@@ -83,6 +84,7 @@ public class FrontendComponentGenerator extends Generator {
         String wireframeElementTemplate = null;
         String functionTemplate = null;
         String microserviceCallTemplate = null;
+        String dataBindingTemplate = null;
         String iwcResponseTemplate = null;
         String eventTemplate = null;
         String yjsImports = null;
@@ -139,6 +141,10 @@ public class FrontendComponentGenerator extends Generator {
                             break;
                         case "genericMicroserviceCall.txt":
                             microserviceCallTemplate = new String(loader.getBytes(), "UTF-8");
+                            break;
+                        case "genericDataBinding.txt":
+                            System.out.println("1.............................");
+                            dataBindingTemplate = new String(loader.getBytes(), "UTF-8");
                             break;
                         case "genericIWCResponse.txt":
                             iwcResponseTemplate = new String(loader.getBytes(), "UTF-8");
@@ -241,7 +247,7 @@ public class FrontendComponentGenerator extends Generator {
             applicationScriptTemplateEngine.addTemplate(applicationTemplate);
 
             createApplicationScript(applicationTemplate, functionTemplate, microserviceCallTemplate,
-                    iwcResponseTemplate, htmlElementTemplate, frontendComponent);
+                    dataBindingTemplate, iwcResponseTemplate, htmlElementTemplate, frontendComponent);
 
             // add events to elements
             addEventsToApplicationScript(applicationTemplate, widgetTemplateEngine, eventTemplate,
@@ -734,8 +740,8 @@ public class FrontendComponentGenerator extends Generator {
      */
     public static void createApplicationScript(Template applicationTemplate,
                                                String functionTemplateFile, String microserviceCallTemplateFile,
-                                               String iwcResponseTemplateFile, String htmlElementTemplateFile,
-                                               FrontendComponent frontendComponent) {
+                                               String dataBindingTemplateFile, String iwcResponseTemplateFile,
+                                               String htmlElementTemplateFile, FrontendComponent frontendComponent) {
 
         // add trace to application script
         applicationTemplate.getTemplateEngine().addTrace(frontendComponent.getWidgetModelId(),
@@ -1002,6 +1008,70 @@ public class FrontendComponentGenerator extends Generator {
         applicationTemplate.setVariableIfNotSet("$Events$", "");
         applicationTemplate.setVariableIfNotSet("$IWC_Responses$", "");
 
+        for (ViewComponent vc : frontendComponent.getViewComponents().values()) {
+          System.out.println("2.............................");
+
+          for (DataBinding dataBinding : vc.getDataBindings()) {
+            System.out.println("3.............................");
+            Template dataBindingFile = applicationTemplate.createTemplate(
+                    vc.getId() + dataBinding.getModelId(), dataBindingTemplateFile);
+            System.out.println("3a............................." + dataBinding.getMethodType().toString());
+            System.out.println("3a.............................");
+
+            dataBindingFile.setVariable("$Container_Id$",
+                    vc.getId());
+
+            dataBindingFile.setVariable("$Method_Type$",
+                    dataBinding.getMethodType().toString());
+            System.out.println("3b.............................");
+
+            dataBindingFile.setVariable("$Method_Path$", dataBinding.getPath());
+
+            if (dataBinding.isAuthorize()) {
+                dataBindingFile.setVariable("$Authenticate$", "true");
+            } else {
+                dataBindingFile.setVariable("$Authenticate$", "false");
+            }
+            System.out.println("3c.............................");
+            if (!dataBinding.getContent().isEmpty()) {
+                // add variable initialization
+                Template contentVar = applicationTemplate.createTemplate(
+                        dataBindingFile.getId() + "contentVar", "   var $Content$ = null;-{\n}-");
+                contentVar.setVariable("$Content$", dataBinding.getContent());
+
+                applicationTemplate.appendVariable("$DataBinding$", contentVar);
+
+                dataBindingFile.setVariable("$Content$", dataBinding.getContent());
+
+                // TODO workaround
+                String contentType = dataBinding.getContentType().toString();
+                if (contentType.equals("application/json"))
+                    contentType = "text/plain";
+
+                dataBindingFile.setVariable("$Content_Type$", contentType);
+            } else {
+                // no content specified, just remove placeholder / insert empty entries
+                dataBindingFile.setVariable("$Content$", "\"\"");
+                dataBindingFile.setVariable("$Content_Type$", "");
+            }
+            System.out.println("3d.............................");
+            dataBindingFile.setVariable("$Method_Path$", dataBinding.getPath());
+            System.out.println("4.............................");
+
+            dataBindingFile.setVariable("$Display_Attr$", dataBinding.getDisplayAttr());
+
+            applicationTemplate.getTemplateEngine().addTrace(dataBinding.getModelId(), "DataBinding",
+                    dataBinding.getModelId(), dataBindingFile);
+            System.out.println("5.............................");
+            // add function to application script
+            applicationTemplate.appendVariable("$DataBinding$", dataBindingFile);
+            System.out.println("6.............................");
+
+            System.out.println("7.............................");
+          }
+        }
+        applicationTemplate.setVariableIfNotSet("$DataBinding$", "");
+        System.out.println("8.............................");
     }
 
 
@@ -1083,33 +1153,35 @@ public class FrontendComponentGenerator extends Generator {
                                                     TemplateEngine templateEngine, String eventTemplateFile,
                                                     FrontendComponent frontendComponent) {
 
-
+        System.out.println("9.............................");
         for (ViewComponent element : frontendComponent.getViewComponents().values()) {
+            System.out.println("10.............................");
             for (Event event : element.getEvents()) {
+                System.out.println("11.............................");
                 Template eventTemplate = templateEngine
                         .createTemplate(element.getModelId() + ":" + event.getModelId(), eventTemplateFile);
                 eventTemplate.setVariable("$Html_Element_Id$", element.getId());
 
                 applicationScriptTemplate.appendVariable("$Events$", eventTemplate);
-
+                System.out.println("12.............................");
                 eventTemplate.getTemplateEngine().addTrace(event.getModelId(), "Event",
                         eventTemplate.getSegment());
 
                 eventTemplate.setVariable("$Event_Type$", event.getEventCause().toString());
-
+                System.out.println("13.............................");
                 Function function = frontendComponent.getFunctions().get(event.getCalledFunctionId());
-
+                System.out.println("14.............................");
                 eventTemplate.setVariable("$Function_Name$", function.getName());
-
+                System.out.println("15.............................");
                 String arguments = "$Function_Parameter$";
                 boolean firstParameter = true;
 
                 for (InputParameter parameter : function.getInputParameters()) {
-
+                    System.out.println("16.............................");
                     Template inputParameter = templateEngine.createTemplate(
                             eventTemplate.getId() + ":input:param:" + parameter.getModelId(),
                             "    var $Parameter_Name$ = null;");
-
+                    System.out.println("17.............................");
                     inputParameter.setVariable("$Parameter_Name$", parameter.getName());
 
                     if (firstParameter) {
