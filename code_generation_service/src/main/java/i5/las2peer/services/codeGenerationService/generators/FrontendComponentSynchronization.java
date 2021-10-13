@@ -55,6 +55,10 @@ public class FrontendComponentSynchronization extends FrontendComponentGenerator
     String functionTemplate = null;
     String microserviceCallTemplate = null;
     String dataBindingTemplate = null;
+    String dataBindingCallerTemplate = null;
+    String dataBindingListTemplate = null;
+    String dataBindingDtlTemplate = null;
+    String paramBindingTemplate = null;
     String iwcResponseTemplate = null;
     String eventTemplate = null;
     String yjs = null;
@@ -110,6 +114,18 @@ public class FrontendComponentSynchronization extends FrontendComponentGenerator
             break;
           case "genericDataBinding.txt":
               dataBindingTemplate = new String(loader.getBytes(), "UTF-8");
+              break;
+          case "dataBindingCaller.txt":
+              dataBindingCallerTemplate = new String(loader.getBytes(), "UTF-8");
+              break;
+          case "dataBindingList.txt":
+              dataBindingListTemplate = new String(loader.getBytes(), "UTF-8");
+              break;
+          case "dataBindingDtl.txt":
+              dataBindingDtlTemplate = new String(loader.getBytes(), "UTF-8");
+              break;
+          case "genericParamBinding.txt":
+              paramBindingTemplate = new String(loader.getBytes(), "UTF-8");
               break;
           case "genericIWCResponse.txt":
             iwcResponseTemplate = new String(loader.getBytes(), "UTF-8");
@@ -218,11 +234,12 @@ public class FrontendComponentSynchronization extends FrontendComponentGenerator
       applicationTemplateEngine.addTemplate(applicationTemplate);
 
       createApplicationScript(applicationTemplate, functionTemplate, microserviceCallTemplate,
-          dataBindingTemplate, iwcResponseTemplate, htmlElementTemplate, frontendComponent);
+          iwcResponseTemplate, htmlElementTemplate, frontendComponent);
 
       // add events to elements
-      addEventsToApplicationScript(applicationTemplate, applicationTemplateEngine, eventTemplate,
-          frontendComponent);
+      addEventsToApplicationScript(applicationTemplate, dataBindingCallerTemplate,
+              dataBindingListTemplate, dataBindingDtlTemplate,
+              widgetTemplateEngine, eventTemplate, functionTemplate, frontendComponent);
 
       // add (possible) Yjs collaboration stuff
       addYjsCollaboration(applicationTemplate, applicationTemplateEngine, yjsInit,

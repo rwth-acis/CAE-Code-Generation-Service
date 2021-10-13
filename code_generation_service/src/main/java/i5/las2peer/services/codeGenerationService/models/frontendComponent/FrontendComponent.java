@@ -32,6 +32,7 @@ public class FrontendComponent {
   private HashMap<String, ViewComponent> viewComponents;
   private HashMap<String, HtmlElement> htmlElements;
   private HashMap<String, Function> functions;
+  private HashMap<String, ParamBinding> paramBindings;
   private boolean hasPolymerElements = false;
 
   /**
@@ -47,6 +48,7 @@ public class FrontendComponent {
     this.viewComponents = new HashMap<String, ViewComponent>();
     this.htmlElements = new HashMap<String, HtmlElement>();
     this.functions = new HashMap<String, Function>();
+    this.paramBindings = new HashMap<String, ParamBinding>();
 
     // some helper fields to check model for correctness
     // used to find (possible) duplicate (HTML) ids and report them
@@ -57,10 +59,9 @@ public class FrontendComponent {
     HashMap<String, InputParameter> tempParameters = new HashMap<String, InputParameter>();
     HashMap<String, IWCResponse> tempIwcResponses = new HashMap<String, IWCResponse>();
     HashMap<String, IWCCall> tempIwcCalls = new HashMap<String, IWCCall>();
-    HashMap<String, MicroserviceCall> tempMicroserviceCalls =
-        new HashMap<String, MicroserviceCall>();
-    HashMap<String, DataBinding> tempDataBindings =
-        new HashMap<String, DataBinding>();
+    HashMap<String, MicroserviceCall> tempMicroserviceCalls = new HashMap<String, MicroserviceCall>();
+    HashMap<String, DataBinding> tempDataBindings = new HashMap<String, DataBinding>();
+    HashMap<String, ParamBinding> tempParamBindings = new HashMap<String, ParamBinding>();
 
     this.name = model.getName();
 
@@ -163,6 +164,10 @@ public class FrontendComponent {
           Function function = new Function(node);
           this.functions.put(node.getId(), function);
           break;
+        case "ParameterBinding":
+          ParamBinding paramBinding = new ParamBinding(node);
+          this.paramBindings.put(node.getId(), paramBinding);
+          break;
         case "Input Parameter":
           InputParameter parameter = new InputParameter(node);
           tempParameters.put(node.getId(), parameter);
@@ -193,7 +198,9 @@ public class FrontendComponent {
     // helper variables to check for correct edges
     int viewComponentCount = this.viewComponents.size();
     int htmlElementCount = this.htmlElements.size();
-    int functionCount = this.functions.size();
+    int functionCount = this.functions.size() - 1;
+    int paramBindingCount = this.paramBindings.size() - 1;
+
     for (int edgeIndex = 0; edgeIndex < edges.size(); edgeIndex++) {
       String currentEdgeSource = edges.get(edgeIndex).getSourceNode();
       String currentEdgeTarget = edges.get(edgeIndex).getTargetNode();
@@ -311,7 +318,6 @@ public class FrontendComponent {
           tempIwcCalls.remove(currentEdgeTarget);
           break;
         case "Event to Function Call":
-          System.out.println("Event to Function Call" + functionCount);
           // check if function exists
           if (!this.functions.containsKey(currentEdgeTarget)) {
             throw new ModelParseException("Wrong Event to Function Call!");
@@ -344,7 +350,44 @@ public class FrontendComponent {
             }
           }
           functionCount--;
-          System.out.println("Event to Function Call end" + functionCount);
+          break;
+        case "Event to ParamBinding":
+          // check if function exists
+          if (!this.paramBindings.containsKey(currentEdgeTarget)) {
+            throw new ModelParseException("Wrong Event to Parameter Binding!");
+          }
+          // check if event is still in tempEvent list
+          if (tempEvents.containsKey(currentEdgeSource)) {
+            tempEvents.get(currentEdgeSource).setCalledParamBindingId(currentEdgeTarget);
+            break;
+          } else {
+            boolean found = false;
+            // now we need to check already parsed events..
+            for (ViewComponent element : this.viewComponents.values()) {
+              for (Event event : element.getEvents()) {
+                if (event.getModelId().equals(currentEdgeSource)) {
+                  event.setCalledParamBindingId(currentEdgeTarget);
+                  found = true;
+                }
+              }
+            }
+            if (!found) {
+              throw new ModelParseException("Wrong Event to Parameter Binding!");
+            }
+          }
+          paramBindingCount--;
+          break;
+        case "ParamBinding to ViewComponent":
+          if (!this.paramBindings.containsKey(currentEdgeSource)
+              || !this.viewComponents.containsKey(currentEdgeTarget)) {
+            throw new ModelParseException("Wrong Element Update edge!");
+          }
+          // check if element is not static
+          if (this.viewComponents.get(currentEdgeTarget).isStaticElement()) {
+            throw new ModelParseException("Static viewComponents cannot be updated by functions: "
+                + this.viewComponents.get(currentEdgeTarget).getId());
+          }
+          this.paramBindings.get(currentEdgeSource).addViewComponentUpdates(currentEdgeTarget);
           break;
         case "Function To Microservice Call":
           if (!this.functions.containsKey(currentEdgeSource)
@@ -388,12 +431,14 @@ public class FrontendComponent {
     // only one widget allowed (checked previously), no multiple edges between two objects in
     // SyncMeta -> element count must be zero now if all elements are connected to the widget
     // also, all temp lists should be empty by now
-    if (htmlElementCount != 0 || viewComponentCount != 0 || functionCount != 0 || !tempEvents.isEmpty()
+    if (htmlElementCount != 0 || viewComponentCount != 0 || functionCount > 0
+        || paramBindingCount > 0 || !tempEvents.isEmpty()
         || !tempParameters.isEmpty() || !tempIwcResponses.isEmpty() || !tempIwcCalls.isEmpty()
         || !tempMicroserviceCalls.isEmpty() || !tempDataBindings.isEmpty()) {
           String str = "";
           if(viewComponentCount != 0)  str += "viewComponentCount" + viewComponentCount;
-          if(functionCount != 0)  str += "functionCount" + functionCount;
+          if(functionCount > 0)  str += "functionCount" + functionCount;
+          if(paramBindingCount > 0)  str += "paramBindingCount" + functionCount;
           if(!tempEvents.isEmpty())  str += "tempEvents" + tempEvents.size();
       throw new ModelParseException("Model not fully connected!" + str);
     }
@@ -528,6 +573,16 @@ public class FrontendComponent {
 
   public void setFunctions(HashMap<String, Function> functions) {
     this.functions = functions;
+  }
+
+
+  public Map<String, ParamBinding> getParamBindings() {
+    return this.paramBindings;
+  }
+
+
+  public void setParamBindings(HashMap<String, ParamBinding> paramBindings) {
+    this.paramBindings = paramBindings;
   }
 
 
