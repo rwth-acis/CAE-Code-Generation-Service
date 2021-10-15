@@ -430,6 +430,20 @@ public class FrontendComponentGenerator extends Generator {
                         .getChildRecursive(frontendComponent.getWidgetModelId() + ":unprotected[0]"));
 
         // now, get all "updated", but not "created" elements (since these are there "from the start")
+        ArrayList<String> vcIdsToAdd = new ArrayList<String>();
+        ArrayList<String> viewComponentsCreated = new ArrayList<String>();
+        for (Function function : frontendComponent.getFunctions().values()) {
+            vcIdsToAdd.addAll(function.getViewComponentUpdates());
+            viewComponentsCreated.addAll(function.getViewComponentCreations());
+        }
+        for (ParamBinding paramBinding : frontendComponent.getParamBindings().values()) {
+            vcIdsToAdd.addAll(paramBinding.getViewComponentUpdates());
+        }
+        vcIdsToAdd.removeAll(viewComponentsCreated);
+        for (String idToAdd : vcIdsToAdd) {
+            viewComponentsToAdd.put(idToAdd, frontendComponent.getViewComponents().get(idToAdd));
+        }
+
         ArrayList<String> idsToAdd = new ArrayList<String>();
         ArrayList<String> htmlElementsCreated = new ArrayList<String>();
         for (Function function : frontendComponent.getFunctions().values()) {
@@ -1102,9 +1116,11 @@ public class FrontendComponentGenerator extends Generator {
         System.out.println("1..................");
         List<ParamBinding> paramBindingList = new ArrayList<>(frontendComponent.getParamBindings().values());
         System.out.println("2..................");
+        String detailContainerId = "";
         for (ParamBinding paramBinding : paramBindingList) {
           for (String vc : paramBinding.getViewComponentUpdates()) {
             detailVC.add(vc);
+            detailContainerId = vc;
             System.out.println("vc.................." + vc);
           }
         }
@@ -1136,8 +1152,11 @@ public class FrontendComponentGenerator extends Generator {
                 Template dataBindingCallerFile = applicationScriptTemplate.createTemplate(
                         element.getId() + dataBinding.getModelId() + "_list", dataBindingCallerTemplateFile);
                         System.out.println("7..................");
-                dataBindingCallerFile.setVariable("$Container_Id$",
-                        element.getId());
+
+                ViewComponent detailContainer = frontendComponent.getViewComponents().get(detailContainerId);
+
+                dataBindingCallerFile.setVariable("$List_Container_Id$", element.getId());
+                dataBindingCallerFile.setVariable("$Dtl_Container_Id$", detailContainer.getId());
 
                 dataBindingCallerFile.setVariable("$Method_Type$",
                         dataBinding.getMethodType().toString());
@@ -1218,6 +1237,7 @@ public class FrontendComponentGenerator extends Generator {
                       ParamBinding paramBinding = frontendComponent.getParamBindings().get(event.getCalledParamBindingId());
                       System.out.println("19..................");
                       dataBindingListFile.setVariable("$Param_Input$", paramBinding.getInput());
+                      dataBindingCallerFile.setVariable("$Param_Input$", paramBinding.getInput());
                   }
                   System.out.println("20..................");
 

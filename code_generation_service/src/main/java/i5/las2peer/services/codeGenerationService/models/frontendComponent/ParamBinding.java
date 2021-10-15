@@ -21,6 +21,7 @@ public class ParamBinding {
   private String functionName;
 
   private ArrayList<String> viewComponentUpdates;
+  private ArrayList<String> viewComponentCreations;
 
 
   /**
@@ -79,6 +80,12 @@ public class ParamBinding {
   public ArrayList<String> getViewComponentUpdates() {
     return this.viewComponentUpdates;
   }
+
+
+  public ArrayList<String> getViewComponentCreations() {
+    return this.viewComponentCreations;
+  }
+
 
 
   /**
