@@ -1153,10 +1153,12 @@ public class FrontendComponentGenerator extends Generator {
                         element.getId() + dataBinding.getModelId() + "_list", dataBindingCallerTemplateFile);
                         System.out.println("7..................");
 
-                ViewComponent detailContainer = frontendComponent.getViewComponents().get(detailContainerId);
+                if(!detailContainerId.isEmpty()) {
+                  ViewComponent detailContainer = frontendComponent.getViewComponents().get(detailContainerId);
 
+                  dataBindingCallerFile.setVariable("$Dtl_Container_Id$", detailContainer.getId());
+                }
                 dataBindingCallerFile.setVariable("$List_Container_Id$", element.getId());
-                dataBindingCallerFile.setVariable("$Dtl_Container_Id$", detailContainer.getId());
 
                 dataBindingCallerFile.setVariable("$Method_Type$",
                         dataBinding.getMethodType().toString());
