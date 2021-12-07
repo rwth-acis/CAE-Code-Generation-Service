@@ -70,6 +70,8 @@ public class DataBinding {
         case "path":
           this.path = attribute.getValue();
           break;
+        case "name":
+          break;
         case "displayAttr":
           this.displayAttr = attribute.getValue();
           break;

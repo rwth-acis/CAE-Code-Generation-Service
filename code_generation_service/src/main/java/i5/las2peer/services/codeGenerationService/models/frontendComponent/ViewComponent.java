@@ -67,6 +67,8 @@ public class ViewComponent {
         case "id":
           this.id = attribute.getValue();
           break;
+        case "name":
+          break;
         case "type":
           switch (attribute.getValue()) {
             case "div":

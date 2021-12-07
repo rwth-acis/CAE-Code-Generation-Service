@@ -134,7 +134,7 @@ public class FrontendComponent {
             }
           }
           break;
-        case "HTML Element":
+        case "View Component Part":
           HtmlElement element = new HtmlElement(node);
 
           //element is a polymer element
