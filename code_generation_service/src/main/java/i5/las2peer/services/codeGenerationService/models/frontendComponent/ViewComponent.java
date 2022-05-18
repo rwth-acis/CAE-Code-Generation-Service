@@ -11,32 +11,26 @@ import java.util.HashMap;
 
 /**
  *
- * HtmlElement data class. Represents an HTML Element, which is part of a frontend component model.
+ * ViewComponent data class. Represents an View Component, which is part of a frontend component model.
  *
  */
-public class HtmlElement {
+public class ViewComponent {
 
 
   /**
    *
-   * Represents the different element types an {@link HtmlElement} can have.
+   * Represents the different element types an {@link ViewComponent} can have.
    *
    */
   public enum ElementType {
-    input, table, br, button, p, div, textarea, CUSTOM, a, img, audio, video, span, iframe, radio, checkbox, ul, ol, dl, canvas, svg
+    div, ul, ol, form, table
   }
 
   private static final Map<ElementType, String> codeSample = ImmutableMap.of(
-          ElementType.ul, "  <li>Item 1</li>\n<li>Item 2</li>\n<li>Item 3</li> ",
-          ElementType.ol, "  <li>Item 1</li>\n<li>Item 2</li>\n<li>Item 3</li> ",
-          ElementType.dl, " <dt>Item 1</dt>\n     <dd>- Description of Item 1</dd>\n" +
-                              "<dt>Item 2</dt>\n      <dd>- Description of Item 2</dd>",
           ElementType.table, "  <tr>\n    <th>Column 1</th>\n    <th>Column 2</th> \n    <th>Column 3</th>\n  </tr>\n" +
                   "  <tr>\n    <td>Edit me!</td>\n    <td>Edit me!</td> \n    <td>Edit me!</td>\n  </tr>\n" +
                   "  <tr>\n    <td>Edit me!</td>\n    <td>Edit me!</td> \n    <td>Edit me!</td>\n  </tr>\n" +
-                  "  <tr>\n    <td>Edit me!</td>\n    <td>Edit me!</td> \n    <td>Edit me!</td>\n  </tr>",
-          ElementType.svg, "  <ellipse cx=\"100\" cy=\"70\" rx=\"85\" ry=\"55\" fill=\"blue\"/>\n  <text fill=\"#ffffff\" font-size=\"45\" font-family=\"Verdana\"\n  x=\"50\" y=\"86\">SVG</text>\nSorry, your browser does not support inline SVG."
-
+                  "  <tr>\n    <td>Edit me!</td>\n    <td>Edit me!</td> \n    <td>Edit me!</td>\n  </tr>"
   );
 
 
@@ -46,8 +40,9 @@ public class HtmlElement {
   private boolean staticElement;
   private boolean collaborativeElement;
   private ArrayList<Event> events = new ArrayList<>();
-  private HtmlElement parent = null;
-  private ArrayList<HtmlElement> children = new ArrayList<>();
+  private ArrayList<DataBinding> dataBindings = new ArrayList<>();
+  private ViewComponent parent = null;
+  private ArrayList<ViewComponent> children = new ArrayList<>();
 
   //Taken from the wireframe
   private HashMap<String, String> attributes = new HashMap<>();
@@ -57,14 +52,14 @@ public class HtmlElement {
   private boolean ignoreSize = false;
   /**
    *
-   * HtmlElement constructor. Takes a {@link SimpleNode} and parses it to an HtmlElement.
+   * ViewComponent constructor. Takes a {@link SimpleNode} and parses it to an ViewComponent.
    *
-   * @param node the node representing the HtmlElement
+   * @param node the node representing the ViewComponent
    *
    * @throws ModelParseException if some error comes up during parsing the node
    *
    */
-  public HtmlElement(SimpleNode node) throws ModelParseException {
+  public ViewComponent(SimpleNode node) throws ModelParseException {
     this.modelId = node.getId();
     for (int nodeIndex = 0; nodeIndex < node.getAttributes().size(); nodeIndex++) {
       SimpleEntityAttribute attribute = node.getAttributes().get(nodeIndex);
@@ -76,56 +71,11 @@ public class HtmlElement {
           break;
         case "type":
           switch (attribute.getValue()) {
-            case "input":
-              this.type = ElementType.input;
-              break;
-            case "table":
-              this.isContentEditable = true;
-              this.type = ElementType.table;
-              break;
-            case "br":
-              this.type = ElementType.br;
-              break;
-            case "button":
-              this.type = ElementType.button;
-              break;
-            case "p":
-              this.type = ElementType.p;
-              break;
             case "div":
               this.type = ElementType.div;
               break;
-            case "textarea":
-              this.type = ElementType.textarea;
-              break;
-            case "CUSTOM":
-              this.type = ElementType.CUSTOM;
-              break;
-            case "a":
-              this.type = ElementType.a;
-              break;
-            case "img":
-              this.type = ElementType.img;
-              break;
-            case "audio":
-              this.type = ElementType.audio;
-              break;
-            case "video":
-              this.type = ElementType.video;
-              break;
-            case "span":
-              this.type = ElementType.span;
-              break;
-            case "iframe":
-              this.type = ElementType.iframe;
-              break;
-            case "radio":
-              this.ignoreSize = true;
-              this.type = ElementType.radio;
-              break;
-            case "checkbox":
-              this.ignoreSize = true;
-              this.type = ElementType.checkbox;
+            case "form":
+              this.type = ElementType.form;
               break;
             case "ol":
               this.isContentEditable = true;
@@ -135,21 +85,12 @@ public class HtmlElement {
               this.isContentEditable = true;
               this.type = ElementType.ul;
               break;
-            case "dl":
+            case "table":
               this.isContentEditable = true;
-              this.type = ElementType.dl;
-              break;
-            case "canvas":
-              this.ignoreSize = true;
-              this.type = ElementType.canvas;
-              break;
-            case "svg":
-              this.ignoreSize = true;
-              this.isContentEditable = true;
-              this.type = ElementType.svg;
+              this.type = ElementType.table;
               break;
             default:
-              throw new ModelParseException("Unknown HtmlElement type: " + attribute.getValue());
+              throw new ModelParseException("Unknown ViewComponent type: " + attribute.getValue());
           }
           break;
         case "static":
@@ -171,33 +112,17 @@ public class HtmlElement {
                 label = "";
             }
             else{
-              throw new ModelParseException("Unknown HtmlElement attribute: " + attribute.getName());
+              throw new ModelParseException("Unknown ViewComponent attribute: " + attribute.getName());
             }
           }
-          else throw new ModelParseException("Unknown HtmlElement attribute: " + attribute.getName());
+          else throw new ModelParseException("Unknown ViewComponent attribute: " + attribute.getName());
       }
     }
   }
 
   public String generateCodeForAttributes() {
     //non attributes for polymer elements
-    if(this.type.equals(ElementType.CUSTOM))
-      return " ";
-
-    StringBuilder code = new StringBuilder();
-    for (String key : attributes.keySet()) {
-      String value = attributes.get(key);
-      if (value.length() > 0) {
-        if (value.equals("true"))
-          code.append(" ").append(key).append(" ");
-        else if (!value.equals("false")) //if value = false then ignore the attribute
-          code.append(" ").append(key).append("=\"").append(value).append("\" ");
-      }
-    }
-
-    if(this.getType().equals(ElementType.input) && this.getLabel() != null)
-      code.append("value=\"").append(this.getLabel()).append("\"");
-    return code.toString();
+    return " ";
   }
 
   public String generateCodeForGeometry(){
@@ -250,6 +175,11 @@ public class HtmlElement {
   }
 
 
+  public ArrayList<DataBinding> getDataBindings() {
+    return this.dataBindings;
+  }
+
+
   public boolean isCollaborativeElement() {
     return collaborativeElement;
   }
@@ -262,15 +192,15 @@ public class HtmlElement {
     return label;
   }
 
-  void setParent(HtmlElement element){
+  void setParent(ViewComponent element){
     parent = element;
   }
 
-  void addChildren(HtmlElement element){
+  void addChildren(ViewComponent element){
     children.add(element);
   }
 
-  public ArrayList<HtmlElement> getChildren(){
+  public ArrayList<ViewComponent> getChildren(){
     return children;
   }
 
@@ -292,6 +222,17 @@ public class HtmlElement {
    */
   void addEvent(Event event) {
     this.events.add(event);
+  }
+
+  /**
+   *
+   * Adds an {@link DataBinding} to the HtmlElement.
+   *
+   * @param DataBinding an {@link DataBinding}
+   *
+   */
+  void addDataBinding(DataBinding dataBinding) {
+    this.dataBindings.add(dataBinding);
   }
 
   public boolean isContentEditable(){

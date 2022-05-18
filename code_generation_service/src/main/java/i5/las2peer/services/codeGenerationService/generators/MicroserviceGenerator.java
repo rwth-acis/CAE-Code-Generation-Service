@@ -35,10 +35,10 @@ import java.util.Iterator;
 import java.util.Map;
 
 /**
- * 
+ *
  * Generates microservice source code from passed on
  * {@link i5.las2peer.services.codeGenerationService.models.microservice.Microservice} models.
- * 
+ *
  */
 public class MicroserviceGenerator extends Generator {
 
@@ -52,7 +52,7 @@ public class MicroserviceGenerator extends Generator {
 
   /**
    * Get the name of the package for a microservice model
-   * 
+   *
    * @param microservice A microservice nodel
    * @return The name of the package
    */
@@ -64,7 +64,7 @@ public class MicroserviceGenerator extends Generator {
 
   /**
    * Get the service file name of a microservice model
-   * 
+   *
    * @param microservice A microservice model
    * @return The file name of the service
    */
@@ -87,7 +87,7 @@ public class MicroserviceGenerator extends Generator {
 
   /**
    * Get the file name of the service properties file
-   * 
+   *
    * @param microservice A microservice model
    * @return The file name of the service properties file
    */
@@ -100,7 +100,7 @@ public class MicroserviceGenerator extends Generator {
 
   /**
    * Get the file name of the test file of a microservice model
-   * 
+   *
    * @param microservice A microservice model
    * @return The file name of the test file
    */
@@ -112,7 +112,7 @@ public class MicroserviceGenerator extends Generator {
 
   /**
    * Returns the repository name for the given microservice model
-   * 
+   *
    * @param microservice the mircoservice model
    * @return The name of the repository
    */
@@ -123,9 +123,9 @@ public class MicroserviceGenerator extends Generator {
   }
 
   /**
-   * 
+   *
    * Creates source code from a CAE microservice model and pushes it to GitHub.
-   * 
+   *
    * @param microservice the microservice model
  * @param templateRepositoryName the name of the template repository on GitHub
  * @param gitAdapter The gitAdapter that manages operations on GitHub/GitLab etc.
@@ -134,10 +134,10 @@ public class MicroserviceGenerator extends Generator {
  * @return Commit sha identifier
    * @throws GitHostException thrown if anything goes wrong during this process. Wraps around all
    *         other exceptions and prints their message.
-   * 
+   *
    */
-  
-  public static String createSourceCode(Microservice microservice, 
+
+  public static String createSourceCode(Microservice microservice,
 		  String templateRepositoryName, BaseGitHostAdapter gitAdapter, String commitMessage, String versionTag,
 		  boolean forcePush, String metadataDoc) throws GitHostException {
 	// variables to be closed in the final block
@@ -189,25 +189,25 @@ public class MicroserviceGenerator extends Generator {
         String genericClassProperty = null;
 
 	    try {
-	    	
+
 	      PersonIdent caeUser = new PersonIdent(gitAdapter.getGitUser(), gitAdapter.getGitUserMail());
 	      String repositoryName = getRepositoryName(microservice);
 	      TraceModel traceModel = new TraceModel();
-	      
-	      // 
+
+	      //
 	      try {
 
 	        // now load the TreeWalk containing the template repository content
 	        treeWalk = getTemplateRepositoryContent(gitAdapter);
 	        treeWalk.setFilter(PathFilter.create("backend/"));
 	        ObjectReader reader = treeWalk.getObjectReader();
-	        
+
 	        // walk through the tree and retrieve the needed templates
 	        while (treeWalk.next()) {
 	          ObjectId objectId = treeWalk.getObjectId(0);
 	          ObjectLoader loader = reader.open(objectId);
 	          String path = treeWalk.getPathString().replace("backend/", "");
-	          
+
 	          switch (treeWalk.getNameString()) {
 	            // start with the "easy" replacements, and store the other template files for later
 	            case ".project":
@@ -389,14 +389,14 @@ public class MicroserviceGenerator extends Generator {
 	    	  microserviceRepository = getRemoteRepository(repositoryName, gitAdapter);
 	    	  Git git = Git.wrap(microserviceRepository);
 	          StoredConfig config = git.getRepository().getConfig();
-	          
+
 	          RemoteConfig remoteConfig = null;
-	          
+
 	          try {
 	          remoteConfig = new RemoteConfig(config, "Remote");
 	          remoteConfig.addURI(new URIish(gitAdapter.getBaseURL() + gitAdapter.getGitOrganization() + "/" + repositoryName + ".git"));
-	    		
-	          
+
+
 	          remoteConfig.update(config);
 	          config.save();
 	          } catch (URISyntaxException e) {
@@ -405,7 +405,7 @@ public class MicroserviceGenerator extends Generator {
 	        	  throw new GitHostException("IO exception: " + e.getMessage());
 	          }
 	      }
-	      
+
 	      // generate service class and test
 	      String repositoryLocation = gitAdapter.getBaseURL() + gitAdapter.getGitOrganization() + "/" + repositoryName;
 
@@ -494,9 +494,9 @@ public class MicroserviceGenerator extends Generator {
 	            .setCommitter(caeUser).call();
 	        Ref head = microserviceRepository.getAllRefs().get("HEAD");
             commitSha = head.getObjectId().getName();
-            
+
             if(versionTag != null) {
-            	Git.wrap(microserviceRepository).tag().setObjectId(commit).setName(versionTag).call();	
+            	Git.wrap(microserviceRepository).tag().setObjectId(commit).setName(versionTag).call();
             }
 	      } catch (Exception e) {
 	        logger.printStackTrace(e);
@@ -510,7 +510,7 @@ public class MicroserviceGenerator extends Generator {
 	        logger.printStackTrace(e);
 	        throw new GitHostException(e.getMessage());
 	      }
-	      
+
 	      return commitSha;
 
 	      // close all open resources
@@ -523,12 +523,12 @@ public class MicroserviceGenerator extends Generator {
 	      treeWalk.close();
 	    }
   }
-  
+
   public static void createSourceCode(Microservice microservice, String templateRepositoryName,
       BaseGitHostAdapter gitAdapter, String commitMessage, String versionTag, String metadataDoc)
       throws GitHostException {
 	  createSourceCode(microservice, templateRepositoryName, gitAdapter, commitMessage, versionTag, false, metadataDoc);
-    
+
   }
 
   protected static void generateOtherArtifacts(TemplateEngine templateEngine,
@@ -536,14 +536,14 @@ public class MicroserviceGenerator extends Generator {
     String repositoryName = getRepositoryName(microservice);
     String packageName = getPackageName(microservice);
     String port = "8080";
-    
-    
+
+
     // get the port: skip first 6 characters for search (http: / https:)
     try {
     	if(microservice.getPath().contains("http:") || microservice.getPath().contains("https:")) {
     		port = String.valueOf(new URL(microservice.getPath()).getPort());
     	}else {
-    		port = String.valueOf(new URL("http://"+microservice.getPath()).getPort());	
+    		port = String.valueOf(new URL("http://"+microservice.getPath()).getPort());
     	}
     } catch (Exception e) {
     	throw new ModelParseException(e.getMessage());
@@ -671,9 +671,9 @@ public class MicroserviceGenerator extends Generator {
 
 
   /**
-   * 
+   *
    * Generates the service class.
-   * 
+   *
    * @param templateEngine the template engine to use
    * @param serviceClass the service class file
    * @param microservice the microservice model
@@ -685,7 +685,7 @@ public class MicroserviceGenerator extends Generator {
    * @param databaseConfig a database configuration (source code) template
    * @param databaseInstantiation a database instantiation (source code) template
    * @param serviceInvocation a service invocation (source code) template
-   * 
+   *
    */
   protected static void generateNewServiceClass(TemplateEngine templateEngine, String serviceClass,
 																								Microservice microservice, String repositoryLocation, String genericHttpMethod,
@@ -769,7 +769,7 @@ public class MicroserviceGenerator extends Generator {
             serviceClassTemplate.setVariable("$Metadata_Terms$", "");
         }
     }
-    
+
     // resource name
     serviceClassTemplate.setVariable("$Resource_Name$", microservice.getResourceName());
     // create database references only if microservice has database
@@ -857,7 +857,7 @@ public class MicroserviceGenerator extends Generator {
 
         if (nodeDetails != null) {
           if (nodeDetails.hasNonNull(responseNodeId)) {
-            JsonNode nodeDetail = nodeDetails.get(responseNodeId); 
+            JsonNode nodeDetail = nodeDetails.get(responseNodeId);
             if (nodeDetail.hasNonNull("description")) {
                 description = nodeDetail.get("description").asText();
             }
@@ -991,7 +991,7 @@ public class MicroserviceGenerator extends Generator {
             System.out.println("[MICROSERVICE GENERATOR] Node details available");
             System.out.println(nodeDetails);
 
-            JsonNode nodeDetail = nodeDetails.get(payloadNodeId); 
+            JsonNode nodeDetail = nodeDetails.get(payloadNodeId);
             if (nodeDetail.hasNonNull("description")) {
                 description = nodeDetail.get("description").asText();
             }
@@ -1025,7 +1025,7 @@ public class MicroserviceGenerator extends Generator {
         	// TODO workaround
           // consumesAnnotation = "MediaType.APPLICATION_JSON";
           consumesAnnotation = "MediaType.TEXT_PLAIN";
-          
+
           // if schema is available
           System.out.println("[MICROSERVICE GENERATOR] Schema name available " + schemaName);
           if (schemaName != null && !schemaName.equals("")) {
@@ -1041,7 +1041,7 @@ public class MicroserviceGenerator extends Generator {
                     "       payload$Payload_Name$Object.fromJSON($Payload_Name$);\n" +
                     "   } catch (Exception e) { \n" +
                     "       e.printStackTrace();\n" +
-                    "       JSONObject result = new JSONObject();\n" + 
+                    "       JSONObject result = new JSONObject();\n" +
                     "       return Response.status(HttpURLConnection.HTTP_INTERNAL_ERROR).entity(\"Cannot convert json to object\").build();\n" +
                     "   }");
             castTemplate.setVariable("$Payload_Name$", currentPayload.getName());
@@ -1349,10 +1349,10 @@ public class MicroserviceGenerator extends Generator {
      * @param metadataDoc           metadata information that will be used to generate schemas
      */
     protected static void generateNewClasses(TemplateEngine templateEngine, String classes,
-                                                    Microservice microservice, String repositoryLocation, 
+                                                    Microservice microservice, String repositoryLocation,
                                                     String genericClassBody, String genericClassProperty,
                                                     String metadataDoc) {
-        
+
         System.out.println("[Microservice Generator - generateNewClasses] Generate new service class for " + classes);
         System.out.println("[Microservice Generator - generateNewClasses] Repository name " + repositoryLocation);
 
@@ -1401,7 +1401,7 @@ public class MicroserviceGenerator extends Generator {
 
             Iterator<Map.Entry<String, JsonNode>> nodes = nodeDefinitions.fields();
             while (nodes.hasNext()) {
-                        
+
                 Map.Entry<String, JsonNode> entry = (Map.Entry<String, JsonNode>) nodes.next();
                 String className = entry.getKey();
                 JsonNode entryValue = entry.getValue();
@@ -1510,14 +1510,14 @@ public class MicroserviceGenerator extends Generator {
 
 
   /**
-   * 
+   *
    * Generates the service test class.
-   * 
+   *
    * @param templateEngine The template engine to use
    * @param serviceTest the service test class file
    * @param microservice the microservice model
    * @param genericTestCase a generic test class file
-   * 
+   *
    */
   protected static void generateNewServiceTest(TemplateEngine templateEngine, String serviceTest,
       Microservice microservice, String genericTestCase) {
@@ -1664,14 +1664,14 @@ public class MicroserviceGenerator extends Generator {
 
 
   /**
-   * 
+   *
    * Creates the database script according to the passed database.
-   * 
+   *
    * @param templateEngine the template engine to use for the code generation
    * @param databaseScript a database script (template)
    * @param tableTemplate a table template
    * @param microservice the microservice model
-   * 
+   *
    */
   protected static void generateDatabaseScript(TemplateEngine templateEngine, String databaseScript,
       String tableTemplate, Microservice microservice) {
