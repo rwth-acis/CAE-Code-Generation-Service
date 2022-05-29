@@ -42,6 +42,7 @@ import i5.las2peer.services.codeGenerationService.models.frontendComponent.Front
 import i5.las2peer.services.codeGenerationService.models.microservice.Microservice;
 import i5.las2peer.services.codeGenerationService.templateEngine.ModelViolationDetection;
 import i5.las2peer.services.codeGenerationService.utilities.GitUtility;
+import i5.las2peer.services.modelPersistenceService.testmodel.TestModel;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.Contact;
 import io.swagger.annotations.Info;
@@ -192,7 +193,7 @@ public class CodeGenerationService extends RESTService {
 	 *
 	 */
 	public String createFromModel(boolean forcePush, String commitMessage, String versionTag, String metadataDoc,
-			ArrayList<SimpleModel> serializedModel, HashMap<String, String> externalDependencies) {
+			ArrayList<SimpleModel> serializedModel, HashMap<String, String> externalDependencies, TestModel testModel) {
 
 		SimpleModel model = (SimpleModel) serializedModel.get(0);
 		Context.get().monitorEvent(MonitoringEvent.SERVICE_MESSAGE, "createFromModel: Received model with name " + model.getName());
@@ -219,7 +220,7 @@ public class CodeGenerationService extends RESTService {
 					case "microservice":
 						// Create an object representing the microservice model
 						Context.get().monitorEvent(MonitoringEvent.SERVICE_MESSAGE, "createFromModel: Creating microservice model now..");
-						Microservice microservice = new Microservice(model);
+						Microservice microservice = new Microservice(model, testModel);
 						microservice.setMetadataDocString(metadataDoc);
 
 						// Generate the code (and repositories) for this model
@@ -272,9 +273,9 @@ public class CodeGenerationService extends RESTService {
 	}
 
 	public String createFromModel(String commitMessage, String versionTag, String metadataDoc, ArrayList<SimpleModel> serializedModel,
-			HashMap<String, String> externalDependencies) {
+			HashMap<String, String> externalDependencies, TestModel testModel) {
 		if(versionTag.equals("")) versionTag = null;
-		return createFromModel(false, commitMessage, versionTag, "", serializedModel, externalDependencies);
+		return createFromModel(false, commitMessage, versionTag, "", serializedModel, externalDependencies, testModel);
 	}
 
 	/**
@@ -356,7 +357,7 @@ public class CodeGenerationService extends RESTService {
 	 *
 	 */
 	public String updateRepositoryOfModel(String commitMessage, String versionTag, String metadataDoc,
-			ArrayList<SimpleModel> serializedModel, HashMap<String, String> externalDependencies) {
+			ArrayList<SimpleModel> serializedModel, HashMap<String, String> externalDependencies, TestModel testModel) {
 		SimpleModel model = (SimpleModel) serializedModel.get(0);
 		String modelName = model.getName();
 		Context.get().monitorEvent(MonitoringEvent.SERVICE_MESSAGE, "updateRepositoryOfModel: Received model with name " + modelName);
@@ -385,7 +386,7 @@ public class CodeGenerationService extends RESTService {
 						// check first if model can be constructed
 						// (in case of an invalid model, keep the old
 						// repository)
-						Microservice microservice = new Microservice(model);
+						Microservice microservice = new Microservice(model, testModel);
 						microservice.setMetadataDocString(metadataDoc);
 
 						// only if an old model and a remote repository exist,
@@ -393,7 +394,7 @@ public class CodeGenerationService extends RESTService {
 						// the model and source code
 						if (useModelSynchronization && oldModel != null && MicroserviceSynchronization
 								.existsRemoteRepositoryForModel(microservice, (BaseGitHostAdapter) gitAdapter)) {
-							Microservice oldMicroservice = new Microservice(oldModel);
+							Microservice oldMicroservice = new Microservice(oldModel, testModel);
 							Context.get().monitorEvent(MonitoringEvent.SERVICE_MESSAGE,
 									"Using model sync: Old model:" + oldModel.getName());
 							Context.get().monitorEvent(MonitoringEvent.SERVICE_MESSAGE,
@@ -413,7 +414,7 @@ public class CodeGenerationService extends RESTService {
 								// Use pseudo-update to circumvent gitlab
 								// deletion/creation problem
 								return pseudoUpdateRepositoryOfModel(commitMessage, versionTag, metadataDoc,
-										serializedModel, externalDependencies);
+										serializedModel, externalDependencies, testModel);
 
 							} else {
 								if (useModelSynchronization) {
@@ -442,7 +443,7 @@ public class CodeGenerationService extends RESTService {
 								Context.get().monitorEvent(MonitoringEvent.SERVICE_MESSAGE,
 										"updateRepositoryOfModel: Calling createFromModel now..");
 
-								return createFromModel(commitMessage, versionTag, metadataDoc, serializedModel, externalDependencies);
+								return createFromModel(commitMessage, versionTag, metadataDoc, serializedModel, externalDependencies, testModel);
 							}
 						}
 
@@ -477,7 +478,7 @@ public class CodeGenerationService extends RESTService {
 						} else {
 							if (gitAdapter instanceof GitLabAdapter) {
 								return pseudoUpdateRepositoryOfModel(commitMessage, versionTag, metadataDoc,
-										serializedModel, externalDependencies);
+										serializedModel, externalDependencies, testModel);
 							} else {
 								if (useModelSynchronization) {
 									Context.get().monitorEvent(MonitoringEvent.SERVICE_MESSAGE,
@@ -501,7 +502,7 @@ public class CodeGenerationService extends RESTService {
 
 								Context.get().monitorEvent(MonitoringEvent.SERVICE_MESSAGE,
 										"updateRepositoryOfModel: Calling createFromModel now..");
-								return createFromModel(commitMessage, versionTag, metadataDoc, serializedModel, externalDependencies);
+								return createFromModel(commitMessage, versionTag, metadataDoc, serializedModel, externalDependencies, testModel);
 							}
 
 						}
@@ -524,7 +525,7 @@ public class CodeGenerationService extends RESTService {
 						 * "updateRepositoryOfModel: Calling createFromModel now.."
 						 * ); return createFromModel(serializedModel);
 						 */
-						return pseudoUpdateRepositoryOfModel(commitMessage, versionTag, "", serializedModel, externalDependencies);
+						return pseudoUpdateRepositoryOfModel(commitMessage, versionTag, "", serializedModel, externalDependencies, testModel);
 
 					default:
 						return "Error: Model has to have an attribute 'type' that is either "
@@ -552,11 +553,11 @@ public class CodeGenerationService extends RESTService {
 	}
 
 	public String pseudoUpdateRepositoryOfModel(String commitMessage, String versionTag, String metadataDoc,
-			ArrayList<SimpleModel> serializedModel, HashMap<String, String> externalDependencies) {
+			ArrayList<SimpleModel> serializedModel, HashMap<String, String> externalDependencies, TestModel testModel) {
 		SimpleModel model = serializedModel.get(0);
 		model.getName();
 		// force push
-		return createFromModel(true, commitMessage, versionTag, metadataDoc, serializedModel, externalDependencies);
+		return createFromModel(true, commitMessage, versionTag, metadataDoc, serializedModel, externalDependencies, testModel);
 	}
 
 	/**
