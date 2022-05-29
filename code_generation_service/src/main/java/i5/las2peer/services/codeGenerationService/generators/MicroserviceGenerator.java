@@ -175,6 +175,8 @@ public class MicroserviceGenerator extends Generator {
 	    byte[] gradleWrapperJar = null;
 	    String gradleWrapperProperties = null;
 	    
+	    String ghActionsCI = null;
+
 		// monitoring templates
 		String genericCustomMessageDescription = null;
 		String genericCustomMessageLog = null;
@@ -278,6 +280,9 @@ public class MicroserviceGenerator extends Generator {
 	              break;
 	            case "gradle-wrapper.properties":
 	              gradleWrapperProperties = new String(loader.getBytes(), "UTF-8");
+	              break;
+	            case "gradle.yml":
+	              ghActionsCI = new String(loader.getBytes(), "UTF-8");
 	              break;
 	            case "i5.las2peer.services.servicePackage.ServiceClass.properties":
 	              String serviceProperties = new String(loader.getBytes(), "UTF-8");
@@ -463,6 +468,9 @@ public class MicroserviceGenerator extends Generator {
 	    		  "gradle-wrapper.jar", gradleWrapperJar);
 	      microserviceRepository = createTextFileInRepository(microserviceRepository, "gradle/wrapper/",
 	    		  "gradle-wrapper.properties", gradleWrapperProperties);
+	      microserviceRepository = createTextFileInRepository(microserviceRepository, ".github/workflows/",
+	    		  "gradle.yml", ghActionsCI);
+	      
 	      microserviceRepository =
 	          createTextFileInRepository(microserviceRepository, "", ".gitignore", gitignore);
 
@@ -555,7 +563,11 @@ public class MicroserviceGenerator extends Generator {
     	if(microservice.getPath().contains("http:") || microservice.getPath().contains("https:")) {
     		port = String.valueOf(new URL(microservice.getPath()).getPort());
     	}else {
-    		port = String.valueOf(new URL("http://"+microservice.getPath()).getPort());
+    		URL url = new URL("http://"+microservice.getPath());
+    		if(url.getPort() != -1) {
+    			// port is set
+    			port = String.valueOf(url.getPort());	
+    		}
     	}
     } catch (Exception e) {
     	throw new ModelParseException(e.getMessage());
