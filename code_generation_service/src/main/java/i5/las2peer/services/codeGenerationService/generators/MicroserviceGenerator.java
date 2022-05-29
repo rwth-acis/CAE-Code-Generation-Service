@@ -17,6 +17,16 @@ import i5.las2peer.services.codeGenerationService.templateEngine.Template;
 import i5.las2peer.services.codeGenerationService.templateEngine.TemplateEngine;
 import i5.las2peer.services.codeGenerationService.templateEngine.TemplateStrategy;
 import i5.las2peer.services.codeGenerationService.traces.segments.Segment;
+import i5.las2peer.services.modelPersistenceService.testmodel.BodyAssertion;
+import i5.las2peer.services.modelPersistenceService.testmodel.BodyAssertionOperator;
+import i5.las2peer.services.modelPersistenceService.testmodel.OperatorInput;
+import i5.las2peer.services.modelPersistenceService.testmodel.RequestAssertion;
+import i5.las2peer.services.modelPersistenceService.testmodel.ResponseBodyOperator;
+import i5.las2peer.services.modelPersistenceService.testmodel.StatusCodeAssertion;
+import i5.las2peer.services.modelPersistenceService.testmodel.TestCase;
+import i5.las2peer.services.modelPersistenceService.testmodel.TestModel;
+import i5.las2peer.services.modelPersistenceService.testmodel.TestRequest;
+
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.lib.*;
 import org.eclipse.jgit.revwalk.RevCommit;
@@ -32,6 +42,7 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -163,14 +174,17 @@ public class MicroserviceGenerator extends Generator {
 	    String genericHttpMethodBody = null;
 	    String genericApiResponse = null;
 	    String genericHttpResponse = null;
-	    String genericTestCase = null;
 	    String databaseConfig = null;
 	    String databaseInstantiation = null;
 	    String serviceInvocation = null;
 	    String databaseScript = null;
 	    String genericTable = null;
 	    String guidances = null;
-
+	    
+	    String genericTestMethod = null;
+	    String genericTestRequest = null;
+	    String genericStatusCodeAssertion = null;
+	    
 		// monitoring templates
 		String genericCustomMessageDescription = null;
 		String genericCustomMessageLog = null;
@@ -320,7 +334,13 @@ public class MicroserviceGenerator extends Generator {
 	              serviceTest = new String(loader.getBytes(), "UTF-8");
 	              break;
 	            case "genericTestMethod.txt":
-	              genericTestCase = new String(loader.getBytes(), "UTF-8");
+	              genericTestMethod = new String(loader.getBytes(), "UTF-8");
+	              break;
+	            case "genericTestRequest.txt":
+	              genericTestRequest = new String(loader.getBytes(), "UTF-8");
+	              break;
+	            case "genericStatusCodeAssertion.txt":
+	              genericStatusCodeAssertion = new String(loader.getBytes(), "UTF-8");
 	              break;
 	            case "databaseConfig.txt":
 	              databaseConfig = new String(loader.getBytes(), "UTF-8");
@@ -440,7 +460,8 @@ public class MicroserviceGenerator extends Generator {
 	      TemplateEngine serviceTestTemplateEngine =
 	          new TemplateEngine(new InitialGenerationStrategy(), serviceTestTraceModel);
 
-	      generateNewServiceTest(serviceTestTemplateEngine, serviceTest, microservice, genericTestCase);
+	      generateNewServiceTest(serviceTestTemplateEngine, serviceTest, microservice, genericTestMethod,
+	    		  genericTestRequest, genericStatusCodeAssertion);
 
 	      // add not traced files to new repository, e.g. static files
 
@@ -1520,7 +1541,8 @@ public class MicroserviceGenerator extends Generator {
    *
    */
   protected static void generateNewServiceTest(TemplateEngine templateEngine, String serviceTest,
-      Microservice microservice, String genericTestCase) {
+      Microservice microservice, String genericTestMethod, String genericTestRequest,
+      String genericStatusCodeAssertion) {
 
     // create template and add to template engine
     Template serviceTestTemplate =
@@ -1528,12 +1550,12 @@ public class MicroserviceGenerator extends Generator {
     templateEngine.addTemplate(serviceTestTemplate);
 
     // general replacements
-
     serviceTestTemplate.setVariable("$Resource_Name$", microservice.getResourceName());
-    serviceTestTemplate.setVariable("$Microservice_Name$", microservice.getVersionedModelId());
+    serviceTestTemplate.setVariable("$Microservice_Name$", microservice.getName());
 
     serviceTest = serviceTest.replace("$Resource_Name$", microservice.getResourceName());
-    serviceTest = serviceTest.replace("$Microservice_Name$", microservice.getVersionedModelId());
+    serviceTest = serviceTest.replace("$Microservice_Name$", microservice.getName());
+    
     // get the resource address: (skip first /)
     String relativeResourcePath =
         microservice.getPath().substring(microservice.getPath().indexOf("/", 8) + 1);
@@ -1544,7 +1566,53 @@ public class MicroserviceGenerator extends Generator {
     serviceTest = serviceTest.replace("$Lower_Resource_Name$", packageName);
     serviceTestTemplate.setVariable("$Lower_Resource_Name$", packageName);
     
-    
+    if(microservice.getTestModel() != null) {
+    	TestModel testModel = microservice.getTestModel();
+    	for(TestCase testCase : testModel.getTestCases()) {
+    		
+    		// 2 spaces indent for test method
+    		Template testMethod = templateEngine.createTemplate(testCase.getId() + ":testcase", genericTestMethod.indent(2));
+    	    serviceTestTemplate.appendVariable("$Test_Methods$", testMethod);
+    	    
+    	    testMethod.setVariable("$HTTP_Method_Name$", testCase.getName().replaceAll("\\s+",""));
+    	    
+    	    // add requests to test case
+    	    for(TestRequest request : testCase.getRequests()) {
+    	    	Template requestTemplate = templateEngine.createTemplate(request.getId() + ":request", genericTestRequest.indent(4));
+    	    	testMethod.appendVariable("$Test_Requests$", requestTemplate);
+    	    	
+    	    	// set method type & path
+    	    	requestTemplate.setVariable("$HTTP_Method_Type$", request.getType());
+    	    	String url = request.getUrl();
+    	    	if(url.startsWith("/")) {
+    	    		if(url.length() > 1) url = url.substring(1);
+    	    		else url = "";
+    	    	}
+    	    	requestTemplate.setVariable("$HTTPMethod_Path$", url);
+    	    	
+    	    	boolean firstResponseBodyAssertion = true;
+    	    	
+    	    	for(RequestAssertion assertion : request.getAssertions()) {
+    	    		if(assertion instanceof StatusCodeAssertion) {
+    	    			StatusCodeAssertion scAssertion = (StatusCodeAssertion) assertion;
+    	    			
+    	    			Template assertionTemplate = templateEngine.createTemplate(scAssertion.getId() + ":assertion", genericStatusCodeAssertion.indent(6));
+    	    			requestTemplate.appendVariable("$Request_Assertions$", assertionTemplate);
+    	    		    
+    	    			String comparisonOperatorMessage = scAssertion.getComparisonOperator() == 0 ? "equals" : "not equals";
+    	    			
+    	    			assertionTemplate.setVariable("$Message$", "Status code " + comparisonOperatorMessage + " " + scAssertion.getStatusCodeValue() + " [" + assertion.getId() + "]");
+    	    			assertionTemplate.setVariable("$Comparison_Operator$", scAssertion.getComparisonOperator() == 0 ? "==" : "!=");
+    	    			assertionTemplate.setVariable("$Value$", "" + scAssertion.getStatusCodeValue());
+    	    		} 
+    	    	}
+    	    	
+    	    	requestTemplate.setVariableIfNotSet("$Request_Assertions$", "");
+    	    }
+    	    
+    	    testMethod.setVariableIfNotSet("$Test_Requests$", "");
+    	}
+    }
 
     serviceTestTemplate.setVariableIfNotSet("$Test_Methods$", "");
   }
