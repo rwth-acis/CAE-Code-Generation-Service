@@ -1537,7 +1537,6 @@ public class MicroserviceGenerator extends Generator {
    * @param templateEngine The template engine to use
    * @param serviceTest the service test class file
    * @param microservice the microservice model
-   * @param genericTestCase a generic test class file
    *
    */
   protected static void generateNewServiceTest(TemplateEngine templateEngine, String serviceTest,
