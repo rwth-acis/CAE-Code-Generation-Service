@@ -81,7 +81,7 @@ public class MicroserviceGenerator extends Generator {
    */
 
   protected static String getServiceFileName(Microservice microservice) {
-    return "src/main/i5/las2peer/services/" + getPackageName(microservice) + "/"
+    return "app/src/main/java/i5/las2peer/services/" + getPackageName(microservice) + "/"
         + microservice.getResourceName() + ".java";
   }
 
@@ -93,7 +93,7 @@ public class MicroserviceGenerator extends Generator {
      */
 
     protected static String getClassesFileName(Microservice microservice) {
-        return "src/main/i5/las2peer/services/" + getPackageName(microservice) + "/classes.java";
+        return "app/src/main/java/i5/las2peer/services/" + getPackageName(microservice) + "/classes.java";
     }
 
   /**
@@ -117,7 +117,7 @@ public class MicroserviceGenerator extends Generator {
    */
 
   protected static String getServiceTestFileName(Microservice microservice) {
-    return "src/test/i5/las2peer/services/" + getPackageName(microservice) + "/"
+    return "app/src/test/java/i5/las2peer/services/" + getPackageName(microservice) + "/"
         + microservice.getResourceName() + "Test.java";
   }
 
@@ -164,8 +164,6 @@ public class MicroserviceGenerator extends Generator {
 	    String license = null;
 	    String userAgentGeneratorWindows = null;
 	    String userAgentGeneratorUnix = null;
-	    String antUserProperties = null;
-	    String ivySettings = null;
 	    String gitignore = null;
 	    String databaseManager = null;
 	    String serviceClass = null;
@@ -185,6 +183,15 @@ public class MicroserviceGenerator extends Generator {
 	    String genericTestRequest = null;
 	    String genericStatusCodeAssertion = null;
 	    
+
+	    String gradleSettings = null;
+	    String gradlew = null;
+	    String gradlewBat = null;
+	    byte[] gradleWrapperJar = null;
+	    String gradleWrapperProperties = null;
+	    
+	    String ghActionsCI = null;
+
 		// monitoring templates
 		String genericCustomMessageDescription = null;
 		String genericCustomMessageLog = null;
@@ -243,7 +250,7 @@ public class MicroserviceGenerator extends Generator {
 	            case "LICENSE.txt":
 	              license = new String(loader.getBytes(), "UTF-8");
 	              break;
-	            case "build.xml":
+	            case "build.gradle":
 	              String buildFile = new String(loader.getBytes(), "UTF-8");
 	              generateOtherArtifacts(Template.createInitialTemplateEngine(traceModel, path),
 	                  microservice, gitAdapter.getGitOrganization(), buildFile);
@@ -269,21 +276,28 @@ public class MicroserviceGenerator extends Generator {
 	              generateOtherArtifacts(Template.createInitialTemplateEngine(traceModel, path),
 	                  microservice, gitAdapter.getGitOrganization(), nodeInfo);
 	              break;
-	            case "service.properties":
-	              String antServiceProperties = new String(loader.getBytes(), "UTF-8");
+	            case "gradle.properties":
+	              String gradleServiceProperties = new String(loader.getBytes(), "UTF-8");
 	              generateOtherArtifacts(Template.createInitialTemplateEngine(traceModel, path),
-	                  microservice, gitAdapter.getGitOrganization(), antServiceProperties);
+	                  microservice, gitAdapter.getGitOrganization(), gradleServiceProperties);
 	              break;
-	            case "user.properties":
-	              antUserProperties = new String(loader.getBytes(), "UTF-8");
+	            case "settings.gradle":
+	              gradleSettings = new String(loader.getBytes(), "UTF-8");
 	              break;
-	            case "ivy.xml":
-	              String ivy = new String(loader.getBytes(), "UTF-8");
-	              generateOtherArtifacts(Template.createInitialTemplateEngine(traceModel, path),
-	                  microservice, gitAdapter.getGitOrganization(), ivy);
+	            case "gradlew":
+	              gradlew = new String(loader.getBytes(), "UTF-8");
 	              break;
-	            case "ivysettings.xml":
-	              ivySettings = new String(loader.getBytes(), "UTF-8");
+	            case "gradlew.bat":
+	              gradlewBat = new String(loader.getBytes(), "UTF-8");
+	              break;
+	            case "gradle-wrapper.jar":
+	              gradleWrapperJar = loader.getBytes();
+	              break;
+	            case "gradle-wrapper.properties":
+	              gradleWrapperProperties = new String(loader.getBytes(), "UTF-8");
+	              break;
+	            case "gradle.yml":
+	              ghActionsCI = new String(loader.getBytes(), "UTF-8");
 	              break;
 	            case "i5.las2peer.services.servicePackage.ServiceClass.properties":
 	              String serviceProperties = new String(loader.getBytes(), "UTF-8");
@@ -466,12 +480,19 @@ public class MicroserviceGenerator extends Generator {
 	      // add not traced files to new repository, e.g. static files
 
 	      // configuration and build stuff
-	      microserviceRepository = createTextFileInRepository(microserviceRepository, "etc/ivy/",
-	          "ivysettings.xml", ivySettings);
-
-	      microserviceRepository = createTextFileInRepository(microserviceRepository,
-	          "etc/ant_configuration/", "user.properties", antUserProperties);
-
+	      microserviceRepository = createTextFileInRepository(microserviceRepository, "/",
+    	          "settings.gradle", gradleSettings);
+	      microserviceRepository = createTextFileInRepository(microserviceRepository, "/",
+	    		  "gradlew", gradlew);
+	      microserviceRepository = createTextFileInRepository(microserviceRepository, "/",
+	    		  "gradlew.bat", gradlewBat);
+	      microserviceRepository = createBinaryFileInRepository(microserviceRepository, "gradle/wrapper/",
+	    		  "gradle-wrapper.jar", gradleWrapperJar);
+	      microserviceRepository = createTextFileInRepository(microserviceRepository, "gradle/wrapper/",
+	    		  "gradle-wrapper.properties", gradleWrapperProperties);
+	      microserviceRepository = createTextFileInRepository(microserviceRepository, ".github/workflows/",
+	    		  "gradle.yml", ghActionsCI);
+	      
 	      microserviceRepository =
 	          createTextFileInRepository(microserviceRepository, "", ".gitignore", gitignore);
 
@@ -564,7 +585,11 @@ public class MicroserviceGenerator extends Generator {
     	if(microservice.getPath().contains("http:") || microservice.getPath().contains("https:")) {
     		port = String.valueOf(new URL(microservice.getPath()).getPort());
     	}else {
-    		port = String.valueOf(new URL("http://"+microservice.getPath()).getPort());
+    		URL url = new URL("http://"+microservice.getPath());
+    		if(url.getPort() != -1) {
+    			// port is set
+    			port = String.valueOf(url.getPort());	
+    		}
     	}
     } catch (Exception e) {
     	throw new ModelParseException(e.getMessage());
@@ -612,10 +637,9 @@ public class MicroserviceGenerator extends Generator {
         template.setVariable("$Organization_Name$", gitHubOrganization);
         template.setVariable("$Microservice_Name$", microservice.getName());
         break;
-      case "build.xml":
+      case "build.gradle":
         template = templateEngine
             .createTemplate(microservice.getMicroserviceModelId() + ":buildFile", templateContent);
-        template.setVariable("$Microservice_Name$", microservice.getVersionedModelId());
         break;
       case "start_network.bat":
         template = templateEngine.createTemplate(
@@ -637,26 +661,13 @@ public class MicroserviceGenerator extends Generator {
         template.setVariable("$Developer$", microservice.getDeveloper());
         template.setVariable("$Resource_Name$", microservice.getResourceName());
         break;
-      case "service.properties":
+      case "gradle.properties":
         template = templateEngine.createTemplate(
-            microservice.getMicroserviceModelId() + ":antServiceProperties", templateContent);
+            microservice.getMicroserviceModelId() + ":gradleServiceProperties", templateContent);
         template.setVariable("$Microservice_Version$", microservice.getVersion() + "");
         template.setVariable("$Lower_Resource_Name$", packageName);
         template.setVariable("$Resource_Name$", microservice.getResourceName());
         template.setVariable("$Microservice_Version$", microservice.getVersion() + "");
-        break;
-      case "ivy.xml":
-        template = templateEngine.createTemplate(microservice.getMicroserviceModelId() + ":ivy",
-            templateContent);
-        // add mysql dependency only if a database exists
-        if (microservice.getDatabase() != null) {
-          template.setVariable("$MySQL_Dependencies$",
-              "<dependency org=\"mysql\" name=\"mysql-connector-java\" rev=\"5.1.6\" conf=\"bundle->default\"/>\n"
-                  + "    <dependency org=\"org.apache.commons\" name=\"commons-pool2\" rev=\"2.2\" conf=\"bundle->default\"/>\n"
-                  + "    <dependency org=\"org.apache.commons\" name=\"commons-dbcp2\" rev=\"2.0\" conf=\"bundle->default\"/>");
-        } else {
-          template.setVariable("$MySQL_Dependencies$", "");
-        }
         break;
       case "i5.las2peer.services.servicePackage.ServiceClass.properties":
 
