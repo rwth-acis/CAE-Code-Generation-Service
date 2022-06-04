@@ -120,6 +120,15 @@ public class MicroserviceGenerator extends Generator {
     return "app/src/test/java/i5/las2peer/services/" + getPackageName(microservice) + "/"
         + microservice.getResourceName() + "Test.java";
   }
+  
+  /**
+   * Get the file name/path of the TestUtil.java file.
+   * @param microservice A microservice model
+   * @return The file name/path of the TestUtil.java file.
+   */
+  protected static String getServiceTestUtilFileName(Microservice microservice) {
+	  return "app/src/test/java/i5/las2peer/services/" + getPackageName(microservice) + "/TestUtil.java";
+  }
 
   /**
    * Returns the repository name for the given microservice model
@@ -182,8 +191,8 @@ public class MicroserviceGenerator extends Generator {
 	    String genericTestMethod = null;
 	    String genericTestRequest = null;
 	    String genericStatusCodeAssertion = null;
+	    String testUtilClass = null;
 	    
-
 	    String gradleSettings = null;
 	    String gradlew = null;
 	    String gradlewBat = null;
@@ -356,6 +365,9 @@ public class MicroserviceGenerator extends Generator {
 	            case "genericStatusCodeAssertion.txt":
 	              genericStatusCodeAssertion = new String(loader.getBytes(), "UTF-8");
 	              break;
+	            case "TestUtil.java":
+	              testUtilClass = new String(loader.getBytes(), "UTF-8");
+	              break;
 	            case "databaseConfig.txt":
 	              databaseConfig = new String(loader.getBytes(), "UTF-8");
 	              break;
@@ -466,7 +478,16 @@ public class MicroserviceGenerator extends Generator {
 
           generateNewClasses(classesTemplateEngine, classes, microservice, repositoryLocation,
               genericClassBody, genericClassProperty, metadataDoc);
-
+          
+          // service TestUtil.java
+          FileTraceModel serviceTestUtilTraceModel = new FileTraceModel(traceModel, getServiceTestUtilFileName(microservice));
+          traceModel.addFileTraceModel(serviceTestUtilTraceModel);
+          
+          TemplateEngine serviceTestUtilTemplateEngine = new TemplateEngine(new InitialGenerationStrategy(), serviceTestUtilTraceModel);
+          
+          generateServiceTestUtilClass(serviceTestUtilTemplateEngine, microservice, testUtilClass);
+          
+          // service test class
 	      FileTraceModel serviceTestTraceModel =
 	          new FileTraceModel(traceModel, getServiceTestFileName(microservice));
 	      traceModel.addFileTraceModel(serviceTestTraceModel);
@@ -1540,20 +1561,29 @@ public class MicroserviceGenerator extends Generator {
         return swaggerType;
     }
 
-
   /**
-   *
+   * Generates the TestUtil.java file.
+   * @param templateEngine The template engine to use
+   * @param microservice the microservice model
+   * @param testUtilClass File content
+   */
+  protected static void generateServiceTestUtilClass(TemplateEngine templateEngine, Microservice microservice, String testUtilClass) {
+	Template testUtilTemplate = templateEngine.createTemplate(microservice.getMicroserviceModelId() + ":testutil", testUtilClass);
+	templateEngine.addTemplate(testUtilTemplate);
+	  
+	String packageName = microservice.getResourceName().substring(0, 1).toLowerCase() + microservice.getResourceName().substring(1);
+	testUtilTemplate.setVariable("$Lower_Resource_Name$", packageName);
+  }
+    
+  /**
    * Generates the service test class.
-   *
    * @param templateEngine The template engine to use
    * @param serviceTest the service test class file
    * @param microservice the microservice model
-   *
    */
   protected static void generateNewServiceTest(TemplateEngine templateEngine, String serviceTest,
       Microservice microservice, String genericTestMethod, String genericTestRequest,
       String genericStatusCodeAssertion) {
-
     // create template and add to template engine
     Template serviceTestTemplate =
         templateEngine.createTemplate(microservice.getMicroserviceModelId(), serviceTest);
@@ -1606,15 +1636,29 @@ public class MicroserviceGenerator extends Generator {
     	    		if(assertion instanceof StatusCodeAssertion) {
     	    			StatusCodeAssertion scAssertion = (StatusCodeAssertion) assertion;
     	    			
+    	    			requestTemplate.insertBreakLine(scAssertion.getId() + ":linebreak", "$Request_Assertions$");
     	    			Template assertionTemplate = templateEngine.createTemplate(scAssertion.getId() + ":assertion", genericStatusCodeAssertion.indent(6));
     	    			requestTemplate.appendVariable("$Request_Assertions$", assertionTemplate);
     	    		    
     	    			String comparisonOperatorMessage = scAssertion.getComparisonOperator() == 0 ? "equals" : "not equals";
     	    			
     	    			assertionTemplate.setVariable("$Message$", "Status code " + comparisonOperatorMessage + " " + scAssertion.getStatusCodeValue() + " [" + assertion.getId() + "]");
-    	    			assertionTemplate.setVariable("$Comparison_Operator$", scAssertion.getComparisonOperator() == 0 ? "==" : "!=");
+    	    			assertionTemplate.setVariable("$Comparison_Operator$", scAssertion.getComparisonOperator() == 0 ? "Equals" : "NotEquals");
     	    			assertionTemplate.setVariable("$Value$", "" + scAssertion.getStatusCodeValue());
-    	    		} 
+    	    		} else if(assertion instanceof BodyAssertion) {
+    	    			// if this is the first body assertion, we need to parse the response JSON
+    	    			if(firstResponseBodyAssertion) {
+    	    				Template getBodyTemplate = templateEngine.createTemplate(request.getId() + ":getbody", "Object response = JSONValue.parse(result.getResponse().trim());".indent(2));
+    	    				requestTemplate.appendVariable("$Request_Assertions$", getBodyTemplate);
+    	    				firstResponseBodyAssertion = false;
+    	    			}
+    	    			
+    	    			BodyAssertion bodyAssertion = (BodyAssertion) assertion;
+
+    	    			Template t = templateEngine.createTemplate(bodyAssertion.getId() + ":assertion", insertLineBreak(generateBodyAssertionCode(bodyAssertion), 2).indent(6));
+    	    			requestTemplate.appendVariable("$Request_Assertions$", t);
+    	    			
+    	    		}
     	    	}
     	    	
     	    	requestTemplate.setVariableIfNotSet("$Request_Assertions$", "");
@@ -1626,8 +1670,137 @@ public class MicroserviceGenerator extends Generator {
 
     serviceTestTemplate.setVariableIfNotSet("$Test_Methods$", "");
   }
-
-
+  
+  
+  /**
+   * Generates the code for the given body assertion.
+   * @param bodyAssertion Body assertion for which code should be generated.
+   * @return Code corresponding to given body assertion.
+   */
+  private static String generateBodyAssertionCode(BodyAssertion bodyAssertion) {
+	  // add a comment that describes the assertion
+	  String code = "// Response body " + bodyAssertion.getOperator().toString();
+	  code = insertLineBreak(code);
+	  // add the assertion code itself
+	  return code + "assertThat(response, " + generateOperatorCode(bodyAssertion.getOperator()) + ");";
+  }
+  
+  /**
+   * Recursively generates the code for the given operator and its successors.
+   * @param operator Operator for which code should be generated.
+   * @return Code for the given operator and its successors.
+   */
+  private static String generateOperatorCode(BodyAssertionOperator operator) {
+	  if(operator.getOperatorId() == ResponseBodyOperator.HAS_TYPE.getId()) {
+		  return generateHasTypeOperatorCode(operator);
+	  } else if(operator.getOperatorId() == ResponseBodyOperator.HAS_FIELD.getId()) {
+		  return generateHasFieldOperatorCode(operator);
+	  } else if(operator.getOperatorId() == ResponseBodyOperator.HAS_LIST_ENTRY_THAT.getId()) {
+	      return generateHasListEntryThatOperatorCode(operator);
+	  } else if(operator.getOperatorId() == ResponseBodyOperator.ALL_LIST_ENTRIES.getId()) {
+		  return generateAllListEntriesOperatorCode(operator);
+	  } else {
+		  return "// TODO: Not yet supported by code-generation!";
+	  }
+  }
+  
+  /**
+   * Generates code for "has type" operator.
+   * Appends code of following operator, if it exists.
+   * @param operator A "has type" operator.
+   * @return Code for given "has type" operator.
+   */
+  private static String generateHasTypeOperatorCode(BodyAssertionOperator operator) {
+	  // get expected type
+	  String expectedType = OperatorInput.fromId(operator.getInputType()).getJavaClassName();
+	  
+	  // create isA() assertion
+	  String basicAssertion = generateTypeAssertionCode(expectedType);
+	  
+	  // if there is a following operator => append it
+      if(operator.hasFollowingOperator()) {
+    	  return "both(" + basicAssertion + ").and(" + generateOperatorCode(operator.getFollowingOperator()) + ")";
+      } else {
+    	  return basicAssertion;
+      }
+  }
+  
+  /**
+   * Generates code for "has field" operator. Ensures that current object is of type JSONObject.
+   * Appends code of following operator, if exists.
+   * @param operator A "has field" operator.
+   * @return Code for given "has field" operator.
+   */
+  private static String generateHasFieldOperatorCode(BodyAssertionOperator operator) {
+	  // verify that current object is JSONObject and that the JSONObject has the given field
+	  String typeAssertion = generateTypeAssertionCode("JSONObject");
+	  
+	  String fieldName = operator.getInputValue();
+	  // if there is a following operator => append it
+	  String followingOperatorCode = operator.hasFollowingOperator() ? ", " + generateOperatorCode(operator.getFollowingOperator()) : "";
+	  
+	  return "both(" + typeAssertion + ").and(asJSONObject(hasField(\"" + fieldName + "\"" + followingOperatorCode + ")))";
+  }
+  
+  /**
+   * Generates code for "has list entry that" operator. Ensures that current object is of type JSONArray.
+   * Appends code of following operator.
+   * @param operator A "has list entry that" operator.
+   * @return Code for "has list entry that" operator.
+   */
+  private static String generateHasListEntryThatOperatorCode(BodyAssertionOperator operator) {
+	  // verify that current object is JSONArray
+	  String typeAssertion = generateTypeAssertionCode("JSONArray");
+	  
+	  // "has list entry that" operator always has a following operator
+	  String followingOperatorCode = generateOperatorCode(operator.getFollowingOperator());
+	  
+	  return "both(" + typeAssertion + ").and(asJSONObjectList(hasItem(" + followingOperatorCode + ")))";
+  }
+  
+  /**
+   * Generates code for "all list entries" operator. Ensures that current object is of type JSONArray.
+   * Appends code of following operator.
+   * @param operator A "all list entries" operator.
+   * @return Code for "all list entries" operator.
+   */
+  private static String generateAllListEntriesOperatorCode(BodyAssertionOperator operator) {
+	  // verify that current object is JSONArray
+	  String typeAssertion = generateTypeAssertionCode("JSONArray");
+	  
+	  // "all list entries" operator always has a following operator
+	  String followingOperatorCode = generateOperatorCode(operator.getFollowingOperator());
+	  
+	  return "both(" + typeAssertion + ").and(asJSONObjectList(everyItem(" + followingOperatorCode + ")))";
+  }
+  
+  /**
+   * Generates assertion code that tests if current object has given type.
+   * @param className Type that the tested object should have.
+   * @return Code for type assertion.
+   */
+  private static String generateTypeAssertionCode(String className) {
+	  return "isA(" + className + ".class)";
+  }
+  
+  /**
+   * Appends one line break at the end of the given code.
+   * @param code Code, to which a line break should be appended.
+   * @return Given code including line break at the end.
+   */
+  private static String insertLineBreak(String code) {
+	  return code + "\n";
+  }
+  
+  /**
+   * Appends multiple line breaks at the end of the given code.
+   * @param code Code, to which line breaks should be appended.
+   * @return Given code including line breaks at the end.
+   */
+  private static String insertLineBreak(String code, int count) {
+	  for(int i = 0; i < count; i++) code = insertLineBreak(code);
+	  return code;
+  }
   /**
    *
    * Creates the database script according to the passed database.
