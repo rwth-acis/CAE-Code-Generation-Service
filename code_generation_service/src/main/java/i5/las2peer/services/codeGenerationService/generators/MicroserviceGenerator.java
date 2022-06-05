@@ -1621,6 +1621,13 @@ public class MicroserviceGenerator extends Generator {
     	    	Template requestTemplate = templateEngine.createTemplate(request.getId() + ":request", genericTestRequest.indent(4));
     	    	testMethod.appendVariable("$Test_Requests$", requestTemplate);
     	    	
+    	    	// replace agent variables
+                setTestRequestAgent(requestTemplate, request);
+                
+                // set request body
+                String requestBody = request.getBody() != null ? "\"\"\"\n" + request.getBody() + "\"\"\"" : "\"\"";
+                requestTemplate.setVariable("$Request_Body$", requestBody);
+    	    	
     	    	// set method type & path
     	    	requestTemplate.setVariable("$HTTP_Method_Type$", request.getType());
     	    	String url = request.getUrl();
@@ -1669,6 +1676,38 @@ public class MicroserviceGenerator extends Generator {
     }
 
     serviceTestTemplate.setVariableIfNotSet("$Test_Methods$", "");
+  }
+  
+  /**
+   * Sets the agent identifier and password in the given request template.
+   * @param requestTemplate Template for the request code.
+   * @param request TestRequest containing the necessary agent information.
+   */
+  private static void setTestRequestAgent(Template requestTemplate, TestRequest request) {
+  	String agentIdentifier;
+  	String agentPassword;
+  	
+  	switch(request.getAgent()) {
+          case 1:
+  		    agentIdentifier = "testAgentAdam.getIdentifier()";
+  		    agentPassword = "testPassAdam";
+  		    break;
+  		case 2:
+  		    agentIdentifier = "testAgentAbel.getIdentifier()";
+  		    agentPassword = "testPassAbel";
+  		    break;
+  		case 3:
+  		    agentIdentifier = "testAgentEve.getIdentifier()";
+  		    agentPassword = "testPassEve";
+  		    break;
+  		default:
+  		    agentIdentifier = "AnonymousAgentImpl.IDENTIFIER";
+  		    agentPassword = "\"\"";
+  		    break;
+  	}
+  	
+  	requestTemplate.setVariable("$Agent_Identifier$", agentIdentifier);
+  	requestTemplate.setVariable("$Agent_Password$", agentPassword);
   }
   
   
