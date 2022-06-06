@@ -1614,7 +1614,7 @@ public class MicroserviceGenerator extends Generator {
     		Template testMethod = templateEngine.createTemplate(testCase.getId() + ":testcase", genericTestMethod.indent(2));
     	    serviceTestTemplate.appendVariable("$Test_Methods$", testMethod);
     	    
-    	    testMethod.setVariable("$HTTP_Method_Name$", testCase.getName().replaceAll("\\s+",""));
+    	    testMethod.setVariable("$HTTP_Method_Name$", testCase.getName().replaceAll("\\s+","") + "_ID" + testCase.getId());
     	    
     	    // add requests to test case
     	    for(TestRequest request : testCase.getRequests()) {
@@ -1646,10 +1646,8 @@ public class MicroserviceGenerator extends Generator {
     	    			requestTemplate.insertBreakLine(scAssertion.getId() + ":linebreak", "$Request_Assertions$");
     	    			Template assertionTemplate = templateEngine.createTemplate(scAssertion.getId() + ":assertion", genericStatusCodeAssertion.indent(6));
     	    			requestTemplate.appendVariable("$Request_Assertions$", assertionTemplate);
-    	    		    
-    	    			String comparisonOperatorMessage = scAssertion.getComparisonOperator() == 0 ? "equals" : "not equals";
     	    			
-    	    			assertionTemplate.setVariable("$Message$", "Status code " + comparisonOperatorMessage + " " + scAssertion.getStatusCodeValue() + " [" + assertion.getId() + "]");
+    	    			assertionTemplate.setVariable("$Message$", "[" + assertion.getId() + "]");
     	    			assertionTemplate.setVariable("$Comparison_Operator$", scAssertion.getComparisonOperator() == 0 ? "Equals" : "NotEquals");
     	    			assertionTemplate.setVariable("$Value$", "" + scAssertion.getStatusCodeValue());
     	    		} else if(assertion instanceof BodyAssertion) {
@@ -1721,7 +1719,7 @@ public class MicroserviceGenerator extends Generator {
 	  String code = "// Response body " + bodyAssertion.getOperator().toString();
 	  code = insertLineBreak(code);
 	  // add the assertion code itself
-	  return code + "assertThat(response, " + generateOperatorCode(bodyAssertion.getOperator()) + ");";
+	  return code + "assertThat([ID" + bodyAssertion.getId() + "], response, " + generateOperatorCode(bodyAssertion.getOperator()) + ");";
   }
   
   /**
