@@ -130,6 +130,7 @@ public class MicroserviceSynchronization extends MicroserviceGenerator {
             break;
           case "i5.las2peer.services.servicePackage.ServiceClass.properties":
             serviceProperties = new String(loader.getBytes(), "UTF-8");
+            break;
           case "genericTestMethod.txt":
             genericTestMethod = new String(loader.getBytes(), "UTF-8");
             break;
