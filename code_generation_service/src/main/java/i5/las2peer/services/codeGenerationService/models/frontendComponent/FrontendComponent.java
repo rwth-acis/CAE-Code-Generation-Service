@@ -11,10 +11,10 @@ import i5.cae.simpleModel.node.SimpleNode;
 import i5.las2peer.services.codeGenerationService.exception.ModelParseException;
 
 /**
- * 
+ *
  * FrontendComponent data class. Currently, edges are only used for creating simple 1 to 1
  * dependencies between objects, without any attributes added to them.
- * 
+ *
  */
 public class FrontendComponent {
   private String versionedModelId;
@@ -29,33 +29,39 @@ public class FrontendComponent {
   private int widgetWidth;
   private int widgetHeight;
   private String microserviceAddress;
+  private HashMap<String, ViewComponent> viewComponents;
   private HashMap<String, HtmlElement> htmlElements;
   private HashMap<String, Function> functions;
+  private HashMap<String, ParamBinding> paramBindings;
   private boolean hasPolymerElements = false;
 
   /**
-   * 
+   *
    * Creates a new frontend component.
-   * 
+   *
    * @param model a {@link i5.cae.simpleModel.SimpleModel} containing the frontend component
-   * 
+   *
    * @throws ModelParseException if something goes wrong during parsing
-   * 
+   *
    */
   public FrontendComponent(SimpleModel model) throws ModelParseException {
+    this.viewComponents = new HashMap<String, ViewComponent>();
     this.htmlElements = new HashMap<String, HtmlElement>();
     this.functions = new HashMap<String, Function>();
+    this.paramBindings = new HashMap<String, ParamBinding>();
 
     // some helper fields to check model for correctness
     // used to find (possible) duplicate (HTML) ids and report them
     ArrayList<String> tempIds = new ArrayList<String>();
+    ArrayList<String> tempViewComponents = new ArrayList<String>();
     // used to first parse all nodes and later add them to their corresponding "parent objects"
     HashMap<String, Event> tempEvents = new HashMap<String, Event>();
     HashMap<String, InputParameter> tempParameters = new HashMap<String, InputParameter>();
     HashMap<String, IWCResponse> tempIwcResponses = new HashMap<String, IWCResponse>();
     HashMap<String, IWCCall> tempIwcCalls = new HashMap<String, IWCCall>();
-    HashMap<String, MicroserviceCall> tempMicroserviceCalls =
-        new HashMap<String, MicroserviceCall>();
+    HashMap<String, MicroserviceCall> tempMicroserviceCalls = new HashMap<String, MicroserviceCall>();
+    HashMap<String, DataBinding> tempDataBindings = new HashMap<String, DataBinding>();
+    HashMap<String, ParamBinding> tempParamBindings = new HashMap<String, ParamBinding>();
 
     this.name = model.getName();
 
@@ -128,7 +134,7 @@ public class FrontendComponent {
             }
           }
           break;
-        case "HTML Element":
+        case "View Component Part":
           HtmlElement element = new HtmlElement(node);
 
           //element is a polymer element
@@ -141,6 +147,15 @@ public class FrontendComponent {
           }
           tempIds.add(element.getModelId());
           break;
+        case "View Component":
+          ViewComponent viewComponent = new ViewComponent(node);
+
+          this.viewComponents.put(node.getId(), viewComponent);
+          if (tempViewComponents.contains(viewComponent.getModelId())) {
+            throw new ModelParseException("Duplicate id found: " + viewComponent.getModelId());
+          }
+          tempViewComponents.add(viewComponent.getModelId());
+          break;
         case "Event":
           Event event = new Event(node);
           tempEvents.put(node.getId(), event);
@@ -148,6 +163,10 @@ public class FrontendComponent {
         case "Function":
           Function function = new Function(node);
           this.functions.put(node.getId(), function);
+          break;
+        case "ParameterBinding":
+          ParamBinding paramBinding = new ParamBinding(node);
+          this.paramBindings.put(node.getId(), paramBinding);
           break;
         case "Input Parameter":
           InputParameter parameter = new InputParameter(node);
@@ -165,6 +184,10 @@ public class FrontendComponent {
           MicroserviceCall microserviceCall = new MicroserviceCall(node);
           tempMicroserviceCalls.put(node.getId(), microserviceCall);
           break;
+        case "DataBinding":
+          DataBinding dataBinding = new DataBinding(node);
+          tempDataBindings.put(node.getId(), dataBinding);
+          break;
         default:
           throw new ModelParseException("Unknown node type: " + node.getType());
       }
@@ -173,13 +196,38 @@ public class FrontendComponent {
     // edges
     ArrayList<SimpleEdge> edges = model.getEdges();
     // helper variables to check for correct edges
+    int viewComponentCount = this.viewComponents.size();
     int htmlElementCount = this.htmlElements.size();
-    int functionCount = this.functions.size();
+    int functionCount = this.functions.size() - 1;
+    int paramBindingCount = this.paramBindings.size() - 1;
+
     for (int edgeIndex = 0; edgeIndex < edges.size(); edgeIndex++) {
       String currentEdgeSource = edges.get(edgeIndex).getSourceNode();
       String currentEdgeTarget = edges.get(edgeIndex).getTargetNode();
       String currentEdgeType = edges.get(edgeIndex).getType();
       switch (currentEdgeType) {
+        case "Widget to View Component":
+          if (!this.widgetModelId.equals(currentEdgeSource)
+              || !this.viewComponents.containsKey(currentEdgeTarget)) {
+            throw new ModelParseException("Wrong Widget to View Component edge!");
+          }
+          viewComponentCount--;
+          break;
+        case "View Component to HTML":
+          if (!this.viewComponents.containsKey(currentEdgeSource)
+              || !this.htmlElements.containsKey(currentEdgeTarget)) {
+            throw new ModelParseException("Wrong View Component to HTML Element edge!");
+          }
+          htmlElementCount--;
+          break;
+        case "View Component to Event":
+          if (!this.viewComponents.containsKey(currentEdgeSource)
+              || !tempEvents.containsKey(currentEdgeTarget)) {
+            throw new ModelParseException("Wrong View Component to Event edge!");
+          }
+          this.viewComponents.get(currentEdgeSource).addEvent(tempEvents.get(currentEdgeTarget));
+          tempEvents.remove(currentEdgeTarget);
+          break;
         case "Widget to HTML Element":
           if (!this.widgetModelId.equals(currentEdgeSource)
               || !this.htmlElements.containsKey(currentEdgeTarget)) {
@@ -270,7 +318,6 @@ public class FrontendComponent {
           tempIwcCalls.remove(currentEdgeTarget);
           break;
         case "Event to Function Call":
-
           // check if function exists
           if (!this.functions.containsKey(currentEdgeTarget)) {
             throw new ModelParseException("Wrong Event to Function Call!");
@@ -282,6 +329,14 @@ public class FrontendComponent {
           } else {
             boolean found = false;
             // now we need to check already parsed events..
+            for (ViewComponent element : this.viewComponents.values()) {
+              for (Event event : element.getEvents()) {
+                if (event.getModelId().equals(currentEdgeSource)) {
+                  event.setCalledFunctionId(currentEdgeTarget);
+                  found = true;
+                }
+              }
+            }
             for (HtmlElement element : this.htmlElements.values()) {
               for (Event event : element.getEvents()) {
                 if (event.getModelId().equals(currentEdgeSource)) {
@@ -294,6 +349,45 @@ public class FrontendComponent {
               throw new ModelParseException("Wrong Event to Function Call!");
             }
           }
+          functionCount--;
+          break;
+        case "Event to ParamBinding":
+          // check if function exists
+          if (!this.paramBindings.containsKey(currentEdgeTarget)) {
+            throw new ModelParseException("Wrong Event to Parameter Binding!");
+          }
+          // check if event is still in tempEvent list
+          if (tempEvents.containsKey(currentEdgeSource)) {
+            tempEvents.get(currentEdgeSource).setCalledParamBindingId(currentEdgeTarget);
+            break;
+          } else {
+            boolean found = false;
+            // now we need to check already parsed events..
+            for (ViewComponent element : this.viewComponents.values()) {
+              for (Event event : element.getEvents()) {
+                if (event.getModelId().equals(currentEdgeSource)) {
+                  event.setCalledParamBindingId(currentEdgeTarget);
+                  found = true;
+                }
+              }
+            }
+            if (!found) {
+              throw new ModelParseException("Wrong Event to Parameter Binding!");
+            }
+          }
+          paramBindingCount--;
+          break;
+        case "ParamBinding to ViewComponent":
+          if (!this.paramBindings.containsKey(currentEdgeSource)
+              || !this.viewComponents.containsKey(currentEdgeTarget)) {
+            throw new ModelParseException("Wrong Element Update edge!");
+          }
+          // check if element is not static
+          if (this.viewComponents.get(currentEdgeTarget).isStaticElement()) {
+            throw new ModelParseException("Static viewComponents cannot be updated by functions: "
+                + this.viewComponents.get(currentEdgeTarget).getId());
+          }
+          this.paramBindings.get(currentEdgeSource).addViewComponentUpdates(currentEdgeTarget);
           break;
         case "Function To Microservice Call":
           if (!this.functions.containsKey(currentEdgeSource)
@@ -303,6 +397,15 @@ public class FrontendComponent {
           this.functions.get(currentEdgeSource)
               .addMicroserviceCall(tempMicroserviceCalls.get(currentEdgeTarget));
           tempMicroserviceCalls.remove(currentEdgeTarget);
+          break;
+        case "View Component to DataBinding":
+          if (!this.viewComponents.containsKey(currentEdgeSource)
+              || !tempDataBindings.containsKey(currentEdgeTarget)) {
+            throw new ModelParseException("Wrong View Component to DataBinding edge!");
+          }
+          this.viewComponents.get(currentEdgeSource)
+              .addDataBinding(tempDataBindings.get(currentEdgeTarget));
+          tempDataBindings.remove(currentEdgeTarget);
           break;
         case "Widget to Function":
           if (!this.widgetModelId.equals(currentEdgeSource)
@@ -328,10 +431,16 @@ public class FrontendComponent {
     // only one widget allowed (checked previously), no multiple edges between two objects in
     // SyncMeta -> element count must be zero now if all elements are connected to the widget
     // also, all temp lists should be empty by now
-    if (htmlElementCount != 0 || functionCount != 0 || !tempEvents.isEmpty()
+    if (htmlElementCount != 0 || viewComponentCount != 0 || functionCount > 0
+        || paramBindingCount > 0 || !tempEvents.isEmpty()
         || !tempParameters.isEmpty() || !tempIwcResponses.isEmpty() || !tempIwcCalls.isEmpty()
-        || !tempMicroserviceCalls.isEmpty()) {
-      throw new ModelParseException("Model not fully connected!");
+        || !tempMicroserviceCalls.isEmpty() || !tempDataBindings.isEmpty()) {
+          String str = "";
+          if(viewComponentCount != 0)  str += "viewComponentCount" + viewComponentCount;
+          if(functionCount > 0)  str += "functionCount" + functionCount;
+          if(paramBindingCount > 0)  str += "paramBindingCount" + functionCount;
+          if(!tempEvents.isEmpty())  str += "tempEvents" + tempEvents.size();
+      throw new ModelParseException("Model not fully connected!" + str);
     }
     // check functions (now complete with all IWC events, microservice calls and input parameters)
     // for semantical correctness
@@ -353,7 +462,7 @@ public class FrontendComponent {
   public String getVersionedModelId() {
     return this.versionedModelId;
   }
-  
+
   public String getName() {
 	return this.name;
   }
@@ -437,6 +546,16 @@ public class FrontendComponent {
   }
 
 
+  public Map<String, ViewComponent> getViewComponents() {
+    return this.viewComponents;
+  }
+
+
+  public void setViewComponents(HashMap<String, ViewComponent> viewComponents) {
+    this.viewComponents = viewComponents;
+  }
+
+
   public Map<String, HtmlElement> getHtmlElements() {
     return this.htmlElements;
   }
@@ -454,6 +573,16 @@ public class FrontendComponent {
 
   public void setFunctions(HashMap<String, Function> functions) {
     this.functions = functions;
+  }
+
+
+  public Map<String, ParamBinding> getParamBindings() {
+    return this.paramBindings;
+  }
+
+
+  public void setParamBindings(HashMap<String, ParamBinding> paramBindings) {
+    this.paramBindings = paramBindings;
   }
 
 

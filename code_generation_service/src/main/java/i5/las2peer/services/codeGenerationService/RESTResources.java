@@ -81,12 +81,12 @@ public class RESTResources {
 	 * REST endpoints (github proxy functionality)
 	 * -------------------------------------------
 	 */
-	
+
 	/**
 	 * Tags the commit with the given sha identifier with the given tag and pushes the new tag.
 	 * @param repositoryName Name of the repository, where a commit should be tagged.
 	 * @param jsonInput JSON object containing the "tag" and "commitSha".
-	 * @return
+	 * @return return
 	 */
 	@POST
 	@Path("{repositoryName}/tags")
@@ -96,50 +96,50 @@ public class RESTResources {
 			               @ApiResponse(code = HttpURLConnection.HTTP_INTERNAL_ERROR, message = "Internal server error")})
 	public Response addTag(@PathParam("repositoryName") String repositoryName, String jsonInput) {
 		Context.get().monitorEvent(MonitoringEvent.SERVICE_MESSAGE, "tags: trying to add tag to repository with name: " + repositoryName);
-		
-		
+
+
 		JSONObject json = (JSONObject) JSONValue.parse(jsonInput);
 		String versionTag = (String) json.get("tag");
 		String commitSha = (String) json.get("commitSha");
 		int versionedModelId = ((Long) json.get("versionedModelId")).intValue();
-		
+
 		Repository repository = null;
 		RevWalk revWalk = null;
-		
+
 		String masterBranch = repositoryName.startsWith("frontend") ? "gh-pages" : "master";
-		
+
 		try (Git git = gitUtility.getLocalGit(repositoryName, masterBranch)) {
 			RefSpec specTags = new RefSpec("refs/tags/" + versionTag + ":refs/tags/" + versionTag);
-			
+
 			// use gitAdapter from service
 			BaseGitHostAdapter gitAdapter = (BaseGitHostAdapter) service.getGitAdapter();
-			
+
 			repository = git.getRepository();
-			
+
 			CredentialsProvider credentialsProvider =
 			        new UsernamePasswordCredentialsProvider(gitAdapter.getGitUser(), gitAdapter.getGitPassword());
-			
+
 			// get the commit by the given commit sha identifier
 			ObjectId commitId = repository.resolve(commitSha);
 			revWalk = new RevWalk(repository);
 		    RevCommit commit = revWalk.parseCommit(commitId);
-		    
+
 		    StoredConfig config = git.getRepository().getConfig();
 		    RemoteConfig remoteConfig = new RemoteConfig(config, "Remote");
 		    remoteConfig.addURI(new URIish(gitAdapter.getBaseURL() + gitAdapter.getGitOrganization() + "/" + repositoryName + ".git"));
 	        remoteConfig.update(config);
-			
+
 	        // set tag
 			Git.wrap(repository).tag().setObjectId(commit).setName(versionTag).call();
 			// push tag
 			Git.wrap(repository).push().setForce(true).setRemote("Remote").setPushTags().setCredentialsProvider(credentialsProvider)
 	        .setRefSpecs(specTags).call();
-			
+
 			// also store commit into database
 			String response = (String) Context.getCurrent().invoke(
 					"i5.las2peer.services.modelPersistenceService.ModelPersistenceService@0.1", "addTagToCommit",
 					new Serializable[]{commitSha, versionedModelId, versionTag});
-			
+
 			if(response.equals("done")) return Response.ok().build();
 			else return Response.serverError().build();
 		} catch (Exception e) {
@@ -154,7 +154,7 @@ public class RESTResources {
 	/**
 	 * Merges the development branch of the given repository with the
 	 * master/gh-pages branch and pushes the changes to the remote repository.
-	 * 
+	 *
 	 * @param repositoryName
 	 *            The name of the repository to push the local changes to
 	 * @return HttpResponse containing the status code of the request or the
@@ -171,7 +171,7 @@ public class RESTResources {
 			@ApiResponse(code = HttpURLConnection.HTTP_INTERNAL_ERROR, message = "Internal server error") })
 	public Response pushToRemote(@PathParam("repositoryName") String repositoryName) throws ServiceException {
 		Context.get().monitorEvent(MonitoringEvent.SERVICE_MESSAGE, "push: trying to push repository with name: " + repositoryName);
-		
+
 		try {
 			// determine which branch to merge in
 			boolean isFrontend = repositoryName.startsWith("frontendComponent-");
@@ -190,14 +190,14 @@ public class RESTResources {
 	/**
 	 * Store the content and traces of a file in a repository and commit it to
 	 * the local repository.
-	 * 
+	 *
 	 * @param repositoryName
 	 *            The name of the repository
 	 * @param content
 	 *            A json string containing the content of the file encoded in
 	 *            base64 and its file traces
 	 * @return HttpResponse with the status code of the request
-	 * @throws ServiceException thrown incase of error in service 
+	 * @throws ServiceException thrown incase of error in service
 	 */
 
 	@SuppressWarnings("unchecked")
@@ -211,7 +211,7 @@ public class RESTResources {
 			@ApiResponse(code = HttpURLConnection.HTTP_NOT_FOUND, message = "404, file not found") })
 	public synchronized Response storeAndCommitFle(@PathParam("repositoryName") String repositoryName, String content) throws ServiceException {
 		Context.get().monitorEvent(MonitoringEvent.SERVICE_MESSAGE, "PUT {repositoryName}/file called with respositoryName: " + repositoryName);
-		
+
 		try {
 			JSONObject result = new JSONObject();
 
@@ -273,12 +273,12 @@ public class RESTResources {
 					git.add().addFilepattern(filePath).addFilepattern(gitProxy.getTraceFileName(filePath)).call();
 					RevCommit commit = git.commit().setAuthor(gitUser, gitUserMail).setMessage(commitMessage).call();
 					String commitSha = commit.getId().getName();
-					
+
 					// call Model Persistence Service to store the auto commit
 					String response = (String) Context.getCurrent().invoke(
 							"i5.las2peer.services.modelPersistenceService.ModelPersistenceService@0.1", "addAutoCommitToVersionedModel",
 							new Serializable[]{commitSha, commitMessage, versionedModelId});
-					
+
 					if(response.equals("error")) {
 						throw new InternalServerErrorException();
 					}
@@ -299,14 +299,14 @@ public class RESTResources {
 
 	/**
 	 * Calculate and returns the file name and segment id for a given model id.
-	 * 
+	 *
 	 * @param repositoryName
 	 *            The name of the repository
 	 * @param modelId
 	 *            The id of the model.
 	 * @return HttpResponse with the status code of the request and the file
 	 *         name and segment id of the model
-	 * @throws ServiceException 
+	 * @throws ServiceException
 	 * 			Thrown if something goes wrong with the Github Service
 	 */
 
@@ -360,13 +360,13 @@ public class RESTResources {
 	/**
 	 * Get the files needed for the live preview widget collected in one
 	 * response
-	 * 
+	 *
 	 * @param repositoryName
 	 *            The name of the repository
 	 * @return HttpResponse containing the status code of the request and the
 	 *         content of the needed files for the live preview widget encoded
 	 *         in base64 if everything was fine.
-	 * @throws ServiceException 
+	 * @throws ServiceException
 	 * 			Thrown if something goes wrong with the Github Service
 	 */
 
@@ -423,7 +423,7 @@ public class RESTResources {
 		}
 
 	}
-	
+
 	public static void deleteFolder(File folder) {
 		// get all files in folder
 	    File[] files = folder.listFiles();
@@ -441,15 +441,15 @@ public class RESTResources {
 
 	/**
 	 * Returns the content encoded in base64 of a file in a repository
-	 * 
+	 *
 	 * @param repositoryName
 	 *            The name of the repository
 	 * @param fileName
 	 *            The absolute path of the file
 	 * @return HttpResponse containing the status code of the request and the
 	 *         content of the file encoded in base64 if everything was fine.
-	 * @throws ServiceException 
-	 * 			Thrown if something goes wrong with the Github Service 
+	 * @throws ServiceException
+	 * 			Thrown if something goes wrong with the Github Service
 	 */
 
 	@SuppressWarnings("unchecked")
@@ -496,16 +496,16 @@ public class RESTResources {
 
 	/**
 	 * List all files of a folder of a repository.
-	 * 
+	 *
 	 * @param repositoryName
 	 *            the name of the repository
 	 * @param path
 	 *            the path of the folder whose files should be listed
 	 * @return HttpResponse containing the files of the given repository as a
 	 *         json string
-	 *@throws ServiceException 
-	 * 			Thrown if something goes wrong with the Github Service 
-	 * 
+	 *@throws ServiceException
+	 * 			Thrown if something goes wrong with the Github Service
+	 *
 	 */
 
 	@SuppressWarnings("unchecked")
@@ -574,7 +574,7 @@ public class RESTResources {
 
 	/**
 	 * Deletes a local repository
-	 * 
+	 *
 	 * @param repositoryName
 	 *            The repository to delete
 	 * @return HttpResponse containing a status code

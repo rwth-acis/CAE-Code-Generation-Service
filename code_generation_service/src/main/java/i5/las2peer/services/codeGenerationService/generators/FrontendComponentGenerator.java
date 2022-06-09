@@ -29,11 +29,14 @@ import i5.las2peer.services.codeGenerationService.exception.GitHostException;
 import i5.las2peer.services.codeGenerationService.models.frontendComponent.Event;
 import i5.las2peer.services.codeGenerationService.models.frontendComponent.FrontendComponent;
 import i5.las2peer.services.codeGenerationService.models.frontendComponent.Function;
+import i5.las2peer.services.codeGenerationService.models.frontendComponent.ViewComponent;
 import i5.las2peer.services.codeGenerationService.models.frontendComponent.HtmlElement;
 import i5.las2peer.services.codeGenerationService.models.frontendComponent.IWCCall;
 import i5.las2peer.services.codeGenerationService.models.frontendComponent.IWCResponse;
 import i5.las2peer.services.codeGenerationService.models.frontendComponent.InputParameter;
 import i5.las2peer.services.codeGenerationService.models.frontendComponent.MicroserviceCall;
+import i5.las2peer.services.codeGenerationService.models.frontendComponent.DataBinding;
+import i5.las2peer.services.codeGenerationService.models.frontendComponent.ParamBinding;
 import i5.las2peer.services.codeGenerationService.models.traceModel.FileTraceModel;
 import i5.las2peer.services.codeGenerationService.models.traceModel.TraceModel;
 import i5.las2peer.services.codeGenerationService.templateEngine.InitialGenerationStrategy;
@@ -82,6 +85,11 @@ public class FrontendComponentGenerator extends Generator {
         String wireframeElementTemplate = null;
         String functionTemplate = null;
         String microserviceCallTemplate = null;
+        String dataBindingTemplate = null;
+        String dataBindingCallerTemplate = null;
+        String dataBindingListTemplate = null;
+        String dataBindingDtlTemplate = null;
+        String paramBindingTemplate = null;
         String iwcResponseTemplate = null;
         String eventTemplate = null;
         String yjsImports = null;
@@ -138,6 +146,21 @@ public class FrontendComponentGenerator extends Generator {
                             break;
                         case "genericMicroserviceCall.txt":
                             microserviceCallTemplate = new String(loader.getBytes(), "UTF-8");
+                            break;
+                        case "genericDataBinding.txt":
+                            dataBindingTemplate = new String(loader.getBytes(), "UTF-8");
+                            break;
+                        case "dataBindingCaller.txt":
+                            dataBindingCallerTemplate = new String(loader.getBytes(), "UTF-8");
+                            break;
+                        case "dataBindingList.txt":
+                            dataBindingListTemplate = new String(loader.getBytes(), "UTF-8");
+                            break;
+                        case "dataBindingDtl.txt":
+                            dataBindingDtlTemplate = new String(loader.getBytes(), "UTF-8");
+                            break;
+                        case "genericParamBinding.txt":
+                            paramBindingTemplate = new String(loader.getBytes(), "UTF-8");
                             break;
                         case "genericIWCResponse.txt":
                             iwcResponseTemplate = new String(loader.getBytes(), "UTF-8");
@@ -243,8 +266,9 @@ public class FrontendComponentGenerator extends Generator {
                     iwcResponseTemplate, htmlElementTemplate, frontendComponent);
 
             // add events to elements
-            addEventsToApplicationScript(applicationTemplate, widgetTemplateEngine, eventTemplate,
-                    frontendComponent);
+            addEventsToApplicationScript(applicationTemplate, dataBindingCallerTemplate,
+                    dataBindingListTemplate, dataBindingDtlTemplate,
+                    widgetTemplateEngine, eventTemplate, functionTemplate, frontendComponent);
             // add (possible) Yjs collaboration stuff
             addYjsCollaboration(applicationTemplate, applicationScriptTemplateEngine, yjsInit,
                     frontendComponent);
@@ -303,12 +327,12 @@ public class FrontendComponentGenerator extends Generator {
                 RevCommit commit = Git.wrap(frontendComponentRepository).commit()
                         .setMessage(commitMessage)
                         .setCommitter(caeUser).call();
-                
+
                 Ref head = frontendComponentRepository.getAllRefs().get("HEAD");
                 commitSha = head.getObjectId().getName();
-                
+
                 if(versionTag != null) {
-                	Git.wrap(frontendComponentRepository).tag().setObjectId(commit).setName(versionTag).call();	
+                	Git.wrap(frontendComponentRepository).tag().setObjectId(commit).setName(versionTag).call();
                 }
             } catch (Exception e) {
                 logger.printStackTrace(e);
@@ -359,8 +383,20 @@ public class FrontendComponentGenerator extends Generator {
         Template widgetTemplate = templateEngine.createTemplate(frontendComponent.getWidgetModelId(), widgetTemplateFile);
         templateEngine.addTemplate(widgetTemplate);
 
+        Map<String, ViewComponent> viewComponentsToAdd = new HashMap<String, ViewComponent>();
         Map<String, HtmlElement> htmlElementsToAdd = new HashMap<String, HtmlElement>();
 
+        // add all static elements and check for collaborative elements
+        for (ViewComponent element : frontendComponent.getViewComponents().values()) {
+            if (element.isStaticElement() && !element.hasParent()) {
+                viewComponentsToAdd.put(element.getId(), element);
+            }
+            if (element.isCollaborativeElement()) {
+                // currently, only textareas are supported
+                Template importTemplate = templateEngine.createTemplate(widgetTemplate.getId() + ":additionalYjsImports", importTemplateFiles.get("Yjs"));
+                widgetTemplate.appendVariableOnce("$Additional_Imports$", importTemplate);
+            }
+        }
 
         // add all static elements and check for collaborative elements
         for (HtmlElement element : frontendComponent.getHtmlElements().values()) {
@@ -394,6 +430,20 @@ public class FrontendComponentGenerator extends Generator {
                         .getChildRecursive(frontendComponent.getWidgetModelId() + ":unprotected[0]"));
 
         // now, get all "updated", but not "created" elements (since these are there "from the start")
+        ArrayList<String> vcIdsToAdd = new ArrayList<String>();
+        ArrayList<String> viewComponentsCreated = new ArrayList<String>();
+        for (Function function : frontendComponent.getFunctions().values()) {
+            vcIdsToAdd.addAll(function.getViewComponentUpdates());
+            viewComponentsCreated.addAll(function.getViewComponentCreations());
+        }
+        for (ParamBinding paramBinding : frontendComponent.getParamBindings().values()) {
+            vcIdsToAdd.addAll(paramBinding.getViewComponentUpdates());
+        }
+        vcIdsToAdd.removeAll(viewComponentsCreated);
+        for (String idToAdd : vcIdsToAdd) {
+            viewComponentsToAdd.put(idToAdd, frontendComponent.getViewComponents().get(idToAdd));
+        }
+
         ArrayList<String> idsToAdd = new ArrayList<String>();
         ArrayList<String> htmlElementsCreated = new ArrayList<String>();
         for (Function function : frontendComponent.getFunctions().values()) {
@@ -405,6 +455,18 @@ public class FrontendComponentGenerator extends Generator {
             htmlElementsToAdd.put(idToAdd, frontendComponent.getHtmlElements().get(idToAdd));
         }
         // now we got all elements that are there from the start on, so add them to the widget code
+
+        for (ViewComponent element : viewComponentsToAdd.values()) {
+            Template indent = templateEngine
+                    .createTemplate(widgetTemplate.getId() + ":indent:" + element.getModelId(), "\n   ");
+            widgetTemplate.appendVariable("$Main_Content$", indent);
+            Template elementTemplate =
+                    createViewComponentTemplate(element, htmlElementTemplateFile, widgetTemplate);
+
+            widgetTemplate.appendVariable("$Main_Content$", elementTemplate);
+            templateEngine.addTrace(element.getModelId(), "HTML Element", element.getId(),
+                    elementTemplate);
+        }
 
         for (HtmlElement element : htmlElementsToAdd.values()) {
             Template indent = templateEngine
@@ -428,6 +490,70 @@ public class FrontendComponentGenerator extends Generator {
         widgetTemplate.setVariableIfNotSet("$Additional_Imports$", "");
     }
 
+    /**
+     * Creates a template for an View Component.
+     *
+     * @param element                 the element
+     * @param htmlElementTemplateFile a template containing the code for an HTML element
+     * @param template                The template instance in which the html element should be added
+     */
+    private static Template createViewComponentTemplate(ViewComponent element,
+                                                      String htmlElementTemplateFile, Template template) {
+        String wireframeAttributes = "";
+        if(element.isContentEditable())
+            htmlElementTemplateFile = htmlElementTemplateFile.replace("$Element_Content$", "-{$Element_Content$}-");
+
+        Template elementTemplate = template.createTemplate(element.getModelId() + ":htmlElement", htmlElementTemplateFile);
+
+        String wireframeGeometry = element.generateCodeForGeometry();
+        if(wireframeGeometry.length() > 0)
+            elementTemplate.setVariable("$Wireframe_Geometry$", wireframeGeometry);
+        else
+            elementTemplate.setVariable("$Wireframe_Geometry$", "");
+
+
+        switch (element.getType()) {
+            case div:
+                wireframeAttributes = element.generateCodeForAttributes();
+                if (wireframeAttributes.length() > 0)
+                    elementTemplate.setVariable("$Wireframe_Attributes$", wireframeAttributes);
+                else
+                    elementTemplate.setVariable("$Wireframe_Attributes$", "");
+                elementTemplate.setVariable("$Additional_Styles$", " ");
+                elementTemplate.setVariable("$Element_Type$", element.getType().toString());
+                elementTemplate.setVariable("$Element_Id$", element.getId());
+                elementTemplate.setVariable("$Additional_Values$", " ");
+                elementTemplate.setVariable("$Closing_Element$", "</" + element.getType().toString() + ">");
+
+                if(element.hasChildren()){
+                    for(ViewComponent child : element.getChildren()){
+                        Template tpl = createViewComponentTemplate(child, htmlElementTemplateFile, template);
+                        elementTemplate.appendVariable("$Element_Content$", tpl);
+                    }
+                }
+                else
+                    elementTemplate.setVariable("$Element_Content$", " ");
+                break;
+            case table:
+                wireframeAttributes = element.generateCodeForAttributes();
+                if (wireframeAttributes.length() > 0)
+                    elementTemplate.setVariable("$Wireframe_Attributes$", wireframeAttributes);
+                else
+                    elementTemplate.setVariable("$Wireframe_Attributes$", "");
+                elementTemplate.setVariable("$Additional_Styles$", " ");
+                elementTemplate.setVariable("$Element_Type$", element.getType().toString());
+                elementTemplate.setVariable("$Element_Id$", element.getId());
+                elementTemplate.setVariable("$Additional_Values$", " ");
+                elementTemplate.setVariable("$Element_Content$", element.getCodeSample());
+                elementTemplate.setVariable("$Closing_Element$", "</" + element.getType().toString() + ">");
+                break;
+            default:
+                break;
+        }
+
+
+        return elementTemplate;
+    }
 
     /**
      * Creates a template for an HTML element.
@@ -643,10 +769,9 @@ public class FrontendComponentGenerator extends Generator {
      * @param htmlElementTemplateFile      a template representing a generic HTML template
      * @param frontendComponent            a {@link FrontendComponent}
      */
-    public static void createApplicationScript(Template applicationTemplate,
-                                               String functionTemplateFile, String microserviceCallTemplateFile,
-                                               String iwcResponseTemplateFile, String htmlElementTemplateFile,
-                                               FrontendComponent frontendComponent) {
+    public static void createApplicationScript(Template applicationTemplate, String functionTemplateFile,
+                                               String microserviceCallTemplateFile, String iwcResponseTemplateFile,
+                                               String htmlElementTemplateFile, FrontendComponent frontendComponent) {
 
         // add trace to application script
         applicationTemplate.getTemplateEngine().addTrace(frontendComponent.getWidgetModelId(),
@@ -681,6 +806,13 @@ public class FrontendComponentGenerator extends Generator {
                         "IWC Response[" + response.getIntentAction() + "]", iwcResponseTemplate);
             }
 
+            List<ViewComponent> updatedComponents = new ArrayList<ViewComponent>();
+
+            // element updates
+            for (String elementId : function.getViewComponentUpdates()) {
+                ViewComponent element = frontendComponent.getViewComponents().get(elementId);
+                updatedComponents.add(element);
+            }
 
             List<HtmlElement> updatedElements = new ArrayList<HtmlElement>();
 
@@ -726,7 +858,6 @@ public class FrontendComponentGenerator extends Generator {
                 functionTemplate.appendVariable("$Function_Body$", returnParameter);
                 functionTemplate.setVariable("$Function_Return_Parameter$",
                         " return " + function.getReturnParameter() + ";");
-
             } else {
                 functionTemplate.setVariable("$Function_Return_Parameter$", "");
             }
@@ -734,7 +865,6 @@ public class FrontendComponentGenerator extends Generator {
             functionTemplate.appendVariable("$Function_Body$",
                     applicationTemplate.createTemplate(functionTemplate.getId() + ":endVarDeclaration",
                             "-{\n}-//end variable declaration\n-{\n}-"));
-
 
             // microservice calls
             for (MicroserviceCall microserviceCall : function.getMicroserviceCalls()) {
@@ -775,6 +905,25 @@ public class FrontendComponentGenerator extends Generator {
 
                 microserviceCallFile.setVariable("$Method_Path$", microserviceCall.getPath());
 
+                for (ViewComponent element : updatedComponents) {
+                    String updateElementTemplate =
+                            "\n-{    //Also update the html element?\n    //}-$(\"#$Element_Id$\").html(-{\"Updated Element\"}-);";
+                    // success callback
+                    Template updatedElement = applicationTemplate.createTemplate(functionTemplate.getId()
+                                    + ":" + microserviceCall.getModelId() + ":update:" + element.getModelId(),
+                            updateElementTemplate);
+                    updatedElement.setVariable("$Element_Id$", element.getId());
+                    // error callback
+                    Template updatedElementError = applicationTemplate.createTemplate(functionTemplate.getId()
+                                    + ":" + microserviceCall.getModelId() + ":updateError:" + element.getModelId(),
+                            updateElementTemplate);
+                    updatedElementError.setVariable("$Element_Id$", element.getId());
+
+                    microserviceCallFile.appendVariable("$HTML_Elements_Updates$", updatedElement);
+                    microserviceCallFile.appendVariable("$HTML_Elements_Updates_Errors$",
+                            updatedElementError);
+                }
+
                 for (HtmlElement element : updatedElements) {
                     String updateElementTemplate =
                             "\n-{    //Also update the html element?\n    //}-$(\"#$Element_Id$\").html(-{\"Updated Element\"}-);";
@@ -800,6 +949,35 @@ public class FrontendComponentGenerator extends Generator {
                 functionTemplate.appendVariable("$Function_Body$", microserviceCallFile);
                 applicationTemplate.getTemplateEngine().addTrace(microserviceCall.getModelId(),
                         "MicroserviceCall", microserviceCallFile);
+            }
+
+            // element creations
+            for (String elementId : function.getViewComponentCreations()) {
+                ViewComponent element = frontendComponent.getViewComponents().get(elementId);
+
+                Template elementTemplate =
+                        createViewComponentTemplate(element, htmlElementTemplateFile, functionTemplate);
+
+                Template createdElementTemplate = applicationTemplate.createTemplate(
+                        functionTemplate.getId() + ":create:" + element.getModelId(),
+                        "   $( \".container\" ).append(\"$Html$\");\n");
+
+                createdElementTemplate.appendVariable("$Html$", elementTemplate);
+                functionTemplate.appendVariable("$Function_Body$", createdElementTemplate);
+
+                applicationTemplate.getTemplateEngine().addTrace(element.getModelId(), "HTML Element",
+                        element.getId(), elementTemplate);
+            }
+
+            // element updates
+            for (String elementId : function.getViewComponentUpdates()) {
+                ViewComponent element = frontendComponent.getViewComponents().get(elementId);
+
+                Template updatedElement = applicationTemplate.createTemplate(
+                        functionTemplate.getId() + ":update:" + element.getModelId(),
+                        "\n-{  }-$(\"#$Element_Id$\").html(-{\"Updated Element\"}-);");
+                updatedElement.setVariable("$Element_Id$", element.getId());
+                functionTemplate.appendVariable("$Function_Body$", updatedElement);
             }
 
             // element creations
@@ -847,17 +1025,11 @@ public class FrontendComponentGenerator extends Generator {
                 functionTemplate.appendVariable("$Function_Body$", iwc);
                 applicationTemplate.getTemplateEngine().addTrace(call.getModelId(), "IWC Call",
                         call.getIntentAction(), iwc);
-
             }
-
-
         }
-
-
         applicationTemplate.setVariableIfNotSet("$Functions$", "");
         applicationTemplate.setVariableIfNotSet("$Events$", "");
         applicationTemplate.setVariableIfNotSet("$IWC_Responses$", "");
-
     }
 
 
@@ -881,6 +1053,21 @@ public class FrontendComponentGenerator extends Generator {
                 .createTemplate(applicationScriptTemplate.getId() + ":yjsInit", yjsInitTemplateFile);
         String variableInit = "$Variable_Init$";
         String shareElement = "$Share_Element$";
+
+        for (ViewComponent element : frontendComponent.getViewComponents().values()) {
+            if (element.isCollaborativeElement()) {
+                if (!foundCollaborativeElement) {
+                    applicationScriptTemplate.appendVariable("$Yjs_Code$", yjsInitTemplate);
+                    foundCollaborativeElement = true;
+                }
+
+                variableInit = variableInit.replace("$Variable_Init$",
+                        "    " + element.getId() + ":\'Text\'" + ",\n$Variable_Init$");
+                shareElement = shareElement.replace("$Share_Element$", "  y.share." + element.getId()
+                        + ".bind(document.getElementById('" + element.getId() + "'))" + "\n$Share_Element$");
+
+            }
+        }
 
         for (HtmlElement element : frontendComponent.getHtmlElements().values()) {
             if (element.isCollaborativeElement()) {
@@ -920,9 +1107,181 @@ public class FrontendComponentGenerator extends Generator {
      * @param eventTemplateFile         a template for an event
      * @param frontendComponent         a {@link FrontendComponent}
      */
-    public static void addEventsToApplicationScript(Template applicationScriptTemplate,
+    public static void addEventsToApplicationScript(Template applicationScriptTemplate, String dataBindingCallerTemplateFile,
+                                                    String dataBindingListTemplateFile, String dataBindingDtlemplateFile,
                                                     TemplateEngine templateEngine, String eventTemplateFile,
-                                                    FrontendComponent frontendComponent) {
+                                                    String functionTemplateFile, FrontendComponent frontendComponent) {
+
+        ArrayList<String> detailVC = new ArrayList<String>();
+        List<ParamBinding> paramBindingList = new ArrayList<>(frontendComponent.getParamBindings().values());
+        String detailContainerId = "";
+        for (ParamBinding paramBinding : paramBindingList) {
+          for (String vc : paramBinding.getViewComponentUpdates()) {
+            detailVC.add(vc);
+            detailContainerId = vc;
+          }
+        }
+
+        for (ViewComponent element : frontendComponent.getViewComponents().values()) {
+            if(element.getDataBindings().size() > 0 && !detailVC.contains(element.getModelId())) {
+              for (DataBinding dataBinding : element.getDataBindings()) {
+                applicationScriptTemplate.setVariable("$DataBinding$", "getData(null, true)");
+                Template functionTemplate = applicationScriptTemplate.createTemplate(
+                        applicationScriptTemplate.getId() + dataBinding.getModelId() + "_main", functionTemplateFile);
+                applicationScriptTemplate.getTemplateEngine().addTrace(dataBinding.getModelId(), "Function",
+                        "getData", functionTemplate);
+                // add function to application script
+                applicationScriptTemplate.appendVariable("$Functions$", functionTemplate);
+                // start creating the actual function
+                functionTemplate.setVariable("$Function_Name$", "getData");
+
+                functionTemplate.setVariable("$Function_Parameters$", "param, isList");
+                functionTemplate.setVariable("$Function_Return_Parameter$", "");
+
+                Template dataBindingCallerFile = applicationScriptTemplate.createTemplate(
+                        element.getId() + dataBinding.getModelId() + "_list", dataBindingCallerTemplateFile);
+
+                if(!detailContainerId.isEmpty()) {
+                  ViewComponent detailContainer = frontendComponent.getViewComponents().get(detailContainerId);
+
+                  dataBindingCallerFile.setVariable("$Dtl_Container_Id$", detailContainer.getId());
+                }
+                dataBindingCallerFile.setVariable("$List_Container_Id$", element.getId());
+
+                dataBindingCallerFile.setVariable("$Method_Type$",
+                        dataBinding.getMethodType().toString());
+
+                dataBindingCallerFile.setVariable("$Method_Path$", dataBinding.getPath());
+
+                if (dataBinding.isAuthorize()) {
+                    dataBindingCallerFile.setVariable("$Authenticate$", "true");
+                } else {
+                    dataBindingCallerFile.setVariable("$Authenticate$", "false");
+                }
+
+                if (!dataBinding.getContent().isEmpty()) {
+                    // add variable initialization
+
+                    dataBindingCallerFile.setVariable("$Content$", dataBinding.getContent());
+
+                    // TODO workaround
+                    String contentType = dataBinding.getContentType().toString();
+                    if (contentType.equals("application/json"))
+                        contentType = "text/plain";
+
+                    dataBindingCallerFile.setVariable("$Content_Type$", contentType);
+                } else {
+                    // no content specified, just remove placeholder / insert empty entries
+                    dataBindingCallerFile.setVariable("$Content$", "\"\"");
+                    dataBindingCallerFile.setVariable("$Content_Type$", "");
+                }
+                dataBindingCallerFile.setVariable("$Method_Path$", dataBinding.getPath());
+
+                // add function to application script
+                applicationScriptTemplate.getTemplateEngine().addTrace(dataBinding.getModelId(), "DataBinding",
+                        dataBinding.getModelId(), dataBindingCallerFile);
+                // add function to application script
+                functionTemplate.appendVariable("$Function_Body$", dataBindingCallerFile);
+
+                /** function for list **/
+
+                Template functionTemplateList = applicationScriptTemplate.createTemplate(
+                        applicationScriptTemplate.getId() + dataBinding.getModelId() + "_list", functionTemplateFile);
+                applicationScriptTemplate.getTemplateEngine().addTrace(dataBinding.getModelId(), "Function",
+                        "buildList", functionTemplateList);
+                // add function to application script
+                applicationScriptTemplate.appendVariable("$Functions$", functionTemplateList);
+                // start creating the actual function
+                functionTemplateList.setVariable("$Function_Name$", "buildList");
+
+                functionTemplateList.setVariable("$Function_Parameters$", "root, arr");
+                functionTemplateList.setVariable("$Function_Return_Parameter$", "");
+
+                Template dataBindingListFile = applicationScriptTemplate.createTemplate(
+                        element.getId() + dataBinding.getModelId() + "_list", dataBindingListTemplateFile);
+
+                dataBindingListFile.setVariable("$Display_Attr$", dataBinding.getDisplayAttr());
+
+                functionTemplateList.appendVariable("$Function_Body$", dataBindingListFile);
+
+                for (Event event : element.getEvents()) {
+
+                  dataBindingListFile.setVariable("$Event_Check$", "true");
+                  dataBindingListFile.setVariable("$Event_Type$", event.getEventCause().toString());
+                  if(!event.getCalledParamBindingId().isEmpty()){
+                      ParamBinding paramBinding = frontendComponent.getParamBindings().get(event.getCalledParamBindingId());
+                      dataBindingListFile.setVariable("$Param_Input$", paramBinding.getInput());
+                      dataBindingCallerFile.setVariable("$Param_Input$", paramBinding.getInput());
+                  }
+
+                }
+
+                dataBindingListFile.setVariableIfNotSet("$Event_Check$", "false");
+
+                applicationScriptTemplate.getTemplateEngine().addTrace(dataBinding.getModelId(), "DataBinding",
+                        dataBinding.getModelId(), dataBindingListFile);
+              }
+
+            } else if(element.getDataBindings().size() > 0 && detailVC.contains(element.getModelId())){
+              ParamBinding paramBinding = null;
+              for (ParamBinding p : paramBindingList) {
+                for (String dtlId : p.getViewComponentUpdates()) {
+                  if(dtlId.equals(element.getModelId())) {
+                    paramBinding = p;
+                    break;
+                  }
+                }
+              }
+
+              Template functionTemplate = applicationScriptTemplate.createTemplate(
+                      applicationScriptTemplate.getId() + paramBinding.getModelId() + "_dtl", functionTemplateFile);
+              applicationScriptTemplate.getTemplateEngine().addTrace(paramBinding.getModelId(), "Function",
+                      paramBinding.getFunctionName(), functionTemplate);
+              // add function to application script
+              applicationScriptTemplate.appendVariable("$Functions$", functionTemplate);
+              // start creating the actual function
+              functionTemplate.setVariable("$Function_Name$", "buildDetail");
+              functionTemplate.setVariable("$Function_Parameters$", "root, arr");
+              functionTemplate.setVariable("$Function_Return_Parameter$", "");
+
+              for (DataBinding dataBinding : element.getDataBindings()) {
+                Template dataBindingFile = applicationScriptTemplate.createTemplate(
+                        element.getId() + dataBinding.getModelId(), dataBindingDtlemplateFile);
+
+                applicationScriptTemplate.getTemplateEngine().addTrace(dataBinding.getModelId(), "DataBinding",
+                        dataBinding.getModelId(), dataBindingFile);
+                // add function to application script
+                functionTemplate.appendVariable("$Function_Body$", dataBindingFile);
+              }
+
+            } else {
+                for (Event event : element.getEvents()) {
+
+                    Template eventTemplate = templateEngine
+                            .createTemplate(element.getModelId() + ":" + event.getModelId(), eventTemplateFile);
+                    eventTemplate.setVariable("$Html_Element_Id$", element.getId());
+
+                    applicationScriptTemplate.appendVariable("$Events$", eventTemplate);
+
+                    eventTemplate.getTemplateEngine().addTrace(event.getModelId(), "Event",
+                            eventTemplate.getSegment());
+
+                    eventTemplate.setVariable("$Event_Type$", event.getEventCause().toString());
+
+                    if(!event.getCalledFunctionId().isEmpty()){
+                      Function function = frontendComponent.getFunctions().get(event.getCalledFunctionId());
+                      eventTemplate.setVariable("$Function_Name$", function.getName());
+                      eventTemplate.setVariable("$Function_Parameter$", function.getName());
+                    } else {
+                      eventTemplate.setVariableIfNotSet("$Function_Name$", "");
+                      eventTemplate.setVariableIfNotSet("$Function_Parameter$", "");
+                      eventTemplate.setVariableIfNotSet("$Parameter_Init$", "");
+                    }
+                }
+            }
+        }
+
+        applicationScriptTemplate.setVariableIfNotSet("$DataBinding$", "");
 
         for (HtmlElement element : frontendComponent.getHtmlElements().values()) {
             for (Event event : element.getEvents()) {
@@ -966,7 +1325,6 @@ public class FrontendComponentGenerator extends Generator {
                 if (!firstParameter) {
                     eventTemplate.insertBreakLine("additional", "$Parameter_Init$");
                 }
-
 
                 // remove last parameter placeholder
                 arguments = arguments.replace(", $Function_Parameter$", "");

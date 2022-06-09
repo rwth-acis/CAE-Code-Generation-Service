@@ -6,7 +6,7 @@ import i5.las2peer.services.codeGenerationService.exception.ModelParseException;
 
 
 /**
- * 
+ *
  * Event data class. Represents an event, which is part of a frontend component model.
  *
  */
@@ -14,9 +14,9 @@ public class Event {
 
 
   /**
-   * 
+   *
    * Represents the different event causes of an {@link Event}.
-   * 
+   *
    */
   public enum EventCause {
     click
@@ -25,15 +25,16 @@ public class Event {
   private String modelId;
   private EventCause eventCause;
   private String calledFunctionId;
+  private String calledParamBindingId;
 
   /**
    *
    * Event constructor. Takes a {@link SimpleNode} and parses it to an Event.
-   * 
+   *
    * @param node the node representing the Event
-   * 
+   *
    * @throws ModelParseException if some error comes up during parsing the node
-   * 
+   *
    */
   public Event(SimpleNode node) throws ModelParseException {
     this.modelId = node.getId();
@@ -74,20 +75,42 @@ public class Event {
   }
 
 
+  public String getCalledParamBindingId() {
+    return calledParamBindingId;
+  }
+
+
   /**
-   * 
+   *
    * Sets the called function id.
-   * 
+   *
    * @param functionId the SyncMeta id
-   * 
+   *
    * @throws ModelParseException if an id was already set previously.
-   * 
+   *
    */
   public void setCalledFunctionId(String functionId) throws ModelParseException {
     if (calledFunctionId != null) {
       throw new ModelParseException("Event " + this.modelId + " already has a called function!");
     }
     this.calledFunctionId = functionId;
+  }
+
+
+  /**
+   *
+   * Sets the called paramBinding id.
+   *
+   * @param paramBindingId paramBinding the SyncMeta id
+   *
+   * @throws ModelParseException if an id was already set previously.
+   *
+   */
+  public void setCalledParamBindingId(String paramBindingId) throws ModelParseException {
+    if (calledParamBindingId != null) {
+      throw new ModelParseException("Event " + this.modelId + " already has a called param binding!");
+    }
+    this.calledParamBindingId = paramBindingId;
   }
 
 }
