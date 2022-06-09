@@ -1719,7 +1719,7 @@ public class MicroserviceGenerator extends Generator {
 	  String code = "// Response body " + bodyAssertion.getOperator().toString();
 	  code = insertLineBreak(code);
 	  // add the assertion code itself
-	  return code + "assertThat([ID" + bodyAssertion.getId() + "], response, " + generateOperatorCode(bodyAssertion.getOperator()) + ");";
+	  return code + "assertThat(\"[" + bodyAssertion.getId() + "]\", response, " + generateOperatorCode(bodyAssertion.getOperator()) + ");";
   }
   
   /**
