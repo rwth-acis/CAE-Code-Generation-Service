@@ -1627,6 +1627,8 @@ public class MicroserviceGenerator extends Generator {
                 // set request body
                 String requestBody = request.getBody() != null ? "\"\"\"\n" + request.getBody() + "\"\"\"" : "\"\"";
                 requestTemplate.setVariable("$Request_Body$", requestBody);
+
+                requestTemplate.setVariable("$Request_Id$", "" + request.getId());
     	    	
     	    	// set method type & path
     	    	requestTemplate.setVariable("$HTTP_Method_Type$", request.getType());
