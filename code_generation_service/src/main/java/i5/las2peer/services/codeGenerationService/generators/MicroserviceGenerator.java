@@ -1075,9 +1075,7 @@ public class MicroserviceGenerator extends Generator {
 
         // check if payload is a JSON and cast if so
         if (currentPayload.getPayloadType() == PayloadType.JSONObject) {
-        	// TODO workaround
-          // consumesAnnotation = "MediaType.APPLICATION_JSON";
-          consumesAnnotation = "MediaType.TEXT_PLAIN";
+          consumesAnnotation = "MediaType.APPLICATION_JSON";
 
           // if schema is available
           System.out.println("[MICROSERVICE GENERATOR] Schema name available " + schemaName);
