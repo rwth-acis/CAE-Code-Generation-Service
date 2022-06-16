@@ -130,6 +130,10 @@ public class MicroserviceGenerator extends Generator {
 	  return "app/src/test/java/i5/las2peer/services/" + getPackageName(microservice) + "/TestUtil.java";
   }
 
+  protected static String getMiniClientCoverageFileName(Microservice microservice) {
+  	  return "app/src/test/java/i5/las2peer/services/" + getPackageName(microservice) + "/MiniClientCoverage.java";
+  }
+
   /**
    * Returns the repository name for the given microservice model
    *
@@ -192,6 +196,7 @@ public class MicroserviceGenerator extends Generator {
 	    String genericTestRequest = null;
 	    String genericStatusCodeAssertion = null;
 	    String testUtilClass = null;
+	    String miniClientCoverage = null;
 	    
 	    String gradleSettings = null;
 	    String gradlew = null;
@@ -368,6 +373,9 @@ public class MicroserviceGenerator extends Generator {
 	            case "TestUtil.java":
 	              testUtilClass = new String(loader.getBytes(), "UTF-8");
 	              break;
+	            case "MiniClientCoverage.java":
+				  miniClientCoverage = new String(loader.getBytes(), "UTF-8");
+				  break;
 	            case "databaseConfig.txt":
 	              databaseConfig = new String(loader.getBytes(), "UTF-8");
 	              break;
@@ -486,6 +494,14 @@ public class MicroserviceGenerator extends Generator {
           TemplateEngine serviceTestUtilTemplateEngine = new TemplateEngine(new InitialGenerationStrategy(), serviceTestUtilTraceModel);
           
           generateServiceTestUtilClass(serviceTestUtilTemplateEngine, microservice, testUtilClass);
+
+          // MiniClientCoverage.java
+		  FileTraceModel miniClientCoverageTraceModel = new FileTraceModel(traceModel, getMiniClientCoverageFileName(microservice));
+		  traceModel.addFileTraceModel(miniClientCoverageTraceModel);
+
+		  TemplateEngine miniClientCoverageTemplateEngine = new TemplateEngine(new InitialGenerationStrategy(), miniClientCoverageTraceModel);
+
+		  generateMiniClientCoverageClass(miniClientCoverageTemplateEngine, microservice, miniClientCoverage);
           
           // service test class
 	      FileTraceModel serviceTestTraceModel =
@@ -1571,6 +1587,14 @@ public class MicroserviceGenerator extends Generator {
 	  
 	String packageName = microservice.getResourceName().substring(0, 1).toLowerCase() + microservice.getResourceName().substring(1);
 	testUtilTemplate.setVariable("$Lower_Resource_Name$", packageName);
+  }
+
+  protected static void generateMiniClientCoverageClass(TemplateEngine templateEngine, Microservice microservice, String miniClientCoverage) {
+  	Template template = templateEngine.createTemplate(microservice.getMicroserviceModelId() + ":miniclientcoverage", miniClientCoverage);
+  	templateEngine.addTemplate(template);
+
+  	String packageName = microservice.getResourceName().substring(0, 1).toLowerCase() + microservice.getResourceName().substring(1);
+	  template.setVariable("$Lower_Resource_Name$", packageName);
   }
     
   /**
