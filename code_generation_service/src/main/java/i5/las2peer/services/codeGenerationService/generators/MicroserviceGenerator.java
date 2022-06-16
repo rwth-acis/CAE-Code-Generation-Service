@@ -34,6 +34,7 @@ import org.eclipse.jgit.transport.RemoteConfig;
 import org.eclipse.jgit.transport.URIish;
 import org.eclipse.jgit.treewalk.TreeWalk;
 import org.eclipse.jgit.treewalk.filter.PathFilter;
+import org.json.simple.JSONObject;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
@@ -44,6 +45,8 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.MatchResult;
+import java.util.regex.Pattern;
 
 /**
  *
@@ -1650,7 +1653,36 @@ public class MicroserviceGenerator extends Generator {
                 String requestBody = request.getBody() != null ? "\"\"\"\n" + request.getBody() + "\"\"\"" : "\"\"";
                 requestTemplate.setVariable("$Request_Body$", requestBody);
 
+                // set request content-type
+                String contentType = "text/plain";
+                if(request.getBody() != null && !request.getBody().isBlank()) {
+                	contentType = "application/json";
+				}
+				requestTemplate.setVariable("$Content_Type$", contentType);
+
                 requestTemplate.setVariable("$Request_Id$", "" + request.getId());
+
+                // generate code for setting path parameters
+				JSONObject pathParamsRequest = request.getPathParams();
+				Pattern p = Pattern.compile("\\{([^}]*)}");
+				String pathParamsStr = "";
+				for(Object match : p.matcher(request.getUrl()).results().toArray()) {
+					MatchResult result = (MatchResult) match;
+					String paramName = request.getUrl().substring(result.start()+1, result.end()-1);
+					String paramValue = (String) pathParamsRequest.get(paramName);
+					// add parameter value to list of parameter values
+					pathParamsStr += "\"" + paramValue + "\", ";
+				}
+
+				if(p.matcher(request.getUrl()).results().count() > 0) {
+					// request contains path params => remove last "," of pathParamsStr
+					pathParamsStr = pathParamsStr.substring(0, pathParamsStr.length() - 2);
+					// set request path params to param value list
+					requestTemplate.setVariable("$Path_Params$", pathParamsStr);
+				} else {
+					// no path parameters set => use empty array
+					requestTemplate.setVariableIfNotSet("$Path_Params$", "new Object[0]");
+				}
     	    	
     	    	// set method type & path
     	    	requestTemplate.setVariable("$HTTP_Method_Type$", request.getType());
