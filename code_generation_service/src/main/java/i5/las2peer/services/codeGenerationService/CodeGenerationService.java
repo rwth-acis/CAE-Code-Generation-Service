@@ -275,7 +275,7 @@ public class CodeGenerationService extends RESTService {
 	public String createFromModel(String commitMessage, String versionTag, String metadataDoc, ArrayList<SimpleModel> serializedModel,
 			HashMap<String, String> externalDependencies, TestModel testModel) {
 		if(versionTag.equals("")) versionTag = null;
-		return createFromModel(false, commitMessage, versionTag, "", serializedModel, externalDependencies, testModel);
+		return createFromModel(false, commitMessage, versionTag, metadataDoc, serializedModel, externalDependencies, testModel);
 	}
 
 	/**

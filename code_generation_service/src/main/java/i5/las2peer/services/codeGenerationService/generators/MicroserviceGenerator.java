@@ -34,7 +34,9 @@ import org.eclipse.jgit.transport.RemoteConfig;
 import org.eclipse.jgit.transport.URIish;
 import org.eclipse.jgit.treewalk.TreeWalk;
 import org.eclipse.jgit.treewalk.filter.PathFilter;
+import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
+import org.json.simple.JSONValue;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
@@ -1716,7 +1718,7 @@ public class MicroserviceGenerator extends Generator {
     	    			
     	    			BodyAssertion bodyAssertion = (BodyAssertion) assertion;
 
-    	    			Template t = templateEngine.createTemplate(bodyAssertion.getId() + ":assertion", insertLineBreak(generateBodyAssertionCode(bodyAssertion), 2).indent(6));
+    	    			Template t = templateEngine.createTemplate(bodyAssertion.getId() + ":assertion", insertLineBreak(generateBodyAssertionCode(bodyAssertion, microservice), 2).indent(6));
     	    			requestTemplate.appendVariable("$Request_Assertions$", t);
     	    			
     	    		}
@@ -1768,30 +1770,37 @@ public class MicroserviceGenerator extends Generator {
   /**
    * Generates the code for the given body assertion.
    * @param bodyAssertion Body assertion for which code should be generated.
+   * @param microservice
    * @return Code corresponding to given body assertion.
    */
-  private static String generateBodyAssertionCode(BodyAssertion bodyAssertion) {
+  private static String generateBodyAssertionCode(BodyAssertion bodyAssertion, Microservice microservice) {
 	  // add a comment that describes the assertion
 	  String code = "// Response body " + bodyAssertion.getOperator().toString();
 	  code = insertLineBreak(code);
 	  // add the assertion code itself
-	  return code + "assertThat(\"[" + bodyAssertion.getId() + "]\", response, " + generateOperatorCode(bodyAssertion.getOperator()) + ");";
+	  return code + "assertThat(\"[" + bodyAssertion.getId() + "]\", response, " + generateOperatorCode(bodyAssertion.getOperator(), microservice) + ");";
   }
   
   /**
    * Recursively generates the code for the given operator and its successors.
    * @param operator Operator for which code should be generated.
+   * @param microservice
    * @return Code for the given operator and its successors.
    */
-  private static String generateOperatorCode(BodyAssertionOperator operator) {
+  private static String generateOperatorCode(BodyAssertionOperator operator, Microservice microservice) {
 	  if(operator.getOperatorId() == ResponseBodyOperator.HAS_TYPE.getId()) {
-		  return generateHasTypeOperatorCode(operator);
+	  	  // check if type is predefined or a schema defined in metadata editor
+		  if(OperatorInput.fromId(operator.getInputType()) != null) {
+			  return generateHasTypeOperatorCode(operator);
+		  } else {
+		  	  return generateHasSchemaOperatorCode(operator, microservice);
+		  }
 	  } else if(operator.getOperatorId() == ResponseBodyOperator.HAS_FIELD.getId()) {
-		  return generateHasFieldOperatorCode(operator);
+		  return generateHasFieldOperatorCode(operator, microservice);
 	  } else if(operator.getOperatorId() == ResponseBodyOperator.HAS_LIST_ENTRY_THAT.getId()) {
-	      return generateHasListEntryThatOperatorCode(operator);
+	      return generateHasListEntryThatOperatorCode(operator, microservice);
 	  } else if(operator.getOperatorId() == ResponseBodyOperator.ALL_LIST_ENTRIES.getId()) {
-		  return generateAllListEntriesOperatorCode(operator);
+		  return generateAllListEntriesOperatorCode(operator, microservice);
 	  } else {
 		  return "// TODO: Not yet supported by code-generation!";
 	  }
@@ -1808,29 +1817,51 @@ public class MicroserviceGenerator extends Generator {
 	  String expectedType = OperatorInput.fromId(operator.getInputType()).getJavaClassName();
 	  
 	  // create isA() assertion
-	  String basicAssertion = generateTypeAssertionCode(expectedType);
-	  
-	  // if there is a following operator => append it
-      if(operator.hasFollowingOperator()) {
-    	  return "both(" + basicAssertion + ").and(" + generateOperatorCode(operator.getFollowingOperator()) + ")";
-      } else {
-    	  return basicAssertion;
-      }
+	  return generateTypeAssertionCode(expectedType);
+  }
+
+  private static String generateHasSchemaOperatorCode(BodyAssertionOperator operator, Microservice microservice) {
+  	  // get name of schema
+	  String schemaName = operator.getInputValue();
+
+	  String typeAssertionCode = generateTypeAssertionCode("JSONObject");
+	  String schemaAssertionCode = "followsSchema(\"" + schemaName + "\", \"\"\"\n" + createJSONSchemaFromMetadataDoc(microservice.getMetadataDocString(), schemaName) + "\"\"\")";
+
+	  // create assertion
+	  return "both(" + typeAssertionCode + ").and(asJSONObject(" + schemaAssertionCode + "))";
+  }
+
+  private static String createJSONSchemaFromMetadataDoc(String metadataDoc, String schemaName) {
+      JSONObject metadata = (JSONObject) JSONValue.parse(metadataDoc);
+	  JSONObject definitions = (JSONObject) metadata.get("definitions");
+	  JSONObject definition = (JSONObject) definitions.get(schemaName);
+	  JSONArray required = new JSONArray();
+	  for(Object attributeKey : definition.keySet().toArray()) {
+          required.add(attributeKey);
+	  }
+
+	  JSONObject schema = new JSONObject();
+	  schema.put("type", "object");
+	  schema.put("properties", definition);
+	  schema.put("required", required);
+
+	  return schema.toJSONString();
   }
   
   /**
    * Generates code for "has field" operator. Ensures that current object is of type JSONObject.
    * Appends code of following operator, if exists.
    * @param operator A "has field" operator.
+   * @param microservice
    * @return Code for given "has field" operator.
    */
-  private static String generateHasFieldOperatorCode(BodyAssertionOperator operator) {
+  private static String generateHasFieldOperatorCode(BodyAssertionOperator operator, Microservice microservice) {
 	  // verify that current object is JSONObject and that the JSONObject has the given field
 	  String typeAssertion = generateTypeAssertionCode("JSONObject");
 	  
 	  String fieldName = operator.getInputValue();
 	  // if there is a following operator => append it
-	  String followingOperatorCode = operator.hasFollowingOperator() ? ", " + generateOperatorCode(operator.getFollowingOperator()) : "";
+	  String followingOperatorCode = operator.hasFollowingOperator() ? ", " + generateOperatorCode(operator.getFollowingOperator(), microservice) : "";
 	  
 	  return "both(" + typeAssertion + ").and(asJSONObject(hasField(\"" + fieldName + "\"" + followingOperatorCode + ")))";
   }
@@ -1839,14 +1870,15 @@ public class MicroserviceGenerator extends Generator {
    * Generates code for "has list entry that" operator. Ensures that current object is of type JSONArray.
    * Appends code of following operator.
    * @param operator A "has list entry that" operator.
+   * @param microservice
    * @return Code for "has list entry that" operator.
    */
-  private static String generateHasListEntryThatOperatorCode(BodyAssertionOperator operator) {
+  private static String generateHasListEntryThatOperatorCode(BodyAssertionOperator operator, Microservice microservice) {
 	  // verify that current object is JSONArray
 	  String typeAssertion = generateTypeAssertionCode("JSONArray");
 	  
 	  // "has list entry that" operator always has a following operator
-	  String followingOperatorCode = generateOperatorCode(operator.getFollowingOperator());
+	  String followingOperatorCode = generateOperatorCode(operator.getFollowingOperator(), microservice);
 	  
 	  return "both(" + typeAssertion + ").and(asJSONObjectList(hasItem(" + followingOperatorCode + ")))";
   }
@@ -1855,14 +1887,15 @@ public class MicroserviceGenerator extends Generator {
    * Generates code for "all list entries" operator. Ensures that current object is of type JSONArray.
    * Appends code of following operator.
    * @param operator A "all list entries" operator.
+   * @param microservice
    * @return Code for "all list entries" operator.
    */
-  private static String generateAllListEntriesOperatorCode(BodyAssertionOperator operator) {
+  private static String generateAllListEntriesOperatorCode(BodyAssertionOperator operator, Microservice microservice) {
 	  // verify that current object is JSONArray
 	  String typeAssertion = generateTypeAssertionCode("JSONArray");
 	  
 	  // "all list entries" operator always has a following operator
-	  String followingOperatorCode = generateOperatorCode(operator.getFollowingOperator());
+	  String followingOperatorCode = generateOperatorCode(operator.getFollowingOperator(), microservice);
 	  
 	  return "both(" + typeAssertion + ").and(asJSONObjectList(everyItem(" + followingOperatorCode + ")))";
   }
