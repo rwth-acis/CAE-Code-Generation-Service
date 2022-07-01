@@ -3,12 +3,12 @@ package i5.las2peer.services.codeGenerationService;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.HashMap;
 import java.util.Objects;
 
+import i5.las2peer.apiTestModel.TestModel;
 import org.apache.commons.io.FileUtils;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.lib.Ref;
@@ -42,7 +42,6 @@ import i5.las2peer.services.codeGenerationService.models.frontendComponent.Front
 import i5.las2peer.services.codeGenerationService.models.microservice.Microservice;
 import i5.las2peer.services.codeGenerationService.templateEngine.ModelViolationDetection;
 import i5.las2peer.services.codeGenerationService.utilities.GitUtility;
-import i5.las2peer.services.modelPersistenceService.testmodel.TestModel;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.Contact;
 import io.swagger.annotations.Info;

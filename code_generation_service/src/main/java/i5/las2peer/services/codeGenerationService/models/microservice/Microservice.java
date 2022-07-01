@@ -4,11 +4,10 @@ import i5.cae.simpleModel.SimpleEntityAttribute;
 import i5.cae.simpleModel.SimpleModel;
 import i5.cae.simpleModel.edge.SimpleEdge;
 import i5.cae.simpleModel.node.SimpleNode;
+import i5.las2peer.apiTestModel.TestModel;
 import i5.las2peer.services.codeGenerationService.exception.ModelParseException;
-import i5.las2peer.services.modelPersistenceService.testmodel.TestModel;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 /**
  * 
