@@ -1631,8 +1631,15 @@ public class MicroserviceGenerator extends Generator {
     		// 2 spaces indent for test method
     		Template testMethod = templateEngine.createTemplate(testCase.getId() + ":testcase", genericTestMethod.indent(2));
     	    serviceTestTemplate.appendVariable("$Test_Methods$", testMethod);
-    	    
-    	    testMethod.setVariable("$HTTP_Method_Name$", testCase.getName().replaceAll("\\s+","") + "_ID" + testCase.getId());
+
+			String updatedName = testCase.getName()
+					.replaceAll("\\s+","")
+					.replaceAll("/", "")
+					.replaceAll("\\{", "")
+					.replaceAll("}", "")
+					.replaceAll("\\(", "")
+					.replaceAll("\\)", "");
+    	    testMethod.setVariable("$HTTP_Method_Name$", updatedName + "_ID" + testCase.getId());
     	    
     	    // add requests to test case
     	    for(TestRequest request : testCase.getRequests()) {
