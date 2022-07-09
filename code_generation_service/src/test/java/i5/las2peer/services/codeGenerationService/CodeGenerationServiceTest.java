@@ -11,6 +11,7 @@ import java.io.InputStream;
 import java.io.ObjectInput;
 import java.io.ObjectInputStream;
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Objects;
 import java.util.Properties;
 
@@ -32,7 +33,7 @@ import i5.las2peer.services.codeGenerationService.generators.Generator;
 
 
 /**
- * 
+ *
  * Central test class for the CAE-Code-Generation-Service.
  *
  */
@@ -42,7 +43,7 @@ public class CodeGenerationServiceTest {
 
   private static final String codeGenerationService =
       CodeGenerationService.class.getName();
-  
+
   private static SimpleModel model1;
   private static SimpleModel model2;
   private static SimpleModel model3;
@@ -62,21 +63,21 @@ public class CodeGenerationServiceTest {
   private static GitHostAdapter gitAdapter;
   private static String baseURL = null;
   private static String token = null;
-  
+
 
   /**
-   * 
+   *
    * Called before the tests start. Sets up the node and loads test models for later usage.
-   * 
+   *
    * @throws Exception
-   * 
+   *
    */
   @BeforeClass
   public static void startServer() throws Exception {
     // load models
-    String modelPath1 = "./testModels/My First Testservice.model";
-    String modelPath2 = "./testModels/My First Testservice without DB.model";
-    String modelPath3 = "./testModels/My Test Widget.model";
+    // activate a helper function
+    String modelPath1 = "./testModels/modeloutput.model";
+
     String[] modelPathes4 = new String[7];
     modelPathes4[0] = "./testModels/applicationTestModel/CAE Example Application.model";
     modelPathes4[1] = "./testModels/applicationTestModel/Graph Widget.model";
@@ -95,27 +96,18 @@ public class CodeGenerationServiceTest {
       InputStream buffer1 = new BufferedInputStream(file1);
       ObjectInput input1 = new ObjectInputStream(buffer1);
       model1 = (SimpleModel) input1.readObject();
-      InputStream file2 = new FileInputStream(modelPath2);
-      InputStream buffer2 = new BufferedInputStream(file2);
-      ObjectInput input2 = new ObjectInputStream(buffer2);
-      model2 = (SimpleModel) input2.readObject();
-      InputStream file3 = new FileInputStream(modelPath3);
-      InputStream buffer3 = new BufferedInputStream(file3);
-      ObjectInput input3 = new ObjectInputStream(buffer3);
-      model3 = (SimpleModel) input3.readObject();
-      model4 = new SimpleModel[modelPathes4.length];
-      int i = 0;
-      for (String modelPath4 : modelPathes4) {
-        InputStream file4 = new FileInputStream(modelPath4);
-        InputStream buffer4 = new BufferedInputStream(file4);
-        ObjectInput input4 = new ObjectInputStream(buffer4);
-        model4[i] = (SimpleModel) input4.readObject();
-        input4.close();
-        i++;
-      }
+
+      // model4 = new SimpleModel[modelPathes4.length];
+      // int i = 0;
+      // for (String modelPath4 : modelPathes4) {
+      //   InputStream file4 = new FileInputStream(modelPath4);
+      //   InputStream buffer4 = new BufferedInputStream(file4);
+      //   ObjectInput input4 = new ObjectInputStream(buffer4);
+      //   model4[i] = (SimpleModel) input4.readObject();
+      //   input4.close();
+      //   i++;
+      // }
       input1.close();
-      input2.close();
-      input3.close();
 
       FileReader reader = new FileReader(propertiesFile);
       properties.load(reader);
@@ -125,11 +117,11 @@ public class CodeGenerationServiceTest {
       templateRepository = properties.getProperty("templateRepository");
       gitPassword = properties.getProperty("gitPassword");
       usedGitHost = properties.getProperty("usedGitHost");
-      
+
       baseURL = properties.getProperty("baseURL");
       token = properties.getProperty("token");
-      
-      
+
+
       if (Objects.equals(usedGitHost, "GitHub")) {
       	gitAdapter = new GitHubAdapter(gitUser, gitPassword, token, gitOrganization, templateRepository, gitUserMail);
       } else if (Objects.equals(usedGitHost, "GitLab")) {
@@ -137,8 +129,8 @@ public class CodeGenerationServiceTest {
       } else {
     	  fail("Property usedGitHost not valid!");
       }
-      
-      
+
+
 
     } catch (IOException ex) {
       fail("Error reading test models and configuration file!");
@@ -160,46 +152,24 @@ public class CodeGenerationServiceTest {
 
 
   /**
-   * 
+   *
    * Called after the tests have finished. Deletes all test repositories and shuts down the server.
    * Just comment out repositories you want to check on after the tests.
-   * 
+   *
    * @throws Exception
-   * 
+   *
    **/
   @AfterClass
   public static void shutDownServer() throws Exception {
-    String model1GitHubName = "microservice-" + model1.getName().replace(" ", "-");
-    String model2GitHubName = "microservice-" + model2.getName().replace(" ", "-");
-    String model3GitHubName = "frontendComponent-" + model3.getName().replace(" ", "-");
-    String model4GitHubName = "application-" + model4[0].getName().replace(" ", "-");
+    String model1GitHubName = "frontendComponent-" + model1.getName().replace(" ", "-");
+    // String model2GitHubName = "microservice-" + model2.getName().replace(" ", "-");
+    // String model3GitHubName = "frontendComponent-" + model3.getName().replace(" ", "-");
+    // String model4GitHubName = "application-" + model4[0].getName().replace(" ", "-");
 
     Thread.sleep(5000);
-    
+
     try {
       Generator.deleteRemoteRepository(model1GitHubName, (BaseGitHostAdapter) gitAdapter);
-    } catch (GitHostException e) {
-      e.printStackTrace();
-      // that's ok, maybe some error / failure in previous tests caused this
-      // catch it, to make sure that every other repository gets deleted
-    }
-    try {
-      Generator.deleteRemoteRepository(model2GitHubName, (BaseGitHostAdapter) gitAdapter);
-    } catch (GitHostException e) {
-      e.printStackTrace();
-      // that's ok, maybe some error / failure in previous tests caused this
-      // catch it, to make sure that every other repository gets deleted
-    }
-    try {
-      Generator.deleteRemoteRepository(model3GitHubName, (BaseGitHostAdapter) gitAdapter);
-    } catch (GitHostException e) {
-      e.printStackTrace();
-      // that's ok, maybe some error / failure in previous tests caused this
-      // catch it, to make sure that every other repository gets deleted
-    }
-    try {
-      gitAdapter.deleteRepo("Test123");
-      Generator.deleteRemoteRepository(model4GitHubName, (BaseGitHostAdapter) gitAdapter);
     } catch (GitHostException e) {
       e.printStackTrace();
       // that's ok, maybe some error / failure in previous tests caused this
@@ -210,74 +180,75 @@ public class CodeGenerationServiceTest {
   }
 
 
-  /**
-   * 
-   * Posts a new microservice model to the service.
-   * 
-   */
-  @Test
-  public void testCreateMicroservice() {
-    Serializable[] content = {(Serializable) model1};
-    Serializable[] parameters = {content};
-    try {
-      String returnMessage = (String) node.invoke(testService,serviceNameVersion, "createFromModel",parameters);
-      assertEquals("done", returnMessage);
-    } catch (Exception e) {
-      e.printStackTrace();
-      fail(e.getMessage());
-    }
-  }
+  // /**
+  //  *
+  //  * Posts a new microservice model to the service.
+  //  *
+  //  */
+  // @Test
+  // public void testCreateMicroservice() {
+  //   Serializable[] content = {(Serializable) model1};
+  //   Serializable[] parameters = {content};
+  //   try {
+  //     String returnMessage = (String) node.invoke(testService,serviceNameVersion, "createFromModel",parameters);
+  //     assertEquals("done", returnMessage);
+  //   } catch (Exception e) {
+  //     e.printStackTrace();
+  //     fail(e.getMessage());
+  //   }
+  // }
+  //
+  //
+  // /**
+  //  *
+  //  * Posts a new application model to the service.
+  //  *
+  //  */
+  //
+  // public void testCreateApplication() {
+  //   Serializable[] parameters = {(Serializable) model4};
+  //   try {
+  //     String returnMessage = (String) node.invoke(testService,
+  //   		  serviceNameVersion, "createFromModel",
+  //         parameters);
+  //     assertEquals("done", returnMessage);
+  //   } catch (Exception e) {
+  //     e.printStackTrace();
+  //     fail(e.getMessage());
+  //   }
+  // }
+  //
+  //
+  // /**
+  //  *
+  //  * Posts a new application model to the service.
+  //  *
+  //  */
+  // @Test
+  // public void testGetCommViewModel() {
+  //   Serializable[] parameters = {(Serializable) model4};
+  //   try {
+  //     SimpleModel simpleModel = (SimpleModel) node.invoke(testService,
+  //   		  serviceNameVersion, "getCommunicationViewOfApplicationModel", parameters);
+  //     assertEquals("CAE Example Application", simpleModel.getName());
+  //     // TODO more attributes of model checking
+  //   } catch (Exception e) {
+  //     e.printStackTrace();
+  //     fail(e.getMessage());
+  //   }
+  // }
 
 
   /**
-   * 
-   * Posts a new application model to the service.
-   * 
-   */
-  
-  public void testCreateApplication() {
-    Serializable[] parameters = {(Serializable) model4};
-    try {
-      String returnMessage = (String) node.invoke(testService,
-    		  serviceNameVersion, "createFromModel",
-          parameters);
-      assertEquals("done", returnMessage);
-    } catch (Exception e) {
-      e.printStackTrace();
-      fail(e.getMessage());
-    }
-  }
-
-
-  /**
-   * 
-   * Posts a new application model to the service.
-   * 
-   */
-  @Test
-  public void testGetCommViewModel() {
-    Serializable[] parameters = {(Serializable) model4};
-    try {
-      SimpleModel simpleModel = (SimpleModel) node.invoke(testService,
-    		  serviceNameVersion, "getCommunicationViewOfApplicationModel", parameters);
-      assertEquals("CAE Example Application", simpleModel.getName());
-      // TODO more attributes of model checking
-    } catch (Exception e) {
-      e.printStackTrace();
-      fail(e.getMessage());
-    }
-  }
-
-
-  /**
-   * 
+   *
    * Posts a new frontend component model to the service.
-   * 
+   *
    */
   @Test
   public void testCreateFrontendComponent() {
-    Serializable[] content = {(Serializable) model3};
-    Serializable[] parameters = {content};
+    ArrayList<SimpleModel> simpleArray1 = new ArrayList<SimpleModel>();
+    simpleArray1.add(model1);
+    Serializable[] parameters = {"commit", "0.1", "", simpleArray1, null};
     try {
       String returnMessage = (String) node.invoke(testService,
     		  serviceNameVersion, "createFromModel",
@@ -291,9 +262,9 @@ public class CodeGenerationServiceTest {
 
 
   /**
-   * 
+   *
    * Posts a new model to the service and then tries to delete it.
-   * 
+   *
    */
   @Test
   public void testDeleteModel() {
@@ -315,9 +286,9 @@ public class CodeGenerationServiceTest {
 
 
   /**
-   * 
+   *
    * Posts a new model to the service and then tries to update it (with the same model).
-   * 
+   *
    */
   @Test
   public void testUpdate() {
@@ -333,7 +304,7 @@ public class CodeGenerationServiceTest {
       fail(e.getMessage());
     }
   }
-  
+
   /**
    * Internal adapter tests
    */
@@ -346,7 +317,7 @@ public class CodeGenerationServiceTest {
 		  fail(e.getMessage());
 	  }
   }
-  
+
   @Test
   public void testRepoDeletion(){
 	  try {
