@@ -180,6 +180,10 @@ public class CodeGenerationService extends RESTService {
 		}
 	}
 
+	public void addWebhook(String repoName, String webhookUrl) {
+		gitAdapter.addWebhook(repoName, webhookUrl);
+	}
+
 	/**
 	 *
 	 * Creates a new GitHub repository with the source code according to the

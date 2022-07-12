@@ -69,5 +69,10 @@ public abstract class BaseGitHostAdapter implements GitHostAdapter {
 
 	public String getBaseURL() {
 		return baseURL;
-	}	
+	}
+
+	@Override
+	public void addWebhook(String repoName, String webhookUrl) {
+
+	}
 }
