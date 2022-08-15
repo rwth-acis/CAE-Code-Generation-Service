@@ -1627,109 +1627,116 @@ public class MicroserviceGenerator extends Generator {
     if(microservice.getTestModel() != null) {
     	TestModel testModel = microservice.getTestModel();
     	for(TestCase testCase : testModel.getTestCases()) {
-    		
-    		// 2 spaces indent for test method
-    		Template testMethod = templateEngine.createTemplate(testCase.getId() + ":testcase", genericTestMethod.indent(2));
-    	    serviceTestTemplate.appendVariable("$Test_Methods$", testMethod);
-
-			String updatedName = testCase.getName()
-					.replaceAll("\\s+","")
-					.replaceAll("/", "")
-					.replaceAll("\\{", "")
-					.replaceAll("}", "")
-					.replaceAll("\\(", "")
-					.replaceAll("\\)", "");
-    	    testMethod.setVariable("$HTTP_Method_Name$", updatedName + "_ID" + testCase.getId());
-    	    
-    	    // add requests to test case
-    	    for(TestRequest request : testCase.getRequests()) {
-    	    	Template requestTemplate = templateEngine.createTemplate(request.getId() + ":request", genericTestRequest.indent(4));
-    	    	testMethod.appendVariable("$Test_Requests$", requestTemplate);
-    	    	
-    	    	// replace agent variables
-                setTestRequestAgent(requestTemplate, request);
-                
-                // set request body
-                String requestBody = request.getBody() != null ? "\"\"\"\n" + request.getBody() + "\"\"\"" : "\"\"";
-                requestTemplate.setVariable("$Request_Body$", requestBody);
-
-                // set request content-type
-                String contentType = "text/plain";
-                if(request.getBody() != null && !request.getBody().isBlank()) {
-                	contentType = "application/json";
-				}
-				requestTemplate.setVariable("$Content_Type$", contentType);
-
-                requestTemplate.setVariable("$Request_Id$", "" + request.getId());
-
-                // generate code for setting path parameters
-				JSONObject pathParamsRequest = request.getPathParams();
-				Pattern p = Pattern.compile("\\{([^}]*)}");
-				String pathParamsStr = "";
-				for(Object match : p.matcher(request.getUrl()).results().toArray()) {
-					MatchResult result = (MatchResult) match;
-					String paramName = request.getUrl().substring(result.start()+1, result.end()-1);
-					String paramValue = (String) pathParamsRequest.get(paramName);
-					// add parameter value to list of parameter values
-					pathParamsStr += "\"" + paramValue + "\", ";
-				}
-
-				if(p.matcher(request.getUrl()).results().count() > 0) {
-					// request contains path params => remove last "," of pathParamsStr
-					pathParamsStr = pathParamsStr.substring(0, pathParamsStr.length() - 2);
-					// set request path params to param value list
-					requestTemplate.setVariable("$Path_Params$", pathParamsStr);
-				} else {
-					// no path parameters set => use empty array
-					requestTemplate.setVariableIfNotSet("$Path_Params$", "new Object[0]");
-				}
-    	    	
-    	    	// set method type & path
-    	    	requestTemplate.setVariable("$HTTP_Method_Type$", request.getType());
-    	    	String url = request.getUrl();
-    	    	if(url.startsWith("/")) {
-    	    		if(url.length() > 1) url = url.substring(1);
-    	    		else url = "";
-    	    	}
-    	    	requestTemplate.setVariable("$HTTPMethod_Path$", url);
-    	    	
-    	    	boolean firstResponseBodyAssertion = true;
-    	    	
-    	    	for(RequestAssertion assertion : request.getAssertions()) {
-    	    		if(assertion instanceof StatusCodeAssertion) {
-    	    			StatusCodeAssertion scAssertion = (StatusCodeAssertion) assertion;
-    	    			
-    	    			requestTemplate.insertBreakLine(scAssertion.getId() + ":linebreak", "$Request_Assertions$");
-    	    			Template assertionTemplate = templateEngine.createTemplate(scAssertion.getId() + ":assertion", genericStatusCodeAssertion.indent(6));
-    	    			requestTemplate.appendVariable("$Request_Assertions$", assertionTemplate);
-    	    			
-    	    			assertionTemplate.setVariable("$Message$", "[" + assertion.getId() + "]");
-    	    			assertionTemplate.setVariable("$Comparison_Operator$", scAssertion.getComparisonOperator() == 0 ? "Equals" : "NotEquals");
-    	    			assertionTemplate.setVariable("$Value$", "" + scAssertion.getStatusCodeValue());
-    	    		} else if(assertion instanceof BodyAssertion) {
-    	    			// if this is the first body assertion, we need to parse the response JSON
-    	    			if(firstResponseBodyAssertion) {
-    	    				Template getBodyTemplate = templateEngine.createTemplate(request.getId() + ":getbody", "Object response = JSONValue.parse(result.getResponse().trim());".indent(2));
-    	    				requestTemplate.appendVariable("$Request_Assertions$", getBodyTemplate);
-    	    				firstResponseBodyAssertion = false;
-    	    			}
-    	    			
-    	    			BodyAssertion bodyAssertion = (BodyAssertion) assertion;
-
-    	    			Template t = templateEngine.createTemplate(bodyAssertion.getId() + ":assertion", insertLineBreak(generateBodyAssertionCode(bodyAssertion, microservice), 2).indent(6));
-    	    			requestTemplate.appendVariable("$Request_Assertions$", t);
-    	    			
-    	    		}
-    	    	}
-    	    	
-    	    	requestTemplate.setVariableIfNotSet("$Request_Assertions$", "");
-    	    }
-    	    
-    	    testMethod.setVariableIfNotSet("$Test_Requests$", "");
+			generateTestMethod(microservice, templateEngine, testCase, serviceTestTemplate, genericTestMethod,
+					genericTestRequest, genericStatusCodeAssertion);
     	}
     }
 
     serviceTestTemplate.setVariableIfNotSet("$Test_Methods$", "");
+  }
+
+  public static Template generateTestMethod(Microservice microservice, TemplateEngine templateEngine, TestCase testCase, Template serviceTestTemplate,
+											String genericTestMethod, String genericTestRequest,
+											String genericStatusCodeAssertion) {
+	  // 2 spaces indent for test method
+	  Template testMethod = templateEngine.createTemplate(testCase.getId() + ":testcase", genericTestMethod.indent(2));
+	  serviceTestTemplate.appendVariable("$Test_Methods$", testMethod);
+
+	  String updatedName = testCase.getName()
+			  .replaceAll("\\s+","")
+			  .replaceAll("/", "")
+			  .replaceAll("\\{", "")
+			  .replaceAll("}", "")
+			  .replaceAll("\\(", "")
+			  .replaceAll("\\)", "");
+	  testMethod.setVariable("$HTTP_Method_Name$", updatedName + "_ID" + testCase.getId());
+
+	  // add requests to test case
+	  for(TestRequest request : testCase.getRequests()) {
+		  Template requestTemplate = templateEngine.createTemplate(request.getId() + ":request", genericTestRequest.indent(4));
+		  testMethod.appendVariable("$Test_Requests$", requestTemplate);
+
+		  // replace agent variables
+		  setTestRequestAgent(requestTemplate, request);
+
+		  // set request body
+		  String requestBody = request.getBody() != null ? "\"\"\"\n" + request.getBody() + "\"\"\"" : "\"\"";
+		  requestTemplate.setVariable("$Request_Body$", requestBody);
+
+		  // set request content-type
+		  String contentType = "text/plain";
+		  if(request.getBody() != null && !request.getBody().isBlank()) {
+			  contentType = "application/json";
+		  }
+		  requestTemplate.setVariable("$Content_Type$", contentType);
+
+		  requestTemplate.setVariable("$Request_Id$", "" + request.getId());
+
+		  // generate code for setting path parameters
+		  JSONObject pathParamsRequest = request.getPathParams();
+		  Pattern p = Pattern.compile("\\{([^}]*)}");
+		  String pathParamsStr = "";
+		  for(Object match : p.matcher(request.getUrl()).results().toArray()) {
+			  MatchResult result = (MatchResult) match;
+			  String paramName = request.getUrl().substring(result.start()+1, result.end()-1);
+			  String paramValue = (String) pathParamsRequest.get(paramName);
+			  // add parameter value to list of parameter values
+			  pathParamsStr += "\"" + paramValue + "\", ";
+		  }
+
+		  if(p.matcher(request.getUrl()).results().count() > 0) {
+			  // request contains path params => remove last "," of pathParamsStr
+			  pathParamsStr = pathParamsStr.substring(0, pathParamsStr.length() - 2);
+			  // set request path params to param value list
+			  requestTemplate.setVariable("$Path_Params$", pathParamsStr);
+		  } else {
+			  // no path parameters set => use empty array
+			  requestTemplate.setVariableIfNotSet("$Path_Params$", "new Object[0]");
+		  }
+
+		  // set method type & path
+		  requestTemplate.setVariable("$HTTP_Method_Type$", request.getType());
+		  String url = request.getUrl();
+		  if(url.startsWith("/")) {
+			  if(url.length() > 1) url = url.substring(1);
+			  else url = "";
+		  }
+		  requestTemplate.setVariable("$HTTPMethod_Path$", url);
+
+		  boolean firstResponseBodyAssertion = true;
+
+		  for(RequestAssertion assertion : request.getAssertions()) {
+			  if(assertion instanceof StatusCodeAssertion) {
+				  StatusCodeAssertion scAssertion = (StatusCodeAssertion) assertion;
+
+				  requestTemplate.insertBreakLine(scAssertion.getId() + ":linebreak", "$Request_Assertions$");
+				  Template assertionTemplate = templateEngine.createTemplate(scAssertion.getId() + ":assertion", genericStatusCodeAssertion.indent(6));
+				  requestTemplate.appendVariable("$Request_Assertions$", assertionTemplate);
+
+				  assertionTemplate.setVariable("$Message$", "[" + assertion.getId() + "]");
+				  assertionTemplate.setVariable("$Comparison_Operator$", scAssertion.getComparisonOperator() == 0 ? "Equals" : "NotEquals");
+				  assertionTemplate.setVariable("$Value$", "" + scAssertion.getStatusCodeValue());
+			  } else if(assertion instanceof BodyAssertion) {
+				  // if this is the first body assertion, we need to parse the response JSON
+				  if(firstResponseBodyAssertion) {
+					  Template getBodyTemplate = templateEngine.createTemplate(request.getId() + ":getbody", "Object response = JSONValue.parse(result.getResponse().trim());".indent(2));
+					  requestTemplate.appendVariable("$Request_Assertions$", getBodyTemplate);
+					  firstResponseBodyAssertion = false;
+				  }
+
+				  BodyAssertion bodyAssertion = (BodyAssertion) assertion;
+
+				  Template t = templateEngine.createTemplate(bodyAssertion.getId() + ":assertion", insertLineBreak(generateBodyAssertionCode(bodyAssertion, microservice), 2).indent(6));
+				  requestTemplate.appendVariable("$Request_Assertions$", t);
+
+			  }
+		  }
+
+		  requestTemplate.setVariableIfNotSet("$Request_Assertions$", "");
+	  }
+
+	  testMethod.setVariableIfNotSet("$Test_Requests$", "");
+	  return testMethod;
   }
   
   /**
