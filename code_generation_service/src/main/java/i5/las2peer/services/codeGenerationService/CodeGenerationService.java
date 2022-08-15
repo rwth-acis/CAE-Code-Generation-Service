@@ -8,7 +8,14 @@ import java.util.Base64;
 import java.util.HashMap;
 import java.util.Objects;
 
+import i5.las2peer.apiTestModel.TestCase;
 import i5.las2peer.apiTestModel.TestModel;
+import i5.las2peer.services.codeGenerationService.models.traceModel.FileTraceModel;
+import i5.las2peer.services.codeGenerationService.models.traceModel.TraceModel;
+import i5.las2peer.services.codeGenerationService.templateEngine.InitialGenerationStrategy;
+import i5.las2peer.services.codeGenerationService.templateEngine.Template;
+import i5.las2peer.services.codeGenerationService.templateEngine.TemplateEngine;
+import kong.unirest.Unirest;
 import org.apache.commons.io.FileUtils;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.lib.Ref;
@@ -182,6 +189,42 @@ public class CodeGenerationService extends RESTService {
 
 	public void addWebhook(String repoName, String webhookUrl) {
 		gitAdapter.addWebhook(repoName, webhookUrl);
+	}
+
+	/**
+	 * This method is used by api-testing-bot.
+	 * It generates the JUnit test method code for the given test case.
+	 * @param testCase Test case for which code should be generated.
+	 * @return JUnit test method code
+	 */
+	public String generateTestMethod(TestCase testCase) {
+		// create a trace model (just because it is needed)
+		TraceModel traceModel = new TraceModel();
+		FileTraceModel serviceTestTraceModel = new FileTraceModel(traceModel, "Test.java");
+		traceModel.addFileTraceModel(serviceTestTraceModel);
+
+		TemplateEngine serviceTestTemplateEngine =
+				new TemplateEngine(new InitialGenerationStrategy(), serviceTestTraceModel);
+
+		// don't clone full CAE-Templates repository here, because only 3 files are needed
+		String baseUrl = "https://raw.githubusercontent.com/" + gitOrganization + "/CAE-Templates/master";
+		String testFilesUrl = baseUrl + "/backend/app/src/test/java/i5/las2peer/services/servicePackage/";
+
+		String genericTestMethodUrl = testFilesUrl + "genericTestMethod.txt";
+		String genericTestRequestUrl = testFilesUrl + "genericTestRequest.txt";
+		String genericStatusCodeAssertionUrl = testFilesUrl + "genericStatusCodeAssertion.txt";
+
+		String genericTestMethod = Unirest.get(genericTestMethodUrl).asString().getBody();
+		String genericTestRequest = Unirest.get(genericTestRequestUrl).asString().getBody();
+		String genericStatusCodeAssertion = Unirest.get(genericStatusCodeAssertionUrl).asString().getBody();
+
+		// generate test method
+		Template testMethod = MicroserviceGenerator.generateTestMethod(null, serviceTestTemplateEngine, testCase,
+				serviceTestTemplateEngine.createTemplate("", ""),
+				genericTestMethod, genericTestRequest, genericStatusCodeAssertion);
+
+		// return code
+		return testMethod.getContent();
 	}
 
 	/**
