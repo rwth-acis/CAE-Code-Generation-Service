@@ -1628,7 +1628,7 @@ public class MicroserviceGenerator extends Generator {
     	TestModel testModel = microservice.getTestModel();
     	for(TestCase testCase : testModel.getTestCases()) {
 			generateTestMethod(microservice, templateEngine, testCase, serviceTestTemplate, genericTestMethod,
-					genericTestRequest, genericStatusCodeAssertion);
+					genericTestRequest, genericStatusCodeAssertion, false);
     	}
     }
 
@@ -1637,7 +1637,7 @@ public class MicroserviceGenerator extends Generator {
 
   public static Template generateTestMethod(Microservice microservice, TemplateEngine templateEngine, TestCase testCase, Template serviceTestTemplate,
 											String genericTestMethod, String genericTestRequest,
-											String genericStatusCodeAssertion) {
+											String genericStatusCodeAssertion, boolean simplify) {
 	  // 2 spaces indent for test method
 	  Template testMethod = templateEngine.createTemplate(testCase.getId() + ":testcase", genericTestMethod.indent(2));
 	  serviceTestTemplate.appendVariable("$Test_Methods$", testMethod);
@@ -1649,7 +1649,9 @@ public class MicroserviceGenerator extends Generator {
 			  .replaceAll("}", "")
 			  .replaceAll("\\(", "")
 			  .replaceAll("\\)", "");
-	  testMethod.setVariable("$HTTP_Method_Name$", updatedName + "_ID" + testCase.getId());
+
+	  String methodName = simplify ? updatedName : updatedName + "_ID"  + testCase.getId();
+	  testMethod.setVariable("$HTTP_Method_Name$", methodName);
 
 	  // add requests to test case
 	  for(TestRequest request : testCase.getRequests()) {
@@ -1726,7 +1728,8 @@ public class MicroserviceGenerator extends Generator {
 
 				  BodyAssertion bodyAssertion = (BodyAssertion) assertion;
 
-				  Template t = templateEngine.createTemplate(bodyAssertion.getId() + ":assertion", insertLineBreak(generateBodyAssertionCode(bodyAssertion, microservice), 2).indent(6));
+				  Template t = templateEngine.createTemplate(bodyAssertion.getId() + ":assertion",
+						  insertLineBreak(generateBodyAssertionCode(bodyAssertion, microservice, simplify), 2).indent(6));
 				  requestTemplate.appendVariable("$Request_Assertions$", t);
 
 			  }
@@ -1778,12 +1781,13 @@ public class MicroserviceGenerator extends Generator {
    * @param microservice
    * @return Code corresponding to given body assertion.
    */
-  private static String generateBodyAssertionCode(BodyAssertion bodyAssertion, Microservice microservice) {
+  private static String generateBodyAssertionCode(BodyAssertion bodyAssertion, Microservice microservice, boolean simplify) {
 	  // add a comment that describes the assertion
 	  String code = "// Response body " + bodyAssertion.getOperator().toString();
 	  code = insertLineBreak(code);
 	  // add the assertion code itself
-	  return code + "assertThat(\"[" + bodyAssertion.getId() + "]\", response, " + generateOperatorCode(bodyAssertion.getOperator(), microservice) + ");";
+	  String id = "\"[" + bodyAssertion.getId() + "]\", ";
+	  return code + "assertThat(" + (simplify ? "" : id) + "response, " + generateOperatorCode(bodyAssertion.getOperator(), microservice) + ");";
   }
   
   /**

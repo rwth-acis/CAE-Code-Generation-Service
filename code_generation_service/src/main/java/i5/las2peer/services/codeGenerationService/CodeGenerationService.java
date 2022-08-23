@@ -212,16 +212,24 @@ public class CodeGenerationService extends RESTService {
 
 		String genericTestMethodUrl = testFilesUrl + "genericTestMethod.txt";
 		String genericTestRequestUrl = testFilesUrl + "genericTestRequest.txt";
-		String genericStatusCodeAssertionUrl = testFilesUrl + "genericStatusCodeAssertion.txt";
 
 		String genericTestMethod = Unirest.get(genericTestMethodUrl).asString().getBody();
+		// remove method javadoc
+		genericTestMethod = "@Test" + genericTestMethod.split("@Test")[1];
+		// use normal MiniClient
+		genericTestMethod = genericTestMethod.replaceAll("MiniClientCoverage", "MiniClient");
+
 		String genericTestRequest = Unirest.get(genericTestRequestUrl).asString().getBody();
-		String genericStatusCodeAssertion = Unirest.get(genericStatusCodeAssertionUrl).asString().getBody();
+		// remove logs
+		String[] parts = genericTestRequest.split("System.out.println");
+		genericTestRequest = parts[0] + parts[1].split(";", 2)[1];
+
+		String genericStatusCodeAssertion = "Assert.assert$Comparison_Operator$($Value$, result.getHttpCode());";
 
 		// generate test method
 		Template testMethod = MicroserviceGenerator.generateTestMethod(null, serviceTestTemplateEngine, testCase,
 				serviceTestTemplateEngine.createTemplate("", ""),
-				genericTestMethod, genericTestRequest, genericStatusCodeAssertion);
+				genericTestMethod, genericTestRequest, genericStatusCodeAssertion, true);
 
 		// return code
 		return testMethod.getContent();
