@@ -23,7 +23,7 @@ public class ViewComponent {
    *
    */
   public enum ElementType {
-    div, ul, ol, form, table
+    div, ul, ol, form, table, list
   }
 
   private static final Map<ElementType, String> codeSample = ImmutableMap.of(
@@ -73,6 +73,9 @@ public class ViewComponent {
           switch (attribute.getValue()) {
             case "div":
               this.type = ElementType.div;
+              break;
+            case "list":
+              this.type = ElementType.list;
               break;
             case "form":
               this.type = ElementType.form;

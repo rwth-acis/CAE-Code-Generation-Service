@@ -69,6 +69,7 @@ public class FrontendComponentGenerator extends Generator {
      */
     public static String createSourceCode(FrontendComponent frontendComponent, BaseGitHostAdapter gitAdapter,
     		String commitMessage, String versionTag, boolean forcePush) throws GitHostException {
+          System.out.println("000000000000000000sc");
         // variables to be closed in the final block
         Repository frontendComponentRepository = null;
         TreeWalk treeWalk = null;
@@ -377,6 +378,7 @@ public class FrontendComponentGenerator extends Generator {
     static void createWidgetCode(TemplateEngine templateEngine, String widgetTemplateFile,
                                         String htmlElementTemplateFile, Map<String,String> importTemplateFiles, String gitHubOrganization,
                                         String repositoryName, FrontendComponent frontendComponent) {
+        System.out.println("0000000000wg");
 
         boolean wasWebComponentLibAdded = false;
         ArrayList<String> polymerElementsToAdd = new ArrayList<>();
@@ -499,6 +501,8 @@ public class FrontendComponentGenerator extends Generator {
      */
     private static Template createViewComponentTemplate(ViewComponent element,
                                                       String htmlElementTemplateFile, Template template) {
+
+        System.out.println("00000000000000000000vc");
         String wireframeAttributes = "";
         if(element.isContentEditable())
             htmlElementTemplateFile = htmlElementTemplateFile.replace("$Element_Content$", "-{$Element_Content$}-");
@@ -534,6 +538,27 @@ public class FrontendComponentGenerator extends Generator {
                 else
                     elementTemplate.setVariable("$Element_Content$", " ");
                 break;
+              case list:
+                  wireframeAttributes = element.generateCodeForAttributes();
+                  if (wireframeAttributes.length() > 0)
+                      elementTemplate.setVariable("$Wireframe_Attributes$", wireframeAttributes);
+                  else
+                      elementTemplate.setVariable("$Wireframe_Attributes$", "");
+                  elementTemplate.setVariable("$Additional_Styles$", " ");
+                  elementTemplate.setVariable("$Element_Type$", ViewComponent.ElementType.div.toString());
+                  elementTemplate.setVariable("$Element_Id$", element.getId());
+                  elementTemplate.setVariable("$Additional_Values$", " ");
+                  elementTemplate.setVariable("$Closing_Element$", "</" + ViewComponent.ElementType.div + ">");
+
+                  if(element.hasChildren()){
+                      for(ViewComponent child : element.getChildren()){
+                          Template tpl = createViewComponentTemplate(child, htmlElementTemplateFile, template);
+                          elementTemplate.appendVariable("$Element_Content$", tpl);
+                      }
+                  }
+                  else
+                      elementTemplate.setVariable("$Element_Content$", " ");
+                  break;
             case table:
                 wireframeAttributes = element.generateCodeForAttributes();
                 if (wireframeAttributes.length() > 0)
@@ -772,6 +797,8 @@ public class FrontendComponentGenerator extends Generator {
     public static void createApplicationScript(Template applicationTemplate, String functionTemplateFile,
                                                String microserviceCallTemplateFile, String iwcResponseTemplateFile,
                                                String htmlElementTemplateFile, FrontendComponent frontendComponent) {
+
+        System.out.println("000000000000000000as");
 
         // add trace to application script
         applicationTemplate.getTemplateEngine().addTrace(frontendComponent.getWidgetModelId(),
@@ -1112,37 +1139,171 @@ public class FrontendComponentGenerator extends Generator {
                                                     TemplateEngine templateEngine, String eventTemplateFile,
                                                     String functionTemplateFile, FrontendComponent frontendComponent) {
 
+        System.out.println("00000000000000000000000");
+
         ArrayList<String> detailVC = new ArrayList<String>();
+        HashMap<String, String> vcMap = new HashMap<>();
         List<ParamBinding> paramBindingList = new ArrayList<>(frontendComponent.getParamBindings().values());
-        String detailContainerId = "";
+
+        System.out.println("000000000000000000000001");
+
         for (ParamBinding paramBinding : paramBindingList) {
-          for (String vc : paramBinding.getViewComponentUpdates()) {
-            detailVC.add(vc);
-            detailContainerId = vc;
+          System.out.println("00000000000000000000000l1");
+          for (String vcc : paramBinding.getViewComponentCreations()) {
+            System.out.println("00000000000000000000000l2");
+            for (String vcu : paramBinding.getViewComponentUpdates()) {
+              System.out.println("00000000000000000000000l3");
+              detailVC.add(vcu);
+              vcMap.put(vcc,vcu);
+            }
           }
         }
 
+        System.out.println("00000000000000000000000l4");
+
+        ArrayList<String> pathName = new ArrayList<String>();
+
         for (ViewComponent element : frontendComponent.getViewComponents().values()) {
-            if(element.getDataBindings().size() > 0 && !detailVC.contains(element.getModelId())) {
+          System.out.println("element.getType()");
+          System.out.println(element.getType());
+          System.out.println("ViewComponent.ElementType.list.toString()");
+          System.out.println(ViewComponent.ElementType.list.toString());
+          if(element.getDataBindings().size() > 0) {
+            System.out.println("111111111111111");
+          }
+          if(!detailVC.contains(element.getModelId())) {
+            System.out.println("222222222222");
+          }
+          if( element.getType().toString().equals(ViewComponent.ElementType.list.toString())) {
+            System.out.println("333333333333333");
+          }
+            if(element.getDataBindings().size() > 0 && !detailVC.contains(element.getModelId()) && element.getType().toString().equals(ViewComponent.ElementType.list.toString())) {
+              System.out.println("444444444");
               for (DataBinding dataBinding : element.getDataBindings()) {
-                applicationScriptTemplate.setVariable("$DataBinding$", "getData(null, true)");
+                System.out.println("55555555555");
+                applicationScriptTemplate.setVariable("$DataBinding$", "getData" + dataBinding.getPath() + "(null, true)");
                 Template functionTemplate = applicationScriptTemplate.createTemplate(
                         applicationScriptTemplate.getId() + dataBinding.getModelId() + "_main", functionTemplateFile);
                 applicationScriptTemplate.getTemplateEngine().addTrace(dataBinding.getModelId(), "Function",
                         "getData", functionTemplate);
+                System.out.println("666666666666666");
                 // add function to application script
                 applicationScriptTemplate.appendVariable("$Functions$", functionTemplate);
+                System.out.println("7777777777777777777");
                 // start creating the actual function
-                functionTemplate.setVariable("$Function_Name$", "getData");
-
+                pathName.add(dataBinding.getPath());
+                functionTemplate.setVariable("$Function_Name$", "getData" + dataBinding.getPath());
                 functionTemplate.setVariable("$Function_Parameters$", "param, isList");
                 functionTemplate.setVariable("$Function_Return_Parameter$", "");
-
+                System.out.println("8888888888888888888888888");
                 Template dataBindingCallerFile = applicationScriptTemplate.createTemplate(
                         element.getId() + dataBinding.getModelId() + "_list", dataBindingCallerTemplateFile);
 
-                if(!detailContainerId.isEmpty()) {
-                  ViewComponent detailContainer = frontendComponent.getViewComponents().get(detailContainerId);
+                if(vcMap.get(element.getId()) != null) {
+                  ViewComponent detailContainer = frontendComponent.getViewComponents().get(vcMap.get(element.getId()));
+                  System.out.println("9999999999999999999999");
+                  dataBindingCallerFile.setVariable("$Dtl_Container_Id$", detailContainer.getId());
+                }
+                System.out.println("aaaaaaaaaaaaaa1");
+                dataBindingCallerFile.setVariable("$List_Container_Id$", element.getId());
+                System.out.println("aaaaaaaaaaaaaaaaa2");
+                dataBindingCallerFile.setVariable("$Method_Type$",
+                        dataBinding.getMethodType().toString());
+                System.out.println("aaaaaaaaaaaaaaaaa3");
+                dataBindingCallerFile.setVariable("$Method_Path$", dataBinding.getPath());
+                System.out.println("aaaaaaaaaaaaaaa4");
+                if (dataBinding.isAuthorize()) {
+                    dataBindingCallerFile.setVariable("$Authenticate$", "true");
+                } else {
+                    dataBindingCallerFile.setVariable("$Authenticate$", "false");
+                }
+                System.out.println("aaaaaaaaaaaaa5");
+                if (!dataBinding.getContent().isEmpty()) {
+                    // add variable initialization
+                    System.out.println("aaaaaaaaaaaaa6");
+                    dataBindingCallerFile.setVariable("$Content$", dataBinding.getContent());
+
+                    // TODO workaround
+                    String contentType = dataBinding.getContentType().toString();
+                    if (contentType.equals("application/json"))
+                        contentType = "text/plain";
+
+                    dataBindingCallerFile.setVariable("$Content_Type$", contentType);
+                } else {
+                    // no content specified, just remove placeholder / insert empty entries
+                    dataBindingCallerFile.setVariable("$Content$", "\"\"");
+                    dataBindingCallerFile.setVariable("$Content_Type$", "");
+                }
+                System.out.println("aaaaaaaaaaaa7");
+                dataBindingCallerFile.setVariable("$Method_Path$", dataBinding.getPath());
+                System.out.println("aaaaaaaaaaa8");
+                // add function to application script
+                applicationScriptTemplate.getTemplateEngine().addTrace(dataBinding.getModelId(), "DataBinding",
+                        dataBinding.getModelId(), dataBindingCallerFile);
+                // add function to application script
+                functionTemplate.appendVariable("$Function_Body$", dataBindingCallerFile);
+
+                /** function for list **/
+                System.out.println("aaaaaaaaaaaaa9");
+                Template functionTemplateList = applicationScriptTemplate.createTemplate(
+                        applicationScriptTemplate.getId() + dataBinding.getModelId() + "_list", functionTemplateFile);
+                applicationScriptTemplate.getTemplateEngine().addTrace(dataBinding.getModelId(), "Function",
+                        "buildList" + dataBinding.getPath(), functionTemplateList);
+                // add function to application script
+                applicationScriptTemplate.appendVariable("$Functions$", functionTemplateList);
+                // start creating the actual function
+                functionTemplateList.setVariable("$Function_Name$", "buildList" + dataBinding.getPath());
+
+                functionTemplateList.setVariable("$Function_Parameters$", "root, arr");
+                functionTemplateList.setVariable("$Function_Return_Parameter$", "");
+                System.out.println("bbbbbbbbbbbbb1");
+                Template dataBindingListFile = applicationScriptTemplate.createTemplate(
+                        element.getId() + dataBinding.getModelId() + "_list", dataBindingListTemplateFile);
+
+                dataBindingListFile.setVariable("$Display_Attr$", dataBinding.getDisplayAttr());
+                System.out.println("bbbbbbbbbbbbbbbbbbbbb2");
+                functionTemplateList.appendVariable("$Function_Body$", dataBindingListFile);
+                System.out.println("bbbbbbbbbbbbbbbbbbbbb3");
+                for (Event event : element.getEvents()) {
+                  dataBindingListFile.setVariable("$Event_Check$", "true");
+                  dataBindingListFile.setVariable("$Event_Type$", event.getEventCause().toString());
+                  if(!event.getCalledParamBindingId().isEmpty()){
+                      ParamBinding paramBinding = frontendComponent.getParamBindings().get(event.getCalledParamBindingId());
+                      dataBindingListFile.setVariable("$Param_Input$", paramBinding.getInput());
+                      dataBindingCallerFile.setVariable("$Param_Input$", paramBinding.getInput());
+                  }
+
+                }
+                System.out.println("bbbbbbbbbbbbbbbbbbbbb4");
+                dataBindingListFile.setVariableIfNotSet("$Event_Check$", "false");
+
+                applicationScriptTemplate.getTemplateEngine().addTrace(dataBinding.getModelId(), "DataBinding",
+                        dataBinding.getModelId(), dataBindingListFile);
+              }
+
+            }  else if(element.getDataBindings().size() > 0 && detailVC.contains(element.getModelId()) && element.getType().toString().equals(ViewComponent.ElementType.list)){
+              System.out.println("ccccccccccccccccccccccccc1");
+              for (DataBinding dataBinding : element.getDataBindings()) {
+                System.out.println("ccccccccccccccccccccc2");
+                applicationScriptTemplate.setVariable("$DataBinding$", "getData" + dataBinding.getPath() + "(null, true)");
+                Template functionTemplate = applicationScriptTemplate.createTemplate(
+                        applicationScriptTemplate.getId() + dataBinding.getModelId() + "_main", functionTemplateFile);
+                applicationScriptTemplate.getTemplateEngine().addTrace(dataBinding.getModelId(), "Function",
+                        "getData", functionTemplate);
+                System.out.println("ccccccccccc3");
+                // add function to application script
+                applicationScriptTemplate.appendVariable("$Functions$", functionTemplate);
+                // start creating the actual function
+                pathName.add(dataBinding.getPath());
+                functionTemplate.setVariable("$Function_Name$", "getData" + dataBinding.getPath());
+                functionTemplate.setVariable("$Function_Parameters$", "param, isList");
+                functionTemplate.setVariable("$Function_Return_Parameter$", "");
+                System.out.println("cccccccccccccccc4");
+                Template dataBindingCallerFile = applicationScriptTemplate.createTemplate(
+                        element.getId() + dataBinding.getModelId() + "_list", dataBindingCallerTemplateFile);
+
+                if(!vcMap.get(element.getId()).isEmpty()) {
+                  ViewComponent detailContainer = frontendComponent.getViewComponents().get(vcMap.get(element.getId()));
 
                   dataBindingCallerFile.setVariable("$Dtl_Container_Id$", detailContainer.getId());
                 }
@@ -1152,7 +1313,7 @@ public class FrontendComponentGenerator extends Generator {
                         dataBinding.getMethodType().toString());
 
                 dataBindingCallerFile.setVariable("$Method_Path$", dataBinding.getPath());
-
+                System.out.println("cccccccccccccccccc5");
                 if (dataBinding.isAuthorize()) {
                     dataBindingCallerFile.setVariable("$Authenticate$", "true");
                 } else {
@@ -1176,7 +1337,7 @@ public class FrontendComponentGenerator extends Generator {
                     dataBindingCallerFile.setVariable("$Content_Type$", "");
                 }
                 dataBindingCallerFile.setVariable("$Method_Path$", dataBinding.getPath());
-
+                System.out.println("ccccccccccccccccc6");
                 // add function to application script
                 applicationScriptTemplate.getTemplateEngine().addTrace(dataBinding.getModelId(), "DataBinding",
                         dataBinding.getModelId(), dataBindingCallerFile);
@@ -1184,45 +1345,46 @@ public class FrontendComponentGenerator extends Generator {
                 functionTemplate.appendVariable("$Function_Body$", dataBindingCallerFile);
 
                 /** function for list **/
+                if (pathName.contains(dataBinding.getPath())) {
+                  Template functionTemplateList = applicationScriptTemplate.createTemplate(
+                          applicationScriptTemplate.getId() + dataBinding.getModelId() + "_list", functionTemplateFile);
+                  applicationScriptTemplate.getTemplateEngine().addTrace(dataBinding.getModelId(), "Function",
+                          "buildList" + dataBinding.getPath(), functionTemplateList);
+                  // add function to application script
+                  applicationScriptTemplate.appendVariable("$Functions$", functionTemplateList);
+                  // start creating the actual function
+                  functionTemplateList.setVariable("$Function_Name$", "buildList" + dataBinding.getPath());
 
-                Template functionTemplateList = applicationScriptTemplate.createTemplate(
-                        applicationScriptTemplate.getId() + dataBinding.getModelId() + "_list", functionTemplateFile);
-                applicationScriptTemplate.getTemplateEngine().addTrace(dataBinding.getModelId(), "Function",
-                        "buildList", functionTemplateList);
-                // add function to application script
-                applicationScriptTemplate.appendVariable("$Functions$", functionTemplateList);
-                // start creating the actual function
-                functionTemplateList.setVariable("$Function_Name$", "buildList");
+                  functionTemplateList.setVariable("$Function_Parameters$", "root, arr");
+                  functionTemplateList.setVariable("$Function_Return_Parameter$", "");
 
-                functionTemplateList.setVariable("$Function_Parameters$", "root, arr");
-                functionTemplateList.setVariable("$Function_Return_Parameter$", "");
+                  Template dataBindingListFile = applicationScriptTemplate.createTemplate(
+                          element.getId() + dataBinding.getModelId() + "_list", dataBindingListTemplateFile);
 
-                Template dataBindingListFile = applicationScriptTemplate.createTemplate(
-                        element.getId() + dataBinding.getModelId() + "_list", dataBindingListTemplateFile);
+                  dataBindingListFile.setVariable("$Display_Attr$", dataBinding.getDisplayAttr());
 
-                dataBindingListFile.setVariable("$Display_Attr$", dataBinding.getDisplayAttr());
+                  functionTemplateList.appendVariable("$Function_Body$", dataBindingListFile);
 
-                functionTemplateList.appendVariable("$Function_Body$", dataBindingListFile);
+                  for (Event event : element.getEvents()) {
+                    dataBindingListFile.setVariable("$Event_Check$", "true");
+                    dataBindingListFile.setVariable("$Event_Type$", event.getEventCause().toString());
+                    if(!event.getCalledParamBindingId().isEmpty()){
+                        ParamBinding paramBinding = frontendComponent.getParamBindings().get(event.getCalledParamBindingId());
+                        dataBindingListFile.setVariable("$Param_Input$", paramBinding.getInput());
+                        dataBindingCallerFile.setVariable("$Param_Input$", paramBinding.getInput());
+                    }
 
-                for (Event event : element.getEvents()) {
-
-                  dataBindingListFile.setVariable("$Event_Check$", "true");
-                  dataBindingListFile.setVariable("$Event_Type$", event.getEventCause().toString());
-                  if(!event.getCalledParamBindingId().isEmpty()){
-                      ParamBinding paramBinding = frontendComponent.getParamBindings().get(event.getCalledParamBindingId());
-                      dataBindingListFile.setVariable("$Param_Input$", paramBinding.getInput());
-                      dataBindingCallerFile.setVariable("$Param_Input$", paramBinding.getInput());
                   }
 
+                  dataBindingListFile.setVariableIfNotSet("$Event_Check$", "false");
+
+                  applicationScriptTemplate.getTemplateEngine().addTrace(dataBinding.getModelId(), "DataBinding",
+                          dataBinding.getModelId(), dataBindingListFile);
                 }
-
-                dataBindingListFile.setVariableIfNotSet("$Event_Check$", "false");
-
-                applicationScriptTemplate.getTemplateEngine().addTrace(dataBinding.getModelId(), "DataBinding",
-                        dataBinding.getModelId(), dataBindingListFile);
               }
 
-            } else if(element.getDataBindings().size() > 0 && detailVC.contains(element.getModelId())){
+            }  else if(element.getDataBindings().size() > 0 && detailVC.contains(element.getModelId()) && element.getType().equals(ViewComponent.ElementType.div)){
+              System.out.println("dddddddddddddddddd1");
               ParamBinding paramBinding = null;
               for (ParamBinding p : paramBindingList) {
                 for (String dtlId : p.getViewComponentUpdates()) {
@@ -1232,7 +1394,7 @@ public class FrontendComponentGenerator extends Generator {
                   }
                 }
               }
-
+              System.out.println("ddddddddddd2");
               Template functionTemplate = applicationScriptTemplate.createTemplate(
                       applicationScriptTemplate.getId() + paramBinding.getModelId() + "_dtl", functionTemplateFile);
               applicationScriptTemplate.getTemplateEngine().addTrace(paramBinding.getModelId(), "Function",
@@ -1243,7 +1405,7 @@ public class FrontendComponentGenerator extends Generator {
               functionTemplate.setVariable("$Function_Name$", "buildDetail");
               functionTemplate.setVariable("$Function_Parameters$", "root, arr");
               functionTemplate.setVariable("$Function_Return_Parameter$", "");
-
+              System.out.println("ddddddddddd3");
               for (DataBinding dataBinding : element.getDataBindings()) {
                 Template dataBindingFile = applicationScriptTemplate.createTemplate(
                         element.getId() + dataBinding.getModelId(), dataBindingDtlemplateFile);
