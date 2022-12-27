@@ -4,10 +4,10 @@ import i5.cae.simpleModel.SimpleEntityAttribute;
 import i5.cae.simpleModel.SimpleModel;
 import i5.cae.simpleModel.edge.SimpleEdge;
 import i5.cae.simpleModel.node.SimpleNode;
+import i5.las2peer.apiTestModel.TestModel;
 import i5.las2peer.services.codeGenerationService.exception.ModelParseException;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 /**
  * 
@@ -32,7 +32,12 @@ public class Microservice {
   private String version;
   private String selectedCommitSha;
   private String metadataDocString;
+  private TestModel testModel;
 
+  public Microservice(SimpleModel model) throws ModelParseException {
+	  this(model, null);
+  }
+  
   /**
    * 
    * Creates a new microservice.
@@ -42,7 +47,7 @@ public class Microservice {
    * @throws ModelParseException if something goes wrong during parsing
    * 
    */
-  public Microservice(SimpleModel model) throws ModelParseException {
+  public Microservice(SimpleModel model, TestModel testModel) throws ModelParseException {
     this.httpMethods = new HashMap<String, HttpMethod>();
     this.mobSOSLogs = new HashMap<String, MobSOSLog>();
 
@@ -154,6 +159,8 @@ public class Microservice {
         default:
           throw new ModelParseException("Unknown node type: " + node.getType());
       }
+      
+      this.testModel = testModel;
     }
 
     // now to the edges
@@ -346,6 +353,10 @@ public class Microservice {
     }
   }
 
+  
+  public TestModel getTestModel() {
+	  return this.testModel;
+  }
 
   public void setMicroserviceModelId(String microserviceModelId) {
     this.microserviceModelId = microserviceModelId;

@@ -71,7 +71,6 @@ public class MicroserviceSynchronization extends MicroserviceGenerator {
     String genericHttpMethodBody = null;
     String genericApiResponse = null;
     String genericHttpResponse = null;
-    String genericTestCase = null;
     String databaseConfig = null;
     String databaseInstantiation = null;
     String serviceInvocation = null;
@@ -79,6 +78,10 @@ public class MicroserviceSynchronization extends MicroserviceGenerator {
     String genericTable = null;
     String databaseManager = null;
     String guidances = null;
+    
+    String genericTestMethod = null;
+    String genericTestRequest = null;
+    String genericStatusCodeAssertion = null;
 
     // monitoring templates
     String genericCustomMessageDescription = null;
@@ -127,9 +130,16 @@ public class MicroserviceSynchronization extends MicroserviceGenerator {
             break;
           case "i5.las2peer.services.servicePackage.ServiceClass.properties":
             serviceProperties = new String(loader.getBytes(), "UTF-8");
-          case "genericTestMethod.txt":
-            genericTestCase = new String(loader.getBytes(), "UTF-8");
             break;
+          case "genericTestMethod.txt":
+            genericTestMethod = new String(loader.getBytes(), "UTF-8");
+            break;
+          case "genericTestRequest.txt":
+            genericTestRequest = new String(loader.getBytes(), "UTF-8");
+            break;
+          case "genericStatusCodeAssertion.txt":
+        	genericStatusCodeAssertion = new String(loader.getBytes(), "UTF-8");
+        	break;
           case "guidances.json":
             guidances = new String(loader.getBytes(), "UTF-8");
             break;
@@ -312,7 +322,7 @@ public class MicroserviceSynchronization extends MicroserviceGenerator {
               databaseConfig, databaseInstantiation, serviceInvocation, metadataDoc);
         } else if (fileName.equals(serviceOldTestFileName)) {
           oldFileTraceModel.setFileName(serviceTestFileName);
-          generateNewServiceTest(templateEngine, serviceTest, microservice, genericTestCase);
+          generateNewServiceTest(templateEngine, serviceTest, microservice, genericTestMethod, genericTestRequest, genericStatusCodeAssertion);
         } else if (fileName.equals(oldClassesFileName)) {
             oldFileTraceModel.setFileName(newClassesFileName);
    

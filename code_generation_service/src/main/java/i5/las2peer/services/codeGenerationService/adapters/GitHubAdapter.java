@@ -8,6 +8,10 @@ import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Base64;
+
+import kong.unirest.HttpResponse;
+import kong.unirest.Unirest;
+import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 
 import i5.las2peer.services.codeGenerationService.exception.GitHostException;
@@ -119,5 +123,22 @@ public class GitHubAdapter extends BaseGitHostAdapter {
 		  throw new GitHostException(e.getMessage());
 	  }
 			
+	}
+
+	public void addWebhook(String repoName, String webhookUrl) {
+		JSONObject body = new JSONObject();
+		JSONObject config = new JSONObject();
+		config.put("url", webhookUrl);
+		config.put("content_type", "json");
+		body.put("config", config);
+		JSONArray events = new JSONArray();
+		events.add("*");
+		body.put("events", events);
+
+		HttpResponse<String> response = Unirest.post("https://api.github.com/repos/" + gitOrganization + "/" + repoName + "/hooks")
+				.header("Authorization", "token " + token)
+				.header("Content-Type", "application/json")
+				.body(body.toJSONString())
+				.asString();
 	}
 }
