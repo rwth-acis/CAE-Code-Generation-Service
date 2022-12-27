@@ -3,6 +3,7 @@ package i5.las2peer.services.codeGenerationService.generators;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Strings;
+import i5.las2peer.apiTestModel.*;
 import i5.las2peer.logging.L2pLogger;
 import i5.las2peer.services.codeGenerationService.adapters.BaseGitHostAdapter;
 import i5.las2peer.services.codeGenerationService.exception.GitHostException;
@@ -17,6 +18,7 @@ import i5.las2peer.services.codeGenerationService.templateEngine.Template;
 import i5.las2peer.services.codeGenerationService.templateEngine.TemplateEngine;
 import i5.las2peer.services.codeGenerationService.templateEngine.TemplateStrategy;
 import i5.las2peer.services.codeGenerationService.traces.segments.Segment;
+
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.lib.*;
 import org.eclipse.jgit.revwalk.RevCommit;
@@ -24,6 +26,9 @@ import org.eclipse.jgit.transport.RemoteConfig;
 import org.eclipse.jgit.transport.URIish;
 import org.eclipse.jgit.treewalk.TreeWalk;
 import org.eclipse.jgit.treewalk.filter.PathFilter;
+import org.json.simple.JSONArray;
+import org.json.simple.JSONObject;
+import org.json.simple.JSONValue;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
@@ -33,6 +38,8 @@ import java.net.URL;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.regex.MatchResult;
+import java.util.regex.Pattern;
 
 /**
  *
@@ -70,7 +77,7 @@ public class MicroserviceGenerator extends Generator {
    */
 
   protected static String getServiceFileName(Microservice microservice) {
-    return "src/main/i5/las2peer/services/" + getPackageName(microservice) + "/"
+    return "app/src/main/java/i5/las2peer/services/" + getPackageName(microservice) + "/"
         + microservice.getResourceName() + ".java";
   }
 
@@ -82,7 +89,7 @@ public class MicroserviceGenerator extends Generator {
      */
 
     protected static String getClassesFileName(Microservice microservice) {
-        return "src/main/i5/las2peer/services/" + getPackageName(microservice) + "/classes.java";
+        return "app/src/main/java/i5/las2peer/services/" + getPackageName(microservice) + "/classes.java";
     }
 
   /**
@@ -106,8 +113,21 @@ public class MicroserviceGenerator extends Generator {
    */
 
   protected static String getServiceTestFileName(Microservice microservice) {
-    return "src/test/i5/las2peer/services/" + getPackageName(microservice) + "/"
+    return "app/src/test/java/i5/las2peer/services/" + getPackageName(microservice) + "/"
         + microservice.getResourceName() + "Test.java";
+  }
+  
+  /**
+   * Get the file name/path of the TestUtil.java file.
+   * @param microservice A microservice model
+   * @return The file name/path of the TestUtil.java file.
+   */
+  protected static String getServiceTestUtilFileName(Microservice microservice) {
+	  return "app/src/test/java/i5/las2peer/services/" + getPackageName(microservice) + "/TestUtil.java";
+  }
+
+  protected static String getMiniClientCoverageFileName(Microservice microservice) {
+  	  return "app/src/test/java/i5/las2peer/services/" + getPackageName(microservice) + "/MiniClientCoverage.java";
   }
 
   /**
@@ -153,8 +173,6 @@ public class MicroserviceGenerator extends Generator {
 	    String license = null;
 	    String userAgentGeneratorWindows = null;
 	    String userAgentGeneratorUnix = null;
-	    String antUserProperties = null;
-	    String ivySettings = null;
 	    String gitignore = null;
 	    String databaseManager = null;
 	    String serviceClass = null;
@@ -163,13 +181,26 @@ public class MicroserviceGenerator extends Generator {
 	    String genericHttpMethodBody = null;
 	    String genericApiResponse = null;
 	    String genericHttpResponse = null;
-	    String genericTestCase = null;
 	    String databaseConfig = null;
 	    String databaseInstantiation = null;
 	    String serviceInvocation = null;
 	    String databaseScript = null;
 	    String genericTable = null;
 	    String guidances = null;
+	    
+	    String genericTestMethod = null;
+	    String genericTestRequest = null;
+	    String genericStatusCodeAssertion = null;
+	    String testUtilClass = null;
+	    String miniClientCoverage = null;
+	    
+	    String gradleSettings = null;
+	    String gradlew = null;
+	    String gradlewBat = null;
+	    byte[] gradleWrapperJar = null;
+	    String gradleWrapperProperties = null;
+	    
+	    String ghActionsCI = null;
 
 		// monitoring templates
 		String genericCustomMessageDescription = null;
@@ -229,7 +260,7 @@ public class MicroserviceGenerator extends Generator {
 	            case "LICENSE.txt":
 	              license = new String(loader.getBytes(), "UTF-8");
 	              break;
-	            case "build.xml":
+	            case "build.gradle":
 	              String buildFile = new String(loader.getBytes(), "UTF-8");
 	              generateOtherArtifacts(Template.createInitialTemplateEngine(traceModel, path),
 	                  microservice, gitAdapter.getGitOrganization(), buildFile);
@@ -255,21 +286,28 @@ public class MicroserviceGenerator extends Generator {
 	              generateOtherArtifacts(Template.createInitialTemplateEngine(traceModel, path),
 	                  microservice, gitAdapter.getGitOrganization(), nodeInfo);
 	              break;
-	            case "service.properties":
-	              String antServiceProperties = new String(loader.getBytes(), "UTF-8");
+	            case "gradle.properties":
+	              String gradleServiceProperties = new String(loader.getBytes(), "UTF-8");
 	              generateOtherArtifacts(Template.createInitialTemplateEngine(traceModel, path),
-	                  microservice, gitAdapter.getGitOrganization(), antServiceProperties);
+	                  microservice, gitAdapter.getGitOrganization(), gradleServiceProperties);
 	              break;
-	            case "user.properties":
-	              antUserProperties = new String(loader.getBytes(), "UTF-8");
+	            case "settings.gradle":
+	              gradleSettings = new String(loader.getBytes(), "UTF-8");
 	              break;
-	            case "ivy.xml":
-	              String ivy = new String(loader.getBytes(), "UTF-8");
-	              generateOtherArtifacts(Template.createInitialTemplateEngine(traceModel, path),
-	                  microservice, gitAdapter.getGitOrganization(), ivy);
+	            case "gradlew":
+	              gradlew = new String(loader.getBytes(), "UTF-8");
 	              break;
-	            case "ivysettings.xml":
-	              ivySettings = new String(loader.getBytes(), "UTF-8");
+	            case "gradlew.bat":
+	              gradlewBat = new String(loader.getBytes(), "UTF-8");
+	              break;
+	            case "gradle-wrapper.jar":
+	              gradleWrapperJar = loader.getBytes();
+	              break;
+	            case "gradle-wrapper.properties":
+	              gradleWrapperProperties = new String(loader.getBytes(), "UTF-8");
+	              break;
+	            case "gradle.yml":
+	              ghActionsCI = new String(loader.getBytes(), "UTF-8");
 	              break;
 	            case "i5.las2peer.services.servicePackage.ServiceClass.properties":
 	              String serviceProperties = new String(loader.getBytes(), "UTF-8");
@@ -320,8 +358,20 @@ public class MicroserviceGenerator extends Generator {
 	              serviceTest = new String(loader.getBytes(), "UTF-8");
 	              break;
 	            case "genericTestMethod.txt":
-	              genericTestCase = new String(loader.getBytes(), "UTF-8");
+	              genericTestMethod = new String(loader.getBytes(), "UTF-8");
 	              break;
+	            case "genericTestRequest.txt":
+	              genericTestRequest = new String(loader.getBytes(), "UTF-8");
+	              break;
+	            case "genericStatusCodeAssertion.txt":
+	              genericStatusCodeAssertion = new String(loader.getBytes(), "UTF-8");
+	              break;
+	            case "TestUtil.java":
+	              testUtilClass = new String(loader.getBytes(), "UTF-8");
+	              break;
+	            case "MiniClientCoverage.java":
+				  miniClientCoverage = new String(loader.getBytes(), "UTF-8");
+				  break;
 	            case "databaseConfig.txt":
 	              databaseConfig = new String(loader.getBytes(), "UTF-8");
 	              break;
@@ -432,7 +482,24 @@ public class MicroserviceGenerator extends Generator {
 
           generateNewClasses(classesTemplateEngine, classes, microservice, repositoryLocation,
               genericClassBody, genericClassProperty, metadataDoc);
+          
+          // service TestUtil.java
+          FileTraceModel serviceTestUtilTraceModel = new FileTraceModel(traceModel, getServiceTestUtilFileName(microservice));
+          traceModel.addFileTraceModel(serviceTestUtilTraceModel);
+          
+          TemplateEngine serviceTestUtilTemplateEngine = new TemplateEngine(new InitialGenerationStrategy(), serviceTestUtilTraceModel);
+          
+          generateServiceTestUtilClass(serviceTestUtilTemplateEngine, microservice, testUtilClass);
 
+          // MiniClientCoverage.java
+		  FileTraceModel miniClientCoverageTraceModel = new FileTraceModel(traceModel, getMiniClientCoverageFileName(microservice));
+		  traceModel.addFileTraceModel(miniClientCoverageTraceModel);
+
+		  TemplateEngine miniClientCoverageTemplateEngine = new TemplateEngine(new InitialGenerationStrategy(), miniClientCoverageTraceModel);
+
+		  generateMiniClientCoverageClass(miniClientCoverageTemplateEngine, microservice, miniClientCoverage);
+          
+          // service test class
 	      FileTraceModel serviceTestTraceModel =
 	          new FileTraceModel(traceModel, getServiceTestFileName(microservice));
 	      traceModel.addFileTraceModel(serviceTestTraceModel);
@@ -440,17 +507,25 @@ public class MicroserviceGenerator extends Generator {
 	      TemplateEngine serviceTestTemplateEngine =
 	          new TemplateEngine(new InitialGenerationStrategy(), serviceTestTraceModel);
 
-	      generateNewServiceTest(serviceTestTemplateEngine, serviceTest, microservice, genericTestCase);
+	      generateNewServiceTest(serviceTestTemplateEngine, serviceTest, microservice, genericTestMethod,
+	    		  genericTestRequest, genericStatusCodeAssertion);
 
 	      // add not traced files to new repository, e.g. static files
 
 	      // configuration and build stuff
-	      microserviceRepository = createTextFileInRepository(microserviceRepository, "etc/ivy/",
-	          "ivysettings.xml", ivySettings);
-
-	      microserviceRepository = createTextFileInRepository(microserviceRepository,
-	          "etc/ant_configuration/", "user.properties", antUserProperties);
-
+	      microserviceRepository = createTextFileInRepository(microserviceRepository, "/",
+    	          "settings.gradle", gradleSettings);
+	      microserviceRepository = createTextFileInRepository(microserviceRepository, "/",
+	    		  "gradlew", gradlew);
+	      microserviceRepository = createTextFileInRepository(microserviceRepository, "/",
+	    		  "gradlew.bat", gradlewBat);
+	      microserviceRepository = createBinaryFileInRepository(microserviceRepository, "gradle/wrapper/",
+	    		  "gradle-wrapper.jar", gradleWrapperJar);
+	      microserviceRepository = createTextFileInRepository(microserviceRepository, "gradle/wrapper/",
+	    		  "gradle-wrapper.properties", gradleWrapperProperties);
+	      microserviceRepository = createTextFileInRepository(microserviceRepository, ".github/workflows/",
+	    		  "gradle.yml", ghActionsCI);
+	      
 	      microserviceRepository =
 	          createTextFileInRepository(microserviceRepository, "", ".gitignore", gitignore);
 
@@ -543,7 +618,11 @@ public class MicroserviceGenerator extends Generator {
     	if(microservice.getPath().contains("http:") || microservice.getPath().contains("https:")) {
     		port = String.valueOf(new URL(microservice.getPath()).getPort());
     	}else {
-    		port = String.valueOf(new URL("http://"+microservice.getPath()).getPort());
+    		URL url = new URL("http://"+microservice.getPath());
+    		if(url.getPort() != -1) {
+    			// port is set
+    			port = String.valueOf(url.getPort());	
+    		}
     	}
     } catch (Exception e) {
     	throw new ModelParseException(e.getMessage());
@@ -591,10 +670,9 @@ public class MicroserviceGenerator extends Generator {
         template.setVariable("$Organization_Name$", gitHubOrganization);
         template.setVariable("$Microservice_Name$", microservice.getName());
         break;
-      case "build.xml":
+      case "build.gradle":
         template = templateEngine
             .createTemplate(microservice.getMicroserviceModelId() + ":buildFile", templateContent);
-        template.setVariable("$Microservice_Name$", microservice.getVersionedModelId());
         break;
       case "start_network.bat":
         template = templateEngine.createTemplate(
@@ -616,26 +694,13 @@ public class MicroserviceGenerator extends Generator {
         template.setVariable("$Developer$", microservice.getDeveloper());
         template.setVariable("$Resource_Name$", microservice.getResourceName());
         break;
-      case "service.properties":
+      case "gradle.properties":
         template = templateEngine.createTemplate(
-            microservice.getMicroserviceModelId() + ":antServiceProperties", templateContent);
+            microservice.getMicroserviceModelId() + ":gradleServiceProperties", templateContent);
         template.setVariable("$Microservice_Version$", microservice.getVersion() + "");
         template.setVariable("$Lower_Resource_Name$", packageName);
         template.setVariable("$Resource_Name$", microservice.getResourceName());
         template.setVariable("$Microservice_Version$", microservice.getVersion() + "");
-        break;
-      case "ivy.xml":
-        template = templateEngine.createTemplate(microservice.getMicroserviceModelId() + ":ivy",
-            templateContent);
-        // add mysql dependency only if a database exists
-        if (microservice.getDatabase() != null) {
-          template.setVariable("$MySQL_Dependencies$",
-              "<dependency org=\"mysql\" name=\"mysql-connector-java\" rev=\"5.1.6\" conf=\"bundle->default\"/>\n"
-                  + "    <dependency org=\"org.apache.commons\" name=\"commons-pool2\" rev=\"2.2\" conf=\"bundle->default\"/>\n"
-                  + "    <dependency org=\"org.apache.commons\" name=\"commons-dbcp2\" rev=\"2.0\" conf=\"bundle->default\"/>");
-        } else {
-          template.setVariable("$MySQL_Dependencies$", "");
-        }
         break;
       case "i5.las2peer.services.servicePackage.ServiceClass.properties":
 
@@ -1022,9 +1087,7 @@ public class MicroserviceGenerator extends Generator {
 
         // check if payload is a JSON and cast if so
         if (currentPayload.getPayloadType() == PayloadType.JSONObject) {
-        	// TODO workaround
-          // consumesAnnotation = "MediaType.APPLICATION_JSON";
-          consumesAnnotation = "MediaType.TEXT_PLAIN";
+          consumesAnnotation = "MediaType.APPLICATION_JSON";
 
           // if schema is available
           System.out.println("[MICROSERVICE GENERATOR] Schema name available " + schemaName);
@@ -1508,32 +1571,49 @@ public class MicroserviceGenerator extends Generator {
         return swaggerType;
     }
 
-
   /**
-   *
+   * Generates the TestUtil.java file.
+   * @param templateEngine The template engine to use
+   * @param microservice the microservice model
+   * @param testUtilClass File content
+   */
+  protected static void generateServiceTestUtilClass(TemplateEngine templateEngine, Microservice microservice, String testUtilClass) {
+	Template testUtilTemplate = templateEngine.createTemplate(microservice.getMicroserviceModelId() + ":testutil", testUtilClass);
+	templateEngine.addTemplate(testUtilTemplate);
+	  
+	String packageName = microservice.getResourceName().substring(0, 1).toLowerCase() + microservice.getResourceName().substring(1);
+	testUtilTemplate.setVariable("$Lower_Resource_Name$", packageName);
+  }
+
+  protected static void generateMiniClientCoverageClass(TemplateEngine templateEngine, Microservice microservice, String miniClientCoverage) {
+  	Template template = templateEngine.createTemplate(microservice.getMicroserviceModelId() + ":miniclientcoverage", miniClientCoverage);
+  	templateEngine.addTemplate(template);
+
+  	String packageName = microservice.getResourceName().substring(0, 1).toLowerCase() + microservice.getResourceName().substring(1);
+	  template.setVariable("$Lower_Resource_Name$", packageName);
+  }
+    
+  /**
    * Generates the service test class.
-   *
    * @param templateEngine The template engine to use
    * @param serviceTest the service test class file
    * @param microservice the microservice model
-   * @param genericTestCase a generic test class file
-   *
    */
   protected static void generateNewServiceTest(TemplateEngine templateEngine, String serviceTest,
-      Microservice microservice, String genericTestCase) {
-
+      Microservice microservice, String genericTestMethod, String genericTestRequest,
+      String genericStatusCodeAssertion) {
     // create template and add to template engine
     Template serviceTestTemplate =
         templateEngine.createTemplate(microservice.getMicroserviceModelId(), serviceTest);
     templateEngine.addTemplate(serviceTestTemplate);
 
     // general replacements
-
     serviceTestTemplate.setVariable("$Resource_Name$", microservice.getResourceName());
-    serviceTestTemplate.setVariable("$Microservice_Name$", microservice.getVersionedModelId());
+    serviceTestTemplate.setVariable("$Microservice_Name$", microservice.getName());
 
     serviceTest = serviceTest.replace("$Resource_Name$", microservice.getResourceName());
-    serviceTest = serviceTest.replace("$Microservice_Name$", microservice.getVersionedModelId());
+    serviceTest = serviceTest.replace("$Microservice_Name$", microservice.getName());
+    
     // get the resource address: (skip first /)
     String relativeResourcePath =
         microservice.getPath().substring(microservice.getPath().indexOf("/", 8) + 1);
@@ -1543,126 +1623,319 @@ public class MicroserviceGenerator extends Generator {
         + microservice.getResourceName().substring(1);
     serviceTest = serviceTest.replace("$Lower_Resource_Name$", packageName);
     serviceTestTemplate.setVariable("$Lower_Resource_Name$", packageName);
-
-    // test cases
-    HttpMethod[] httpMethods = microservice.getHttpMethods().values().toArray(new HttpMethod[0]);
-    for (int httpMethodIndex = 0; httpMethodIndex < httpMethods.length; httpMethodIndex++) {
-
-      String currentMethodCode = genericTestCase; // copy content
-      HttpMethod currentMethod = httpMethods[httpMethodIndex];
-
-      Template currentMethodTemplate = templateEngine
-          .createTemplate(currentMethod.getModelId() + ":httpMethod", genericTestCase);
-
-      serviceTestTemplate.appendVariable("$Test_Methods$", currentMethodTemplate);
-
-      String content = "\"\"";
-      String consumesAnnotation = "";
-      // replace placeholder of current method code
-
-      currentMethodTemplate.setVariable("$HTTP_Method_Name$", currentMethod.getName());
-      currentMethodTemplate.setVariable("$HTTPMethod_Path$", currentMethod.getPath());
-
-      currentMethodCode = currentMethodCode.replace("$HTTP_Method_Name$", currentMethod.getName());
-      currentMethodCode = currentMethodCode.replace("$HTTPMethod_Path$", currentMethod.getPath());
-      for (int httpPayloadIndex = 0; httpPayloadIndex < currentMethod.getHttpPayloads()
-          .size(); httpPayloadIndex++) {
-        HttpPayload currentPayload = currentMethod.getHttpPayloads().get(httpPayloadIndex);
-        // get the payload and create variables for it, if needed, cast in sendRequest code
-        if (currentPayload.getPayloadType() == PayloadType.JSONObject) {
-          consumesAnnotation = "MediaType.APPLICATION_JSON";
-
-          Template currentPayloadTemplate =
-              templateEngine.createTemplate(currentPayload.getModelId() + ":payloadJSON",
-                  "      JSONObject $Payload_Name$ = new JSONObject();");
-          currentPayloadTemplate.setVariable("$Payload_Name$", currentPayload.getName());
-
-          currentMethodTemplate.appendVariable("$TestMethod_Variables$", currentPayloadTemplate);
-
-          currentMethodCode =
-              currentMethodCode.replace("$TestMethod_Variables$", "      JSONObject "
-                  + currentPayload.getName() + " = new JSONObject();\n$TestMethod_Variables$");
-          content = currentPayload.getName() + ".toJSONString()";
-        }
-        // string parameter
-        if (currentPayload.getPayloadType() == PayloadType.String) {
-          Template currentPayloadTemplate =
-              templateEngine.createTemplate(currentPayload.getModelId() + ":payloadString",
-                  "      String $Payload_Name$ = \"-{initialized}-\";");
-          currentPayloadTemplate.setVariable("$Payload_Name$", currentPayload.getName());
-
-          currentMethodTemplate.appendVariable("$TestMethod_Variables$", currentPayloadTemplate);
-
-          currentMethodCode = currentMethodCode.replace("$TestMethod_Variables$", "      String "
-              + currentPayload.getName() + " = \"initialized\";\n$TestMethod_Variables$");
-          content = currentPayload.getName();
-        }
-        // mark custom payload in consumes annotation and parameter type
-        if (currentPayload.getPayloadType() == PayloadType.CUSTOM) {
-          consumesAnnotation = "CUSTOM";
-
-          Template currentPayloadTemplate =
-              templateEngine.createTemplate(currentPayload.getModelId() + ":payloadCustom",
-                  "      -{CUSTOM}- $Payload_Name$ = \"-{null-\";");
-          currentPayloadTemplate.setVariable("$Payload_Name$", currentPayload.getName());
-
-          currentMethodTemplate.appendVariable("$TestMethod_Variables$", currentPayloadTemplate);
-
-          currentMethodCode = currentMethodCode.replace("$TestMethod_Variables$",
-              "      CUSTOM " + currentPayload.getName() + " = null;\n$TestMethod_Variables$");
-          content = currentPayload.getName();
-        }
-        // path param: replace strings in method call path
-        if (currentPayload.getPayloadType() == PayloadType.PATH_PARAM) {
-
-          Template currentPayloadTemplate =
-              templateEngine.createTemplate(currentPayload.getModelId() + ":payloadPathParam",
-                  "      String $Payload_Name$ = \"-{initialized}-\";");
-          currentPayloadTemplate.setVariable("$Payload_Name$", currentPayload.getName());
-
-          currentMethodTemplate.appendVariable("$TestMethod_Variables$", currentPayloadTemplate);
-
-          currentMethodCode = currentMethodCode.replace("$TestMethod_Variables$", "      String "
-              + currentPayload.getName() + " = \"initialized\";\n$TestMethod_Variables$");
-          currentMethodCode = currentMethodCode.replace("{" + currentPayload.getName() + "}",
-              "\" + " + currentPayload.getName() + " + \"");
-        }
-      }
-      // no JSON, no custom, set it to text (no payloads, string payload, only path parameters)
-      if (consumesAnnotation.equals("")) {
-        consumesAnnotation = "MediaType.TEXT_PLAIN";
-      }
-
-      currentMethodTemplate.setVariable("$HTTPMethod_Content$", content);
-      currentMethodTemplate.setVariable("$HTTP_Method_Type$",
-          currentMethod.getMethodType().toString());
-      // produces annotation
-      String producesAnnotation = "";
-      for (int httpResponseIndex = 0; httpResponseIndex < currentMethod.getHttpResponses()
-          .size(); httpResponseIndex++) {
-        HttpResponse currentResponse = currentMethod.getHttpResponses().get(httpResponseIndex);
-        if (currentResponse.getResultType() == ResultType.JSONObject) {
-          producesAnnotation = "MediaType.APPLICATION_JSON";
-        }
-        // check for custom return type and mark it if found
-        if (currentResponse.getResultType() == ResultType.CUSTOM) {
-          producesAnnotation = "CUSTOM";
-        }
-      }
-      // if no produces annotation is set until here, we set it to text
-      if (producesAnnotation.equals("")) {
-        producesAnnotation = "MediaType.TEXT_PLAIN";
-      }
-      currentMethodTemplate.setVariable("$HTTPMethod_Produces$", producesAnnotation);
-      currentMethodTemplate.setVariable("$HTTPMethod_Consumes$", consumesAnnotation);
-      currentMethodTemplate.setVariableIfNotSet("$TestMethod_Variables$", "");
-
+    
+    if(microservice.getTestModel() != null) {
+    	TestModel testModel = microservice.getTestModel();
+    	for(TestCase testCase : testModel.getTestCases()) {
+			generateTestMethod(microservice, templateEngine, testCase, serviceTestTemplate, genericTestMethod,
+					genericTestRequest, genericStatusCodeAssertion, false);
+    	}
     }
 
     serviceTestTemplate.setVariableIfNotSet("$Test_Methods$", "");
   }
 
+  public static Template generateTestMethod(Microservice microservice, TemplateEngine templateEngine, TestCase testCase, Template serviceTestTemplate,
+											String genericTestMethod, String genericTestRequest,
+											String genericStatusCodeAssertion, boolean simplify) {
+	  // 2 spaces indent for test method
+	  Template testMethod = templateEngine.createTemplate(testCase.getId() + ":testcase", genericTestMethod.indent(2));
+	  serviceTestTemplate.appendVariable("$Test_Methods$", testMethod);
 
+	  String updatedName = testCase.getName()
+			  .replaceAll("\\s+","")
+			  .replaceAll("/", "")
+			  .replaceAll("\\{", "")
+			  .replaceAll("}", "")
+			  .replaceAll("\\(", "")
+			  .replaceAll("\\)", "");
+
+	  String methodName = simplify ? updatedName : updatedName + "_ID"  + testCase.getId();
+	  testMethod.setVariable("$HTTP_Method_Name$", methodName);
+
+	  // add requests to test case
+	  for(TestRequest request : testCase.getRequests()) {
+		  Template requestTemplate = templateEngine.createTemplate(request.getId() + ":request", genericTestRequest.indent(4));
+		  testMethod.appendVariable("$Test_Requests$", requestTemplate);
+
+		  // replace agent variables
+		  setTestRequestAgent(requestTemplate, request);
+
+		  // set request body
+		  String requestBody = request.getBody() != null ? "\"\"\"\n" + request.getBody() + "\"\"\"" : "\"\"";
+		  requestTemplate.setVariable("$Request_Body$", requestBody);
+
+		  // set request content-type
+		  String contentType = "text/plain";
+		  if(request.getBody() != null && !request.getBody().isBlank()) {
+			  contentType = "application/json";
+		  }
+		  requestTemplate.setVariable("$Content_Type$", contentType);
+
+		  requestTemplate.setVariable("$Request_Id$", "" + request.getId());
+
+		  // generate code for setting path parameters
+		  JSONObject pathParamsRequest = request.getPathParams();
+		  Pattern p = Pattern.compile("\\{([^}]*)}");
+		  String pathParamsStr = "";
+		  for(Object match : p.matcher(request.getUrl()).results().toArray()) {
+			  MatchResult result = (MatchResult) match;
+			  String paramName = request.getUrl().substring(result.start()+1, result.end()-1);
+			  String paramValue = (String) pathParamsRequest.get(paramName);
+			  // add parameter value to list of parameter values
+			  pathParamsStr += "\"" + paramValue + "\", ";
+		  }
+
+		  if(p.matcher(request.getUrl()).results().count() > 0) {
+			  // request contains path params => remove last "," of pathParamsStr
+			  pathParamsStr = pathParamsStr.substring(0, pathParamsStr.length() - 2);
+			  // set request path params to param value list
+			  requestTemplate.setVariable("$Path_Params$", pathParamsStr);
+		  } else {
+			  // no path parameters set => use empty array
+			  requestTemplate.setVariableIfNotSet("$Path_Params$", "new Object[0]");
+		  }
+
+		  // set method type & path
+		  requestTemplate.setVariable("$HTTP_Method_Type$", request.getType());
+		  String url = request.getUrl();
+		  if(url.startsWith("/")) {
+			  if(url.length() > 1) url = url.substring(1);
+			  else url = "";
+		  }
+		  requestTemplate.setVariable("$HTTPMethod_Path$", url);
+
+		  boolean firstResponseBodyAssertion = true;
+
+		  for(RequestAssertion assertion : request.getAssertions()) {
+			  if(assertion instanceof StatusCodeAssertion) {
+				  StatusCodeAssertion scAssertion = (StatusCodeAssertion) assertion;
+
+				  requestTemplate.insertBreakLine(scAssertion.getId() + ":linebreak", "$Request_Assertions$");
+				  Template assertionTemplate = templateEngine.createTemplate(scAssertion.getId() + ":assertion", genericStatusCodeAssertion.indent(6));
+				  requestTemplate.appendVariable("$Request_Assertions$", assertionTemplate);
+
+				  assertionTemplate.setVariable("$Message$", "[" + assertion.getId() + "]");
+				  assertionTemplate.setVariable("$Comparison_Operator$", scAssertion.getComparisonOperator() == 0 ? "Equals" : "NotEquals");
+				  assertionTemplate.setVariable("$Value$", "" + scAssertion.getStatusCodeValue());
+			  } else if(assertion instanceof BodyAssertion) {
+				  // if this is the first body assertion, we need to parse the response JSON
+				  if(firstResponseBodyAssertion) {
+					  Template getBodyTemplate = templateEngine.createTemplate(request.getId() + ":getbody", "Object response = JSONValue.parse(result.getResponse().trim());".indent(2));
+					  requestTemplate.appendVariable("$Request_Assertions$", getBodyTemplate);
+					  firstResponseBodyAssertion = false;
+				  }
+
+				  BodyAssertion bodyAssertion = (BodyAssertion) assertion;
+
+				  Template t = templateEngine.createTemplate(bodyAssertion.getId() + ":assertion",
+						  insertLineBreak(generateBodyAssertionCode(bodyAssertion, microservice, simplify), 2).indent(6));
+				  requestTemplate.appendVariable("$Request_Assertions$", t);
+
+			  }
+		  }
+
+		  requestTemplate.setVariableIfNotSet("$Request_Assertions$", "");
+	  }
+
+	  testMethod.setVariableIfNotSet("$Test_Requests$", "");
+	  return testMethod;
+  }
+  
+  /**
+   * Sets the agent identifier and password in the given request template.
+   * @param requestTemplate Template for the request code.
+   * @param request TestRequest containing the necessary agent information.
+   */
+  private static void setTestRequestAgent(Template requestTemplate, TestRequest request) {
+  	String agentIdentifier;
+  	String agentPassword;
+  	
+  	switch(request.getAgent()) {
+          case 1:
+  		    agentIdentifier = "testAgentAdam.getIdentifier()";
+  		    agentPassword = "testPassAdam";
+  		    break;
+  		case 2:
+  		    agentIdentifier = "testAgentAbel.getIdentifier()";
+  		    agentPassword = "testPassAbel";
+  		    break;
+  		case 3:
+  		    agentIdentifier = "testAgentEve.getIdentifier()";
+  		    agentPassword = "testPassEve";
+  		    break;
+  		default:
+  		    agentIdentifier = "AnonymousAgentImpl.IDENTIFIER";
+  		    agentPassword = "\"\"";
+  		    break;
+  	}
+  	
+  	requestTemplate.setVariable("$Agent_Identifier$", agentIdentifier);
+  	requestTemplate.setVariable("$Agent_Password$", agentPassword);
+  }
+  
+  
+  /**
+   * Generates the code for the given body assertion.
+   * @param bodyAssertion Body assertion for which code should be generated.
+   * @param microservice
+   * @return Code corresponding to given body assertion.
+   */
+  private static String generateBodyAssertionCode(BodyAssertion bodyAssertion, Microservice microservice, boolean simplify) {
+	  // add a comment that describes the assertion
+	  String code = "// Response body " + bodyAssertion.getOperator().toString();
+	  code = insertLineBreak(code);
+	  // add the assertion code itself
+	  String id = "\"[" + bodyAssertion.getId() + "]\", ";
+	  return code + "assertThat(" + (simplify ? "" : id) + "response, " + generateOperatorCode(bodyAssertion.getOperator(), microservice) + ");";
+  }
+  
+  /**
+   * Recursively generates the code for the given operator and its successors.
+   * @param operator Operator for which code should be generated.
+   * @param microservice
+   * @return Code for the given operator and its successors.
+   */
+  private static String generateOperatorCode(BodyAssertionOperator operator, Microservice microservice) {
+	  if(operator.getOperatorId() == ResponseBodyOperator.HAS_TYPE.getId()) {
+	  	  // check if type is predefined or a schema defined in metadata editor
+		  if(OperatorInput.fromId(operator.getInputType()) != null) {
+			  return generateHasTypeOperatorCode(operator);
+		  } else {
+		  	  return generateHasSchemaOperatorCode(operator, microservice);
+		  }
+	  } else if(operator.getOperatorId() == ResponseBodyOperator.HAS_FIELD.getId()) {
+		  return generateHasFieldOperatorCode(operator, microservice);
+	  } else if(operator.getOperatorId() == ResponseBodyOperator.HAS_LIST_ENTRY_THAT.getId()) {
+	      return generateHasListEntryThatOperatorCode(operator, microservice);
+	  } else if(operator.getOperatorId() == ResponseBodyOperator.ALL_LIST_ENTRIES.getId()) {
+		  return generateAllListEntriesOperatorCode(operator, microservice);
+	  } else {
+		  return "// TODO: Not yet supported by code-generation!";
+	  }
+  }
+  
+  /**
+   * Generates code for "has type" operator.
+   * Appends code of following operator, if it exists.
+   * @param operator A "has type" operator.
+   * @return Code for given "has type" operator.
+   */
+  private static String generateHasTypeOperatorCode(BodyAssertionOperator operator) {
+	  // get expected type
+	  String expectedType = OperatorInput.fromId(operator.getInputType()).getJavaClassName();
+	  
+	  // create isA() assertion
+	  return generateTypeAssertionCode(expectedType);
+  }
+
+  private static String generateHasSchemaOperatorCode(BodyAssertionOperator operator, Microservice microservice) {
+  	  // get name of schema
+	  String schemaName = operator.getInputValue();
+
+	  String typeAssertionCode = generateTypeAssertionCode("JSONObject");
+	  String schemaAssertionCode = "followsSchema(\"" + schemaName + "\", \"\"\"\n" + createJSONSchemaFromMetadataDoc(microservice.getMetadataDocString(), schemaName) + "\"\"\")";
+
+	  // create assertion
+	  return "both(" + typeAssertionCode + ").and(asJSONObject(" + schemaAssertionCode + "))";
+  }
+
+  private static String createJSONSchemaFromMetadataDoc(String metadataDoc, String schemaName) {
+      JSONObject metadata = (JSONObject) JSONValue.parse(metadataDoc);
+	  JSONObject definitions = (JSONObject) metadata.get("definitions");
+	  JSONObject definition = (JSONObject) definitions.get(schemaName);
+	  JSONArray required = new JSONArray();
+	  for(Object attributeKey : definition.keySet().toArray()) {
+          required.add(attributeKey);
+	  }
+
+	  JSONObject schema = new JSONObject();
+	  schema.put("type", "object");
+	  schema.put("properties", definition);
+	  schema.put("required", required);
+
+	  return schema.toJSONString();
+  }
+  
+  /**
+   * Generates code for "has field" operator. Ensures that current object is of type JSONObject.
+   * Appends code of following operator, if exists.
+   * @param operator A "has field" operator.
+   * @param microservice
+   * @return Code for given "has field" operator.
+   */
+  private static String generateHasFieldOperatorCode(BodyAssertionOperator operator, Microservice microservice) {
+	  // verify that current object is JSONObject and that the JSONObject has the given field
+	  String typeAssertion = generateTypeAssertionCode("JSONObject");
+	  
+	  String fieldName = operator.getInputValue();
+	  // if there is a following operator => append it
+	  String followingOperatorCode = operator.hasFollowingOperator() ? ", " + generateOperatorCode(operator.getFollowingOperator(), microservice) : "";
+	  
+	  return "both(" + typeAssertion + ").and(asJSONObject(hasField(\"" + fieldName + "\"" + followingOperatorCode + ")))";
+  }
+  
+  /**
+   * Generates code for "has list entry that" operator. Ensures that current object is of type JSONArray.
+   * Appends code of following operator.
+   * @param operator A "has list entry that" operator.
+   * @param microservice
+   * @return Code for "has list entry that" operator.
+   */
+  private static String generateHasListEntryThatOperatorCode(BodyAssertionOperator operator, Microservice microservice) {
+	  // verify that current object is JSONArray
+	  String typeAssertion = generateTypeAssertionCode("JSONArray");
+	  
+	  // "has list entry that" operator always has a following operator
+	  String followingOperatorCode = generateOperatorCode(operator.getFollowingOperator(), microservice);
+	  
+	  return "both(" + typeAssertion + ").and(asJSONObjectList(hasItem(" + followingOperatorCode + ")))";
+  }
+  
+  /**
+   * Generates code for "all list entries" operator. Ensures that current object is of type JSONArray.
+   * Appends code of following operator.
+   * @param operator A "all list entries" operator.
+   * @param microservice
+   * @return Code for "all list entries" operator.
+   */
+  private static String generateAllListEntriesOperatorCode(BodyAssertionOperator operator, Microservice microservice) {
+	  // verify that current object is JSONArray
+	  String typeAssertion = generateTypeAssertionCode("JSONArray");
+	  
+	  // "all list entries" operator always has a following operator
+	  String followingOperatorCode = generateOperatorCode(operator.getFollowingOperator(), microservice);
+	  
+	  return "both(" + typeAssertion + ").and(asJSONObjectList(everyItem(" + followingOperatorCode + ")))";
+  }
+  
+  /**
+   * Generates assertion code that tests if current object has given type.
+   * @param className Type that the tested object should have.
+   * @return Code for type assertion.
+   */
+  private static String generateTypeAssertionCode(String className) {
+	  return "isA(" + className + ".class)";
+  }
+  
+  /**
+   * Appends one line break at the end of the given code.
+   * @param code Code, to which a line break should be appended.
+   * @return Given code including line break at the end.
+   */
+  private static String insertLineBreak(String code) {
+	  return code + "\n";
+  }
+  
+  /**
+   * Appends multiple line breaks at the end of the given code.
+   * @param code Code, to which line breaks should be appended.
+   * @return Given code including line breaks at the end.
+   */
+  private static String insertLineBreak(String code, int count) {
+	  for(int i = 0; i < count; i++) code = insertLineBreak(code);
+	  return code;
+  }
   /**
    *
    * Creates the database script according to the passed database.

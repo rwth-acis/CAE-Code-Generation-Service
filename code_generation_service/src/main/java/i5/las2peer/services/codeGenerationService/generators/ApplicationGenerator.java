@@ -341,7 +341,8 @@ public class ApplicationGenerator extends Generator {
                     || fileName.contains(".sh") || fileName.contains(".md")
                     || fileName.contains(".classpath") || fileName.contains(".gitignore")
                     || fileName.contains(".project") || fileName.contains(".xml")
-                    || fileName.contains(".sql") || fileName.contains(".properties")) {
+                    || fileName.contains(".sql") || fileName.contains(".properties")
+                    || fileName.contains(".gradle") || fileName.equals("gradlew")) {
                   String file = new String(loader.getBytes(), "UTF-8");
                   applicationRepository =
                       createTextFileInRepository(applicationRepository, microserviceRepositoryName
